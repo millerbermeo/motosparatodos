@@ -20,15 +20,15 @@ const AppRouter: React.FC = () => {
         {/* Rutas privadas con layout */}
         <Route element={<PrivateRoute />}>
           <Route element={<MainLayout />}>
-                  <Route path="/" element={<Home />} />
+            <Route path="/" element={<Home />} />
 
             <Route path="/usuarios" element={<Users />} />
 
             <Route path="/reportes" element={<Reportes />} />
-                <Route path="/reportes" element={<Reportes />} />
-                <Route path="/configuracion" element={<Configs />} />
+            <Route path="/reportes" element={<Reportes />} />
+            <Route path="/configuracion" element={<Configs />} />
 
-                
+
             {/* Aquí podrías poner más rutas de usuarios */}
           </Route>
         </Route>

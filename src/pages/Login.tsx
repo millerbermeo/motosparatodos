@@ -28,29 +28,38 @@ const Login: React.FC = () => {
 
   return (
     <main className="h-screen max-h-screen overflow-hidden w-full bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200">
-             <div className="pointer-events-none absolute -top-24 -left-24 size-72 rounded-full bg-sky-500/50 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-0 -right-0 size-72 rounded-full bg-red-400/50 blur-3xl" />
+      <div className="pointer-events-none absolute -top-24 -left-24 size-72 rounded-full bg-sky-500/50 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-0 -right-0 size-72 rounded-full bg-red-400/50 blur-3xl" />
       <div className="mx-auto grid min-h-svh max-w-7xl grid-cols-1 lg:grid-cols-2">
         {/* Panel visual izquierdo */}
         <aside className="relative hidden items-center justify-center overflow-hidden lg:flex">
           <img
             src="/moto3.png"
             alt="Motos Para Todos"
-            className="pointer-events-none select-none h-[85%] w-[85%] rounded-[2.5rem] object-cover "
+            className="pointer-events-none select-none h-[75%] w-[75%] rounded-[2.5rem] object-cover "
           />
           {/* Decoraciones */}
-   
+
         </aside>
 
         {/* Panel de formulario derecho */}
         <section className="flex items-center justify-center p-6 sm:p-8 lg:p-12">
+
+
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="relative w-full max-w-md rounded-3xl bg-white p-8 shadow-xl ring-1 ring-black/5"
             aria-describedby="form-status"
             noValidate
           >
-            <header className="mb-6 text-center">
+          <div className="avatar absolute -top-10 z-50 left-1/2 -translate-x-1/2">
+          <div className="ring-gray-700 ring-offset-base-100 w-18 rounded-full ring-2 ring-offset-2">
+            <img src="/moto3.png" />
+          </div>
+        </div>
+
+
+            <header className="mb-6 text-center pt-5">
               <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
                 Motos Para Todos
               </h1>
@@ -78,13 +87,13 @@ const Login: React.FC = () => {
                   placeholder="username"
                   className="block w-full rounded-2xl border border-slate-200 bg-white px-10 py-3 text-slate-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
                   aria-invalid={!!errors.username}
-               {...register("username", {
-  required: "El nombre de usuario es obligatorio",
-  pattern: {
-    value: /^[a-zA-Z0-9_]{3,16}$/, // letras, números y guiones bajos, de 3 a 16 caracteres
-    message: "El nombre de usuario solo puede contener letras, números y guiones bajos (3-16 caracteres)",
-  },
-})}
+                  {...register("username", {
+                    required: "El nombre de usuario es obligatorio",
+                    pattern: {
+                      value: /^[a-zA-Z0-9_]{3,16}$/, // letras, números y guiones bajos, de 3 a 16 caracteres
+                      message: "El nombre de usuario solo puede contener letras, números y guiones bajos (3-16 caracteres)",
+                    },
+                  })}
 
                 />
               </div>

@@ -9,18 +9,18 @@ import axios from 'axios';
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
-    withCredentials: true,            // <- clave
-
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Interceptor para añadir el token antes de cada request
 api.interceptors.request.use((config) => {
-  const token = import.meta.env.TOKEN
+  const token = import.meta.env.VITE_AUTH_TOKEN; // Define este valor en tu .env
+
+  console.log(token)
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    config.headers['Cookie'] = `auth_token=${token}`;
   }
   return config;
 });
