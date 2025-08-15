@@ -18,7 +18,7 @@ export const api = axios.create({
 
 // Interceptor para añadir el token antes de cada request
 api.interceptors.request.use((config) => {
-  const token = "7eefd1646707eca6a8f792b6751738780e57867b2031a1cf1d207818fc2dd92d"
+  const token = import.meta.env.TOKEN
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

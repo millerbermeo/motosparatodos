@@ -1,19 +1,19 @@
 import React from 'react'
-import { useUsuarios } from '../../services/usersServices'
+// import { useUsuarios } from '../../services/usersServices'
 
 const TablaUsuarios: React.FC = () => {
 
-    const {data, isPending, isError} = useUsuarios()
+    // const {data, isPending, isError} = useUsuarios()
 
-    if (isPending) {
-        return "cargando usuarios"
-    }
+    // if (isPending) {
+    //     return "cargando usuarios"
+    // }
 
-    if (isError) {
-        return "error al caragar usuarios"
-    }
+    // if (isError) {
+    //     return "error al caragar usuarios"
+    // }
 
-    console.log(data)
+    // console.log(data)
 
 
   return (
