@@ -31,6 +31,7 @@ export function FormInput<T extends FieldValues>({
 }: FormInputProps<T>) {
   const id = useId();
 
+  console.log(placeholder)
   return (
     <Controller
       name={name}
