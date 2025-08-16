@@ -1,4 +1,4 @@
-// components/FormInput.tsx
+// FormInput.tsx
 import { Controller } from "react-hook-form";
 import type {
   Control,
@@ -9,12 +9,12 @@ import type {
 import { useId } from "react";
 
 type FormInputProps<T extends FieldValues> = {
-  name: Path<T>; // ← cambio aquí
+  name: Path<T>;
   label: string;
-  control: Control<T>;
+  control: Control<T, any, T>; // 👈 aceptar 3 genéricos
   type?: React.InputHTMLAttributes<HTMLInputElement>["type"];
   placeholder?: string;
-  rules?: RegisterOptions<T, Path<T>>; // ← y aquí
+  rules?: RegisterOptions<T, Path<T>>;
   disabled?: boolean;
   className?: string;
 };
@@ -31,9 +31,8 @@ export function FormInput<T extends FieldValues>({
 }: FormInputProps<T>) {
   const id = useId();
 
-  console.log(placeholder)
   return (
-    <Controller
+    <Controller<T, Path<T>>   // 👈 especifica los genéricos de Controller
       name={name}
       control={control}
       rules={rules}
@@ -59,7 +58,7 @@ export function FormInput<T extends FieldValues>({
             <input
               id={id}
               type={type}
-              placeholder={label}
+              placeholder={label ?? placeholder}
               disabled={disabled}
               className={[
                 "w-full bg-transparent outline-none border-none",

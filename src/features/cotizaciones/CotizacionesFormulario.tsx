@@ -48,7 +48,7 @@ const CotizacionesFormulario: React.FC = () => {
 
   const totalSeguros = useMemo(() => {
     let t = 0;
-    (Object.values(v.seguros || {}) as boolean[]).forEach((sel, i) => {
+    (Object.values(v.seguros || {}) as boolean[]).forEach((sel) => {
       if (!sel) return;
     });
     // Recalcular sumando catálogo por clave

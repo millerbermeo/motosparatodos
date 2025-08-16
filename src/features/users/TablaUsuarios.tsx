@@ -2,24 +2,17 @@ import React from "react";
 import FormularioUsuarios from "./FormularioUsuarios";
 import { useModalStore } from "../../store/modalStore";
 import { useUsuarios } from "../../services/usersServices";
+import UsuarioEstadoAlert from "./UsuarioEstadoAlert";
+import { Pen } from "lucide-react";
 
-type Row = {
-  id: number;
-  name: string;
-  job: string;
-  color: string;
-  avatar: string;
-};
+// Paginación
+const PAGE_SIZE = 5;
+const SIBLING_COUNT = 1;
+const BOUNDARY_COUNT = 1;
 
-const PAGE_SIZE = 5; // 👈 cámbialo si quieres más/menos filas por página
-const SIBLING_COUNT = 1; // números alrededor de la página actual
-const BOUNDARY_COUNT = 1; // cuántos mostrar al inicio/fin
-
-// Utilidad para crear rangos numéricos
 const range = (start: number, end: number) =>
   Array.from({ length: end - start + 1 }, (_, i) => start + i);
 
-// Devuelve un arreglo como: [1, 2, 3, "...", 10]
 function getPaginationItems(
   current: number,
   totalPages: number,
@@ -43,38 +36,28 @@ function getPaginationItems(
   );
 
   const siblingsEnd = Math.min(
-    Math.max(
-      current + siblingCount,
-      boundaryCount + siblingCount * 2 + 2
-    ),
+    Math.max(current + siblingCount, boundaryCount + siblingCount * 2 + 2),
     endPages.length > 0 ? endPages[0] - 2 : totalPages - 1
   );
 
   const items: (number | "...")[] = [];
-
-  // Inicio
   items.push(...startPages);
-  // Ellipsis después del inicio
+
   if (siblingsStart > boundaryCount + 2) {
     items.push("...");
   } else if (boundaryCount + 1 < totalPages - boundaryCount) {
     items.push(boundaryCount + 1);
   }
 
-  // Zona media
   items.push(...range(siblingsStart, siblingsEnd));
 
-  // Ellipsis antes del final
   if (siblingsEnd < totalPages - boundaryCount - 1) {
     items.push("...");
   } else if (totalPages - boundaryCount > boundaryCount) {
     items.push(totalPages - boundaryCount);
   }
 
-  // Fin
   items.push(...endPages);
-
-  // Limpieza por si se repiten números
   return items.filter((v, i, a) => a.indexOf(v) === i);
 }
 
@@ -87,113 +70,134 @@ const btnEllipsis =
 
 const TablaUsuarios: React.FC = () => {
   const open = useModalStore((s) => s.open);
+  const { data, isPending, isError } = useUsuarios();
 
-  // 🔹 MOCK de datos (puedes reemplazar con los que vienen de tu servicio)
-  const rows: Row[] = React.useMemo(() => {
-    const jobs = [
-      "Quality Control Specialist",
-      "Desktop Support Technician",
-      "Tax Accountant",
-      "UI/UX Designer",
-      "DevOps Engineer",
-      "Product Manager",
-    ];
-    const colors = ["Blue", "Purple", "Red", "Green", "Yellow", "Orange"];
-    return Array.from({ length: 32 }, (_, i) => ({
-      id: i + 1,
-      name: `Usuario ${i + 1}`,
-      job: jobs[i % jobs.length],
-      color: colors[i % colors.length],
-      avatar: `https://i.pravatar.cc/40?img=${(i % 70) + 1}`,
-    }));
-  }, []);
+  // Asegura arreglo (cuando no hay data, usa [])
+  const usuarios = Array.isArray(data) ? data : data ?? [];
 
-  // Estado de paginación
+  // Hooks SIEMPRE se ejecutan
   const [page, setPage] = React.useState(1);
-  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
 
-  // Si cambia el total y la página actual se sale de rango, corrígela
+  const totalPages = React.useMemo(
+    () => Math.max(1, Math.ceil(usuarios.length / PAGE_SIZE)),
+    [usuarios.length]
+  );
+
   React.useEffect(() => {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
-  // Slice de filas visibles
   const start = (page - 1) * PAGE_SIZE;
-  const end = Math.min(start + PAGE_SIZE, rows.length);
-  const visible = rows.slice(start, end);
-
+  const end = Math.min(start + PAGE_SIZE, usuarios.length);
+  const visible = usuarios.slice(start, end);
   const items = getPaginationItems(page, totalPages);
 
   const goPrev = () => setPage((p) => Math.max(1, p - 1));
   const goNext = () => setPage((p) => Math.min(totalPages, p + 1));
   const goTo = (p: number) => setPage(Math.min(Math.max(1, p), totalPages));
 
+  const stateBadge = (s: string | number) => {
+    const val = typeof s === "string" ? Number(s) : s;
+    const isActive = val === 1;
+    return (
+      <span className={`badge ${isActive ? "badge-success" : "badge-ghost"}`}>
+        {isActive ? "Activo" : "Inactivo"}
+      </span>
+    );
+  };
 
-  //   const {data, isPending, isError} = useUsuarios()
+  const formatFecha = (f: string) => (!f || f === "0000-00-00" ? "—" : f);
 
-  // if (isPending) {
-  //     return "cargando usuarios"
-  // }
+  const openCrear = () =>
+    open(<FormularioUsuarios />, "Crear usuario", {
+      size: "4xl",
+      position: "center",
+    });
 
-  // if (isError) {
-  //     return "error al caragar usuarios"
-  // }
+  const openEditar = (u: any) => {
+    const initialValues = {
+      ...u,
+      state: typeof u.state === "string" ? Number(u.state) : u.state,
+    };
 
+    open(
+      <FormularioUsuarios initialValues={initialValues} mode="edit" />,
+      `Editar usuario: ${u.name}`,
+      { size: "4xl", position: "center" }
+    );
+  };
+
+  // Render condicional DESPUÉS de haber corrido todos los hooks
+  if (isPending) {
+    return (
+      <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4">
+        Cargando usuarios…
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4 text-error">
+        Error al cargar usuarios
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl">
-      <div className="px-4 pt-4">
-        <button
-          className="btn bg-[#2BB352] text-white"
-          onClick={() =>
-            open(<FormularioUsuarios />, "Crear usuario", {
-              size: "4xl",
-              position: "center",
-            })
-          }
-        >
+      <div className="px-4 pt-4 flex items-center justify-between gap-3 flex-wrap">
+        <h3 className="text-sm font-semibold tracking-wide text-base-content/70">
+          Módulo de usuarios
+        </h3>
+
+        <button className="btn bg-[#2BB352] text-white" onClick={openCrear}>
           Crear Usuario
         </button>
-
-        <h3 className="text-sm font-semibold tracking-wide text-base-content/70 mt-5">
-          Modulo de usuarios
-        </h3>
       </div>
 
       <table className="table table-zebra table-pin-rows table-pin-cols">
         <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
           <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-base-content/70">
             <th className="w-12">#</th>
-            <th className="py-4">Name</th>
-            <th className="py-4">Job</th>
-            <th className="py-4">Favorite Color</th>
+            <th className="py-4">Nombre</th>
+            <th className="py-4">Usuario</th>
+            <th className="py-4">Rol</th>
+            <th className="py-4">Estado</th>
+            <th className="py-4">Cédula</th>
+            <th className="py-4">Fecha exp.</th>
+            <th className="py-4 text-right pr-6">Acciones</th>
           </tr>
         </thead>
 
         <tbody className="[&>tr:hover]:bg-base-200/40">
-          {visible.map((u) => (
-            <tr key={u.id} className="transition-colors">
+          {visible.map((u: any, idx: number) => (
+            <tr key={u.id ?? `${start + idx}`} className="transition-colors">
               <th className="text-base-content/50">{u.id}</th>
               <td>
-                <div className="flex items-center gap-3">
-                  <div className="avatar">
-                    <div className="w-10 rounded-full ring ring-base-300 ring-offset-2 ring-offset-base-100">
-                      <img src={u.avatar} alt={u.name} />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="font-medium">{u.name}</div>
-                    <div className="text-xs text-base-content/50">
-                      ID: {String(u.id).padStart(3, "0")}
-                    </div>
-                  </div>
+                <div className="font-medium">{u.name ?? "—"}</div>
+                <div className="text-xs text-base-content/50">
+                  {u.lastname ? u.lastname : "—"}
                 </div>
               </td>
+              <td>{u.username ?? "—"}</td>
               <td>
-                <span className="badge badge-ghost badge-md">{u.job}</span>
+                <span className="badge badge-ghost badge-md">
+                  {u.rol ?? "—"}
+                </span>
               </td>
-              <td>
-                <span className="badge badge-outline">{u.color}</span>
+              <td className="flex gap-2"><div className="w-16">{stateBadge(u.state)}</div>  <UsuarioEstadoAlert id={Number(u.id)} currentState={(u.state)} /></td>
+              <td>{u.cedula ?? "—"}</td>
+              <td>{formatFecha(u.fecha_exp)}</td>
+              <td className="text-right">
+                <div className="flex justify-end gap-2">
+                  <button
+                    className="btn btn-sm bg-white btn-circle"
+                    onClick={() => openEditar(u)}
+                  >
+                    <Pen color="green" size="20px"/>
+                  </button>
+                </div>
               </td>
             </tr>
           ))}
@@ -202,20 +206,23 @@ const TablaUsuarios: React.FC = () => {
         <tfoot className="bg-base-200/60">
           <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-base-content/70">
             <th></th>
-            <th>Name</th>
-            <th>Job</th>
-            <th>Favorite Color</th>
+            <th>Nombre</th>
+            <th>Usuario</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Cédula</th>
+            <th>Fecha exp.</th>
+            <th className="text-right pr-6">Acciones</th>
           </tr>
         </tfoot>
       </table>
 
-      {/* Footer */}
+      {/* Footer paginación */}
       <div className="flex items-center justify-between px-4 pb-4 pt-2">
         <span className="text-xs text-base-content/50">
-          Mostrando {rows.length === 0 ? 0 : start + 1}–{end} de {rows.length}
+          Mostrando {usuarios.length === 0 ? 0 : start + 1}–{end} de {usuarios.length}
         </span>
 
-        {/* Pagination pills estilo screenshot */}
         <div className="flex items-center gap-2">
           <button
             className={btnGhost}

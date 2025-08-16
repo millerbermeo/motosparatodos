@@ -34,4 +34,26 @@ export const MENU_ESTATICO: MenuItem[] = [
     ruta: "/configuracion",
     icono: "Settings",
   },
+
+   {
+    nombre: "Parametrización",
+    ruta: "/parametrizacion",
+    icono: "Sliders",
+  },
+  {
+    nombre: "Solicitudes",
+    ruta: "/solicitudes",
+    icono: "FileSpreadsheet",
+  },
+  {
+    nombre: "Ayuda",
+    ruta: "/ayuda",
+    icono: "HelpCircle",
+  },
+  {
+    nombre: "Formatos",
+    ruta: "/formatos",
+    icono: "FileType",
+  },
+  
 ];
