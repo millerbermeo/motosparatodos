@@ -53,10 +53,9 @@ const Sidebar: React.FC = () => {
         <div
           key={key}
           className={`group flex items-center gap-2 py-3 pr-3 cursor-pointer select-none transition-all
-            ${
-              isActive
-                ? "text-[#0277bd] bg-gray-50 border-l-4 border-blue-300"
-                : "hover:bg-[#0277bd]/40 text-white"
+            ${isActive
+              ? "text-[#0277bd] bg-gray-50 border-l-4 border-blue-300"
+              : "hover:bg-[#0277bd]/40 text-white"
             }`}
           style={{ paddingLeft: "16px" }}
           onClick={() => {
@@ -79,7 +78,21 @@ const Sidebar: React.FC = () => {
 
   return (
     <div className="w-[260px] h-screen bg-[#3498DB] flex flex-col justify-between overflow-y-auto">
+      {/* Usuario logueado */}
+      <div>
+        <div className="flex items-center gap-3 p-4 border-b border-white/20">
+        <img
+          src="https://cdn-icons-png.flaticon.com/512/204/204191.png"
+          alt="avatar"
+          className="w-10 h-10 rounded-full border border-white/50"
+        />
+        <div className="text-white">
+          <p className="font-semibold leading-tight">Juan Pérez</p>
+          <p className="text-sm text-white/70">juanperez@example.com</p>
+        </div>
+      </div>
       <div className="pt-4">{renderMenuItems(menus)}</div>
+      </div>
       <div className="p-4">
         <button
           className="w-full flex items-center justify-center gap-2 bg-white/20 hover:bg-white/30 text-white rounded-md py-2 transition"

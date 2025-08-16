@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { Eye, EyeOff, Loader2, Mail, Lock } from "lucide-react";
 import useLogin from "../services/authServices";
+import { useNavigate } from "react-router-dom";
 
 interface LoginRequest {
   username: string;
@@ -18,12 +19,18 @@ const Login: React.FC = () => {
     reValidateMode: "onChange",
     defaultValues: { username: "", password: "" },
   });
+  const navigate = useNavigate();                 // 👈
 
   const [showPassword, setShowPassword] = useState(false);
   const { mutate, isPending, isError, error } = useLogin();
 
   const onSubmit: SubmitHandler<LoginRequest> = (data) => {
-    mutate(data);
+    mutate(data, {
+      onSuccess: () => {
+        // navega al home y reemplaza para que no vuelva al login al darle atrás
+        navigate("/usuarios");        // 👈
+      },
+    });
   };
 
   return (

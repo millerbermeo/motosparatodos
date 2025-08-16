@@ -5,6 +5,8 @@ import MainLayout from '../layouts/MainLayout';
 import PrivateRoute from './PrivateRoute';
 import Reportes from '../pages/Reportes';
 import Configs from '../pages/Configs';
+import Motocicletas from '../pages/Motocicletas';
+import Parametrizacion from '../pages/Parametrizacion';
 
 const Home = lazy(() => import('../pages/Home'));
 const Login = lazy(() => import('../pages/Login'));
@@ -27,6 +29,9 @@ const AppRouter: React.FC = () => {
             <Route path="/reportes" element={<Reportes />} />
             <Route path="/reportes" element={<Reportes />} />
             <Route path="/configuracion" element={<Configs />} />
+            <Route path="/motocicletas" element={<Motocicletas />} />
+                        <Route path="/parametrizacion" element={<Parametrizacion />} />
+
 
 
             {/* Aquí podrías poner más rutas de usuarios */}
