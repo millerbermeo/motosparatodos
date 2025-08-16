@@ -18,7 +18,11 @@ export const MENU_ESTATICO: MenuItem[] = [
     icono: "Ride",
   },
 
-  
+     {
+    nombre: "Cotizaciones",
+    ruta: "/cotizaciones",
+    icono: "Ride",
+  },
   
   {
     nombre: "Reportes",

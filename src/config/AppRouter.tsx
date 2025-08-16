@@ -7,6 +7,7 @@ import Reportes from '../pages/Reportes';
 import Configs from '../pages/Configs';
 import Motocicletas from '../pages/Motocicletas';
 import Parametrizacion from '../pages/Parametrizacion';
+import Cotizaciones from '../pages/Cotizaciones';
 
 const Home = lazy(() => import('../pages/Home'));
 const Login = lazy(() => import('../pages/Login'));
@@ -31,6 +32,7 @@ const AppRouter: React.FC = () => {
             <Route path="/configuracion" element={<Configs />} />
             <Route path="/motocicletas" element={<Motocicletas />} />
                         <Route path="/parametrizacion" element={<Parametrizacion />} />
+            <Route path="/cotizaciones" element={<Cotizaciones />} />
 
 
 

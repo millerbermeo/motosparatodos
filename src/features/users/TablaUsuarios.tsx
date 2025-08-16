@@ -129,22 +129,22 @@ const TablaUsuarios: React.FC = () => {
   const goTo = (p: number) => setPage(Math.min(Math.max(1, p), totalPages));
 
 
-    const {data, isPending, isError} = useUsuarios()
+  //   const {data, isPending, isError} = useUsuarios()
 
-  if (isPending) {
-      return "cargando usuarios"
-  }
+  // if (isPending) {
+  //     return "cargando usuarios"
+  // }
 
-  if (isError) {
-      return "error al caragar usuarios"
-  }
+  // if (isError) {
+  //     return "error al caragar usuarios"
+  // }
 
 
   return (
     <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl">
       <div className="px-4 pt-4">
         <button
-          className="btn bg-[#7DCEA0] text-white"
+          className="btn bg-[#2BB352] text-white"
           onClick={() =>
             open(<FormularioUsuarios />, "Crear usuario", {
               size: "4xl",
