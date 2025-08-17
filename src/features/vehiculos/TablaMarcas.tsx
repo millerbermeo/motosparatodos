@@ -1,13 +1,12 @@
-// src/components/marcas/TablaMarcas.tsx
 import React from "react";
 import { Pen, Trash2 } from "lucide-react";
 import { useModalStore } from "../../store/modalStore";
-import { useMarcas, useDeleteMarca } from "../../services/marcasServices"; // <-- ajusta la ruta
+import { useMarcas, useDeleteMarca } from "../../services/marcasServices";
 import Swal from "sweetalert2";
-import FormularioMarcas from "./forms/FormularioMarcas"; // <-- si ya lo tienes, usa el tuyo
+import FormularioMarcas from "./forms/FormularioMarcas";
 
 // Paginación
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 10;
 const SIBLING_COUNT = 1;
 const BOUNDARY_COUNT = 1;
 
@@ -98,15 +97,16 @@ const TablaMarcas: React.FC = () => {
   const goNext = () => setPage((p) => Math.min(totalPages, p + 1));
   const goTo = (p: number) => setPage(Math.min(Math.max(1, p), totalPages));
 
+  // 👉 Usamos key para forzar remount y evitar "datos pegados"
   const openCrear = () =>
-    open(<FormularioMarcas />, "Crear marca", {
+    open(<FormularioMarcas key="create" />, "Crear marca", {
       size: "md",
       position: "center",
     });
 
   const openEditar = (m: any) =>
     open(
-      <FormularioMarcas initialValues={m} mode="edit" />,
+      <FormularioMarcas key={`edit-${m.id}`} initialValues={m} mode="edit" />,
       `Editar marca: ${m.marca}`,
       { size: "md", position: "center" }
     );

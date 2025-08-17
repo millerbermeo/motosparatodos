@@ -1,4 +1,3 @@
-// src/components/lineas/TablaLineas.tsx
 import React from "react";
 import { Pen, Trash2 } from "lucide-react";
 import { useModalStore } from "../../store/modalStore";
@@ -7,7 +6,7 @@ import Swal from "sweetalert2";
 import FormularioLineas from "./forms/FormularioLineas";
 
 // Paginación
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 10;
 const SIBLING_COUNT = 1;
 const BOUNDARY_COUNT = 1;
 
@@ -96,12 +95,13 @@ const TablaLineas: React.FC = () => {
   const goNext = () => setPage((p) => Math.min(totalPages, p + 1));
   const goTo = (p: number) => setPage(Math.min(Math.max(1, p), totalPages));
 
+  // 👉 key para remount y evitar “datos pegados”
   const openCrear = () =>
-    open(<FormularioLineas />, "Crear línea", { size: "lg", position: "center" });
+    open(<FormularioLineas key="create" />, "Crear línea", { size: "lg", position: "center" });
 
   const openEditar = (l: any) =>
     open(
-      <FormularioLineas initialValues={l} mode="edit" />,
+      <FormularioLineas key={`edit-${l.id}`} initialValues={l} mode="edit" />,
       `Editar línea: ${l.marca} - ${l.linea}`,
       { size: "lg", position: "center" }
     );

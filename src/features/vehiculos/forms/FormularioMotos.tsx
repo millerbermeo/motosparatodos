@@ -48,7 +48,6 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
   const { data: empresas, isPending: loadingEmpresas } = useEmpresasSelect();
   const { data: subdistribs, isPending: loadingSubd } = useSubDistribucion();
 
-  console.log(empresas)
 
   // archivo y preview se manejan fuera de RHF (file inputs no controlados)
   const [file, setFile] = React.useState<File | null>(null);
@@ -59,6 +58,7 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
     handleSubmit,
     setValue,
     watch,
+    reset,
   } = useForm<MotoFormValues>({
     defaultValues: {
       marca: initialValues?.marca ?? "",
@@ -72,6 +72,22 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
     },
     mode: "onBlur",
   });
+
+  // cuando cambien los props, rehidrata el form
+  React.useEffect(() => {
+    reset({
+      marca: initialValues?.marca ?? "",
+      linea: initialValues?.linea ?? "",
+      modelo: initialValues?.modelo ?? "",
+      estado: (initialValues?.estado as "Nueva" | "Usada") ?? "Nueva",
+      precio_base: initialValues?.precio_base ?? 0,
+      descrip: initialValues?.descrip ?? "",
+      empresa: initialValues?.empresa ?? "",
+      subdistribucion: initialValues?.subdistribucion ?? "",
+    });
+    setFile(null);
+    setPreview(initialValues?.imagen ?? null);
+  }, [initialValues, mode, reset]);
 
   const selectedMarca = watch("marca");
 
@@ -107,7 +123,7 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
 
       // 👇 ahora solo enviamos nombres
       empresa: values.empresa,
-  subdistribucion: values.subdistribucion || null, // si viene vacío lo mandas como null
+      subdistribucion: values.subdistribucion || null, // si viene vacío lo mandas como null
     };
 
     if (mode === "edit" && initialValues?.id != null) {
@@ -253,7 +269,7 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
             // Usamos un textarea nativo para multi-línea: tu FormInput renderiza <input/>.
             // Si prefieres textarea estilado, puedes crear un FormTextarea similar a FormInput.
             placeholder="Motocicleta deportiva"
-            rules={{ required: "La descripción es obligatoria" }}
+            // rules={{ required: "La descripción es obligatoria" }}
             // Hack simple: usa type=text y dale espacio; para mejor UX, crea FormTextarea.
             className="min-h-24"
           />

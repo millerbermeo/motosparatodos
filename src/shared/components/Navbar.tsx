@@ -49,7 +49,7 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <div className="w-full bg-white/80 pl-20 backdrop-blur border-b border-gray-200 px-4 py-4 flex items-center justify-between">
+    <div className="w-full bg-white pl-20 backdrop-blur border-b border-gray-200 px-4 py-4 flex items-center justify-between">
       <h1 className="text-[15px] md:text-base font-medium text-gray-700">
         Panel de Administración
       </h1>

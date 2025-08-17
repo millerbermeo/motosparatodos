@@ -6,7 +6,7 @@ import { useMotos, useDeleteMoto } from "../../services/motosServices";
 import Swal from "sweetalert2";
 import FormularioMotos from "./forms/FormularioMotos";
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 10;
 const SIBLING_COUNT = 1;
 const BOUNDARY_COUNT = 1;
 
@@ -54,8 +54,8 @@ const TablaMotos: React.FC = () => {
   const goNext = () => setPage((p) => Math.min(totalPages, p + 1));
   const goTo = (p: number) => setPage(Math.min(Math.max(1, p), totalPages));
 
-  const openCrear = () => open(<FormularioMotos />, "Crear moto", { size: "5xl", position: "center" });
-  const openEditar = (m: any) => open(<FormularioMotos initialValues={m} mode="edit" />, `Editar moto: ${m.marca} ${m.linea}`, { size: "5xl", position: "center" });
+  const openCrear = () => open(<FormularioMotos key="create" />, "Crear moto", { size: "5xl", position: "center" });
+  const openEditar = (m: any) => open(<FormularioMotos key={`edit-${m.id}`} initialValues={m} mode="edit" />, `Editar moto: ${m.marca} ${m.linea}`, { size: "5xl", position: "center" });
 
   const confirmarEliminar = async (id: number, nombre: string) => {
     const res = await Swal.fire({
@@ -71,9 +71,9 @@ const TablaMotos: React.FC = () => {
   };
 
   if (isPending) return <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4">Cargando motos…</div>;
-  if (isError)   return <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4 text-error">Error al cargar motos</div>;
+  if (isError) return <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4 text-error">Error al cargar motos</div>;
 
-const BaseUrl = "http://tuclick.vozipcolombia.net.co/motos/back";
+  const BaseUrl = "http://tuclick.vozipcolombia.net.co/motos/back";
 
   return (
     <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl">
@@ -90,6 +90,8 @@ const BaseUrl = "http://tuclick.vozipcolombia.net.co/motos/back";
             <th>Marca</th>
             <th>Línea</th>
             <th>Modelo</th>
+            <th>Empresa</th>
+            <th>Subdistribucion</th>
             <th>Estado</th>
             <th className="text-right pr-6">Precio</th>
             <th className="text-right pr-6">Acciones</th>
@@ -99,22 +101,24 @@ const BaseUrl = "http://tuclick.vozipcolombia.net.co/motos/back";
           {visible.map((m: any, idx: number) => (
             <tr key={m.id ?? `${start + idx}`} className="transition-colors">
               <th className="text-base-content/50">{m.id}</th>
-        <td>
-  {m.foto ? (
-    <img 
-      src={`${BaseUrl}/${m.foto}`} 
-      alt={`${m.marca} ${m.linea}`} 
-      className="h-12 w-16 object-cover rounded-md border" 
-    />
-  ) : (
-    <div className="h-12 w-16 bg-base-200 rounded-md" />
-  )}
-</td>
+              <td>
+                {m.foto ? (
+                  <img
+                    src={`${BaseUrl}/${m.foto}`}
+                    alt={`${m.marca} ${m.linea}`}
+                    className="h-12 w-16 object-cover rounded-md border"
+                  />
+                ) : (
+                  <div className="h-12 w-16 bg-base-200 rounded-md" />
+                )}
+              </td>
 
-              <td className="font-medium">{m.marca ?? "—"}</td>
-              <td>{m.linea ?? "—"}</td>
-              <td>{m.modelo ?? "—"}</td>
-              <td><span className="badge badge-ghost">{m.estado ?? "—"}</span></td>
+              <td className="font-medium">{m.marca ?? ""}</td>
+              <td>{m.linea ?? ""}</td>
+              <td>{m.modelo ?? ""}</td>
+                   <td>{m.empresa ?? ""}</td>
+              <td>{m.subdistribucion ?? ""}</td>
+              <td><span className="badge badge-ghost">{m.estado ?? ""}</span></td>
               <td className="text-right">{Number(m.precio_base || 0).toLocaleString()}</td>
               <td className="text-right">
                 <div className="flex justify-end gap-2">
@@ -131,7 +135,7 @@ const BaseUrl = "http://tuclick.vozipcolombia.net.co/motos/back";
         </tbody>
         <tfoot className="bg-base-200/60">
           <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-base-content/70">
-            <th></th><th>Imagen</th><th>Marca</th><th>Línea</th><th>Modelo</th><th>Estado</th><th className="text-right pr-6">Precio</th><th className="text-right pr-6">Acciones</th>
+            <th></th><th>Imagen</th><th>Marca</th><th>Línea</th><th>Modelo</th><th>Empresa</th><th>Subdistribucion</th><th>Estado</th><th className="text-right pr-6">Precio</th><th className="text-right pr-6">Acciones</th>
           </tr>
         </tfoot>
       </table>
