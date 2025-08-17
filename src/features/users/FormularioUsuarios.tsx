@@ -117,7 +117,7 @@ const FormularioUsuarios: React.FC<Props> = ({ initialValues, mode = "create" })
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-        {/* ID (solo lectura en edición si quieres mostrarlo) */}
+
         {mode === "edit" && (
           <FormInput<FormValues>
             name="id"
@@ -125,6 +125,7 @@ const FormularioUsuarios: React.FC<Props> = ({ initialValues, mode = "create" })
             control={control}
             rules={{}}
             disabled
+            type="hidden"
           />
         )}
 

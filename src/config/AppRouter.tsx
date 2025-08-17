@@ -9,7 +9,7 @@ const Home = lazy(() => import("../pages/Home"));
 const Login = lazy(() => import("../pages/Login"));
 const Users = lazy(() => import("../pages/Users"));
 const Reportes = lazy(() => import("../pages/Reportes"));
-const Configs = lazy(() => import("../pages/Configs"));
+// const Configs = lazy(() => import("../pages/Configs"));
 const Motocicletas = lazy(() => import("../pages/Motocicletas"));
 const Parametrizacion = lazy(() => import("../pages/Parametrizacion"));
 const Cotizaciones = lazy(() => import("../pages/Cotizaciones"));
@@ -17,6 +17,15 @@ const SolicitudFacturacion = lazy(() => import("../pages/SolicitudFacturacion"))
 const Ayuda = lazy(() => import("../pages/Ayuda"));
 const Formatos = lazy(() => import("../pages/Formatos"));
 const Forbidden = lazy(() => import("../pages/Forbidden")); // 👈 crea esta página simple
+const Empresas = lazy(() => import("../pages/Empresas"));
+const Agencias = lazy(() => import("../pages/Agencias")); // 👈 crea esta página simple
+const Happy = lazy(() => import("../pages/Happy")); // 👈 crea esta página simple
+const Soat = lazy(() => import("../pages/Soat")); // 👈 crea esta página simple
+const Revisiones = lazy(() => import("../pages/Revisiones")); // 👈 crea esta página simple
+const Clientes = lazy(() => import("../pages/Clientes")); // 👈 crea esta página simple
+
+const Creditos = lazy(() => import("../pages/Creditos")); // 👈 crea esta página simple
+
 
 const Fallback = () => <div style={{ padding: 16 }}>Cargando…</div>;
 
@@ -34,13 +43,12 @@ const AppRouter: React.FC = () => {
               {/* Home: solo autenticación */}
               <Route path="/" element={<Home />} />
 
-              {/* Por módulo (ajusta los nombres según tu backend) */}
-              <Route element={<RequireModule name="Usuarios" />}>
-                <Route path="/usuarios" element={<Users />} />
+              <Route element={<RequireModule name="Clientes" />}>
+                <Route path="/clientes" element={<Clientes />} />
               </Route>
 
-              <Route element={<RequireModule name="Reportes" />}>
-                <Route path="/reportes" element={<Reportes />} />
+              <Route element={<RequireModule name="Motocicletas" />}>
+                <Route path="/motocicletas" element={<Motocicletas />} />
               </Route>
 
               <Route element={<RequireModule name="Parametrizaciones" />}>
@@ -51,26 +59,66 @@ const AppRouter: React.FC = () => {
                 <Route path="/cotizaciones" element={<Cotizaciones />} />
               </Route>
 
-              <Route element={<RequireModule name="Motocicletas" />}>
-                <Route path="/motocicletas" element={<Motocicletas />} />
+              <Route element={<RequireModule name="Créditos" />}>
+                <Route path="/creditos" element={<Creditos />} />
               </Route>
+
 
               <Route element={<RequireModule name="Solicitudes de facturación" />}>
                 <Route path="/solicitudes" element={<SolicitudFacturacion />} />
               </Route>
 
-              <Route element={<RequireModule name="Ayuda" />}>
-                <Route path="/ayuda" element={<Ayuda />} />
+
+
+              {/* -------------------- SUBMENU PUNTOS -------------------- */}
+
+              <Route element={<RequireModule name="Puntos" />}>
+                <Route path="/empresas" element={<Empresas />} />
+              </Route>
+
+              <Route element={<RequireModule name="Puntos" />}>
+                <Route path="/agencias" element={<Agencias />} />
+              </Route>
+
+
+              {/* -------------------- SUBEMENU ALERTAS -------------------- */}
+
+              <Route element={<RequireModule name="Cumple" />}>
+                <Route path="/happy" element={<Happy />} />
+              </Route>
+
+              <Route element={<RequireModule name="Soat" />}>
+                <Route path="/soat" element={<Soat />} />
+              </Route>
+
+              <Route element={<RequireModule name="Revisiones" />}>
+                <Route path="/revisiones" element={<Revisiones />} />
+              </Route>
+
+
+              <Route element={<RequireModule name="Reportes" />}>
+                <Route path="/reportes" element={<Reportes />} />
+              </Route>
+
+              {/* Por módulo (ajusta los nombres según tu backend) */}
+              <Route element={<RequireModule name="Usuarios" />}>
+                <Route path="/usuarios" element={<Users />} />
               </Route>
 
               <Route element={<RequireModule name="Formatos" />}>
                 <Route path="/formatos" element={<Formatos />} />
               </Route>
 
-              {/* Configuración (si lo controlas por rol o módulo, cambia aquí) */}
-              <Route element={<PrivateRoute requireRole="Administrador" />}>
-                <Route path="/configuracion" element={<Configs />} />
+              <Route element={<RequireModule name="Ayuda" />}>
+                <Route path="/ayuda" element={<Ayuda />} />
               </Route>
+
+
+
+              {/* Configuración (si lo controlas por rol o módulo, cambia aquí) */}
+              {/* <Route element={<PrivateRoute requireRole="Administrador" />}>
+                <Route path="/configuracion" element={<Configs />} />
+              </Route> */}
             </Route>
           </Route>
 

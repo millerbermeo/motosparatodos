@@ -9,12 +9,12 @@ const Motocicletas: React.FC = () => {
         <>
             {/* name of each tab group should be unique */}
             <div className="tabs tabs-lift">
-                <input type="radio" name="my_tabs_3" className="tab" aria-label="Moticletas" />
+                <input type="radio" name="my_tabs_3" className="tab" aria-label="Moticletas" defaultChecked />
                 <div className="tab-content bg-base-100 border-base-300 p-6">
                     <TablaMotos />
                 </div>
 
-                <input type="radio" name="my_tabs_3" className="tab" aria-label="Marcas" defaultChecked />
+                <input type="radio" name="my_tabs_3" className="tab" aria-label="Marcas"  />
                 <div className="tab-content bg-base-100 border-base-300 p-6">
                     <TablaMarcas />
                 </div>

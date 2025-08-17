@@ -15,6 +15,8 @@ export interface Moto {
   precio_base: number;   // en tu API puede venir string; lo normalizamos a number
   descrip: string;
   imagen?: any;       // URL/filename guardado por el backend
+  empresa?: string
+  subdistribucion: string
 }
 
 export type NewMoto = Omit<Moto, "id" | "imagen"> & { imagen?: File | null };
@@ -37,6 +39,11 @@ const toFormData = (data: Partial<Moto> & { imagen?: File | null }) => {
   if (data.estado != null) fd.append("estado", data.estado);
   if (data.precio_base != null) fd.append("precio_base", String(data.precio_base));
   if (data.descrip != null) fd.append("descrip", data.descrip);
+
+  // 🔹 Agregar los dos campos nuevos (nombres en string)
+  if (data.empresa != null) fd.append("empresa", data.empresa);
+  if (data.subdistribucion != null) fd.append("subdistribucion", data.subdistribucion);
+  
   if (data.imagen instanceof File) fd.append("imagen", data.imagen);
   return fd;
 };

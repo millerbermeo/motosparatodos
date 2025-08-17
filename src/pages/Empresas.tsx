@@ -1,8 +1,9 @@
 import React from 'react'
+import TablaEmpresas from '../features/empresas/TablaEmpresas'
 
 const Empresas: React.FC = () => {
   return (
-    <div>Empresas</div>
+    <TablaEmpresas />
   )
 }
 

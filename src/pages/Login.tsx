@@ -28,7 +28,7 @@ const Login: React.FC = () => {
     mutate(data, {
       onSuccess: () => {
         // navega al home y reemplaza para que no vuelva al login al darle atrás
-        navigate("/usuarios");        // 👈
+        navigate("/");        // 👈
       },
     });
   };

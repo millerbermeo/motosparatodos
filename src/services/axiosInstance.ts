@@ -25,7 +25,7 @@ export const api = axios.create({
 
 // Interceptor para incluir el Bearer token en cada request
 api.interceptors.request.use((config) => {
-  const token = "b3a7de5d3d899e667cc0c42b26ada5ef69cfeb9ec40720d30f877420d12289c1"; // O donde guardes tu token
+  const token = "e9a0a7c07ca5587db5c24f1859149e35e4aa15d730dd3de0a1d10f9185833c65"; // O donde guardes tu token
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
