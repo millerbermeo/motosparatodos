@@ -3,6 +3,8 @@ import { api } from "./axiosInstance";
 import type { AxiosError } from "axios";
 import type { NewUsuario, Usuario, UsuariosResponse } from "../shared/types/users";
 import type { ServerError } from "../shared/types/server";
+import { useModalStore } from "../store/modalStore";
+import Swal from "sweetalert2";
 
 
 
@@ -17,10 +19,21 @@ export const useUsuarios = () => {
   });
 };
 
+export const useUsuarioById = (id: string) => {
+  return useQuery<Usuario>({
+    queryKey: ['user', id],
+    queryFn: async () => {
+      const { data } = await api.get<Usuario>(`/list_users.php/${id}`);
+      return data;
+    },
+    enabled: Boolean(id), // solo ejecuta si hay un id válido
+  });
+};
+
 
 export const useRegisterUsuario = () => {
-
   const qc = useQueryClient();
+  const closeModal = useModalStore((s) => s.close);
 
   return useMutation({
     mutationFn: async (usuario: NewUsuario) => {
@@ -29,34 +42,57 @@ export const useRegisterUsuario = () => {
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["users"] });
+      closeModal(); // 🔒 cierra modal
+      Swal.fire({
+        icon: "success",
+        title: "Usuario registrado",
+        text: "El usuario fue creado exitosamente.",
+        timer: 2000,
+        showConfirmButton: false,
+      });
     },
     onError: (error: AxiosError<ServerError>) => {
       const raw = error.response?.data?.message ?? "Error al registrar usuario";
       const arr = Array.isArray(raw) ? raw : [raw];
-      arr.forEach((m) => console.log(m, "error"));
+
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        html: arr.join("<br/>"), // muestra todos los errores en varias líneas
+      });
     },
   });
 };
 
-
-
 export const useUpdateUsuario = () => {
   const qc = useQueryClient();
+  const closeModal = useModalStore((s) => s.close);
 
   return useMutation({
-    mutationFn: async ( data : Usuario) => {
-
-        console.log("actulzaidno",data)
+    mutationFn: async (data: Usuario) => {
       const res = await api.put("/create_user.php", data);
       return res.data;
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["users"] });
+      closeModal(); // 🔒 cierra modal
+      Swal.fire({
+        icon: "success",
+        title: "Usuario actualizado",
+        text: "Los cambios se guardaron correctamente.",
+        timer: 2000,
+        showConfirmButton: false,
+      });
     },
     onError: (error: AxiosError<ServerError>) => {
       const raw = error.response?.data?.message ?? "Error al actualizar usuario";
       const arr = Array.isArray(raw) ? raw : [raw];
-      arr.forEach((m) => console.log(m, "error"));
+
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        html: arr.join("<br/>"),
+      });
     },
   });
 };

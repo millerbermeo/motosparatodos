@@ -1,32 +1,24 @@
-// TablaLineasMarcas.tsx
+// src/components/lineas/TablaLineas.tsx
 import React from "react";
+import { Pen, Trash2 } from "lucide-react";
 import { useModalStore } from "../../store/modalStore";
-import LineasMarcasFormulario from "./LineasMarcasFormulario";
+import { useLineas, useDeleteLinea } from "../../services/lineasMarcasServices";
+import Swal from "sweetalert2";
+import FormularioLineas from "./forms/FormularioLineas";
 
-type LineaMarca = {
-  id: number;
-  nombre: string;
-  marcaId: string; // relación a la marca
-};
-
-// Lista estática de marcas (id -> nombre)
-const marcasMoto = [
-  { id: "1", nombre: "Yamaha" },
-  { id: "2", nombre: "Honda" },
-  { id: "3", nombre: "Suzuki" },
-  { id: "4", nombre: "Kawasaki" },
-  { id: "5", nombre: "Ducati" },
-];
-
+// Paginación
 const PAGE_SIZE = 5;
+const SIBLING_COUNT = 1;
+const BOUNDARY_COUNT = 1;
+
 const range = (start: number, end: number) =>
   Array.from({ length: end - start + 1 }, (_, i) => start + i);
 
 function getPaginationItems(
   current: number,
   totalPages: number,
-  siblingCount = 1,
-  boundaryCount = 1
+  siblingCount = SIBLING_COUNT,
+  boundaryCount = BOUNDARY_COUNT
 ) {
   if (totalPages <= 1) return [1];
 
@@ -45,10 +37,7 @@ function getPaginationItems(
   );
 
   const siblingsEnd = Math.min(
-    Math.max(
-      current + siblingCount,
-      boundaryCount + siblingCount * 2 + 2
-    ),
+    Math.max(current + siblingCount, boundaryCount + siblingCount * 2 + 2),
     endPages.length > 0 ? endPages[0] - 2 : totalPages - 1
   );
 
@@ -80,149 +69,170 @@ const btnActive = `${btnBase} btn-primary text-primary-content`;
 const btnEllipsis =
   "btn btn-xs rounded-xl min-w-8 h-8 px-3 bg-base-200 text-base-content/60 pointer-events-none";
 
-const TablaLineasMarcas: React.FC = () => {
+const TablaLineas: React.FC = () => {
   const open = useModalStore((s) => s.open);
+  const { data, isPending, isError } = useLineas();
+  const deleteLinea = useDeleteLinea();
 
-  // 🔹 MOCK de líneas de marca (reemplaza por datos reales del backend)
-  const rows: LineaMarca[] = React.useMemo(
-    () =>
-      Array.from({ length: 23 }, (_, i) => {
-        const marca = marcasMoto[i % marcasMoto.length];
-        return {
-          id: i + 1,
-          nombre: `Línea ${i + 1}`,
-          marcaId: marca.id,
-        };
-      }),
-    []
-  );
+  const lineas = Array.isArray(data) ? data : data ?? [];
 
   const [page, setPage] = React.useState(1);
-  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+
+  const totalPages = React.useMemo(
+    () => Math.max(1, Math.ceil(lineas.length / PAGE_SIZE)),
+    [lineas.length]
+  );
 
   React.useEffect(() => {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
   const start = (page - 1) * PAGE_SIZE;
-  const end = Math.min(start + PAGE_SIZE, rows.length);
-  const visible = rows.slice(start, end);
-
+  const end = Math.min(start + PAGE_SIZE, lineas.length);
+  const visible = lineas.slice(start, end);
   const items = getPaginationItems(page, totalPages);
+
   const goPrev = () => setPage((p) => Math.max(1, p - 1));
   const goNext = () => setPage((p) => Math.min(totalPages, p + 1));
   const goTo = (p: number) => setPage(Math.min(Math.max(1, p), totalPages));
 
-  // helper para mostrar el nombre de la marca
-  const getMarcaNombre = (id: string) =>
-    marcasMoto.find((m) => m.id === id)?.nombre ?? "—";
+  const openCrear = () =>
+    open(<FormularioLineas />, "Crear línea", { size: "lg", position: "center" });
+
+  const openEditar = (l: any) =>
+    open(
+      <FormularioLineas initialValues={l} mode="edit" />,
+      `Editar línea: ${l.marca} - ${l.linea}`,
+      { size: "lg", position: "center" }
+    );
+
+  const confirmarEliminar = async (id: number, nombre: string) => {
+    const res = await Swal.fire({
+      icon: "warning",
+      title: "Eliminar línea",
+      html: `¿Seguro que deseas eliminar <b>${nombre}</b>?`,
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+      confirmButtonColor: "#ef4444",
+    });
+    if (res.isConfirmed) deleteLinea.mutate(id);
+  };
+
+  // Render estados
+  if (isPending) {
+    return (
+      <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4">
+        Cargando líneas…
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4 text-error">
+        Error al cargar líneas
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl">
-      <div className="px-4 pt-4 flex items-center justify-between">
-        <button
-          className="btn btn-primary"
-          type="button"
-          onClick={() =>
-            open(<LineasMarcasFormulario />, "Crear línea de marca", {
-              size: "lg",
-              position: "center",
-            })
-          }
-        >
-          Crear Línea de Marca
-        </button>
+      <div className="px-4 pt-4 flex items-center justify-between gap-3 flex-wrap">
         <h3 className="text-sm font-semibold tracking-wide text-base-content/70">
-          Módulo de líneas de marca
+          Módulo de líneas
         </h3>
+
+        <button className="btn bg-[#2BB352] text-white" onClick={openCrear}>
+          Crear Línea
+        </button>
       </div>
 
-      <table className="table table-zebra">
-        <caption className="sr-only">
-          Listado paginado de líneas de marca con su marca asociada
-        </caption>
-        <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur">
+      <table className="table table-zebra table-pin-rows table-pin-cols">
+        <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
           <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-base-content/70">
             <th className="w-12">#</th>
-            <th className="py-4">Línea</th>
             <th className="py-4">Marca</th>
+            <th className="py-4">Línea</th>
+            <th className="py-4 text-right pr-6">Acciones</th>
           </tr>
         </thead>
 
         <tbody className="[&>tr:hover]:bg-base-200/40">
-          {visible.map((l) => (
-            <tr key={l.id}>
-              <td className="text-base-content/50">{l.id}</td>
-              <td className="font-medium">{l.nombre}</td>
-              <td>
-                <span className="badge badge-outline">
-                  {getMarcaNombre(l.marcaId)}
-                </span>
+          {visible.map((l: any, idx: number) => (
+            <tr key={l.id ?? `${start + idx}`} className="transition-colors">
+              <th className="text-base-content/50">{l.id}</th>
+              <td className="font-medium">{l.marca ?? "—"}</td>
+              <td className="font-medium">{l.linea ?? "—"}</td>
+              <td className="text-right">
+                <div className="flex justify-end gap-2">
+                  <button
+                    className="btn btn-sm bg-white btn-circle"
+                    onClick={() => openEditar(l)}
+                    title="Editar"
+                  >
+                    <Pen size="18px" color="green" />
+                  </button>
+                  <button
+                    className="btn btn-sm bg-white btn-circle"
+                    onClick={() => confirmarEliminar(Number(l.id), `${l.marca} ${l.linea}`)}
+                    title="Eliminar"
+                  >
+                    <Trash2 size="18px" color="#ef4444" />
+                  </button>
+                </div>
               </td>
             </tr>
           ))}
         </tbody>
 
         <tfoot className="bg-base-200/60">
-          <tr>
+          <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-base-content/70">
             <th></th>
-            <th>Línea</th>
             <th>Marca</th>
+            <th>Línea</th>
+            <th className="text-right pr-6">Acciones</th>
           </tr>
         </tfoot>
       </table>
 
-      {/* Footer de paginación */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 pb-4 pt-2">
-          <span className="text-xs text-base-content/50">
-            Mostrando {rows.length === 0 ? 0 : start + 1}–{end} de {rows.length}
-          </span>
+      {/* Footer paginación */}
+      <div className="flex items-center justify-between px-4 pb-4 pt-2">
+        <span className="text-xs text-base-content/50">
+          Mostrando {lineas.length === 0 ? 0 : start + 1}–{end} de {lineas.length}
+        </span>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className={btnGhost}
-              onClick={goPrev}
-              disabled={page === 1}
-              aria-label="Página anterior"
-            >
-              «
-            </button>
+        <div className="flex items-center gap-2">
+          <button className={btnGhost} onClick={goPrev} disabled={page === 1} aria-label="Página anterior">
+            «
+          </button>
 
-            {items.map((it, idx) =>
-              it === "..." ? (
-                <span key={`e-${idx}`} className={btnEllipsis}>
-                  …
-                </span>
-              ) : (
-                <button
-                  key={`p-${it}`}
-                  type="button"
-                  aria-current={it === page ? "page" : undefined}
-                  aria-label={`Ir a página ${it}`}
-                  className={it === page ? btnActive : btnGhost}
-                  onClick={() => goTo(Number(it))}
-                >
-                  {it}
-                </button>
-              )
-            )}
+          {items.map((it, idx) =>
+            it === "..." ? (
+              <span key={`e-${idx}`} className={btnEllipsis}>…</span>
+            ) : (
+              <button
+                key={`p-${it}`}
+                className={it === page ? btnActive : btnGhost}
+                onClick={() => goTo(Number(it))}
+              >
+                {it}
+              </button>
+            )
+          )}
 
-            <button
-              type="button"
-              className={btnGhost}
-              onClick={goNext}
-              disabled={page === totalPages}
-              aria-label="Página siguiente"
-            >
-              »
-            </button>
-          </div>
+          <button
+            className={btnGhost}
+            onClick={goNext}
+            disabled={page === totalPages}
+            aria-label="Página siguiente"
+          >
+            »
+          </button>
         </div>
-      )}
+      </div>
     </div>
   );
 };
 
-export default TablaLineasMarcas;
+export default TablaLineas;

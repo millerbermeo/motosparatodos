@@ -22,3 +22,4 @@ export type NewUsuario = Omit<Usuario, "id">;
 export type UsuariosResponse = {
   usuarios: Usuario[];
 };
+

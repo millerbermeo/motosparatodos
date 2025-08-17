@@ -100,7 +100,7 @@ const TablaUsuarios: React.FC = () => {
     const val = typeof s === "string" ? Number(s) : s;
     const isActive = val === 1;
     return (
-      <span className={`badge ${isActive ? "badge-success" : "badge-ghost"}`}>
+      <span className={`badge ${isActive ? "badge-success" : "badge-error"}`}>
         {isActive ? "Activo" : "Inactivo"}
       </span>
     );
@@ -186,7 +186,7 @@ const TablaUsuarios: React.FC = () => {
                   {u.rol ?? "—"}
                 </span>
               </td>
-              <td className="flex gap-2"><div className="w-16">{stateBadge(u.state)}</div>  <UsuarioEstadoAlert id={Number(u.id)} currentState={(u.state)} /></td>
+              <td className="flex gap-4"><div className="w-16 min-w-16">{stateBadge(u.state)}</div>  <UsuarioEstadoAlert id={Number(u.id)} currentState={(u.state)} /></td>
               <td>{u.cedula ?? "—"}</td>
               <td>{formatFecha(u.fecha_exp)}</td>
               <td className="text-right">

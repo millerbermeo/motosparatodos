@@ -1,59 +1,27 @@
+// src/utils/arrayMenu.ts
 import type { MenuItem } from "../shared/types/menu";
 
-// ✅ Arreglo estático con 4 módulos
 export const MENU_ESTATICO: MenuItem[] = [
-  {
-    nombre: "Dashboard",
-    ruta: "/",
-    icono: "LayoutDashboard",
-  },
-  {
-    nombre: "Usuarios",
-    ruta: "/usuarios",
-    icono: "Users",
-  },
-   {
-    nombre: "Motocicletas",
-    ruta: "/motocicletas",
-    icono: "Ride",
-  },
+  { nombre: "Dashboard", ruta: "/", icono: "LayoutDashboard", requireModule: "Dashboard" },
 
-     {
-    nombre: "Cotizaciones",
-    ruta: "/cotizaciones",
-    icono: "Ride",
-  },
-  
-  {
-    nombre: "Reportes",
-    ruta: "/reportes",
-    icono: "FileText",
-  },
-  {
-    nombre: "Configuración",
-    ruta: "/configuracion",
-    icono: "Settings",
-  },
+  { nombre: "Usuarios", ruta: "/usuarios", icono: "Users", requireModule: "Usuarios" },
 
-   {
-    nombre: "Parametrización",
-    ruta: "/parametrizacion",
-    icono: "Sliders",
-  },
-  {
-    nombre: "Solicitudes",
-    ruta: "/solicitudes",
-    icono: "FileSpreadsheet",
-  },
-  {
-    nombre: "Ayuda",
-    ruta: "/ayuda",
-    icono: "HelpCircle",
-  },
-  {
-    nombre: "Formatos",
-    ruta: "/formatos",
-    icono: "FileType",
-  },
-  
+  { nombre: "Motocicletas", ruta: "/motocicletas", icono: "Bike", requireModule: "Motocicletas" },
+
+  { nombre: "Cotizaciones", ruta: "/cotizaciones", icono: "FileEdit", requireModule: "Cotizaciones" },
+
+  { nombre: "Reportes", ruta: "/reportes", icono: "FileText", requireModule: "Reportes" },
+
+  // Configuración: puedes exigir rol o módulo. Aquí exijo rol Admin.
+  { nombre: "Configuración", ruta: "/configuracion", icono: "Settings", requireRole: "Administrador" },
+  // Si prefieres por módulo:
+  // { nombre: "Configuración", ruta: "/configuracion", icono: "Settings", requireModule: "Parametrizaciones" },
+
+  { nombre: "Parametrización", ruta: "/parametrizacion", icono: "Sliders", requireModule: "Parametrizaciones" },
+
+  { nombre: "Solicitudes", ruta: "/solicitudes", icono: "FileSpreadsheet", requireModule: "Solicitudes de facturación" },
+
+  { nombre: "Ayuda", ruta: "/ayuda", icono: "HelpCircle", requireModule: "Ayuda" },
+
+  { nombre: "Formatos", ruta: "/formatos", icono: "FileType", requireModule: "Formatos" },
 ];

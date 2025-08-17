@@ -5,7 +5,7 @@ export default defineConfig({
     tailwindcss(),
   ],
   server: {
-    // host: '0.0.0.0',  // Para ser accesible desde cualquier dispositivo de la red
+    host: '0.0.0.0',  // Para ser accesible desde cualquier dispositivo de la red
     port: 3000, // El puerto en desarrollo
     strictPort: true,  // Evita que cambie el puerto si 5173 ya está ocupado
   },
