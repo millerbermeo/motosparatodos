@@ -140,3 +140,54 @@ export const useDeleteMoto = () => {
     },
   });
 };
+
+
+
+/* ===== TIPOS ===== */
+export interface ImpuestosMoto {
+  id: number;                // oculto en el form (p.ej. el id del registro o de la moto)
+  soat: string;              // "458000"
+  matricula_contado: string; // "4548000"
+  matricula_credito: string; // "4538000"
+  impuestos: string;         // "4548000"
+}
+
+export type NewImpuestosMoto = Omit<ImpuestosMoto, "id"> & { id?: number };
+
+
+
+// src/services/motosServices.ts
+
+export const useUpdateImpuestosMoto = () => {
+  const qc = useQueryClient();
+  const close = useModalStore((s) => s.close);
+
+  return useMutation({
+    mutationFn: async (payload: ImpuestosMoto) => {
+      // 🔹 Enviar como JSON
+      const { data } = await api.put("/impuesto_moto.php", payload, {
+        headers: { "Content-Type": "application/json" },
+      });
+      return data;
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["impuestos-moto"] }),
+        qc.invalidateQueries({ queryKey: ["motos"] }),
+      ]);
+      close();
+      Swal.fire({
+        icon: "success",
+        title: "Impuestos actualizados",
+        timer: 1600,
+        showConfirmButton: false,
+      });
+    },
+    onError: (error: AxiosError<ServerError>) => {
+      const raw =
+        error.response?.data?.message ?? "Error al actualizar impuestos";
+      const arr = Array.isArray(raw) ? raw : [raw];
+      Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
+    },
+  });
+};

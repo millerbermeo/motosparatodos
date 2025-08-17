@@ -138,7 +138,7 @@ const TablaLineas: React.FC = () => {
 
   return (
     <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl">
-      <div className="px-4 pt-4 flex items-center justify-between gap-3 flex-wrap">
+      <div className="px-4 pt-4 flex items-center justify-between gap-3 flex-wrap my-3">
         <h3 className="text-sm font-semibold tracking-wide text-base-content/70">
           Módulo de líneas
         </h3>
@@ -148,53 +148,56 @@ const TablaLineas: React.FC = () => {
         </button>
       </div>
 
-      <table className="table table-zebra table-pin-rows table-pin-cols">
-        <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
-          <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-base-content/70">
-            <th className="w-12">#</th>
-            <th className="py-4">Marca</th>
-            <th className="py-4">Línea</th>
-            <th className="py-4 text-right pr-6">Acciones</th>
-          </tr>
-        </thead>
 
-        <tbody className="[&>tr:hover]:bg-base-200/40">
-          {visible.map((l: any, idx: number) => (
-            <tr key={l.id ?? `${start + idx}`} className="transition-colors">
-              <th className="text-base-content/50">{l.id}</th>
-              <td className="font-medium">{l.marca ?? "—"}</td>
-              <td className="font-medium">{l.linea ?? "—"}</td>
-              <td className="text-right">
-                <div className="flex justify-end gap-2">
-                  <button
-                    className="btn btn-sm bg-white btn-circle"
-                    onClick={() => openEditar(l)}
-                    title="Editar"
-                  >
-                    <Pen size="18px" color="green" />
-                  </button>
-                  <button
-                    className="btn btn-sm bg-white btn-circle"
-                    onClick={() => confirmarEliminar(Number(l.id), `${l.marca} ${l.linea}`)}
-                    title="Eliminar"
-                  >
-                    <Trash2 size="18px" color="#ef4444" />
-                  </button>
-                </div>
-              </td>
+      <div className="relative overflow-x-auto max-w-full px-4">
+        <table className="table table-zebra table-pin-rows">
+          <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
+            <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
+              <th className="w-12">#</th>
+              <th className="py-4">Marca</th>
+              <th className="py-4">Línea</th>
+              <th className="py-4 text-right pr-6">Acciones</th>
             </tr>
-          ))}
-        </tbody>
+          </thead>
 
-        <tfoot className="bg-base-200/60">
-          <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-base-content/70">
-            <th></th>
-            <th>Marca</th>
-            <th>Línea</th>
-            <th className="text-right pr-6">Acciones</th>
-          </tr>
-        </tfoot>
-      </table>
+          <tbody className="[&>tr:hover]:bg-base-200/40">
+            {visible.map((l: any, idx: number) => (
+              <tr key={l.id ?? `${start + idx}`} className="transition-colors">
+                <th className="text-base-content/50">{l.id}</th>
+                <td className="font-medium">{l.marca ?? "—"}</td>
+                <td className="font-medium">{l.linea ?? "—"}</td>
+                <td className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <button
+                      className="btn btn-sm bg-white btn-circle"
+                      onClick={() => openEditar(l)}
+                      title="Editar"
+                    >
+                      <Pen size="18px" color="green" />
+                    </button>
+                    <button
+                      className="btn btn-sm bg-white btn-circle"
+                      onClick={() => confirmarEliminar(Number(l.id), `${l.marca} ${l.linea}`)}
+                      title="Eliminar"
+                    >
+                      <Trash2 size="18px" color="#ef4444" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+
+          <tfoot className="bg-base-200/60">
+            <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-base-content/70">
+              <th></th>
+              <th>Marca</th>
+              <th>Línea</th>
+              <th className="text-right pr-6">Acciones</th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
 
       {/* Footer paginación */}
       <div className="flex items-center justify-between px-4 pb-4 pt-2">
