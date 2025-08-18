@@ -6,7 +6,7 @@ import UsuarioEstadoAlert from "./UsuarioEstadoAlert";
 import { Pen } from "lucide-react";
 
 // Paginación
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 10;
 const SIBLING_COUNT = 1;
 const BOUNDARY_COUNT = 1;
 
@@ -109,7 +109,7 @@ const TablaUsuarios: React.FC = () => {
   const formatFecha = (f: string) => (!f || f === "0000-00-00" ? "—" : f);
 
   const openCrear = () =>
-    open(<FormularioUsuarios />, "Crear usuario", {
+    open(<FormularioUsuarios key="create" />, "Crear usuario", {
       size: "4xl",
       position: "center",
     });
@@ -121,7 +121,7 @@ const TablaUsuarios: React.FC = () => {
     };
 
     open(
-      <FormularioUsuarios initialValues={initialValues} mode="edit" />,
+      <FormularioUsuarios key={`edit-${u.id}`} initialValues={initialValues} mode="edit" />,
       `Editar usuario: ${u.name}`,
       { size: "4xl", position: "center" }
     );
@@ -145,8 +145,8 @@ const TablaUsuarios: React.FC = () => {
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl">
-      <div className="px-4 pt-4 flex items-center justify-between gap-3 flex-wrap">
+    <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
+      <div className="px-4 pt-4 flex items-center justify-between gap-3 flex-wrap my-3">
         <h3 className="text-sm font-semibold tracking-wide text-base-content/70">
           Módulo de usuarios
         </h3>
@@ -156,67 +156,68 @@ const TablaUsuarios: React.FC = () => {
         </button>
       </div>
 
-      <table className="table table-zebra table-pin-rows table-pin-cols">
-        <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
-          <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-base-content/70">
-            <th className="w-12">#</th>
-            <th className="py-4">Nombre</th>
-            <th className="py-4">Usuario</th>
-            <th className="py-4">Rol</th>
-            <th className="py-4">Estado</th>
-            <th className="py-4">Cédula</th>
-            <th className="py-4">Fecha exp.</th>
-            <th className="py-4 text-right pr-6">Acciones</th>
-          </tr>
-        </thead>
-
-        <tbody className="[&>tr:hover]:bg-base-200/40">
-          {visible.map((u: any, idx: number) => (
-            <tr key={u.id ?? `${start + idx}`} className="transition-colors">
-              <th className="text-base-content/50">{u.id}</th>
-              <td>
-                <div className="font-medium">{u.name ?? "—"}</div>
-                <div className="text-xs text-base-content/50">
-                  {u.lastname ? u.lastname : "—"}
-                </div>
-              </td>
-              <td>{u.username ?? "—"}</td>
-              <td>
-                <span className="badge badge-ghost badge-md">
-                  {u.rol ?? "—"}
-                </span>
-              </td>
-              <td className="flex gap-4"><div className="w-16 min-w-16">{stateBadge(u.state)}</div>  <UsuarioEstadoAlert id={Number(u.id)} currentState={(u.state)} /></td>
-              <td>{u.cedula ?? "—"}</td>
-              <td>{formatFecha(u.fecha_exp)}</td>
-              <td className="text-right">
-                <div className="flex justify-end gap-2">
-                  <button
-                    className="btn btn-sm bg-white btn-circle"
-                    onClick={() => openEditar(u)}
-                  >
-                    <Pen color="green" size="20px"/>
-                  </button>
-                </div>
-              </td>
+      <div className="relative overflow-x-auto max-w-full px-4">
+        <table className="table table-zebra table-pin-rows  min-w-[900px]">
+          <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
+            <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
+              <th className="w-12">#</th>
+              <th className="py-4">Nombre</th>
+              <th className="py-4">Usuario</th>
+              <th className="py-4">Rol</th>
+              <th className="py-4">Estado</th>
+              <th className="py-4">Cédula</th>
+              <th className="py-4">Fecha exp.</th>
+              <th className="py-4 text-right pr-6">Acciones</th>
             </tr>
-          ))}
-        </tbody>
+          </thead>
 
-        <tfoot className="bg-base-200/60">
-          <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-base-content/70">
-            <th></th>
-            <th>Nombre</th>
-            <th>Usuario</th>
-            <th>Rol</th>
-            <th>Estado</th>
-            <th>Cédula</th>
-            <th>Fecha exp.</th>
-            <th className="text-right pr-6">Acciones</th>
-          </tr>
-        </tfoot>
-      </table>
+          <tbody className="[&>tr:hover]:bg-base-200/40">
+            {visible.map((u: any, idx: number) => (
+              <tr key={u.id ?? `${start + idx}`} className="transition-colors">
+                <th className="text-base-content/50">{u.id}</th>
+                <td>
+                  <div className="font-medium">{u.name ?? "—"}</div>
+                  <div className="text-xs text-base-content/50">
+                    {u.lastname ? u.lastname : "—"}
+                  </div>
+                </td>
+                <td>{u.username ?? "—"}</td>
+                <td>
+                  <span className="badge badge-ghost badge-md">
+                    {u.rol ?? "—"}
+                  </span>
+                </td>
+                <td className="flex gap-4"><div className="w-16 min-w-16">{stateBadge(u.state)}</div>  <UsuarioEstadoAlert id={Number(u.id)} currentState={(u.state)} /></td>
+                <td>{u.cedula ?? "—"}</td>
+                <td>{formatFecha(u.fecha_exp)}</td>
+                <td className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <button
+                      className="btn btn-sm bg-white btn-circle"
+                      onClick={() => openEditar(u)}
+                    >
+                      <Pen color="green" size="20px" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
 
+          <tfoot className="bg-base-200/60">
+            <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-base-content/70">
+              <th></th>
+              <th>Nombre</th>
+              <th>Usuario</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th>Cédula</th>
+              <th>Fecha exp.</th>
+              <th className="text-right pr-6">Acciones</th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
       {/* Footer paginación */}
       <div className="flex items-center justify-between px-4 pb-4 pt-2">
         <span className="text-xs text-base-content/50">

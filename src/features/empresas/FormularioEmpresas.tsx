@@ -1,212 +1,228 @@
+// src/components/empresas/FormularioEmpresas.tsx
 import React from "react";
+import { useForm } from "react-hook-form";
 import {
-    useCreateEmpresa,
-    useUpdateEmpresa,
+  useCreateEmpresa,
+  useUpdateEmpresa,
 } from "../../services/empresasServices";
 import type { Empresa } from "../../shared/types/empresas";
-
+import { FormInput } from "../../shared/components/FormInput";
 
 type Base = {
-    id?: number;
-    nombre_empresa: string;
-    nit_empresa: string;
-    correo_garantias: string;
-    telefono_garantias: string;
-    correo_siniestros: string;
-    telefono_siniestros: string;
-    direccion_siniestros: string;
-    slogan_empresa?: string | null;
-    sitio_web?: string | null;
-    imagen?: string | null; // filename/url actual
+  id?: number;
+  nombre_empresa: string;
+  nit_empresa: string;
+  correo_garantias: string;
+  telefono_garantias: string;
+  correo_siniestros: string;
+  telefono_siniestros: string;
+  direccion_siniestros: string;
+  slogan_empresa?: string | null;
+  sitio_web?: string | null;
+  imagen?: string | null; // filename/url actual
 };
 
-type EmpresaForm = Omit<Empresa, "id" | "imagen"> & { imagen?: File | null };
-
+type EmpresaFormValues = Omit<Empresa, "id" | "imagen"> & {
+  imagen?: File | null;
+};
 
 type Props =
-    | { initialValues?: undefined; mode?: "create" }
-    | { initialValues: Base & { id: number }; mode: "edit" };
+  | { initialValues?: undefined; mode?: "create" }
+  | { initialValues: Base & { id: number }; mode: "edit" };
 
 const FormularioEmpresas: React.FC<Props> = ({ initialValues, mode = "create" }) => {
-    const [nombreEmpresa, setNombreEmpresa] = React.useState(initialValues?.nombre_empresa ?? "");
-    const [nitEmpresa, setNitEmpresa] = React.useState(initialValues?.nit_empresa ?? "");
-    const [correoGarantias, setCorreoGarantias] = React.useState(initialValues?.correo_garantias ?? "");
-    const [telGarantias, setTelGarantias] = React.useState(initialValues?.telefono_garantias ?? "");
-    const [correoSiniestros, setCorreoSiniestros] = React.useState(initialValues?.correo_siniestros ?? "");
-    const [telSiniestros, setTelSiniestros] = React.useState(initialValues?.telefono_siniestros ?? "");
-    const [direccionSiniestros, setDireccionSiniestros] = React.useState(initialValues?.direccion_siniestros ?? "");
-    const [slogan, setSlogan] = React.useState(initialValues?.slogan_empresa ?? "");
-    const [sitioWeb, setSitioWeb] = React.useState(initialValues?.sitio_web ?? "");
-    const [file, setFile] = React.useState<File | null>(null);
-    const [preview, setPreview] = React.useState<string | null>(initialValues?.imagen ?? null);
+  const create = useCreateEmpresa();
+  const update = useUpdateEmpresa();
 
-    const create = useCreateEmpresa();
-    const update = useUpdateEmpresa();
+  // Archivo/preview fuera de RHF (como en motos)
+  const [file, setFile] = React.useState<File | null>(null);
+  const [preview, setPreview] = React.useState<string | null>(initialValues?.imagen ?? null);
 
-    React.useEffect(() => {
-        if (!file) return;
-        const url = URL.createObjectURL(file);
-        setPreview(url);
-        return () => URL.revokeObjectURL(url);
-    }, [file]);
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { isSubmitting },
+  } = useForm<EmpresaFormValues>({
+    defaultValues: {
+      nombre_empresa: initialValues?.nombre_empresa ?? "",
+      nit_empresa: initialValues?.nit_empresa ?? "",
+      correo_garantias: initialValues?.correo_garantias ?? "",
+      telefono_garantias: initialValues?.telefono_garantias ?? "",
+      correo_siniestros: initialValues?.correo_siniestros ?? "",
+      telefono_siniestros: initialValues?.telefono_siniestros ?? "",
+      direccion_siniestros: initialValues?.direccion_siniestros ?? "",
+      slogan_empresa: initialValues?.slogan_empresa ?? "",
+      sitio_web: initialValues?.sitio_web ?? "",
+      imagen: null,
+    },
+    mode: "onBlur",
+  });
 
-    const onSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+  // Rehidratar cuando cambien props (igual que en motos)
+  React.useEffect(() => {
+    reset({
+      nombre_empresa: initialValues?.nombre_empresa ?? "",
+      nit_empresa: initialValues?.nit_empresa ?? "",
+      correo_garantias: initialValues?.correo_garantias ?? "",
+      telefono_garantias: initialValues?.telefono_garantias ?? "",
+      correo_siniestros: initialValues?.correo_siniestros ?? "",
+      telefono_siniestros: initialValues?.telefono_siniestros ?? "",
+      direccion_siniestros: initialValues?.direccion_siniestros ?? "",
+      slogan_empresa: initialValues?.slogan_empresa ?? "",
+      sitio_web: initialValues?.sitio_web ?? "",
+      imagen: null,
+    });
+    setFile(null);
+    setPreview(initialValues?.imagen ?? null);
+  }, [initialValues, mode, reset]);
 
-        const payload: EmpresaForm = {
-            nombre_empresa: nombreEmpresa.trim(),
-            nit_empresa: nitEmpresa.trim(),
-            correo_garantias: correoGarantias.trim(),
-            telefono_garantias: telGarantias.trim(),
-            correo_siniestros: correoSiniestros.trim(),
-            telefono_siniestros: telSiniestros.trim(),
-            direccion_siniestros: direccionSiniestros.trim(),
-            slogan_empresa: slogan || "",
-            sitio_web: sitioWeb || "",
-            imagen: file ?? null,
-        };
+  // preview de imagen
+  React.useEffect(() => {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
 
-        // 3) en edit, compón el input sin ambigüedad
-        if (mode === "edit" && initialValues?.id != null) {
-            update.mutate({
-                id: initialValues.id,
-                ...payload,                 // <- payload NO tiene id
-                nuevaImagen: file ?? null,
-            } as any);
-        } else {
-            create.mutate(payload as any);
-        }
+  const onSubmit = (values: EmpresaFormValues) => {
+    const payload: EmpresaFormValues = {
+      nombre_empresa: values.nombre_empresa.trim(),
+      nit_empresa: values.nit_empresa.trim(),
+      correo_garantias: values.correo_garantias.trim(),
+      telefono_garantias: values.telefono_garantias.trim(),
+      correo_siniestros: values.correo_siniestros.trim(),
+      telefono_siniestros: values.telefono_siniestros.trim(),
+      direccion_siniestros: values.direccion_siniestros.trim(),
+      slogan_empresa: (values.slogan_empresa ?? "").trim(),
+      sitio_web: (values.sitio_web ?? "").trim(),
+      imagen: file ?? null,
     };
 
-    const busy = create.isPending || update.isPending;
+    if (mode === "edit" && initialValues?.id != null) {
+      update.mutate({ id: initialValues.id, ...payload, nuevaImagen: file ?? null } as any);
+    } else {
+      create.mutate(payload as any);
+    }
+  };
 
-    return (
-        <form onSubmit={onSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {/* Nombre empresa */}
-                <label className="form-control w-full">
-                    <span className="label-text">Nombre de la empresa</span>
-                    <input
-                        className="input input-bordered w-full"
-                        value={nombreEmpresa}
-                        onChange={(e) => setNombreEmpresa(e.target.value)}
-                        required
-                    />
-                </label>
+  const busy = isSubmitting || create.isPending || update.isPending;
 
-                {/* NIT */}
-                <label className="form-control w-full">
-                    <span className="label-text">NIT</span>
-                    <input
-                        className="input input-bordered w-full"
-                        value={nitEmpresa}
-                        onChange={(e) => setNitEmpresa(e.target.value)}
-                        required
-                    />
-                </label>
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {/* Nombre empresa */}
+        <FormInput<EmpresaFormValues>
+          name="nombre_empresa"
+          label="Nombre de la empresa"
+          control={control}
+          rules={{ required: "El nombre es obligatorio" }}
+        />
 
-                {/* Correo garantías */}
-                <label className="form-control w-full">
-                    <span className="label-text">Correo (garantías)</span>
-                    <input
-                        type="email"
-                        className="input input-bordered w-full"
-                        value={correoGarantias}
-                        onChange={(e) => setCorreoGarantias(e.target.value)}
-                        required
-                    />
-                </label>
+        {/* NIT */}
+        <FormInput<EmpresaFormValues>
+          name="nit_empresa"
+          label="NIT"
+          control={control}
+          rules={{ required: "El NIT es obligatorio" }}
+        />
 
-                {/* Tel garantías */}
-                <label className="form-control w-full">
-                    <span className="label-text">Teléfono (garantías)</span>
-                    <input
-                        className="input input-bordered w-full"
-                        value={telGarantias}
-                        onChange={(e) => setTelGarantias(e.target.value)}
-                        required
-                    />
-                </label>
+        {/* Correo garantías */}
+        <FormInput<EmpresaFormValues>
+          name="correo_garantias"
+          label="Correo (garantías)"
+          control={control}
+          type="email"
+          rules={{
+            required: "El correo de garantías es obligatorio",
+            pattern: { value: /\S+@\S+\.\S+/, message: "Correo inválido" },
+          }}
+        />
 
-                {/* Correo siniestros */}
-                <label className="form-control w-full">
-                    <span className="label-text">Correo (siniestros)</span>
-                    <input
-                        type="email"
-                        className="input input-bordered w-full"
-                        value={correoSiniestros}
-                        onChange={(e) => setCorreoSiniestros(e.target.value)}
-                        required
-                    />
-                </label>
+        {/* Tel garantías */}
+        <FormInput<EmpresaFormValues>
+          name="telefono_garantias"
+          label="Teléfono (garantías)"
+          control={control}
+          rules={{ required: "El teléfono es obligatorio" }}
+        />
 
-                {/* Tel siniestros */}
-                <label className="form-control w-full">
-                    <span className="label-text">Teléfono (siniestros)</span>
-                    <input
-                        className="input input-bordered w-full"
-                        value={telSiniestros}
-                        onChange={(e) => setTelSiniestros(e.target.value)}
-                        required
-                    />
-                </label>
+        {/* Correo siniestros */}
+        <FormInput<EmpresaFormValues>
+          name="correo_siniestros"
+          label="Correo (siniestros)"
+          control={control}
+          type="email"
+          rules={{
+            required: "El correo de siniestros es obligatorio",
+            pattern: { value: /\S+@\S+\.\S+/, message: "Correo inválido" },
+          }}
+        />
 
-                {/* Dirección siniestros (2 columnas) */}
-                <label className="form-control md:col-span-2">
-                    <span className="label-text">Dirección (siniestros)</span>
-                    <input
-                        className="input input-bordered w-full"
-                        value={direccionSiniestros}
-                        onChange={(e) => setDireccionSiniestros(e.target.value)}
-                        required
-                    />
-                </label>
+        {/* Tel siniestros */}
+        <FormInput<EmpresaFormValues>
+          name="telefono_siniestros"
+          label="Teléfono (siniestros)"
+          control={control}
+          rules={{ required: "El teléfono es obligatorio" }}
+        />
 
-                {/* Slogan */}
-                <label className="form-control w-full">
-                    <span className="label-text">Slogan (opcional)</span>
-                    <input
-                        className="input input-bordered w-full"
-                        value={slogan ?? ""}
-                        onChange={(e) => setSlogan(e.target.value)}
-                    />
-                </label>
+        {/* Dirección siniestros */}
+        <div className="md:col-span-2">
+          <FormInput<EmpresaFormValues>
+            name="direccion_siniestros"
+            label="Dirección (siniestros)"
+            control={control}
+            rules={{ required: "La dirección es obligatoria" }}
+          />
+        </div>
 
-                {/* Sitio web */}
-                <label className="form-control w-full">
-                    <span className="label-text">Sitio web (opcional)</span>
-                    <input
-                        type="url"
-                        className="input input-bordered w-full"
-                        value={sitioWeb ?? ""}
-                        onChange={(e) => setSitioWeb(e.target.value)}
-                    />
-                </label>
+        {/* Slogan */}
+        <FormInput<EmpresaFormValues>
+          name="slogan_empresa"
+          label="Slogan (opcional)"
+          control={control}
+        />
 
-                {/* Imagen */}
-                <label className="form-control w-full">
-                    <span className="label-text">Logo / Imagen (opcional)</span>
-                    <input
-                        type="file"
-                        accept="image/*"
-                        className="file-input file-input-bordered w-full"
-                        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                    />
-                    {preview && (
-                        <div className="mt-2">
-                            <img src={preview} alt="Preview" className="h-24 rounded-md object-cover" />
-                        </div>
-                    )}
-                </label>
+        {/* Sitio web */}
+        <FormInput<EmpresaFormValues>
+          name="sitio_web"
+          label="Sitio web (opcional)"
+          control={control}
+          type="url"
+          rules={{
+            pattern: {
+              value:
+                /^(https?:\/\/)?([\w-]+\.)+[\w-]+(\/[\w\-._~:/?#[\]@!$&'()*+,;=.]*)?$/,
+              message: "URL inválida",
+            },
+          }}
+        />
+
+        {/* Imagen (NO RHF) */}
+        <label className="form-control w-full">
+          <span className="label-text">Logo / Imagen (opcional)</span>
+          <input
+            type="file"
+            accept="image/*"
+            className="file-input file-input-bordered w-full"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          />
+          {preview && (
+            <div className="mt-2">
+              <img src={preview} alt="Preview" className="h-24 rounded-md object-cover" />
             </div>
+          )}
+        </label>
+      </div>
 
-            <div className="flex justify-end gap-2">
-                <button className="btn btn-primary" type="submit" disabled={busy}>
-                    {mode === "edit" ? "Guardar cambios" : "Crear empresa"}
-                </button>
-            </div>
-        </form>
-    );
+      <div className="flex justify-end gap-2">
+        <button className="btn btn-primary" type="submit" disabled={busy}>
+          {mode === "edit" ? "Guardar cambios" : "Crear empresa"}
+        </button>
+      </div>
+    </form>
+  );
 };
 
 export default FormularioEmpresas;

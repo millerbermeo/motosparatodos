@@ -1,112 +1,129 @@
+// src/components/puntos/FormularioPuntos.tsx
 import React from "react";
+import { useForm } from "react-hook-form";
 import { useCreatePunto, useUpdatePunto } from "../../services/puntosServices";
 import { useEmpresas } from "../../services/empresasServices";
 import type { Punto } from "../../shared/types/puntos";
+import { FormInput } from "../../shared/components/FormInput";
+import { FormSelect, type SelectOption } from "../../shared/components/FormSelect";
 
 type Props =
   | { initialValues?: undefined; mode?: "create" }
   | { initialValues: Punto; mode: "edit" };
 
-const FormularioPuntos: React.FC<Props> = ({ initialValues, mode = "create" }) => {
-  const [empresaId, setEmpresaId] = React.useState<number>(initialValues?.empresa_id ?? 0);
-  const [nombrePunto, setNombrePunto] = React.useState(initialValues?.nombre_punto ?? "");
-  const [telefono, setTelefono] = React.useState(initialValues?.telefono ?? "");
-  const [correo, setCorreo] = React.useState(initialValues?.correo ?? "");
-  const [direccion, setDireccion] = React.useState(initialValues?.direccion ?? "");
+// Para acoplar con FormSelect (value:string): guardamos empresa_id como string y luego lo convertimos en submit
+type PuntoFormValues = {
+  empresa_id: string; // id como string para el select
+  nombre_punto: string;
+  telefono: string;
+  correo: string;
+  direccion: string;
+};
 
+const FormularioPuntos: React.FC<Props> = ({ initialValues, mode = "create" }) => {
   const create = useCreatePunto();
   const update = useUpdatePunto();
   const { data: empresas, isPending: loadingEmpresas } = useEmpresas();
 
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { isSubmitting },
+  } = useForm<PuntoFormValues>({
+    defaultValues: {
+      empresa_id: initialValues?.empresa_id != null ? String(initialValues.empresa_id) : "",
+      nombre_punto: initialValues?.nombre_punto ?? "",
+      telefono: initialValues?.telefono ?? "",
+      correo: initialValues?.correo ?? "",
+      direccion: initialValues?.direccion ?? "",
+    },
+    mode: "onBlur",
+  });
 
+  // Rehidratar cuando cambien los props, evitando que queden valores pegados
+  React.useEffect(() => {
+    reset({
+      empresa_id: initialValues?.empresa_id != null ? String(initialValues.empresa_id) : "",
+      nombre_punto: initialValues?.nombre_punto ?? "",
+      telefono: initialValues?.telefono ?? "",
+      correo: initialValues?.correo ?? "",
+      direccion: initialValues?.direccion ?? "",
+    });
+  }, [initialValues, mode, reset]);
+
+  const empresaOptions: SelectOption[] =
+    empresas?.map((e) => ({ value: String(e.id), label: e.nombre_empresa })) ?? [];
+
+  const onSubmit = (values: PuntoFormValues) => {
     const base = {
-      empresa_id: Number(empresaId),
-      nombre_punto: nombrePunto.trim(),
-      telefono: telefono.trim(),
-      correo: correo.trim(),
-      direccion: direccion.trim(),
+      empresa_id: Number(values.empresa_id),
+      nombre_punto: values.nombre_punto.trim(),
+      telefono: values.telefono.trim(),
+      correo: values.correo.trim(),
+      direccion: values.direccion.trim(),
     };
 
     if (mode === "edit" && initialValues?.id != null) {
       update.mutate({ id: Number(initialValues.id), ...base });
-
     } else {
       create.mutate(base);
     }
   };
 
-  const busy = create.isPending || update.isPending;
+  const busy = isSubmitting || create.isPending || update.isPending;
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* Empresa */}
-        <label className="form-control w-full">
-          <span className="label-text">Empresa</span>
-          <select
-            className="select select-bordered w-full"
-            value={empresaId || ""}
-            onChange={(e) => setEmpresaId(Number(e.target.value))}
-            required
-            disabled={loadingEmpresas}
-          >
-            <option value="" disabled>
-              {loadingEmpresas ? "Cargando empresas..." : "Seleccione una empresa"}
-            </option>
-            {empresas?.map((empr) => (
-              <option key={empr.id} value={empr.id}>
-                {empr.nombre_empresa}
-              </option>
-            ))}
-          </select>
-        </label>
+        {/* Empresa (FormSelect) */}
+        <FormSelect<PuntoFormValues>
+          name="empresa_id"
+          label="Empresa"
+          control={control}
+          options={empresaOptions}
+          placeholder={loadingEmpresas ? "Cargando empresas..." : "Seleccione una empresa"}
+          disabled={loadingEmpresas}
+          rules={{ required: "La empresa es obligatoria" }}
+        />
 
         {/* Nombre del punto */}
-        <label className="form-control w-full">
-          <span className="label-text">Nombre del punto</span>
-          <input
-            className="input input-bordered w-full"
-            value={nombrePunto}
-            onChange={(e) => setNombrePunto(e.target.value)}
-            required
-          />
-        </label>
+        <FormInput<PuntoFormValues>
+          name="nombre_punto"
+          label="Nombre del punto"
+          control={control}
+          rules={{ required: "El nombre del punto es obligatorio" }}
+        />
 
         {/* Teléfono */}
-        <label className="form-control w-full">
-          <span className="label-text">Teléfono</span>
-          <input
-            className="input input-bordered w-full"
-            value={telefono}
-            onChange={(e) => setTelefono(e.target.value)}
-            required
-          />
-        </label>
+        <FormInput<PuntoFormValues>
+          name="telefono"
+          label="Teléfono"
+          control={control}
+          rules={{ required: "El teléfono es obligatorio" }}
+        />
 
         {/* Correo */}
-        <label className="form-control w-full">
-          <span className="label-text">Correo</span>
-          <input
-            type="email"
-            className="input input-bordered w-full"
-            value={correo}
-            onChange={(e) => setCorreo(e.target.value)}
-            required
-          />
-        </label>
+        <FormInput<PuntoFormValues>
+          name="correo"
+          label="Correo"
+          control={control}
+          type="email"
+          rules={{
+            required: "El correo es obligatorio",
+            pattern: { value: /\S+@\S+\.\S+/, message: "Correo inválido" },
+          }}
+        />
 
         {/* Dirección (2 columnas) */}
-        <label className="form-control md:col-span-2">
-          <span className="label-text">Dirección</span>
-          <input
-            className="input input-bordered w-full"
-            value={direccion}
-            onChange={(e) => setDireccion(e.target.value)}
-            required
+        <div className="md:col-span-2">
+          <FormInput<PuntoFormValues>
+            name="direccion"
+            label="Dirección"
+            control={control}
+            rules={{ required: "La dirección es obligatoria" }}
           />
-        </label>
+        </div>
       </div>
 
       <div className="flex justify-end gap-2">

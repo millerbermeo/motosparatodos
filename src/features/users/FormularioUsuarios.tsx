@@ -1,13 +1,12 @@
-// FormularioUsuarios.tsx
+// src/components/usuarios/FormularioUsuarios.tsx
 import React from "react";
 import { useForm } from "react-hook-form";
 import { FormInput } from "../../shared/components/FormInput";
 import RolesSelect from "./RolesSelect";
-import { useRegisterUsuario, /*, useUpdateUsuario*/ 
-useUpdateUsuario} from "../../services/usersServices";
+import { useRegisterUsuario, useUpdateUsuario } from "../../services/usersServices";
 
 type FormValues = {
-  id?: string;              // ← opcional al editar
+  id?: string;              // oculto en UI; solo para edición
   name: string;
   lastname: string;
   username: string;
@@ -26,6 +25,9 @@ type Props = {
 };
 
 const FormularioUsuarios: React.FC<Props> = ({ initialValues, mode = "create" }) => {
+  const { mutate: createUser, isPending: isCreating } = useRegisterUsuario();
+  const { mutate: updateUser, isPending: isUpdating } = useUpdateUsuario();
+
   const {
     control,
     register,
@@ -35,80 +37,80 @@ const FormularioUsuarios: React.FC<Props> = ({ initialValues, mode = "create" })
     reset,
   } = useForm<FormValues>({
     defaultValues: {
-      id: "",
-      name: "",
-      lastname: "",
-      username: "",
+      id: initialValues?.id ? String(initialValues.id) : "",
+      name: initialValues?.name ?? "",
+      lastname: initialValues?.lastname ?? "",
+      username: initialValues?.username ?? "",
       pass: "",
       confirmPassword: "",
-      phone: "",
-      rol: "",
-      state: 1,
-      cedula: "",
-      // si llega "0000-00-00" lo mostramos vacío para el input date
+      phone: initialValues?.phone ?? "",
+      rol: (initialValues?.rol as string) ?? "",
+      state:
+        typeof initialValues?.state === "string"
+          ? (Number(initialValues?.state) as 0 | 1)
+          : (initialValues?.state ?? 1),
+      cedula: initialValues?.cedula ?? "",
       fecha_exp:
         initialValues?.fecha_exp && initialValues.fecha_exp !== "0000-00-00"
           ? initialValues.fecha_exp
           : "",
-      ...(initialValues
-        ? {
-            ...initialValues,
-            // Asegura numérico
-            state:
-              typeof initialValues.state === "string"
-                ? (Number(initialValues.state) as 0 | 1)
-                : (initialValues.state ?? 1),
-            // Asegura string en rol
-            rol: (initialValues.rol as string) ?? "",
-          }
-        : {}),
     },
+    mode: "onBlur",
   });
 
-  // Si cambian initialValues (por abrir otro usuario en el modal), resetea
+  // Rehidrata valores en cambios de props/mode (evita "pegados")
   React.useEffect(() => {
-    if (initialValues) {
-      reset((prev) => ({
-        ...prev,
-        ...initialValues,
-        state:
-          typeof initialValues.state === "string"
-            ? (Number(initialValues.state) as 0 | 1)
-            : (initialValues.state ?? prev.state ?? 1),
-        fecha_exp:
-          initialValues.fecha_exp && initialValues.fecha_exp !== "0000-00-00"
-            ? initialValues.fecha_exp
-            : "",
-        rol: (initialValues.rol as string) ?? prev.rol ?? "",
-      }));
-    }
-  }, [initialValues, reset]);
+    reset({
+      id: initialValues?.id ? String(initialValues.id) : "",
+      name: initialValues?.name ?? "",
+      lastname: initialValues?.lastname ?? "",
+      username: initialValues?.username ?? "",
+      pass: "",
+      confirmPassword: "",
+      phone: initialValues?.phone ?? "",
+      rol: (initialValues?.rol as string) ?? "",
+      state:
+        typeof initialValues?.state === "string"
+          ? (Number(initialValues?.state) as 0 | 1)
+          : (initialValues?.state ?? 1),
+      cedula: initialValues?.cedula ?? "",
+      fecha_exp:
+        initialValues?.fecha_exp && initialValues.fecha_exp !== "0000-00-00"
+          ? initialValues.fecha_exp
+          : "",
+    });
+  }, [initialValues, mode, reset]);
 
-  const { mutate: createUser, isPending: isCreating } = useRegisterUsuario();
-  const { mutate: updateUser, isPending: isUpdating } = useUpdateUsuario(); // ← habilita si lo tienes
   const pass = watch("pass");
 
   const onSubmit = (data: FormValues) => {
-    // Normalización para backend
-    const payload = {
-      ...(mode === "edit" && data.id ? { id: data.id } : {}),
+    const base = {
       name: data.name.trim(),
       lastname: data.lastname.trim(),
       username: data.username.trim(),
-      pass: data.pass, // confirmPassword no se envía
       phone: data.phone.trim(),
-      rol: data.rol, // string (Roles.rol)
+      rol: data.rol,
       state: Number(data.state) as 0 | 1,
       cedula: data.cedula.trim(),
       fecha_exp: data.fecha_exp ? data.fecha_exp : "0000-00-00",
-      id: Number(data.id)
     };
 
     if (mode === "edit") {
-      updateUser(payload as any);
-      console.log("Actualizar usuario:", payload);
+      const payload: any = {
+        ...base,
+        id: Number(data.id), // viene oculto del initialValues
+      };
+      // Solo enviar pass si el usuario la cambió
+      if (data.pass && data.pass.trim().length > 0) {
+        payload.pass = data.pass;
+      }
+      updateUser(payload);
     } else {
-      createUser(payload as any);
+      const payload: any = {
+        ...base,
+        pass: data.pass, // en create es obligatoria
+      };
+      createUser(payload);
     }
   };
 
@@ -116,19 +118,12 @@ const FormularioUsuarios: React.FC<Props> = ({ initialValues, mode = "create" })
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-4">
+      {/* ID oculto (solo para edición) */}
+      {mode === "edit" && (
+        <input type="hidden" {...register("id")} />
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-
-        {mode === "edit" && (
-          <FormInput<FormValues>
-            name="id"
-            label="ID"
-            control={control}
-            rules={{}}
-            disabled
-            type="hidden"
-          />
-        )}
-
         <FormInput<FormValues>
           name="name"
           label="Nombre"
@@ -181,7 +176,7 @@ const FormularioUsuarios: React.FC<Props> = ({ initialValues, mode = "create" })
           }}
         />
 
-        {/* fecha_exp */}
+        {/* Fecha de expedición */}
         <div className="w-full">
           <div className="relative bg-base-200 rounded-2xl shadow-sm focus-within:ring-2 focus-within:ring-primary/40 transition-[box-shadow,ring] duration-150">
             <label className="absolute left-3 top-2 text-xs text-base-content/60 pointer-events-none select-none">
@@ -213,7 +208,7 @@ const FormularioUsuarios: React.FC<Props> = ({ initialValues, mode = "create" })
                   minLength: { value: 3, message: "Mínimo 3 caracteres" },
                 }
               : {
-                  // En edición podrías permitir vacío = no cambiar
+                  // En edición se puede dejar vacía si no se desea cambiar
                   minLength: { value: 3, message: "Mínimo 3 caracteres" },
                 }
           }
@@ -238,7 +233,7 @@ const FormularioUsuarios: React.FC<Props> = ({ initialValues, mode = "create" })
           }
         />
 
-        {/* Rol (usa RolesSelect que entrega string en value) */}
+        {/* Rol (usa RolesSelect que maneja RHF) */}
         <RolesSelect
           control={control}
           name="rol"
@@ -280,7 +275,13 @@ const FormularioUsuarios: React.FC<Props> = ({ initialValues, mode = "create" })
             className="btn btn-primary w-full md:w-auto"
             disabled={busy}
           >
-            {busy ? (mode === "edit" ? "Actualizando..." : "Guardando...") : mode === "edit" ? "Actualizar usuario" : "Crear usuario"}
+            {busy
+              ? mode === "edit"
+                ? "Actualizando..."
+                : "Guardando..."
+              : mode === "edit"
+                ? "Actualizar usuario"
+                : "Crear usuario"}
           </button>
         </div>
       </div>

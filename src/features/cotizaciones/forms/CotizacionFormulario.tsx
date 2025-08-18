@@ -389,7 +389,7 @@ const CotizacionFormulario: React.FC = () => {
                                     <FormInput<FormValues>
                                         name="otroSeguro1" label="Otros seguros" control={control}
                                         placeholder="0 COP" disabled={!incluirMoto1}
-                                        rules={{ validate: (v) => !incluirMoto1 ? true : (watch("seguroId1") || (v?.trim()?.length ?? 0) > 0) || "Selecciona un seguro o ingresa el valor de 'Otros seguros'" }}
+                                        // rules={{ validate: (v) => !incluirMoto1 ? true : (watch("seguroId1") || (v?.trim()?.length ?? 0) > 0) || "Selecciona un seguro o ingresa el valor de 'Otros seguros'" }}
                                     />
                                 </div>
                             </div>
@@ -437,11 +437,11 @@ const CotizacionFormulario: React.FC = () => {
                                 {/* Totales */}
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-center bg-warning/10 px-4 py-2 rounded-md">
-                                        <span className="font-semibold">TOTAL SIN SEGUROS:</span>
+                                        <span className="font-semibold text-warning">TOTAL SIN SEGUROS:</span>
                                         <span className="font-bold">{fmt(totalSinSeguros1)}</span>
                                     </div>
                                     <div className="flex justify-between items-center bg-success/20 px-4 py-2 rounded-md">
-                                        <span className="font-bold">TOTAL CON SEGUROS:</span>
+                                        <span className="font-bold text-success">TOTAL CON SEGUROS:</span>
                                         <span className="text-success font-extrabold text-lg">{fmt(totalConSeguros1)}</span>
                                     </div>
                                 </div>
@@ -500,7 +500,7 @@ const CotizacionFormulario: React.FC = () => {
                                     <FormInput<FormValues>
                                         name="otroSeguro2" label="Otros seguros" control={control}
                                         placeholder="0 COP" disabled={!incluirMoto2}
-                                        rules={{ validate: (v) => !incluirMoto2 ? true : (watch("seguroId2") || (v?.trim()?.length ?? 0) > 0) || "Selecciona un seguro o ingresa el valor de 'Otros seguros'" }}
+                                        // rules={{ validate: (v) => !incluirMoto2 ? true : (watch("seguroId2") || (v?.trim()?.length ?? 0) > 0) || "Selecciona un seguro o ingresa el valor de 'Otros seguros'" }}
                                     />
                                 </div>
                             </div>
@@ -549,11 +549,11 @@ const CotizacionFormulario: React.FC = () => {
                                 {/* Totales */}
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-center bg-warning/10 px-4 py-2 rounded-md">
-                                        <span className="font-semibold">TOTAL SIN SEGUROS:</span>
+                                        <span className="font-semibold text-warning">TOTAL SIN SEGUROS:</span>
                                         <span className="font-bold">{fmt(totalSinSeguros2)}</span>
                                     </div>
                                     <div className="flex justify-between items-center bg-success/20 px-4 py-2 rounded-md">
-                                        <span className="font-bold">TOTAL CON SEGUROS:</span>
+                                        <span className="font-bold text-success">TOTAL CON SEGUROS:</span>
                                         <span className="text-success font-extrabold text-lg">{fmt(totalConSeguros2)}</span>
                                     </div>
                                 </div>
