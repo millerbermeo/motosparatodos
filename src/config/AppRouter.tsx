@@ -25,6 +25,7 @@ const Revisiones = lazy(() => import("../pages/Revisiones")); // 👈 crea esta 
 const Clientes = lazy(() => import("../pages/Clientes")); // 👈 crea esta página simple
 
 const Creditos = lazy(() => import("../pages/Creditos")); // 👈 crea esta página simple
+const Detalles = lazy(() => import("../pages/Detalles")); // 👈 crea esta página simple
 
 
 const Fallback = () => <div style={{ padding: 16 }}>Cargando…</div>;
@@ -57,6 +58,8 @@ const AppRouter: React.FC = () => {
 
               <Route element={<RequireModule name="Cotizaciones" />}>
                 <Route path="/cotizaciones" element={<Cotizaciones />} />
+                  <Route path="/cotizaciones/:id" element={<Detalles />} /> {/* 👈 aquí */}
+
               </Route>
 
               <Route element={<RequireModule name="Créditos" />}>

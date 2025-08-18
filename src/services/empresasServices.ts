@@ -119,9 +119,10 @@ export const useDeleteEmpresa = () => {
 
   return useMutation({
     mutationFn: async (id: number) => {
-      // Si DELETE con body no funciona en tu backend, usa POST + accion=delete
-      // return (await api.post("/empresas.php", toEmpresaFormData({ id }), { headers: { "Content-Type": "multipart/form-data" } })).data;
-      const { data } = await api.delete("/empresas.php", { data: { id } });
+
+      const { data } = await api.delete("/empresas.php", { params: { id } });
+
+
       return data as { success: boolean; message?: string };
     },
     onSuccess: async () => {

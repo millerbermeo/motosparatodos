@@ -151,7 +151,7 @@ const Formatos: React.FC = () => {
             const isDoc = ext === 'doc' || ext === 'docx';
 
             return (
-              <article key={f.id} className="card bg-base-100 border border-base-300/60 hover:shadow-md transition-shadow">
+              <article key={f.id} className="card bg-base-200 border border-base-300 hover:shadow-md transition-shadow">
                 <div className="card-body">
                   <div className="flex items-start gap-3">
                     <span className="inline-flex p-2 rounded-lg bg-primary/10 shrink-0">

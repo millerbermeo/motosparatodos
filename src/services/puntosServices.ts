@@ -83,21 +83,31 @@ console.log("payload",payload)
   });
 };
 
+
+
+
+
 export const useDeletePunto = () => {
   const qc = useQueryClient();
 
   return useMutation({
+    // Llama a .../puntos.php?id=22 (query string)
     mutationFn: async (id: number) => {
+   const { data } = await api.delete("/puntos.php", { params: { id } });
 
-      const { data } = await api.post("/puntos.php", toFormData({ id /* , accion: 'delete' */ }), {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
       return data;
     },
+
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["puntos"] });
-      Swal.fire({ icon: "success", title: "Punto eliminado", timer: 1200, showConfirmButton: false });
+      Swal.fire({
+        icon: "success",
+        title: "Punto eliminado",
+        timer: 1200,
+        showConfirmButton: false,
+      });
     },
+
     onError: (error: AxiosError<ServerError>) => {
       const raw = error.response?.data?.message ?? "Error al eliminar el punto";
       const arr = Array.isArray(raw) ? raw : [raw];

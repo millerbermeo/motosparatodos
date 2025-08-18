@@ -234,6 +234,8 @@ const CotizacionFormulario: React.FC = () => {
     validate: (v: any) => (!cond ? true : (v !== undefined && v !== null && String(v).trim().length > 0) || msg),
   });
 
+  
+
   /* helpers numéricos */
   const N = (v: any) => (isNaN(Number(v)) ? 0 : Number(v));
   const fmt = (n: number) => n.toLocaleString("es-CO") + " COP";
@@ -430,7 +432,7 @@ const CotizacionFormulario: React.FC = () => {
               {/* ======= MOTO 1 ======= */}
               <div className="bg-white  rounded-xl">
                 <div className="flex items-center gap-2 mb-2">
-                  <input type="checkbox" className="checkbox" {...register("incluirMoto1")} />
+                  <input type="checkbox" className="checkbox checkbox-success text-white" {...register("incluirMoto1")} />
                   <span className="label-text font-semibold">Incluir Motocicleta 1</span>
                 </div>
 
@@ -468,7 +470,7 @@ const CotizacionFormulario: React.FC = () => {
                       {loadingSeguros && <span>Cargando seguros...</span>}
                       {!loadingSeguros && seguros.map((s: any) => (
                         <label key={`m1-${s.id}`} className="flex items-center gap-2">
-                          <input type="radio" value={String(s.id)} className="radio"
+                          <input type="radio" value={String(s.id)} className="radio radio-neutral"
                             {...register("seguroId1", reqIf(showMotos && incluirMoto1, "Selecciona un seguro o ingresa 'Otros seguros'"))}
                             disabled={!showMotos || !incluirMoto1} />
                           <span>{s.nombre} - {s.tipo} - {Number(s.valor).toLocaleString("es-CO")} COP</span>
@@ -538,7 +540,7 @@ const CotizacionFormulario: React.FC = () => {
               {/* ======= MOTO 2 ======= */}
               <div className="bg-white rounded-xl">
                 <div className="flex items-center gap-2 mb-2">
-                  <input type="checkbox" className="checkbox" {...register("incluirMoto2")} />
+                  <input type="checkbox" className="checkbox checkbox-success text-white" {...register("incluirMoto2")} />
                   <span className="label-text font-semibold">Incluir Motocicleta 2</span>
                 </div>
 
@@ -563,11 +565,23 @@ const CotizacionFormulario: React.FC = () => {
                     placeholder="Seleccione..." disabled={!showMotos || !incluirMoto2}
                     rules={reqIf(showMotos && incluirMoto2, "Este campo es obligatorio")}
                   />
-                  <FormInput<FormValues>
-                    name="accesorios2" label="Accesorios / Marcadas / Personalizadas" control={control}
-                    placeholder="0 COP" disabled={!showMotos || !incluirMoto2}
-                    rules={reqIf(showMotos && incluirMoto2, "Ingresa el valor de accesorios")}
-                  />
+             <FormInput<FormValues>
+  name="accesorios1"
+  label="Accesorios / Marcadas / Personalizadas"
+  control={control}
+  placeholder="0"
+  type="number"
+
+
+  disabled={!showMotos || !incluirMoto1}
+  rules={{
+    ...reqIf(showMotos && incluirMoto1, "Ingresa el valor de accesorios"),
+    validate: (v) => (!showMotos || !incluirMoto1 ? true : Number(v) >= 0 || "Debe ser un número ≥ 0"),
+    // Convierte a número para que los cálculos sumen correctamente
+    setValueAs: (v) => (v === "" ? "" : Number(v)),
+  }}
+/>
+
 
                   {/* Seguros (lista de radios) */}
                   <div className="p-3 rounded-md bg-[#3498DB] text-white">
@@ -576,7 +590,7 @@ const CotizacionFormulario: React.FC = () => {
                       {loadingSeguros && <span>Cargando seguros...</span>}
                       {!loadingSeguros && seguros.map((s: any) => (
                         <label key={`m2-${s.id}`} className="flex items-center gap-2">
-                          <input type="radio" value={String(s.id)} className="radio"
+                          <input type="radio" value={String(s.id)} className="radio radio-neutral"
                             {...register("seguroId2", reqIf(showMotos && incluirMoto2, "Selecciona un seguro o ingresa 'Otros seguros'"))}
                             disabled={!showMotos || !incluirMoto2} />
                           <span>{s.nombre} - {s.tipo} - {Number(s.valor).toLocaleString("es-CO")} COP</span>
@@ -619,10 +633,21 @@ const CotizacionFormulario: React.FC = () => {
                         <span className="font-medium text-gray-500">Descuentos:</span>
                         <span className="text-error font-semibold">-{fmt(descuento2)}</span>
                       </div>
-                      <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                        <span className="font-medium text-gray-500">Accesorios / Marcadas / Personalizadas:</span>
-                        <span>{fmt(accesorios2)}</span>
-                      </div>
+                 <FormInput<FormValues>
+  name="accesorios2"
+  label="Accesorios / Marcadas / Personalizadas"
+  control={control}
+  placeholder="0"
+  type="number"
+
+  disabled={!showMotos || !incluirMoto2}
+  rules={{
+    ...reqIf(showMotos && incluirMoto2, "Ingresa el valor de accesorios"),
+    validate: (v) => (!showMotos || !incluirMoto2 ? true : Number(v) >= 0 || "Debe ser un número ≥ 0"),
+    setValueAs: (v) => (v === "" ? "" : Number(v)),
+  }}
+/>
+
                       <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
                         <span className="font-medium text-gray-500">Inicial:</span>
                         <span>{fmt(inicial2)}</span>
