@@ -5,13 +5,12 @@ import GlobalModal from './shared/components/GlobalModal'
 
 const App: React.FC = () => {
   return (
-     <>
-    <Suspense fallback={<div className='w-full h-screen bg-black flex justify-center items-center'><Loader /></div>}>
-      <AppRouter />
-            <GlobalModal />
-
-    </Suspense>
-     </>
+    <>
+      <Suspense fallback={<div className='w-full h-screen bg-black flex justify-center items-center'><Loader /></div>}>
+        <AppRouter />
+        <GlobalModal />
+      </Suspense>
+    </>
   )
 }
 

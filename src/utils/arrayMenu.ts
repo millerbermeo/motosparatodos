@@ -2,6 +2,7 @@
 import type { MenuItem } from "../shared/types/menu";
 
 export const MENU_ESTATICO: MenuItem[] = [
+  
   { nombre: "Dashboard", ruta: "/", icono: "LayoutDashboard", requireModule: "Dashboard", orden: 1 },
   { nombre: "Clientes", ruta: "/clientes", icono: "Users", requireModule: "Clientes", orden: 2 },
   { nombre: "Motocicletas", ruta: "/motocicletas", icono: "Bike", requireModule: "Motocicletas", orden: 3 },

@@ -1,10 +1,10 @@
 import React from 'react'
-import CotizacionesFormulario from '../features/cotizaciones/forms/CotizacionFormulario'
+import TablaCotizaciones from '../features/cotizaciones/TablaCotizaciones'
 
 const Cotizaciones: React.FC = () => {
   return (
    <>
-   <CotizacionesFormulario />
+   <TablaCotizaciones />
    </>
   )
 }

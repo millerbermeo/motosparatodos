@@ -1,8 +1,10 @@
 // src/pages/DetalleCotizacion.tsx
 import React from 'react';
+import { useParams } from 'react-router-dom';
+import { useCotizacionById } from '../../services/cotizacionesServices'; // ajusta ruta si cambia
 
 /* =======================
-   Tipos y datos de ejemplo
+   Tipos (igual que los tuyos)
    ======================= */
 type Cuotas = {
   inicial: number;
@@ -27,9 +29,9 @@ type Motocicleta = {
 };
 
 type Evento = {
-  fecha: string;         // ej: "agosto 14 2025, 1:01 pm"
-  titulo: string;        // ej: "Se crea la cotización"
-  etiqueta?: string;     // ej: "sin estado" | "solicitud de crédito"
+  fecha: string;
+  titulo: string;
+  etiqueta?: string;
   color?: 'primary' | 'secondary' | 'accent' | 'info' | 'success' | 'warning' | 'error';
 };
 
@@ -48,7 +50,9 @@ type Cotizacion = {
   actividad: Evento[];
 };
 
-// 👉 Ejemplo estático (puedes reemplazarlo por props o fetch)
+/* =======================
+   Ejemplo estático (fallback)
+   ======================= */
 const demo: Cotizacion = {
   id: 'COT-2025-00123',
   estado: 'abierta',
@@ -80,24 +84,9 @@ const demo: Cotizacion = {
     },
   },
   actividad: [
-    {
-      fecha: 'agosto 14 2025, 1:06 pm',
-      titulo: 'Se inicia la solicitud de crédito',
-      etiqueta: 'solicitud de crédito',
-      color: 'success',
-    },
-    {
-      fecha: 'agosto 14 2025, 1:01 pm',
-      titulo: 'Primer recordatorio',
-      etiqueta: 'sin estado',
-      color: 'warning',
-    },
-    {
-      fecha: 'agosto 14 2025, 1:01 pm',
-      titulo: 'Se crea la cotización',
-      etiqueta: 'sin estado',
-      color: 'warning',
-    },
+    { fecha: 'agosto 14 2025, 1:06 pm', titulo: 'Se inicia la solicitud de crédito', etiqueta: 'solicitud de crédito', color: 'success' },
+    { fecha: 'agosto 14 2025, 1:01 pm', titulo: 'Primer recordatorio', etiqueta: 'sin estado', color: 'warning' },
+    { fecha: 'agosto 14 2025, 1:01 pm', titulo: 'Se crea la cotización', etiqueta: 'sin estado', color: 'warning' },
   ],
 };
 
@@ -121,16 +110,128 @@ const waUrl = (tel?: string, msg?: string) =>
   tel ? `https://wa.me/57${tel.replace(/\D/g, '')}?text=${encodeURIComponent(msg || 'Hola, sobre tu cotización…')}` : '#';
 
 const renderCuotaTile = (label: string, valor?: number) =>
-  typeof valor === 'number' ? (
-    <StatTile key={label} label={label} value={fmt(valor)} />
-  ) : null;
+  typeof valor === 'number' ? <StatTile key={label} label={label} value={fmt(valor)} /> : null;
 
+// Formatea fecha "YYYY-MM-DD HH:mm:ss" -> "agosto 18 2025, 8:27 pm"
+const fmtFecha = (isoLike?: string) => {
+  if (!isoLike) return '';
+  const parts = isoLike.replace(' ', 'T'); // "2025-08-18T20:27:17"
+  const d = new Date(parts);
+  return d.toLocaleString('es-CO', {
+    month: 'long',
+    day: '2-digit',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+};
+
+// Mapea el JSON del backend -> Cotizacion (lado A por defecto)
+const mapApiToCotizacion = (data: any): Cotizacion => {
+  const nombres = [data.name, data.s_name].filter(Boolean).join(' ').trim() || '—';
+  const apellidos = [data.last_name, data.s_last_name].filter(Boolean).join(' ').trim() || undefined;
+  const email = data.email && data.email !== '0' ? String(data.email) : undefined;
+  const comentario = data.comentario && data.comentario !== '0' ? String(data.comentario) : undefined;
+
+  const modelo = [data.marca_a, data.linea_a].filter(Boolean).join(' ');
+  const precioBase = Number(data.precio_base_a) || 0;
+  const precioDocumentos = Number(data.precio_documentos_a) || 0;
+  const total = Number(data.precio_total_a) || precioBase + precioDocumentos;
+
+  // Si accesorios/seguros llegan como 0/1, aquí no hay valores $, así que los dejamos en 0 monetario
+  const accesorios = 0;
+  const seguros = 0;
+  const garantiaExtendida = 0; // "3 años" no es valor monetario
+
+  const cuotas: Cuotas = {
+    inicial: Number(data.cuota_inicial_a) || 0,
+    meses6: Number(data.cuota_6_a) || undefined,
+    meses12: Number(data.cuota_12_a) || undefined,
+    meses18: Number(data.cuota_18_a) || undefined,
+    meses24: Number(data.cuota_24_a) || undefined,
+    meses30: Number(data.cuota_30_a) || undefined,
+    meses36: Number(data.cuota_36_a) || undefined,
+  };
+
+  const estadoBackend = (data.estado || '').toString().toLowerCase();
+  const estado: Cotizacion['estado'] =
+    estadoBackend.includes('aprob') ? 'aprobada'
+    : estadoBackend.includes('rechaz') ? 'rechazada'
+    : estadoBackend.includes('borr') ? 'borrador'
+    : 'abierta';
+
+  const creadaFmt = fmtFecha(data.fecha_creacion);
+
+  const actividad: Evento[] = [
+    { fecha: fmtFecha(data.fecha_actualizacion), titulo: 'Actualización de cotización', etiqueta: data.estado || 'sin estado', color: 'info' },
+    { fecha: fmtFecha(data.fecha_creacion), titulo: 'Se crea la cotización', etiqueta: data.estado || 'sin estado', color: 'warning' },
+  ];
+
+  return {
+    id: String(data.id ?? ''),
+    estado,
+    creada: creadaFmt,
+    cliente: { nombres, apellidos, email, telefono: undefined, comentario },
+    moto: {
+      modelo: modelo || '—',
+      precioBase,
+      precioDocumentos,
+      descuentos: 0,
+      accesorios,
+      seguros,
+      garantiaExtendida,
+      total,
+      cuotas,
+    },
+    actividad,
+  };
+};
 
 /* =======================
    Componente principal
    ======================= */
 const DetalleCotizacion: React.FC = () => {
-  const q = demo; // cámbialo por props si quieres
+  // 1) tomar id de la URL: /cotizaciones/:id
+  const { id } = useParams<{ id: string }>();
+
+  // 2) pedir al backend usando tu hook
+  const { data, isLoading, error } = useCotizacionById(id);
+
+  // 3) elegir qué mostrar
+  const q: Cotizacion = React.useMemo(() => {
+    const payload = data?.data; // tu backend: { success, data }
+    if (payload) return mapApiToCotizacion(payload);
+    return demo; // fallback mientras no hay data
+  }, [data]);
+
+  if (!id) {
+    return (
+      <main className="w-full min-h-screen flex items-center justify-center">
+        <div className="alert alert-error max-w-lg">
+          <span>Falta el parámetro <code>id</code> en la URL. Debe ser /cotizaciones/:id</span>
+        </div>
+      </main>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <main className="w-full min-h-screen flex items-center justify-center">
+        <span className="loading loading-spinner loading-lg" />
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="w-full min-h-screen flex items-center justify-center">
+        <div className="alert alert-warning max-w-lg">
+          <span>Hubo un problema cargando la cotización #{id}. Mostrando demo.</span>
+        </div>
+        {/* Aún así renderizamos abajo con demo */}
+      </main>
+    );
+  }
 
   return (
     <main className="w-full min-h-screen bg-base-100 px-4 md:px-6 py-6">
@@ -142,7 +243,7 @@ const DetalleCotizacion: React.FC = () => {
             <div className="mt-2 flex items-center gap-2 text-sm">
               <span className={`badge ${badgeEstado(q.estado)}`}>{q.estado}</span>
               <span className="opacity-70">Creada:</span>
-              <span className="font-medium">{q.creada}</span>
+              <span className="font-medium">{q.creada || '—'}</span>
               <span className="opacity-70">| ID:</span>
               <span className="font-mono">{q.id}</span>
             </div>
@@ -161,7 +262,7 @@ const DetalleCotizacion: React.FC = () => {
             >
               <MailIcon className="w-4 h-4" /> Email
             </a>
-            <button className="btn btn-ghost btn-sm">
+            <button className="btn btn-ghost btn-sm" onClick={() => navigator.clipboard?.writeText(window.location.href)}>
               <CopyIcon className="w-4 h-4" /> Copiar link
             </button>
           </div>
@@ -258,7 +359,6 @@ const DetalleCotizacion: React.FC = () => {
           </div>
         </section>
 
-
         {/* Actividad reciente */}
         <section className="card bg-base-100 border border-base-300/60 shadow-sm">
           <div className="card-body">
@@ -273,9 +373,7 @@ const DetalleCotizacion: React.FC = () => {
                   <span className="absolute -start-2 mt-1 w-3 h-3 rounded-full bg-base-300"></span>
                   <div className="flex flex-wrap items-center gap-2 text-sm opacity-70">
                     <span>{ev.fecha}</span>
-                    {ev.etiqueta && (
-                      <span className={`badge badge-${ev.color || 'ghost'} badge-sm`}>{ev.etiqueta}</span>
-                    )}
+                    {ev.etiqueta && <span className={`badge badge-${ev.color || 'ghost'} badge-sm`}>{ev.etiqueta}</span>}
                   </div>
                   <div className="font-medium mt-1">{ev.titulo}</div>
                 </li>
@@ -291,11 +389,7 @@ const DetalleCotizacion: React.FC = () => {
 /* =======================
    Subcomponentes UI
    ======================= */
-const InfoRow: React.FC<{ label: string; value: React.ReactNode; full?: boolean }> = ({
-  label,
-  value,
-  full,
-}) => (
+const InfoRow: React.FC<{ label: string; value: React.ReactNode; full?: boolean }> = ({ label, value, full }) => (
   <div className={full ? 'md:col-span-2' : ''}>
     <div className="text-sm opacity-70">{label}</div>
     <div className="font-medium">{value}</div>
@@ -319,7 +413,11 @@ const StatTile: React.FC<{ label: string; value: string; badge?: string }> = ({ 
     <div className="stat">
       <div className="stat-title">{label}</div>
       <div className="stat-value text-lg">{value}</div>
-      {badge && <div className="stat-desc"><span className="badge badge-ghost">{badge}</span></div>}
+      {badge && (
+        <div className="stat-desc">
+          <span className="badge badge-ghost">{badge}</span>
+        </div>
+      )}
     </div>
   </div>
 );

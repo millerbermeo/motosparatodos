@@ -4,11 +4,12 @@ import { FormSelect, type SelectOption } from "../../../shared/components/FormSe
 import { FormInput } from "../../../shared/components/FormInput";
 import { useCanales, useFinancieras, usePreguntas, useSeguros } from "../../../services/selectsServices";
 import { useMarcas, useMotosPorMarca } from "../../../services/marcasServices";
+import { useCreateCotizaciones } from "../../../services/cotizacionesServices";
+import { useAuthStore } from "../../../store/auth.store";
 
 type MetodoPago = "contado" | "credibike" | "terceros";
 
 type FormValues = {
-    /* existentes */
     metodoPago: MetodoPago;
     canal: string;
     pregunta: string;
@@ -25,31 +26,38 @@ type FormValues = {
     email: string;
     comentario: string;
 
-    /* ——— motos comparadas ——— */
     incluirMoto1: boolean;
     incluirMoto2: boolean;
 
     marca1: string;
     moto1: string;
-    garantia1: "si" | "no" | "";
+    garantia1: string;
     accesorios1: string;
-    seguroId1: string;
+    segurosIds1: string[];     // <— múltiples seguros
     otroSeguro1: string;
-    matricula1: string;
+    precioDocumentos1: string; // <— mapea a precio_documentos_a
     descuento1: string;
     cuotaInicial1: string;
 
     marca2: string;
     moto2: string;
-    garantia2: "si" | "no" | "";
+    garantia2: string;
     accesorios2: string;
-    seguroId2: string;
+    segurosIds2: string[];     // <— múltiples seguros
     otroSeguro2: string;
-    matricula2: string;
+    precioDocumentos2: string; // <— mapea a precio_documentos_b
     descuento2: string;
     cuotaInicial2: string;
 
-    /* ——— otros productos ——— */
+    // cuotas manuales opcionales
+    cuota_6_a?: string; cuota_6_b?: string;
+    cuota_12_a?: string; cuota_12_b?: string;
+    cuota_18_a?: string; cuota_18_b?: string;
+    cuota_24_a?: string; cuota_24_b?: string;
+    cuota_30_a?: string; cuota_30_b?: string;
+    cuota_36_a?: string; cuota_36_b?: string;
+
+    // otros productos (sin cambios)
     producto1Nombre: string;
     producto1Descripcion: string;
     producto1Precio: string;
@@ -59,6 +67,8 @@ type FormValues = {
     producto2Descripcion: string;
     producto2Precio: string;
     producto2CuotaInicial: string;
+    modelo_a: string;
+    modelo_b: string;
 };
 
 const CotizacionFormulario: React.FC = () => {
@@ -93,22 +103,30 @@ const CotizacionFormulario: React.FC = () => {
             marca1: "",
             moto1: "",
             garantia1: "",
-            accesorios1: "",
-            seguroId1: "",
-            otroSeguro1: "",
-            matricula1: "",
-            descuento1: "",
-            cuotaInicial1: "",
+            accesorios1: "0",
+            segurosIds1: [],          // múltiple
+            otroSeguro1: "0",
+            precioDocumentos1: "0",   // mapea a precio_documentos_a
+            descuento1: "0",
+            cuotaInicial1: "0",
 
             marca2: "",
             moto2: "",
             garantia2: "",
-            accesorios2: "",
-            seguroId2: "",
-            otroSeguro2: "",
-            matricula2: "",
-            descuento2: "",
-            cuotaInicial2: "",
+            accesorios2: "0",
+            segurosIds2: [],          // múltiple
+            otroSeguro2: "0",
+            precioDocumentos2: "0",   // mapea a precio_documentos_b
+            descuento2: "0",
+            cuotaInicial2: "0",
+
+            // cuotas opcionales vacías (=> null al enviar)
+            cuota_6_a: "", cuota_6_b: "",
+            cuota_12_a: "", cuota_12_b: "",
+            cuota_18_a: "", cuota_18_b: "",
+            cuota_24_a: "", cuota_24_b: "",
+            cuota_30_a: "", cuota_30_b: "",
+            cuota_36_a: "", cuota_36_b: "",
 
             producto1Nombre: "",
             producto1Descripcion: "",
@@ -119,27 +137,31 @@ const CotizacionFormulario: React.FC = () => {
             producto2Descripcion: "",
             producto2Precio: "0",
             producto2CuotaInicial: "0",
+
+            modelo_a: "",
+            modelo_b: "",
         },
         mode: "onBlur",
+        shouldUnregister: false, // <-- mantiene valores aunque se oculten
+
     });
+
+    const { mutate: cotizacion } = useCreateCotizaciones();
 
     const metodo = watch("metodoPago");
     const incluirMoto1 = watch("incluirMoto1");
     const incluirMoto2 = watch("incluirMoto2");
-
     const categoria = watch("categoria");
     const isMotos = categoria === "motos";
     const isProductos = categoria === "otros";
-
-    // FLAGS DE VISIBILIDAD
     const showProductos = isProductos || metodo === "terceros";
     const showMotos = isMotos && metodo !== "terceros";
 
-    /* selects globales */
+    const name = useAuthStore((s) => s.user?.name); // string | undefined
+
     const { data: canales, isPending: loadingCanales } = useCanales();
     const { data: preguntas, isPending: loadingPregs } = usePreguntas();
     const { data: financieras, isPending: loadingFinancieras } = useFinancieras();
-
     const canalOptions: SelectOption[] = (canales ?? []).map((c: any) => ({ value: c, label: c }));
     const preguntaOptions: SelectOption[] = (preguntas ?? []).map((p: any) => ({ value: p, label: p }));
     const financieraOptions: SelectOption[] = (financieras ?? []).map((f: any) => ({ value: f, label: f }));
@@ -150,11 +172,9 @@ const CotizacionFormulario: React.FC = () => {
     const selectedMarca1 = watch("marca1");
     const selectedMarca2 = watch("marca2");
 
-    // Hook remoto: trae motos de la marca
     const { data: motos1 } = useMotosPorMarca(selectedMarca1 || undefined);
     const { data: motos2 } = useMotosPorMarca(selectedMarca2 || undefined);
 
-    // Options: "Modelo – $precio"
     const motoOptions1: SelectOption[] = (motos1?.motos ?? []).map((m) => ({
         value: m.linea,
         label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP`,
@@ -164,11 +184,9 @@ const CotizacionFormulario: React.FC = () => {
         label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP`,
     }));
 
-    // reset de moto al cambiar marca
     React.useEffect(() => { setValue("moto1", ""); }, [selectedMarca1, setValue]);
     React.useEffect(() => { setValue("moto2", ""); }, [selectedMarca2, setValue]);
 
-    // Busca la moto elegida y devuelve su precio_base
     const precioBase1 = React.useMemo(() => {
         const sel = watch("moto1");
         const m = (motos1?.motos ?? []).find((x) => x.linea === sel);
@@ -181,21 +199,19 @@ const CotizacionFormulario: React.FC = () => {
         return m ? Number(m.precio_base) : 0;
     }, [motos2?.motos, watch("moto2")]);
 
-    /* seguros (lista) */
     const { data: seguros = [], isPending: loadingSeguros } = useSeguros();
 
-    /* limpieza cuando desmarcan una moto */
     React.useEffect(() => {
         if (!incluirMoto1) {
             setValue("marca1", "");
             setValue("moto1", "");
             setValue("garantia1", "");
-            setValue("accesorios1", "");
-            setValue("seguroId1", "");
-            setValue("otroSeguro1", "");
-            setValue("matricula1", "");
-            setValue("descuento1", "");
-            setValue("cuotaInicial1", "");
+            setValue("accesorios1", "0");
+            setValue("segurosIds1", []);
+            setValue("otroSeguro1", "0");
+            setValue("precioDocumentos1", "0");
+            setValue("descuento1", "0");
+            setValue("cuotaInicial1", "0");
         }
     }, [incluirMoto1, setValue]);
 
@@ -204,39 +220,32 @@ const CotizacionFormulario: React.FC = () => {
             setValue("marca2", "");
             setValue("moto2", "");
             setValue("garantia2", "");
-            setValue("accesorios2", "");
-            setValue("seguroId2", "");
-            setValue("otroSeguro2", "");
-            setValue("matricula2", "");
-            setValue("descuento2", "");
-            setValue("cuotaInicial2", "");
+            setValue("accesorios2", "0");
+            setValue("segurosIds2", []);
+            setValue("otroSeguro2", "0");
+            setValue("precioDocumentos2", "0");
+            setValue("descuento2", "0");
+            setValue("cuotaInicial2", "0");
         }
     }, [incluirMoto2, setValue]);
 
-    /* lógica por método */
     React.useEffect(() => {
         if (metodo === "contado") {
             setValue("financiera", "");
             setValue("cuotas", "");
-            setValue("categoria", "motos"); // contado por defecto: motos
+            setValue("categoria", "motos");
         } else if (metodo === "credibike") {
             setValue("financiera", "");
             setValue("cuotas", "");
-            // el usuario elige categoría
         } else if (metodo === "terceros") {
-            // en terceros no usamos 'categoria'; mostramos productos
             setValue("categoria", "");
         }
     }, [metodo, setValue]);
 
-    /* helper: reglas condicionales por inclusión */
     const reqIf = (cond: boolean, msg: string) => ({
         validate: (v: any) => (!cond ? true : (v !== undefined && v !== null && String(v).trim().length > 0) || msg),
     });
 
-
-
-    /* helpers numéricos */
     const N = (v: any) => (isNaN(Number(v)) ? 0 : Number(v));
     const fmt = (n: number) => n.toLocaleString("es-CO") + " COP";
     const findSeguroValor = (id: string) => {
@@ -244,46 +253,24 @@ const CotizacionFormulario: React.FC = () => {
         return s ? Number(s.valor) : 0;
     };
 
-    // limpiadores
     const clearMotos = React.useCallback(() => {
         setValue("incluirMoto1", true);
         setValue("incluirMoto2", false);
 
         setValue("marca1", ""); setValue("moto1", "");
-        setValue("garantia1", ""); setValue("accesorios1", "");
-        setValue("seguroId1", ""); setValue("otroSeguro1", "");
-        setValue("matricula1", ""); setValue("descuento1", "");
-        setValue("cuotaInicial1", "");
+        setValue("garantia1", ""); setValue("accesorios1", "0");
+        setValue("segurosIds1", []); setValue("otroSeguro1", "0");
+        setValue("precioDocumentos1", "0"); setValue("descuento1", "0");
+        setValue("cuotaInicial1", "0");
 
         setValue("marca2", ""); setValue("moto2", "");
-        setValue("garantia2", ""); setValue("accesorios2", "");
-        setValue("seguroId2", ""); setValue("otroSeguro2", "");
-        setValue("matricula2", ""); setValue("descuento2", "");
-        setValue("cuotaInicial2", "");
+        setValue("garantia2", ""); setValue("accesorios2", "0");
+        setValue("segurosIds2", []); setValue("otroSeguro2", "0");
+        setValue("precioDocumentos2", "0"); setValue("descuento2", "0");
+        setValue("cuotaInicial2", "0");
     }, [setValue]);
 
-    const clearProductos = React.useCallback(() => {
-        setValue("producto1Nombre", "");
-        setValue("producto1Descripcion", "");
-        setValue("producto1Precio", "0");
-        setValue("producto1CuotaInicial", "0");
 
-        setValue("producto2Nombre", "");
-        setValue("producto2Descripcion", "");
-        setValue("producto2Precio", "0");
-        setValue("producto2CuotaInicial", "0");
-    }, [setValue]);
-
-    // limpiar según lo visible
-    React.useEffect(() => {
-        if (showMotos) {
-            clearProductos();
-        } else if (showProductos) {
-            clearMotos();
-        }
-    }, [showMotos, showProductos, clearMotos, clearProductos]);
-
-    // efectos extra cuando cambia método
     React.useEffect(() => {
         if (metodo === "terceros") {
             clearMotos();
@@ -293,38 +280,144 @@ const CotizacionFormulario: React.FC = () => {
         }
     }, [metodo, clearMotos, setValue]);
 
-    /* ===== cálculos MOTO 1 ===== */
-    const segSel1 = watch("seguroId1");
+    // ===== cálculos MOTO 1 =====
+    const segurosIds1 = watch("segurosIds1") ?? [];
     const otros1 = N(watch("otroSeguro1"));
-    const accesorios1 = N(watch("accesorios1"));
-    const matricula1 = N(watch("matricula1"));
-    const descuento1 = N(watch("descuento1"));
+    const accesorios1Val = N(watch("accesorios1"));
+    const precioDocumentos1Val = N(watch("precioDocumentos1"));
+    const descuento1Val = N(watch("descuento1"));
     const inicial1 = N(watch("cuotaInicial1"));
-    const totalSeguros1 = (showMotos && incluirMoto1 ? findSeguroValor(segSel1) : 0) + (showMotos && incluirMoto1 ? otros1 : 0);
-    const totalSinSeguros1 = showMotos && incluirMoto1 ? (precioBase1 + accesorios1 + matricula1 - descuento1) : 0;
+    const totalSeguros1 = (showMotos && incluirMoto1)
+        ? (segurosIds1 as string[]).reduce((acc, id) => acc + findSeguroValor(id), 0) + otros1
+        : 0;
+    const totalSinSeguros1 = showMotos && incluirMoto1 ? (precioBase1 + accesorios1Val + precioDocumentos1Val - descuento1Val) : 0;
     const totalConSeguros1 = totalSinSeguros1 + totalSeguros1;
 
-    /* ===== cálculos MOTO 2 ===== */
-    const segSel2 = watch("seguroId2");
+    // ===== cálculos MOTO 2 =====
+    const segurosIds2 = watch("segurosIds2") ?? [];
     const otros2 = N(watch("otroSeguro2"));
-    const accesorios2 = N(watch("accesorios2"));
-    const matricula2 = N(watch("matricula2"));
-    const descuento2 = N(watch("descuento2"));
+    const accesorios2Val = N(watch("accesorios2"));
+    const precioDocumentos2Val = N(watch("precioDocumentos2"));
+    const descuento2Val = N(watch("descuento2"));
     const inicial2 = N(watch("cuotaInicial2"));
-    const totalSeguros2 = (showMotos && incluirMoto2 ? findSeguroValor(segSel2) : 0) + (showMotos && incluirMoto2 ? otros2 : 0);
-    const totalSinSeguros2 = showMotos && incluirMoto2 ? (precioBase2 + accesorios2 + matricula2 - descuento2) : 0;
+    const totalSeguros2 = (showMotos && incluirMoto2)
+        ? (segurosIds2 as string[]).reduce((acc, id) => acc + findSeguroValor(id), 0) + otros2
+        : 0;
+    const totalSinSeguros2 = showMotos && incluirMoto2 ? (precioBase2 + accesorios2Val + precioDocumentos2Val - descuento2Val) : 0;
     const totalConSeguros2 = totalSinSeguros2 + totalSeguros2;
 
+    // toNumberOrNull: convierte "" -> null, otro -> Number
+    const toNumberOrNull = (v: any) => {
+        if (v === undefined || v === null) return null;
+        const n = Number(v);
+        return isNaN(n) || String(v).trim() === "" ? null : n;
+    };
+
     const onSubmit = (data: FormValues) => {
-        console.log("SUBMIT:", data);
+
+
+        if (!data.segundo_nombre || !data.segundo_nombre.trim()) {
+            alert("El segundo nombre es obligatorio (BD: s_name).");
+            return;
+        }
+        if (!data.comentario || !data.comentario.trim()) {
+            alert("El comentario es obligatorio.");
+            return;
+        }
+
+        // Recalcular totales dentro del submit para asegurar últimos valores:
+        const seg1 = (data.segurosIds1 ?? []).reduce((acc, id) => acc + findSeguroValor(String(id)), 0);
+        const seg2 = (data.segurosIds2 ?? []).reduce((acc, id) => acc + findSeguroValor(String(id)), 0);
+
+        const totalSinSeg1 = incluirMoto1 ? (precioBase1 + N(data.accesorios1) + N(data.precioDocumentos1) - N(data.descuento1)) : 0;
+        const totalSinSeg2 = incluirMoto2 ? (precioBase2 + N(data.accesorios2) + N(data.precioDocumentos2) - N(data.descuento2)) : 0;
+
+        const precioTotalA = incluirMoto1 ? (totalSinSeg1 + seg1 + N(data.otroSeguro1)) : 0;
+        const precioTotalB = incluirMoto2 ? (totalSinSeg2 + seg2 + N(data.otroSeguro2)) : 0;
+
+
+
+
+        const tipo_pago = data.metodoPago === "contado" ? "contado" : "financiado";
+
+        // justo antes de construir payload:
+        const lineaA_final = incluirMoto1
+            ? [data.moto1?.trim(), data.modelo_a?.trim()].filter(Boolean).join(" – ")
+            : "";
+
+        const lineaB_final = incluirMoto2
+            ? [data.moto2?.trim(), data.modelo_b?.trim()].filter(Boolean).join(" – ")
+            : null;
+
+
+        const payload: Record<string, any> = {
+            name: data.primer_nombre?.trim(),
+            s_name: data.segundo_nombre?.trim(),
+            last_name: data.primer_apellido?.trim(),
+            s_last_name: data.segundo_apellido?.trim() || null,
+            cedula: data.cedula?.trim(),
+            email: data.email?.trim(),
+            canal_contacto: data.canal,
+            pregunta: data.pregunta,
+
+            // Vehículo A
+            marca_a: incluirMoto1 ? data.marca1 : "",
+            linea_a: lineaA_final,
+            garantia_a: incluirMoto1 ? (data.garantia1 || "") : "",
+            accesorios_a: incluirMoto1 ? N(data.accesorios1) : 0,
+            seguro_vida_a: incluirMoto1 ? (segurosIds1 as string[]).reduce((acc, id) => acc + findSeguroValor(id), 0) : 0,
+            seguro_mascota_s_a: 0,
+            seguro_mascota_a_a: 0,
+            otro_seguro_a: incluirMoto1 ? N(data.otroSeguro1) : 0,
+            precio_base_a: incluirMoto1 ? precioBase1 : 0,
+            precio_documentos_a: incluirMoto1 ? N(data.precioDocumentos1) : 0,
+            precio_total_a: precioTotalA,
+
+            modelo_a: incluirMoto1 ? (data.modelo_a?.trim() || "") : "",
+
+            // Vehículo B
+            marca_b: incluirMoto2 ? data.marca2 : null,
+            linea_b: lineaB_final,
+            garantia_b: incluirMoto2 ? (data.garantia2 || "") : null,
+            accesorios_b: incluirMoto2 ? N(data.accesorios2) : null,
+            seguro_vida_b: incluirMoto2 ? (segurosIds2 as string[]).reduce((acc, id) => acc + findSeguroValor(id), 0) : null,
+            seguro_mascota_s_b: incluirMoto2 ? 0 : null,
+            seguro_mascota_a_b: incluirMoto2 ? 0 : null,
+            otro_seguro_b: incluirMoto2 ? N(data.otroSeguro2) : null,
+            precio_base_b: incluirMoto2 ? precioBase2 : null,
+            precio_documentos_b: incluirMoto2 ? N(data.precioDocumentos2) : null,
+            precio_total_b: incluirMoto2 ? precioTotalB : null,  // <-- AJUSTE
+            modelo_b: incluirMoto2 ? (data.modelo_b?.trim() || "") : null,
+
+            // Pago / financiación
+            tipo_pago,
+            cuota_inicial_a: incluirMoto1 ? inicial1 : null,
+            cuota_inicial_b: incluirMoto2 ? inicial2 : null,
+            financiera: tipo_pago === "financiado" ? (data.financiera || null) : null,
+            cant_cuotas: tipo_pago === "financiado" ? (data.cuotas ? Number(data.cuotas) : null) : null,
+
+            // Cuotas manuales (opcionales)
+            cuota_6_a: toNumberOrNull(data.cuota_6_a), cuota_6_b: toNumberOrNull(data.cuota_6_b),
+            cuota_12_a: toNumberOrNull(data.cuota_12_a), cuota_12_b: toNumberOrNull(data.cuota_12_b),
+            cuota_18_a: toNumberOrNull(data.cuota_18_a), cuota_18_b: toNumberOrNull(data.cuota_18_b),
+            cuota_24_a: toNumberOrNull(data.cuota_24_a), cuota_24_b: toNumberOrNull(data.cuota_24_b),
+            cuota_30_a: toNumberOrNull(data.cuota_30_a), cuota_30_b: toNumberOrNull(data.cuota_30_b),
+            cuota_36_a: toNumberOrNull(data.cuota_36_a), cuota_36_b: toNumberOrNull(data.cuota_36_b),
+
+            comentario: data.comentario?.trim(),
+
+            asesor: name
+        };
+
+        console.log("SUBMIT (payload EXACTO BD):", payload);
+        cotizacion(payload);
     };
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <h2 className="text-lg font-semibold">Método de pago</h2>
 
-            {/* Radios manuales */}
-            <div className="flex  gap-6  flex-col w-full bg-white p-3 rounded-xl">
+            <div className="flex gap-6 flex-col w-full bg-white p-3 rounded-xl">
                 <div className="flex items-center justify-between gap-6 w-full">
                     <label className="label cursor-pointer gap-2 w-full">
                         <input type="radio" value="contado" className="radio radio-success" {...register("metodoPago", { required: true })} />
@@ -342,7 +435,6 @@ const CotizacionFormulario: React.FC = () => {
 
                 {errors.metodoPago && <p className="text-sm text-error">Selecciona una opción.</p>}
 
-                {/* Bloque de selects/inputs (mismo layout y estilos) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 w-full gap-6">
                     <FormSelect<FormValues>
                         name="canal"
@@ -351,7 +443,7 @@ const CotizacionFormulario: React.FC = () => {
                         options={canalOptions}
                         placeholder={loadingCanales ? "Cargando canales..." : "Seleccione un canal"}
                         disabled={loadingCanales}
-                        rules={{ required: "El campo canal es obligatorio." }}
+                        rules={{ required: "El canal de contacto es obligatorio." }}
                     />
                     <FormSelect<FormValues>
                         name="pregunta"
@@ -363,7 +455,7 @@ const CotizacionFormulario: React.FC = () => {
                         rules={{ required: "Este campo es obligatorio." }}
                     />
 
-                    {metodo === "terceros" && (
+                    {(metodo === "credibike" || metodo === "terceros") && (
                         <>
                             <FormSelect<FormValues>
                                 name="financiera"
@@ -372,7 +464,7 @@ const CotizacionFormulario: React.FC = () => {
                                 options={financieraOptions}
                                 placeholder={loadingFinancieras ? "Cargando financieras..." : "Seleccione..."}
                                 disabled={loadingFinancieras}
-                                rules={{ required: "La financiera es obligatoria." }}
+                                rules={{ required: "La financiera es obligatoria cuando es financiado." }}
                             />
                             <FormInput<FormValues>
                                 name="cuotas"
@@ -380,14 +472,13 @@ const CotizacionFormulario: React.FC = () => {
                                 type="number"
                                 control={control}
                                 placeholder="cuotas"
-                                rules={{ required: "La cantidad de cuotas es obligatoria.", validate: (v) => Number(v) > 0 || "Debe ser > 0" }}
+                                rules={{ required: "La cantidad de cuotas es obligatoria cuando es financiado.", validate: (v) => Number(v) > 0 || "Debe ser > 0" }}
                             />
                         </>
                     )}
                 </div>
             </div>
 
-            {/* Segundo grupo de radios (Categoría): SOLO 'credibike' */}
             {metodo === "credibike" && (
                 <div className="flex gap-10 bg-white p-3 rounded-xl justify-center">
                     <label className="label cursor-pointer gap-2">
@@ -402,8 +493,8 @@ const CotizacionFormulario: React.FC = () => {
             )}
             {metodo === "credibike" && errors.categoria && <p className="text-sm text-error">Selecciona una categoría.</p>}
 
-            {/* ================== DATOS DEL CLIENTE (SIEMPRE VISIBLES) ================== */}
-            <div className="flex  gap-6 flex-col w-full bg-white p-3 rounded-xl">
+            {/* DATOS PERSONALES */}
+            <div className="flex gap-6 flex-col w-full bg-white p-3 rounded-xl">
                 <div className="badge text-xl badge-success text-white">Datos Personales</div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -413,7 +504,8 @@ const CotizacionFormulario: React.FC = () => {
                         rules={{ required: "La fecha de nacimiento es obligatoria." }} />
                     <FormInput<FormValues> name="primer_nombre" label="Primer nombre" control={control}
                         rules={{ required: "El primer nombre es obligatorio." }} />
-                    <FormInput<FormValues> name="segundo_nombre" label="Segundo nombre" control={control} />
+                    <FormInput<FormValues> name="segundo_nombre" label="Segundo nombre" control={control}
+                        rules={{ required: "El segundo nombre es obligatorio (BD)." }} />
                     <FormInput<FormValues> name="primer_apellido" label="Primer apellido" control={control}
                         rules={{ required: "El primer apellido es obligatorio." }} />
                     <FormInput<FormValues> name="segundo_apellido" label="Segundo apellido" control={control} />
@@ -423,14 +515,14 @@ const CotizacionFormulario: React.FC = () => {
                         rules={{ required: "El email es obligatorio.", pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Email inválido" } }} />
                 </div>
 
-                {/* ========= MOTOS ========= */}
+                {/* MOTOS */}
                 {showMotos && (
                     <>
                         <div className="badge text-xl badge-success text-white">Datos Motocicletas</div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* ======= MOTO 1 ======= */}
-                            <div className="bg-white  rounded-xl">
+                            {/* MOTO 1 */}
+                            <div className="bg-white rounded-xl">
                                 <div className="flex items-center gap-2 mb-2">
                                     <input type="checkbox" className="checkbox checkbox-success text-white" {...register("incluirMoto1")} />
                                     <span className="label-text font-semibold">Incluir Motocicleta 1</span>
@@ -451,71 +543,93 @@ const CotizacionFormulario: React.FC = () => {
                                         rules={reqIf(showMotos && incluirMoto1, "La moto es obligatoria")}
                                     />
 
-                                    <FormSelect<FormValues>
-                                        name="garantia1" label="Garantía extendida" control={control}
-                                        options={[{ value: "si", label: "Sí" }, { value: "no", label: "No" }]}
-                                        placeholder="Seleccione..." disabled={!showMotos || !incluirMoto1}
-                                        rules={reqIf(showMotos && incluirMoto1, "Este campo es obligatorio")}
-                                    />
                                     <FormInput<FormValues>
-                                        name="accesorios1" label="Accesorios / Marcadas / Personalizadas" control={control}
-                                        placeholder="0 COP" disabled={!showMotos || !incluirMoto1}
-                                        rules={reqIf(showMotos && incluirMoto1, "Ingresa el valor de accesorios")}
+                                        name="modelo_a"
+                                        label="Modelo año"
+                                        control={control}
+                                        placeholder="Ej. 2025 / Edición especial"
+                                        disabled={!showMotos || !incluirMoto1}
                                     />
 
-                                    {/* Seguros (lista de radios) */}
+
+                                    <FormInput<FormValues>
+                                        name="garantia1"
+                                        label="Garantía (ej. 3 años)"
+                                        control={control}
+                                        placeholder="3 años"
+                                        rules={reqIf(showMotos && incluirMoto1, "La garantía es obligatoria")}
+                                    />
+
+                                    <FormInput<FormValues>
+                                        name="accesorios1"
+                                        label="Accesorios (entero)"
+                                        control={control}
+                                        placeholder="0"
+                                        type="number"
+                                        disabled={!showMotos || !incluirMoto1}
+                                        rules={{
+                                            ...reqIf(showMotos && incluirMoto1, "Ingresa accesorios"),
+                                            validate: (v) => (!showMotos || !incluirMoto1 ? true : Number.isInteger(Number(v)) && Number(v) >= 0 || "Ingrese un entero ≥ 0"),
+                                            setValueAs: (v) => (v === "" ? "" : Number(v)),
+                                        }}
+                                    />
+
+                                    {/* SEGUROS MULTI */}
                                     <div className="p-3 rounded-md bg-[#3498DB] text-white">
-                                        <p className="font-semibold mb-2">Elige los seguros de la cotización</p>
+                                        <p className="font-semibold mb-2">Selecciona uno o varios seguros</p>
                                         <div className="flex flex-col gap-2">
                                             {loadingSeguros && <span>Cargando seguros...</span>}
                                             {!loadingSeguros && seguros.map((s: any) => (
                                                 <label key={`m1-${s.id}`} className="flex items-center gap-2">
-                                                    <input type="radio" value={String(s.id)} className="radio radio-neutral"
-                                                        {...register("seguroId1", reqIf(showMotos && incluirMoto1, "Selecciona un seguro o ingresa 'Otros seguros'"))}
-                                                        disabled={!showMotos || !incluirMoto1} />
-                                                    <span>{s.nombre} - {s.tipo} - {Number(s.valor).toLocaleString("es-CO")} COP</span>
+                                                    <input
+                                                        type="checkbox"
+                                                        value={String(s.id)}
+                                                        className="checkbox checkbox-sm"
+                                                        {...register("segurosIds1")}
+                                                        disabled={!showMotos || !incluirMoto1}
+                                                    />
+                                                    <span>{s.nombre} – {Number(s.valor).toLocaleString("es-CO")} COP</span>
                                                 </label>
                                             ))}
                                         </div>
                                         <div className="mt-2">
                                             <FormInput<FormValues>
-                                                name="otroSeguro1" label="Otros seguros" control={control}
-                                                placeholder="0 COP" disabled={!showMotos || !incluirMoto1}
+                                                name="otroSeguro1" label="Otros seguros (monto adicional)" control={control}
+                                                placeholder="0" type="number" disabled={!showMotos || !incluirMoto1}
+                                                rules={{ setValueAs: (v) => (v === "" ? "" : Number(v)) }}
                                             />
                                         </div>
                                     </div>
 
-                                    {/* Cuota inicial + partidas para cálculo */}
                                     <FormInput<FormValues>
-                                        name="cuotaInicial1" label="Cuota inicial" control={control} type="number" placeholder="0 COP"
+                                        name="cuotaInicial1" label="Cuota inicial" control={control} type="number" 
                                         rules={reqIf(showMotos && incluirMoto1, "Ingresa la cuota inicial")} disabled={!showMotos || !incluirMoto1} />
-                                    <FormInput<FormValues> name="matricula1" label="Matrícula y SOAT" control={control} type="number" placeholder="0 COP" disabled={!showMotos || !incluirMoto1} />
-                                    <FormInput<FormValues> name="descuento1" label="Descuentos" control={control} type="number" placeholder="0 COP" disabled={!showMotos || !incluirMoto1} />
 
-                                    {/* Resumen */}
+                                    {/* CAMBIO DE NOMBRE */}
+                                    <FormInput<FormValues>
+                                        name="precioDocumentos1" label="Precio documentos / matrícula y SOAT" control={control} type="number" 
+                                        disabled={!showMotos || !incluirMoto1}
+                                        rules={reqIf(showMotos && incluirMoto1, "El precio es obligatoria")}
+
+                                    />
+                                    <FormInput<FormValues> name="descuento1" label="Descuentos" control={control} type="number" disabled={!showMotos || !incluirMoto1} />
+
+                                    {/* RESUMEN */}
                                     <div className="bg-base-100 shadow-lg rounded-xl p-6 border border-base-300">
-                                        <h3 className="text-lg font-bold mb-4 text-success flex items-center gap-2">
-                                            <span className="inline-flex w-2 h-2 rounded-full bg-success"></span>
-                                            Resumen de costos
-                                        </h3>
-
-                                        <div className="flex justify-between items-center bg-success/10 text-success px-4 py-2 rounded-lg mb-4">
-                                            <span className="font-semibold">Valor total de seguros:</span>
-                                            <span className="font-bold">{fmt(totalSeguros1)}</span>
-                                        </div>
+                                        <h3 className="text-lg font-bold mb-4 text-success">Resumen de costos</h3>
 
                                         <div className="grid grid-cols-1 gap-2 mb-4">
                                             <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                <span className="font-medium text-gray-500">Matrícula y SOAT:</span>
-                                                <span>{fmt(matricula1)}</span>
+                                                <span className="font-medium text-gray-500">Precio documentos:</span>
+                                                <span>{fmt(precioDocumentos1Val)}</span>
                                             </div>
                                             <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
                                                 <span className="font-medium text-gray-500">Descuentos:</span>
-                                                <span className="text-error font-semibold">-{fmt(descuento1)}</span>
+                                                <span className="text-error font-semibold">-{fmt(descuento1Val)}</span>
                                             </div>
                                             <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                <span className="font-medium text-gray-500">Accesorios / Marcadas / Personalizadas:</span>
-                                                <span>{fmt(accesorios1)}</span>
+                                                <span className="font-medium text-gray-500">Accesorios (entero):</span>
+                                                <span>{N(watch("accesorios1"))}</span>
                                             </div>
                                             <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
                                                 <span className="font-medium text-gray-500">Inicial:</span>
@@ -537,7 +651,7 @@ const CotizacionFormulario: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* ======= MOTO 2 ======= */}
+                            {/* MOTO 2 */}
                             <div className="bg-white rounded-xl">
                                 <div className="flex items-center gap-2 mb-2">
                                     <input type="checkbox" className="checkbox checkbox-success text-white" {...register("incluirMoto2")} />
@@ -559,95 +673,88 @@ const CotizacionFormulario: React.FC = () => {
                                         rules={reqIf(showMotos && incluirMoto2, "La moto es obligatoria")}
                                     />
 
-                                    <FormSelect<FormValues>
-                                        name="garantia2" label="Garantía extendida" control={control}
-                                        options={[{ value: "si", label: "Sí" }, { value: "no", label: "No" }]}
-                                        placeholder="Seleccione..." disabled={!showMotos || !incluirMoto2}
-                                        rules={reqIf(showMotos && incluirMoto2, "Este campo es obligatorio")}
-                                    />
                                     <FormInput<FormValues>
-                                        name="accesorios1"
-                                        label="Accesorios / Marcadas / Personalizadas"
+                                        name="modelo_b"
+                                        label="Modelo año"
+                                        control={control}
+                                        placeholder="Ej. 2025 / Edición especial"
+                                        disabled={!showMotos || !incluirMoto2}
+                                    />
+
+
+                                    <FormInput<FormValues>
+                                        name="garantia2"
+                                        label="Garantía (ej. 2 años)"
+                                        control={control}
+                                        placeholder="2 años"
+                                        rules={reqIf(showMotos && incluirMoto2, "La garantía es obligatoria")}
+                                    />
+
+                                    <FormInput<FormValues>
+                                        name="accesorios2"
+                                        label="Accesorios (entero)"
                                         control={control}
                                         placeholder="0"
                                         type="number"
-
-
-                                        disabled={!showMotos || !incluirMoto1}
+                                        disabled={!showMotos || !incluirMoto2}
                                         rules={{
-                                            ...reqIf(showMotos && incluirMoto1, "Ingresa el valor de accesorios"),
-                                            validate: (v) => (!showMotos || !incluirMoto1 ? true : Number(v) >= 0 || "Debe ser un número ≥ 0"),
-                                            // Convierte a número para que los cálculos sumen correctamente
+                                            ...reqIf(showMotos && incluirMoto2, "Ingresa accesorios"),
+                                            validate: (v) => (!showMotos || !incluirMoto2 ? true : Number.isInteger(Number(v)) && Number(v) >= 0 || "Ingrese un entero ≥ 0"),
                                             setValueAs: (v) => (v === "" ? "" : Number(v)),
                                         }}
                                     />
 
-
-                                    {/* Seguros (lista de radios) */}
+                                    {/* SEGUROS MULTI */}
                                     <div className="p-3 rounded-md bg-[#3498DB] text-white">
-                                        <p className="font-semibold mb-2">Elige los seguros de la cotización</p>
+                                        <p className="font-semibold mb-2">Selecciona uno o varios seguros</p>
                                         <div className="flex flex-col gap-2">
                                             {loadingSeguros && <span>Cargando seguros...</span>}
                                             {!loadingSeguros && seguros.map((s: any) => (
                                                 <label key={`m2-${s.id}`} className="flex items-center gap-2">
-                                                    <input type="radio" value={String(s.id)} className="radio radio-neutral"
-                                                        {...register("seguroId2", reqIf(showMotos && incluirMoto2, "Selecciona un seguro o ingresa 'Otros seguros'"))}
-                                                        disabled={!showMotos || !incluirMoto2} />
-                                                    <span>{s.nombre} - {s.tipo} - {Number(s.valor).toLocaleString("es-CO")} COP</span>
+                                                    <input
+                                                        type="checkbox"
+                                                        value={String(s.id)}
+                                                        className="checkbox checkbox-sm"
+                                                        {...register("segurosIds2")}
+                                                        disabled={!showMotos || !incluirMoto2}
+                                                    />
+                                                    <span>{s.nombre} – {Number(s.valor).toLocaleString("es-CO")} COP</span>
                                                 </label>
                                             ))}
                                         </div>
                                         <div className="mt-2">
                                             <FormInput<FormValues>
-                                                name="otroSeguro2" label="Otros seguros" control={control}
-                                                placeholder="0 COP" disabled={!showMotos || !incluirMoto2}
+                                                name="otroSeguro2" label="Otros seguros (monto adicional)" control={control}
+                                                placeholder="0" type="number" disabled={!showMotos || !incluirMoto2}
+                                                rules={{ setValueAs: (v) => (v === "" ? "" : Number(v)) }}
                                             />
                                         </div>
                                     </div>
 
-                                    {/* Cuota inicial + partidas para cálculo */}
                                     <FormInput<FormValues>
-                                        name="cuotaInicial2" label="Cuota inicial" control={control} type="number" placeholder="0 COP"
+                                        name="cuotaInicial2" label="Cuota inicial" control={control} type="number" placeholder="0"
                                         rules={reqIf(showMotos && incluirMoto2, "Ingresa la cuota inicial")} disabled={!showMotos || !incluirMoto2} />
-                                    <FormInput<FormValues> name="matricula2" label="Matrícula y SOAT" control={control} type="number" placeholder="0 COP" disabled={!showMotos || !incluirMoto2} />
-                                    <FormInput<FormValues> name="descuento2" label="Descuentos" control={control} type="number" placeholder="0 COP" disabled={!showMotos || !incluirMoto2} />
+                                    {/* CAMBIO DE NOMBRE */}
+                                    <FormInput<FormValues> rules={reqIf(showMotos && incluirMoto1, "El precio es obligatoria")}
+                                        name="precioDocumentos2" label="Precio documentos / matrícula y SOAT" control={control} type="number"  disabled={!showMotos || !incluirMoto2} />
+                                    <FormInput<FormValues> name="descuento2" label="Descuentos" control={control} type="number"  disabled={!showMotos || !incluirMoto2} />
 
-                                    {/* Resumen */}
                                     <div className="bg-base-100 shadow-lg rounded-xl p-6 border border-base-300">
-                                        <h3 className="text-lg font-bold mb-4 text-success flex items-center gap-2">
-                                            <span className="inline-flex w-2 h-2 rounded-full bg-success"></span>
-                                            Resumen de costos
-                                        </h3>
-
-                                        <div className="flex justify-between items-center bg-success/10 text-success px-4 py-2 rounded-lg mb-4">
-                                            <span className="font-semibold">Valor total de seguros:</span>
-                                            <span className="font-bold">{fmt(totalSeguros2)}</span>
-                                        </div>
+                                        <h3 className="text-lg font-bold mb-4 text-success">Resumen de costos</h3>
 
                                         <div className="grid grid-cols-1 gap-2 mb-4">
                                             <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                <span className="font-medium text-gray-500">Matrícula y SOAT:</span>
-                                                <span>{fmt(matricula2)}</span>
+                                                <span className="font-medium text-gray-500">Precio documentos:</span>
+                                                <span>{fmt(precioDocumentos2Val)}</span>
                                             </div>
                                             <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
                                                 <span className="font-medium text-gray-500">Descuentos:</span>
-                                                <span className="text-error font-semibold">-{fmt(descuento2)}</span>
+                                                <span className="text-error font-semibold">-{fmt(descuento2Val)}</span>
                                             </div>
-                                            <FormInput<FormValues>
-                                                name="accesorios2"
-                                                label="Accesorios / Marcadas / Personalizadas"
-                                                control={control}
-                                                placeholder="0"
-                                                type="number"
-
-                                                disabled={!showMotos || !incluirMoto2}
-                                                rules={{
-                                                    ...reqIf(showMotos && incluirMoto2, "Ingresa el valor de accesorios"),
-                                                    validate: (v) => (!showMotos || !incluirMoto2 ? true : Number(v) >= 0 || "Debe ser un número ≥ 0"),
-                                                    setValueAs: (v) => (v === "" ? "" : Number(v)),
-                                                }}
-                                            />
-
+                                            <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
+                                                <span className="font-medium text-gray-500">Accesorios (entero):</span>
+                                                <span>{N(watch("accesorios2"))}</span>
+                                            </div>
                                             <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
                                                 <span className="font-medium text-gray-500">Inicial:</span>
                                                 <span>{fmt(inicial2)}</span>
@@ -668,128 +775,92 @@ const CotizacionFormulario: React.FC = () => {
                                 </div>
                             </div>
                         </div>
+
+
                     </>
                 )}
 
-                {/* ========= OTROS PRODUCTOS ========= */}
-                {showProductos && (
-                    <div className="flex  gap-6 flex-col w-full bg-white p-3 rounded-xl">
-                        <div className="badge text-xl badge-success text-white">Otros productos</div>
 
+
+
+                {metodo === "terceros" && (
+                    <div className="flex gap-6 flex-col w-full bg-white p-3 rounded-xl">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormInput<FormValues> name="cuota_6_a" label="Cuota 6 meses A" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> name="cuota_6_b" label="Cuota 6 meses B" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> name="cuota_12_a" label="Cuota 12 meses A" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> name="cuota_12_b" label="Cuota 12 meses B" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> name="cuota_18_a" label="Cuota 18 meses A" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> name="cuota_18_b" label="Cuota 18 meses B" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> name="cuota_24_a" label="Cuota 24 meses A" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> name="cuota_24_b" label="Cuota 24 meses B" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> name="cuota_30_a" label="Cuota 30 meses A" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> name="cuota_30_b" label="Cuota 30 meses B" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> name="cuota_36_a" label="Cuota 36 meses A" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> name="cuota_36_b" label="Cuota 36 meses B" type="number" control={control} placeholder="Opcional" />
+                        </div>
+                    </div>
+                )}
+
+                {/* OTROS PRODUCTOS (igual que antes) */}
+                {showProductos && (
+                    <div className="flex gap-6 flex-col w-full bg-white p-3 rounded-xl">
+                        <div className="badge text-xl badge-success text-white">Otros productos</div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* ===== Producto 1 ===== */}
                             <div className="grid grid-cols-1 gap-4">
                                 <FormInput<FormValues>
                                     name="producto1Nombre"
                                     label="Producto 1 *"
                                     control={control}
                                     placeholder="Producto"
-                                    rules={reqIf(true, "El nombre del producto es obligatorio.")}
                                 />
-
-                                {/* Descripción 1 */}
                                 <div className="form-control w-full">
-                                    <label className="label">
-                                        <span className="label-text">Descripción *</span>
-                                    </label>
+                                    <label className="label"><span className="label-text">Descripción *</span></label>
                                     <textarea
                                         className="textarea textarea-bordered w-full"
                                         placeholder="Descripción"
                                         {...register("producto1Descripcion", {
-                                            validate: (v) => (showProductos ? (v && v.trim().length > 0) : true) || "La descripción es obligatoria.",
+
                                             maxLength: { value: 500, message: "Máximo 500 caracteres" },
                                         })}
                                     />
-                                    {errors.producto1Descripcion && (
-                                        <p className="text-sm text-error">
-                                            {String(errors.producto1Descripcion.message)}
-                                        </p>
-                                    )}
+                                    {errors.producto1Descripcion && <p className="text-sm text-error">{String(errors.producto1Descripcion.message)}</p>}
                                 </div>
-
-                                <FormInput<FormValues>
-                                    name="producto1Precio"
-                                    label="Precio *"
-                                    type="number"
-                                    control={control}
-                                    placeholder="0 COP"
-                                    rules={{
-                                        validate: (v) => (!showProductos ? true : Number(v) > 0) || "Debe ser mayor a 0",
-                                    }}
+                                <FormInput<FormValues> name="producto1Precio" label="Precio *" type="number" control={control} placeholder="0 COP"
                                 />
-
-                                <FormInput<FormValues>
-                                    name="producto1CuotaInicial"
-                                    label="Cuota inicial"
-                                    type="number"
-                                    control={control}
-                                    placeholder="0 COP"
-                                />
+                                <FormInput<FormValues> name="producto1CuotaInicial" label="Cuota inicial" type="number" control={control} placeholder="0 COP" />
                             </div>
 
-                            {/* ===== Producto 2 ===== */}
                             <div className="grid grid-cols-1 gap-4">
-                                <FormInput<FormValues>
-                                    name="producto2Nombre"
-                                    label="Producto 2 *"
-                                    control={control}
-                                    placeholder="Producto"
-                                    rules={reqIf(true, "El nombre del producto es obligatorio.")}
-                                />
-
-                                {/* Descripción 2 */}
+                                <FormInput<FormValues> name="producto2Nombre" label="Producto 2 *" control={control} placeholder="Producto"
+                                    rules={reqIf(true, "El nombre del producto es obligatorio.")} />
                                 <div className="form-control w-full">
-                                    <label className="label">
-                                        <span className="label-text">Descripción *</span>
-                                    </label>
+                                    <label className="label"><span className="label-text">Descripción *</span></label>
                                     <textarea
                                         className="textarea textarea-bordered w-full"
                                         placeholder="Descripción"
                                         {...register("producto2Descripcion", {
-                                            validate: (v) => (showProductos ? (v && v.trim().length > 0) : true) || "La descripción es obligatoria.",
                                             maxLength: { value: 500, message: "Máximo 500 caracteres" },
                                         })}
                                     />
-                                    {errors.producto2Descripcion && (
-                                        <p className="text-sm text-error">
-                                            {String(errors.producto2Descripcion.message)}
-                                        </p>
-                                    )}
+                                    {errors.producto2Descripcion && <p className="text-sm text-error">{String(errors.producto2Descripcion.message)}</p>}
                                 </div>
-
-                                <FormInput<FormValues>
-                                    name="producto2Precio"
-                                    label="Precio *"
-                                    type="number"
-                                    control={control}
-                                    placeholder="0 COP"
-                                    rules={{
-                                        validate: (v) => (!showProductos ? true : Number(v) > 0) || "Debe ser mayor a 0",
-                                    }}
+                                <FormInput<FormValues> name="producto2Precio" label="Precio *" type="number" control={control} placeholder="0 COP"
                                 />
-
-                                <FormInput<FormValues>
-                                    name="producto2CuotaInicial"
-                                    label="Cuota inicial"
-                                    type="number"
-                                    control={control}
-                                    placeholder="0 COP"
-                                />
+                                <FormInput<FormValues> name="producto2CuotaInicial" label="Cuota inicial" type="number" control={control} placeholder="0 COP" />
                             </div>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* ================== COMENTARIO ================== */}
+            {/* COMENTARIO */}
             <div className="form-control w-full">
-                <label className="label">
-                    <span className="label-text">Comentario</span>
-                </label>
+                <label className="label"><span className="label-text">Comentario *</span></label>
                 <textarea
                     className="textarea textarea-bordered w-full"
                     placeholder="Escribe un comentario..."
-                    {...register("comentario", { maxLength: { value: 500, message: "Máximo 500 caracteres" } })}
+                    {...register("comentario", { required: "El comentario es obligatorio.", maxLength: { value: 500, message: "Máximo 500 caracteres" } })}
                 />
                 {errors.comentario && <p className="text-sm text-error">{String(errors.comentario.message)}</p>}
             </div>
