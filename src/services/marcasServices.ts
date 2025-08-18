@@ -129,3 +129,72 @@ export const useDeleteMarca = () => {
     },
   });
 };
+
+
+
+export interface Moto {
+  linea: string;
+  precio_base: number;
+  soat: number;
+  matricula_contado: number;
+  matricula_credito: number;
+  impuestos: number;
+}
+
+export interface FiltroMarcaResponseRaw {
+  success: boolean;
+  marca: string;
+  count: number | string;
+  motos: Array<{
+    linea: string;
+    precio_base: string | number;
+    soat: string | number;
+    matricula_contado: string | number;
+    matricula_credito: string | number;
+    impuestos: string | number;
+  }>;
+}
+
+export interface FiltroMarcaResponse {
+  success: boolean;
+  marca: string;
+  count: number;
+  motos: Moto[];
+}
+
+/**
+ * Hook para obtener las motos de una marca específica.
+ * Usa GET /filter_marca.php?marca=<nombre>
+ */
+export const useMotosPorMarca = (marca: string | undefined) => {
+  return useQuery<FiltroMarcaResponse>({
+    queryKey: ["motos-por-marca", marca],
+    enabled: !!marca && marca.trim().length > 0,
+    queryFn: async () => {
+      // Mejor pasar params que armar el querystring a mano
+      const { data } = await api.get<FiltroMarcaResponseRaw>("/filter_marca.php", {
+        params: { marca },
+      });
+
+      // Normalizamos números porque el backend los devuelve como string
+      const normalizeNumber = (v: string | number) =>
+        typeof v === "number" ? v : Number(v ?? 0);
+
+      return {
+        success: data.success,
+        marca: data.marca,
+        count: normalizeNumber(data.count),
+        motos: (data.motos ?? []).map((m) => ({
+          linea: m.linea,
+          precio_base: normalizeNumber(m.precio_base),
+          soat: normalizeNumber(m.soat),
+          matricula_contado: normalizeNumber(m.matricula_contado),
+          matricula_credito: normalizeNumber(m.matricula_credito),
+          impuestos: normalizeNumber(m.impuestos),
+        })),
+      };
+    },
+    // mantiene los datos previos mientras cambias la marca
+    placeholderData: (prev) => prev,
+  });
+};
