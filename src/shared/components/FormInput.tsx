@@ -41,15 +41,15 @@ export function FormInput<T extends FieldValues>({
           <div
             className={[
               "relative bg-base-200 rounded-lg shadow-sm",
-              "focus-within:ring-2 focus-within:ring-primary/40",
+              "focus-within:ring-2 focus-within:ring-neutral-content",
               "transition-[box-shadow,ring] duration-150",
-              disabled ? "opacity-60" : "",
+              disabled ? "opacity-90" : "",
               className,
             ].join(" ")}
           >
             <label
               htmlFor={id}
-              className="absolute left-3 top-2 text-xs text-base-content/60 pointer-events-none select-none"
+              className="absolute left-3 top-2 text-xs text-base-content pointer-events-none select-none"
             >
               {label}
               {rules?.required ? <span className="text-error"> *</span> : null}

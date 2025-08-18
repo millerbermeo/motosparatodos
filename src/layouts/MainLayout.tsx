@@ -32,7 +32,7 @@ const MainLayout: React.FC = () => {
 
       {/* Contenedor principal */}
       <div
-        className={`flex-1 min-h-dvh bg-gray-50 transition-all duration-300
+        className={`flex-1 min-h-dvh bg-[#F5F5F5] transition-all duration-300
         ${isOpen ? "lg:ml-64" : "ml-0"} 
         min-w-0`}  // 👈 clave: permite que el contenido NO fuerce ancho extra
       >
