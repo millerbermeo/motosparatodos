@@ -168,7 +168,7 @@ const InfoPersonalFormulario: React.FC = () => {
    const [idCot, idDeudor] = id.split("-").map(Number);
    
 
-console.log(idCot, idDeudor);
+console.log(id);
 
     // hooks siempre arriba
     const { data } = useDeudor(idDeudor);

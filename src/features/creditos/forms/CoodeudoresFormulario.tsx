@@ -9,6 +9,10 @@ import {
   useCodeudoresByDeudor,
 } from "../../../services/creditosServices";
 
+// + añade:
+import { useParams } from "react-router-dom";
+
+
 /* ========================= Tipos del form ========================= */
 type Coodeudor = {
   // personales
@@ -197,7 +201,10 @@ const prune = (obj: any): any => {
 };
 
 /* ========================= Mapeos form ⇄ backend ========================= */
-const toBackendPayload = (c: Coodeudor, deudorId?: number) => {
+// antes: const toBackendPayload = (c: Coodeudor, deudorId?: number) => {
+const toBackendPayload = (c: Coodeudor, deudorId?: number, codeudorId?: number) => {
+
+    console.log("ids",deudorId, codeudorId)
   const personas_a_cargo = c.personasACargo === "" ? undefined : Number(c.personasACargo);
   const costo_arriendo_in = c.costoArriendo === "" ? undefined : Number(c.costoArriendo);
   const salario = c.salario === "" ? undefined : Number(c.salario);
@@ -215,9 +222,8 @@ const toBackendPayload = (c: Coodeudor, deudorId?: number) => {
   ].filter(Boolean);
 
   const payload = {
-     deudor_id:  deudorId && 6,              // siempre enviamos el deudor (6 por defecto)
-    codeudor_id: 3,
-    // deudor_id: deudorId,
+    deudor_id: deudorId,          // <- desde URL
+    codeudor_id: codeudorId,      // <- desde URL (puede ser undefined)
     informacion_personal: {
       numero_documento: c.numDocumento,
       tipo_documento: c.tipoDocumento,
@@ -250,8 +256,6 @@ const toBackendPayload = (c: Coodeudor, deudorId?: number) => {
       salario,
       tiempo_servicio: c.tiempoServicio,
     },
-    // el backend lista vehiculos[], pero el payload para crear/actualizar
-    // sigue enviando un único objeto `vehiculo`
     vehiculo: {
       placa: c.vehPlaca,
       marca: c.vehMarca,
@@ -264,6 +268,7 @@ const toBackendPayload = (c: Coodeudor, deudorId?: number) => {
 
   return prune(payload);
 };
+
 
 const normalizeEstadoCivil = (v: any): string => {
   if (v === "0" || v == null || v === "") return "Soltero/a";
@@ -337,10 +342,25 @@ const fromBackendToForm = (data: any): Coodeudor => {
 /* ========================= Data hooks ========================= */
 
 /* ========================= Componente ========================= */
-type Props = { deudorId?: number }; // usaremos id estático si no lo pasan
-const DEFAULT_DEUDOR_ID = 6;
+// type Props = { deudorId?: number }; // usaremos id estático si no lo pasan
 
-const CoodeudoresFormulario: React.FC<Props> = ({ deudorId = DEFAULT_DEUDOR_ID }) => {
+const CoodeudoresFormulario: React.FC = () => {
+
+
+
+      const { id } = useParams<{ id: string }>();
+  if (!id) return <div>Error: no se encontró el parámetro en la URL</div>;
+
+  // "11-6-3" → [11, 6, 3]
+  const [id_coti, idDeudor, idCodeudor] = id.split("-").map(Number);
+
+  console.log(id_coti)
+
+  // Fallback por si alguna URL viene con solo 2 números
+  const effectiveDeudorId = Number.isFinite(idDeudor) ? idDeudor : undefined;
+  const effectiveCodeudorId = Number.isFinite(idCodeudor) ? idCodeudor : undefined;
+
+  
   const { control, handleSubmit, watch, setValue, reset } = useForm<FormValues>({
     mode: "onBlur",
     defaultValues: { codeudores: [emptyCoodeudor] },
@@ -352,7 +372,8 @@ const CoodeudoresFormulario: React.FC<Props> = ({ deudorId = DEFAULT_DEUDOR_ID }
   const actualizar = useActualizarCodeudor();
 
   // lista existente
-  const { data: listResp, isLoading: listLoading, refetch } = useCodeudoresByDeudor(deudorId);
+const { data: listResp, isLoading: listLoading, refetch } =
+  useCodeudoresByDeudor(Number(effectiveDeudorId));
 
   // ids de edición por índice (0..1)
   const [editingIds, setEditingIds] = React.useState<(number | null)[]>([null]);
@@ -413,31 +434,21 @@ const CoodeudoresFormulario: React.FC<Props> = ({ deudorId = DEFAULT_DEUDOR_ID }
   };
 
   // submit: por cada bloque, si hay id → actualizar; si no → registrar
-  const onSubmit = (values: FormValues) => {
-    const payloads = values.codeudores
-      .map((c) => prune(toBackendPayload(c, deudorId)))
-      .filter(Boolean);
+const onSubmit = (values: FormValues) => {
+  const payloads = values.codeudores
+    .map((c) => prune(toBackendPayload(c, effectiveDeudorId, effectiveCodeudorId)))
+    .filter(Boolean);
 
-    payloads.forEach((payload, idx) => {
-      const id = editingIds[idx];
-      if (id) {
-        actualizar.mutate(
-          { id, payload },
-          {
-            onSuccess: () => {
-              refetch();
-            },
-          }
-        );
-      } else {
-        registrar.mutate(payload as any, {
-          onSuccess: () => {
-            refetch();
-          },
-        });
-      }
-    });
-  };
+  payloads.forEach((payload, idx) => {
+    const id = editingIds[idx];
+    if (id) {
+      actualizar.mutate({ id, payload }, { onSuccess: () => refetch() });
+    } else {
+      registrar.mutate(payload as any, { onSuccess: () => refetch() });
+    }
+  });
+};
+
 
   // cancelar: vuelve al estado inicial (lo que haya en servidor o vacío)
   const onCancel = () => {
