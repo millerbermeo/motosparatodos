@@ -28,7 +28,7 @@ export const MENU_ESTATICO: MenuItem[] = [
     icono: "HelpCircle",
     orden: 8,
     children: [
-      { nombre: "Cumple", ruta: "/happy", icono: "Gift", requireModule: "Alertas", orden: 1 },
+      { nombre: "Cumpleaños", ruta: "/happy", icono: "Gift", requireModule: "Alertas", orden: 1 },
       { nombre: "Soat", ruta: "/soat", icono: "Shield", requireModule: "Alertas", orden: 2 },
       { nombre: "Revisiones", ruta: "/revisiones", icono: "Wrench", requireModule: "Alertas", orden: 3 },
     ],
