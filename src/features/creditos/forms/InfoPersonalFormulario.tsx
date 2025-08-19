@@ -1,82 +1,84 @@
 // src/components/solicitudes/InfoPersonalFormulario.tsx
 import React from "react";
 import { useForm } from "react-hook-form";
-import { FormInput } from "../../../shared/components/FormInput";
 import { FormSelect, type SelectOption } from "../../../shared/components/FormSelect";
+import { FormInput } from "../../../shared/components/FormInput";
+import { useDeudor, useRegistrarDeudor, useActualizarDeudor } from "../../../services/creditosServices";
 
-type InfoPersonalFormValues = {
-    // Persona
-    numDocumento: string;
-    tipoDocumento: string;
-    fechaExpedicion: string;
-    lugarExpedicion: string;
-    primerNombre: string;
-    segundoNombre?: string;
-    primerApellido: string;
-    segundoApellido?: string;
-    fechaNacimiento: string;
-    nivelEstudios: string;
-    ciudadResidencia: string;
-    barrioResidencia?: string;
-    direccionResidencia: string;
-    celular: string;
-    telFijo?: string;
-    email: string;
-    estadoCivil: string;
-    personasACargo: number | string;
-    tipoVivienda: string;
-    costoArriendo?: number | string;
-    poseeFincaRaiz: "Si" | "No" | "Otro";
-    // Laboral
-    empresaLabora?: string;
-    direccionEmpleador?: string;
-    telEmpleador?: string;
-    cargo?: string;
-    tipoContrato?: string;
-    salario?: number | string;
-    tiempoServicio?: string;
-    // Vehículo (opcional)
-    vehPlaca?: string;
-    vehMarca?: string;
-    vehModelo?: string;
-    vehTipo?: string;
-    vehNumMotor?: string;
-    // Referencias
-    ref1Nombre?: string;
-    ref1Tipo?: string;
-    ref1Direccion?: string;
-    ref1Telefono?: string;
+// ============================ Tipos ============================
 
-    ref2Nombre?: string;
-    ref2Tipo?: string;
-    ref2Direccion?: string;
-    ref2Telefono?: string;
-
-    ref3Nombre?: string;
-    ref3Tipo?: string;
-    ref3Direccion?: string;
-    ref3Telefono?: string;
+type Referencia = {
+    nombre_completo: string;
+    tipo_referencia: string;
+    direccion: string;
+    telefono: string;
 };
 
+type InfoPersonalFormValues = {
+    id_cotizacion?: number;
+    numero_documento: string;
+    tipo_documento: string;
+    fecha_expedicion: string;     // YYYY-MM-DD
+    lugar_expedicion: string;
+    primer_nombre: string;
+    segundo_nombre?: string;
+    primer_apellido: string;
+    segundo_apellido?: string;
+    fecha_nacimiento: string;     // YYYY-MM-DD
+    nivel_estudios: string;
+    ciudad_residencia: string;
+    barrio_residencia?: string;
+    direccion_residencia: string;
+    telefono_fijo?: string;
+    celular: string;
+    email: string;
+    estado_civil: string;
+    personas_a_cargo: number | string;
+    tipo_vivienda: string;
+    costo_arriendo: number | string;
+    finca_raiz: "Si" | "No" | "Otro";
+
+    informacion_laboral: {
+        empresa?: string;
+        direccion_empleador?: string;
+        telefono_empleador?: string;
+        cargo?: string;
+        tipo_contrato?: string;
+        salario?: number | string;
+        tiempo_servicio?: string;
+    };
+
+    vehiculo: {
+        placa?: string;
+        marca?: string;
+        modelo?: string;
+        tipo?: string;
+        numero_motor?: string;
+    };
+
+    referencias: Referencia[];
+};
+
+// ============================ Opciones Select ============================
+
 const tipoDocumentoOptions: SelectOption[] = [
-    { value: "CC", label: "Cédula de ciudadanía" },
-    { value: "CE", label: "Cédula de extranjería" },
-    { value: "TI", label: "Tarjeta de identidad" },
-    { value: "PA", label: "Pasaporte" },
+    { value: "Cédula de ciudadanía", label: "Cédula de ciudadanía" },
+    // { value: "NIT", label: "NIT" },
 ];
 
 const nivelEstudiosOptions: SelectOption[] = [
     { value: "Primaria", label: "Primaria" },
-    { value: "Secundaria", label: "Educación media" },
-    { value: "Tecnico", label: "Técnico / Tecnólogo" },
+    { value: "Educación media", label: "Educación media" },
+    { value: "Técnico / Tecnólogo", label: "Técnico / Tecnólogo" },
     { value: "Universitario", label: "Universitario" },
     { value: "Postgrado", label: "Postgrado" },
+    { value: "Educación superior", label: "Educación superior" }, // ← coincide con backend
 ];
 
 const estadoCivilOptions: SelectOption[] = [
     { value: "Soltero/a", label: "Soltero/a" },
     { value: "Casado/a", label: "Casado/a" },
-    { value: "Union libre", label: "Unión libre" },
+    { value: "Unión libre", label: "Unión libre" },
     { value: "Divorciado/a", label: "Divorciado/a" },
     { value: "Viudo/a", label: "Viudo/a" },
 ];
@@ -94,15 +96,16 @@ const siNoOtroOptions: SelectOption[] = [
 ];
 
 const tipoContratoOptions: SelectOption[] = [
+    { value: "Fijo", label: "Fijo" },
     { value: "Indefinido", label: "Indefinido" },
-    { value: "Fijo", label: "Término fijo" },
-    { value: "Obra", label: "Obra o labor" },
-    { value: "Prestacion", label: "Prestación de servicios" },
+    { value: "Obra o labor", label: "Obra o labor" },
+    { value: "Temporal", label: "Temporal" },
+    { value: "Prestación de servicios", label: "Prestación de servicios" },
 ];
 
 const vehiculoTipoOptions: SelectOption[] = [
     { value: "Motocicleta", label: "Motocicleta" },
-    { value: "Automovil", label: "Automóvil" },
+    { value: "Automóvil", label: "Automóvil" },
     { value: "Camioneta", label: "Camioneta" },
     { value: "Otro", label: "Otro" },
 ];
@@ -121,67 +124,249 @@ const ciudadesEjemplo: SelectOption[] = [
     { value: "Medellín", label: "Medellín" },
 ];
 
-const InfoPersonalFormulario: React.FC = () => {
-    const { control, handleSubmit, watch, setValue } = useForm<InfoPersonalFormValues>({
-        mode: "onBlur",
+// ============================ Helpers ============================
+
+const hasText = (v?: string) => typeof v === "string" && v.trim() !== "";
+
+const normalizaRef = (r: Referencia): Referencia => ({
+    nombre_completo: (r?.nombre_completo ?? "").trim(),
+    tipo_referencia: (r?.tipo_referencia ?? "").trim(),
+    direccion: (r?.direccion ?? "").trim(),
+    telefono: (r?.telefono ?? "").trim(),
+});
+
+// referencia válida = nombre + teléfono
+const esReferenciaValida = (r: Referencia) => hasText(r.nombre_completo) && hasText(r.telefono);
+
+// convierte strings numéricos a número; conserva 0 cuando no hay valor
+const toNumber = (v: any) => {
+    const n = typeof v === "number" ? v : parseFloat(String(v).replace(/,/g, "."));
+    return Number.isFinite(n) ? n : 0;
+};
+
+// el backend te manda "Casa" en finca_raiz; lo tratamos como "Si"
+const mapFincaRaiz = (v: any): "Si" | "No" | "Otro" => {
+    if (v === "Si" || v === "No" || v === "Otro") return v;
+    if (!v) return "No";
+    // cualquier string distinto de "No" lo consideramos afirmativo
+    return "Si";
+};
+
+// ============================ Props ============================
+
+type Props = {
+    idCotizacion?: number;
+};
+
+// ============================ Componente ============================
+
+const InfoPersonalFormulario: React.FC<Props> = ({ idCotizacion }) => {
+    // hooks siempre arriba
+    const { data, isLoading, error } = useDeudor(6);
+    const registrarDeudor = useRegistrarDeudor();
+    const actualizarDeudor = useActualizarDeudor();
+
+
+    const { control, handleSubmit, watch, setValue, reset } = useForm<InfoPersonalFormValues>({
         defaultValues: {
-            tipoDocumento: "CC",
-            nivelEstudios: "",
-            estadoCivil: "",
-            tipoVivienda: "",
-            poseeFincaRaiz: "No",
-            personasACargo: 0,
-            costoArriendo: 0,
-            salario: 0,
+            id_cotizacion: idCotizacion ?? 1,
+            numero_documento: "",
+            tipo_documento: "Cédula de ciudadanía",
+            fecha_expedicion: "",
+            lugar_expedicion: "",
+            primer_nombre: "",
+            segundo_nombre: "",
+            primer_apellido: "",
+            segundo_apellido: "",
+            fecha_nacimiento: "",
+            nivel_estudios: "",
+            ciudad_residencia: "",
+            barrio_residencia: "",
+            direccion_residencia: "",
+            telefono_fijo: "",
+            celular: "",
+            email: "",
+            estado_civil: "",
+            personas_a_cargo: 0,
+            tipo_vivienda: "",
+            costo_arriendo: 0,
+            finca_raiz: "No",
+            informacion_laboral: {
+                empresa: "",
+                direccion_empleador: "",
+                telefono_empleador: "",
+                cargo: "",
+                tipo_contrato: "Indefinido",
+                salario: 0,
+                tiempo_servicio: "",
+            },
+            vehiculo: {
+                placa: "",
+                marca: "",
+                modelo: "",
+                tipo: "",
+                numero_motor: "",
+            },
+            referencias: [
+                { nombre_completo: "", tipo_referencia: "", direccion: "", telefono: "" },
+                { nombre_completo: "", tipo_referencia: "", direccion: "", telefono: "" },
+                { nombre_completo: "", tipo_referencia: "", direccion: "", telefono: "" },
+            ],
         },
     });
 
-    // si tipoVivienda !== Arriendo => costoArriendo = 0
-    const tipoVivienda = watch("tipoVivienda");
+    // Cargar data del backend → reset con mapeo correcto
+React.useEffect(() => {
+  if (!data) return;
+
+  const p = (data.data as any).informacion_personal ?? {};
+  const l = (data.data as any).informacion_laboral ?? {};
+  const v = (data.data as any).vehiculo ?? {};
+
+  // ← FIX: tomar referencias desde data.data.referencias
+  const rRaw: any[] = Array.isArray((data?.data as any)?.referencias)
+    ? (data!.data as any).referencias
+    : [];
+
+  // ← Garantiza 3 referencias y normaliza
+  const r3 = rRaw.slice(0, 3);
+  while (r3.length < 3) {
+    r3.push({ nombre_completo: "", tipo_referencia: "", direccion: "", telefono: "" });
+  }
+  const referenciasNorm = r3.map(normalizaRef);
+
+  reset({
+    id_cotizacion: p.id_cotizacion ?? idCotizacion ?? 1,
+    numero_documento: p.numero_documento ?? "",
+    tipo_documento: p.tipo_documento ?? "Cédula de ciudadanía",
+    fecha_expedicion: p.fecha_expedicion ?? "",
+    lugar_expedicion: p.lugar_expedicion ?? "",
+    primer_nombre: p.primer_nombre ?? "",
+    segundo_nombre: p.segundo_nombre ?? "",
+    primer_apellido: p.primer_apellido ?? "",
+    segundo_apellido: p.segundo_apellido ?? "",
+    fecha_nacimiento: p.fecha_nacimiento ?? "",
+    nivel_estudios: p.nivel_estudios ?? "",
+    ciudad_residencia: p.ciudad_residencia ?? "",
+    barrio_residencia: p.barrio_residencia ?? "",
+    direccion_residencia: p.direccion_residencia ?? "",
+    telefono_fijo: p.telefono_fijo ?? "",
+    celular: p.celular ?? "",
+    email: p.email ?? "",
+    estado_civil: p.estado_civil ?? "",
+    personas_a_cargo: toNumber(p.personas_a_cargo ?? 0),
+    tipo_vivienda: p.tipo_vivienda ?? "",
+    costo_arriendo: toNumber(p.costo_arriendo ?? 0),
+    finca_raiz: mapFincaRaiz(p.finca_raiz),
+
+    informacion_laboral: {
+      empresa: l.empresa ?? "",
+      direccion_empleador: l.direccion_empleador ?? "",
+      telefono_empleador: l.telefono_empleador ?? "",
+      cargo: l.cargo ?? "",
+      tipo_contrato: l.tipo_contrato ?? "Indefinido",
+      salario: toNumber(l.salario ?? 0),
+      tiempo_servicio: l.tiempo_servicio ?? "",
+    },
+
+    vehiculo: {
+      placa: v.placa ?? "",
+      marca: v.marca ?? "",
+      modelo: v.modelo ?? "",
+      tipo: v.tipo ?? "",
+      numero_motor: v.numero_motor ?? "",
+    },
+
+    // ← Aquí el arreglo ya está limpio y completo
+    referencias: referenciasNorm,
+  });
+}, [data, reset, idCotizacion]);
+
+
+    // Si NO es arriendo → costo_arriendo = 0
+    const tipoVivienda = watch("tipo_vivienda");
     React.useEffect(() => {
-        if (tipoVivienda !== "Arriendo") setValue("costoArriendo", 0);
+        if (tipoVivienda !== "Arriendo") setValue("costo_arriendo", 0);
     }, [tipoVivienda, setValue]);
 
+    // Submit
     const onSubmit = (values: InfoPersonalFormValues) => {
-        // Normalizaciones simples
-        const payload = {
+        const referenciasLimpias = (values.referencias ?? [])
+            .slice(0, 3)
+            .map(normalizaRef)
+            .filter(esReferenciaValida);
+
+        const payload: InfoPersonalFormValues = {
             ...values,
-            personasACargo: Number(values.personasACargo) || 0,
-            costoArriendo: Number(values.costoArriendo) || 0,
-            salario: Number(values.salario) || 0,
+            id_cotizacion: values.id_cotizacion ?? idCotizacion ?? 1,
+            personas_a_cargo: toNumber(values.personas_a_cargo),
+            costo_arriendo: toNumber(values.costo_arriendo),
+            informacion_laboral: {
+                ...values.informacion_laboral,
+                salario: toNumber(values.informacion_laboral?.salario),
+                empresa: values.informacion_laboral?.empresa?.trim() || "",
+                direccion_empleador: values.informacion_laboral?.direccion_empleador?.trim() || "",
+                telefono_empleador: values.informacion_laboral?.telefono_empleador?.trim() || "",
+                cargo: values.informacion_laboral?.cargo?.trim() || "",
+                tipo_contrato: values.informacion_laboral?.tipo_contrato?.trim() || "",
+                tiempo_servicio: values.informacion_laboral?.tiempo_servicio?.trim() || "",
+            },
+            vehiculo: {
+                placa: values.vehiculo?.placa?.trim() || "",
+                marca: values.vehiculo?.marca?.trim() || "",
+                modelo: values.vehiculo?.modelo?.trim() || "",
+                tipo: values.vehiculo?.tipo?.trim() || "",
+                numero_motor: values.vehiculo?.numero_motor?.trim() || "",
+            },
+            referencias: referenciasLimpias,
         };
-        console.log("InfoPersonal payload:", payload);
-        // aquí harías create/update según tu flujo (mutations, etc.)
+
+        // Detecta si hay registro existente (id del deudor)
+        const existingId =
+            (data as any)?.informacion_personal?.id ??
+            (data as any)?.data?.informacion_personal?.id ??
+            null;
+
+        if (existingId) {
+            // ACTUALIZAR
+            actualizarDeudor.mutate({ id: existingId, payload });
+        } else {
+            // REGISTRAR
+            registrarDeudor.mutate(payload);
+        }
     };
 
     const grid = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3";
+
+    // UI
+    if (isLoading) return <p>Cargando datos del deudor…</p>;
+    if (error) return <p>No se pudo cargar el deudor.</p>;
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
             {/* ================== DATOS PERSONALES ================== */}
             <section>
-
-                <div className="badge text-xl badge-success text-white  mb-3">
+                <div className="badge text-xl badge-success text-white mb-3">
                     Deudor - Información Personal
                 </div>
 
                 <div className={grid}>
                     <FormInput
-                        name="numDocumento"
+                        name="numero_documento"
                         label="Número de documento*"
                         control={control}
                         rules={{ required: "Requerido" }}
                         placeholder="1144102233"
                     />
                     <FormSelect
-                        name="tipoDocumento"
+                        name="tipo_documento"
                         label="Tipo de documento*"
                         control={control}
                         options={tipoDocumentoOptions}
                         rules={{ required: "Requerido" }}
                     />
                     <FormInput
-                        name="fechaExpedicion"
+                        name="fecha_expedicion"
                         label="Fecha de expedición*"
                         type="date"
                         control={control}
@@ -189,29 +374,29 @@ const InfoPersonalFormulario: React.FC = () => {
                     />
 
                     <FormSelect
-                        name="lugarExpedicion"
+                        name="lugar_expedicion"
                         label="Lugar de expedición*"
                         control={control}
                         options={ciudadesEjemplo}
                         rules={{ required: "Requerido" }}
                     />
                     <FormInput
-                        name="primerNombre"
+                        name="primer_nombre"
                         label="Primer nombre*"
                         control={control}
                         rules={{ required: "Requerido", minLength: { value: 2, message: "Mínimo 2 caracteres" } }}
                     />
-                    <FormInput name="segundoNombre" label="Segundo nombre" control={control} />
+                    <FormInput name="segundo_nombre" label="Segundo nombre" control={control} />
 
                     <FormInput
-                        name="primerApellido"
+                        name="primer_apellido"
                         label="Primer apellido*"
                         control={control}
                         rules={{ required: "Requerido" }}
                     />
-                    <FormInput name="segundoApellido" label="Segundo apellido" control={control} />
+                    <FormInput name="segundo_apellido" label="Segundo apellido" control={control} />
                     <FormInput
-                        name="fechaNacimiento"
+                        name="fecha_nacimiento"
                         label="Fecha de nacimiento*"
                         type="date"
                         control={control}
@@ -219,23 +404,23 @@ const InfoPersonalFormulario: React.FC = () => {
                     />
 
                     <FormSelect
-                        name="nivelEstudios"
+                        name="nivel_estudios"
                         label="Nivel de estudios*"
                         control={control}
                         options={nivelEstudiosOptions}
                         rules={{ required: "Requerido" }}
                     />
                     <FormSelect
-                        name="ciudadResidencia"
+                        name="ciudad_residencia"
                         label="Ciudad de residencia*"
                         control={control}
                         options={ciudadesEjemplo}
                         rules={{ required: "Requerido" }}
                     />
-                    <FormInput name="barrioResidencia" label="Barrio de residencia" control={control} />
+                    <FormInput name="barrio_residencia" label="Barrio de residencia" control={control} />
 
                     <FormInput
-                        name="direccionResidencia"
+                        name="direccion_residencia"
                         label="Dirección de residencia*"
                         control={control}
                         rules={{ required: "Requerido" }}
@@ -251,7 +436,7 @@ const InfoPersonalFormulario: React.FC = () => {
                         }}
                     />
                     <FormInput
-                        name="telFijo"
+                        name="telefono_fijo"
                         label="Número tel. fijo"
                         control={control}
                         rules={{ pattern: { value: /^[0-9]*$/, message: "Solo dígitos" } }}
@@ -267,14 +452,14 @@ const InfoPersonalFormulario: React.FC = () => {
                         }}
                     />
                     <FormSelect
-                        name="estadoCivil"
+                        name="estado_civil"
                         label="Estado civil*"
                         control={control}
                         options={estadoCivilOptions}
                         rules={{ required: "Requerido" }}
                     />
                     <FormInput
-                        name="personasACargo"
+                        name="personas_a_cargo"
                         label="Personas a cargo*"
                         type="number"
                         control={control}
@@ -285,25 +470,25 @@ const InfoPersonalFormulario: React.FC = () => {
                     />
 
                     <FormSelect
-                        name="tipoVivienda"
+                        name="tipo_vivienda"
                         label="Tipo de vivienda*"
                         control={control}
                         options={tipoViviendaOptions}
                         rules={{ required: "Requerido" }}
                     />
                     <FormInput
-                        name="costoArriendo"
+                        name="costo_arriendo"
                         label="Costo del arriendo (COP)"
                         type="number"
                         control={control}
                         placeholder="0"
                         rules={{
                             validate: (v) =>
-                                tipoVivienda !== "Arriendo" || Number(v) > 0 || "Indique un valor mayor a 0",
+                                watch("tipo_vivienda") !== "Arriendo" || Number(v) > 0 || "Indique un valor mayor a 0",
                         }}
                     />
                     <FormSelect
-                        name="poseeFincaRaiz"
+                        name="finca_raiz"
                         label="Finca raíz*"
                         control={control}
                         options={siNoOtroOptions}
@@ -314,30 +499,29 @@ const InfoPersonalFormulario: React.FC = () => {
 
             {/* ================== INFORMACIÓN LABORAL ================== */}
             <section>
-
-                <div className="badge text-xl badge-success text-white  mb-3">
+                <div className="badge text-xl badge-success text-white mb-3">
                     Deudor - Información laboral
                 </div>
 
                 <div className={grid}>
-                    <FormInput name="empresaLabora" label="Empresa donde labora" control={control} />
-                    <FormInput name="direccionEmpleador" label="Dirección empleador" control={control} />
+                    <FormInput name="informacion_laboral.empresa" label="Empresa donde labora" control={control} />
+                    <FormInput name="informacion_laboral.direccion_empleador" label="Dirección empleador" control={control} />
                     <FormInput
-                        name="telEmpleador"
+                        name="informacion_laboral.telefono_empleador"
                         label="Teléfono del empleador"
                         control={control}
                         rules={{ pattern: { value: /^[0-9]*$/, message: "Solo dígitos" } }}
                     />
 
-                    <FormInput name="cargo" label="Cargo" control={control} />
+                    <FormInput name="informacion_laboral.cargo" label="Cargo" control={control} />
                     <FormSelect
-                        name="tipoContrato"
+                        name="informacion_laboral.tipo_contrato"
                         label="Tipo de contrato"
                         control={control}
                         options={tipoContratoOptions}
                     />
                     <FormInput
-                        name="salario"
+                        name="informacion_laboral.salario"
                         label="Salario (COP)"
                         type="number"
                         control={control}
@@ -345,75 +529,156 @@ const InfoPersonalFormulario: React.FC = () => {
                     />
 
                     <FormInput
-                        name="tiempoServicio"
+                        name="informacion_laboral.tiempo_servicio"
                         label="Tiempo de servicio"
                         control={control}
-                        placeholder="Ej. 2 años"
+                        placeholder="Ej. 5 años"
                     />
                 </div>
             </section>
 
             {/* ================== VEHÍCULO ================== */}
             <section>
-                <div className="badge text-xl badge-success text-white  mb-3">
+                <div className="badge text-xl badge-success text-white mb-3">
                     Deudor - Vehículo
                 </div>
 
                 <div className={grid}>
-                    <FormInput name="vehPlaca" label="Placa" control={control} />
-                    <FormInput name="vehMarca" label="Marca" control={control} />
-                    <FormInput name="vehModelo" label="Modelo" control={control} />
-                    <FormSelect name="vehTipo" label="Tipo" control={control} options={vehiculoTipoOptions} />
-                    <FormInput name="vehNumMotor" label="Número de motor" control={control} />
+                    <FormInput name="vehiculo.placa" label="Placa" control={control} />
+                    <FormInput name="vehiculo.marca" label="Marca" control={control} />
+                    <FormInput name="vehiculo.modelo" label="Modelo" control={control} />
+                    <FormSelect name="vehiculo.tipo" label="Tipo" control={control} options={vehiculoTipoOptions} />
+                    <FormInput name="vehiculo.numero_motor" label="Número de motor" control={control} />
                 </div>
             </section>
 
             {/* ================== REFERENCIAS ================== */}
             <section>
-                <div className="badge text-xl badge-success text-white  mb-3">
+                <div className="badge text-xl badge-success text-white mb-3">
                     Deudor - Referencia 1
                 </div>
 
                 <div className={grid}>
-                    <FormInput name="ref1Nombre" label="Nombre completo" control={control} />
-                    <FormSelect name="ref1Tipo" label="Tipo de referencia" control={control} options={tipoReferenciaOptions} />
-                    <FormInput name="ref1Direccion" label="Dirección" control={control} />
-                    <FormInput name="ref1Telefono" label="Número telefónico" control={control}
-                        rules={{ pattern: { value: /^[0-9]*$/, message: "Solo dígitos" } }} />
+                    <FormInput name="referencias.0.nombre_completo" label="Nombre completo" control={control} />
+                    <FormSelect
+                        name="referencias.0.tipo_referencia"
+                        label="Tipo de referencia"
+                        control={control}
+                        options={tipoReferenciaOptions}
+                    />
+                    <FormInput name="referencias.0.direccion" label="Dirección" control={control} />
+                    <FormInput
+                        name="referencias.0.telefono"
+                        label="Número telefónico"
+                        control={control}
+                        rules={{ pattern: { value: /^[0-9]*$/, message: "Solo dígitos" } }}
+                    />
                 </div>
             </section>
 
             <section>
-                <div className="badge text-xl badge-success text-white  mb-3">
+                <div className="badge text-xl badge-success text-white mb-3">
                     Deudor - Referencia 2
                 </div>
 
-
                 <div className={grid}>
-                    <FormInput name="ref2Nombre" label="Nombre completo" control={control} />
-                    <FormSelect name="ref2Tipo" label="Tipo de referencia" control={control} options={tipoReferenciaOptions} />
-                    <FormInput name="ref2Direccion" label="Dirección" control={control} />
-                    <FormInput name="ref2Telefono" label="Número telefónico" control={control}
-                        rules={{ pattern: { value: /^[0-9]*$/, message: "Solo dígitos" } }} />
+                    <FormInput name="referencias.1.nombre_completo" label="Nombre completo" control={control} />
+                    <FormSelect
+                        name="referencias.1.tipo_referencia"
+                        label="Tipo de referencia"
+                        control={control}
+                        options={tipoReferenciaOptions}
+                    />
+                    <FormInput name="referencias.1.direccion" label="Dirección" control={control} />
+                    <FormInput
+                        name="referencias.1.telefono"
+                        label="Número telefónico"
+                        control={control}
+                        rules={{ pattern: { value: /^[0-9]*$/, message: "Solo dígitos" } }}
+                    />
                 </div>
             </section>
 
             <section>
-                <div className="badge text-xl badge-success text-white  mb-3">
+                <div className="badge text-xl badge-success text-white mb-3">
                     Deudor - Referencia 3
                 </div>
                 <div className={grid}>
-                    <FormInput name="ref3Nombre" label="Nombre completo" control={control} />
-                    <FormSelect name="ref3Tipo" label="Tipo de referencia" control={control} options={tipoReferenciaOptions} />
-                    <FormInput name="ref3Direccion" label="Dirección" control={control} />
-                    <FormInput name="ref3Telefono" label="Número telefónico" control={control}
-                        rules={{ pattern: { value: /^[0-9]*$/, message: "Solo dígitos" } }} />
+                    <FormInput name="referencias.2.nombre_completo" label="Nombre completo" control={control} />
+                    <FormSelect
+                        name="referencias.2.tipo_referencia"
+                        label="Tipo de referencia"
+                        control={control}
+                        options={tipoReferenciaOptions}
+                    />
+                    <FormInput name="referencias.2.direccion" label="Dirección" control={control} />
+                    <FormInput
+                        name="referencias.2.telefono"
+                        label="Número telefónico"
+                        control={control}
+                        rules={{ pattern: { value: /^[0-9]*$/, message: "Solo dígitos" } }}
+                    />
                 </div>
             </section>
 
-            <div className="flex justify-end gap-2">
-                <button className="btn btn-ghost" type="reset">Limpiar</button>
-                <button className="btn btn-primary" type="submit">Guardar</button>
+            <div className="flex justify-between gap-2">
+                <button
+                    className="btn btn-ghost"
+                    type="button"
+                    onClick={() =>
+                        reset({
+                            id_cotizacion: idCotizacion,
+                            numero_documento: "",
+                            tipo_documento: "Cédula de ciudadanía",
+                            fecha_expedicion: "",
+                            lugar_expedicion: "",
+                            primer_nombre: "",
+                            segundo_nombre: "",
+                            primer_apellido: "",
+                            segundo_apellido: "",
+                            fecha_nacimiento: "",
+                            nivel_estudios: "",
+                            ciudad_residencia: "",
+                            barrio_residencia: "",
+                            direccion_residencia: "",
+                            telefono_fijo: "",
+                            celular: "",
+                            email: "",
+                            estado_civil: "",
+                            personas_a_cargo: 0,
+                            tipo_vivienda: "",
+                            costo_arriendo: 0,
+                            finca_raiz: "No",
+                            informacion_laboral: {
+                                empresa: "",
+                                direccion_empleador: "",
+                                telefono_empleador: "",
+                                cargo: "",
+                                tipo_contrato: "",
+                                salario: 0,
+                                tiempo_servicio: "",
+                            },
+                            vehiculo: {
+                                placa: "",
+                                marca: "",
+                                modelo: "",
+                                tipo: "",
+                                numero_motor: "",
+                            },
+                            referencias: [
+                                { nombre_completo: "", tipo_referencia: "", direccion: "", telefono: "" },
+                                { nombre_completo: "", tipo_referencia: "", direccion: "", telefono: "" },
+                                { nombre_completo: "", tipo_referencia: "", direccion: "", telefono: "" },
+                            ],
+                        })
+                    }
+                >
+                    Limpiar
+                </button>
+
+                <button className="btn btn-primary" type="submit">
+                    Guardar
+                </button>
             </div>
         </form>
     );
