@@ -26,8 +26,7 @@ const Happy: React.FC = () => {
                 Celebraciones y Cumpleaños
               </h1>
               <p className="mt-2 text-white/90 max-w-2xl">
-                Administra cumpleaños, programa saludos y registra obsequios.
-                Próximamente podrás automatizar recordatorios y envíos.
+                Administra cumpleaños
               </p>
             </div>
 

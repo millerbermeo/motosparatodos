@@ -8,7 +8,7 @@ export const MENU_ESTATICO: MenuItem[] = [
   { nombre: "Motocicletas", ruta: "/motocicletas", icono: "Bike", requireModule: "Motocicletas", orden: 3 },
   { nombre: "Cotizaciones", ruta: "/cotizaciones", icono: "FileEdit", requireModule: "Cotizaciones", orden: 4 },
   { nombre: "Créditos", ruta: "/creditos", icono: "FileEdit", requireModule: "Creditos", orden: 5 },
-  { nombre: "Solicitudes", ruta: "/solicitudes", icono: "FileSpreadsheet", requireModule: "Solicitudes de facturación", orden: 6 },
+  { nombre: "Solicitud de facturación", ruta: "/solicitudes", icono: "FileSpreadsheet", requireModule: "Solicitudes de facturación", orden: 6 },
   { nombre: "Parametrizacion", ruta: "/parametrizacion", icono: "Config", requireModule: "Parametrizaciones", orden: 6 },
 
   // PUNTOS (submenu)

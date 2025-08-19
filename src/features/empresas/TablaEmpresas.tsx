@@ -10,7 +10,7 @@ const SIBLING_COUNT = 1;
 const BOUNDARY_COUNT = 1;
 
 // Ideal: mueve a un config global o .env
-const BASE_URL = "http://tuclick.vozipcolombia.net.co/motos/back";
+  const BASE_URL = import.meta.env.VITE_API_URL ?? "http://tuclick.vozipcolombia.net.co/motos/back";
 
 /* ========= helpers de paginación (mismos que motos) ========= */
 const range = (start: number, end: number) =>
