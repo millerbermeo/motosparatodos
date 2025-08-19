@@ -79,6 +79,7 @@ const CotizacionFormulario: React.FC = () => {
         formState: { errors },
         watch,
         setValue,
+        reset,  
     } = useForm<FormValues>({
         defaultValues: {
             metodoPago: "contado",
@@ -106,7 +107,7 @@ const CotizacionFormulario: React.FC = () => {
             accesorios1: "0",
             segurosIds1: [],          // múltiple
             otroSeguro1: "0",
-            precioDocumentos1: "0",   // mapea a precio_documentos_a
+            precioDocumentos1: "",   // mapea a precio_documentos_a
             descuento1: "0",
             cuotaInicial1: "0",
 
@@ -116,7 +117,7 @@ const CotizacionFormulario: React.FC = () => {
             accesorios2: "0",
             segurosIds2: [],          // múltiple
             otroSeguro2: "0",
-            precioDocumentos2: "0",   // mapea a precio_documentos_b
+            precioDocumentos2: "",   // mapea a precio_documentos_b
             descuento2: "0",
             cuotaInicial2: "0",
 
@@ -154,8 +155,10 @@ const CotizacionFormulario: React.FC = () => {
     const categoria = watch("categoria");
     const isMotos = categoria === "motos";
     const isProductos = categoria === "otros";
-    const showProductos = isProductos || metodo === "terceros";
-    const showMotos = isMotos && metodo !== "terceros";
+    const showProductos = isProductos && metodo !== "terceros";
+    // Si es “terceros”, también mostramos Motos
+    const showMotos = isMotos || metodo === "terceros";
+
 
     const name = useAuthStore((s) => s.user?.name); // string | undefined
 
@@ -174,15 +177,54 @@ const CotizacionFormulario: React.FC = () => {
 
     const { data: motos1 } = useMotosPorMarca(selectedMarca1 || undefined);
     const { data: motos2 } = useMotosPorMarca(selectedMarca2 || undefined);
-
+console.log(motos1)
     const motoOptions1: SelectOption[] = (motos1?.motos ?? []).map((m) => ({
         value: m.linea,
-        label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP`,
+        label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP - Modelo ${m.modelo ?? ''}`,
     }));
+
+    console.log(motoOptions1)
     const motoOptions2: SelectOption[] = (motos2?.motos ?? []).map((m) => ({
         value: m.linea,
-        label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP`,
+        label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP Modelo ${m.modelo ?? '' }`,
     }));
+
+
+    console.log(motoOptions2)
+
+
+
+    // Cuando seleccionan una moto1, si existe el modelo lo seteo, si no dejo vacío
+    React.useEffect(() => {
+        const sel = watch("moto1");
+        const m = (motos1?.motos ?? []).find((x) => x.linea === sel);
+        if (m) {
+            if (m.modelo && m.modelo.trim() !== "") {
+                setValue("modelo_a", m.modelo); // autocompleta
+            } else {
+                setValue("modelo_a", ""); // lo deja vacío para que el usuario lo escriba
+            }
+        }
+    }, [watch("moto1"), motos1, setValue]);
+
+    // Igual para moto2
+    React.useEffect(() => {
+        const sel = watch("moto2");
+        const m = (motos2?.motos ?? []).find((x) => x.linea === sel);
+        if (m) {
+            if (m.modelo && m.modelo.trim() !== "") {
+                setValue("modelo_b", m.modelo);
+            } else {
+                setValue("modelo_b", "");
+            }
+        }
+    }, [watch("moto2"), motos2, setValue]);
+
+    const garantiaOptions: SelectOption[] = [
+        { value: "si", label: "Sí" },
+        { value: "no", label: "No" },
+    ];
+
 
     React.useEffect(() => { setValue("moto1", ""); }, [selectedMarca1, setValue]);
     React.useEffect(() => { setValue("moto2", ""); }, [selectedMarca2, setValue]);
@@ -237,10 +279,12 @@ const CotizacionFormulario: React.FC = () => {
         } else if (metodo === "credibike") {
             setValue("financiera", "");
             setValue("cuotas", "");
+            // categoría la elige el usuario con los radios (ya gestionado abajo)
         } else if (metodo === "terceros") {
-            setValue("categoria", "");
+            setValue("categoria", "motos"); // <- clave
         }
     }, [metodo, setValue]);
+
 
     const reqIf = (cond: boolean, msg: string) => ({
         validate: (v: any) => (!cond ? true : (v !== undefined && v !== null && String(v).trim().length > 0) || msg),
@@ -253,32 +297,49 @@ const CotizacionFormulario: React.FC = () => {
         return s ? Number(s.valor) : 0;
     };
 
-    const clearMotos = React.useCallback(() => {
-        setValue("incluirMoto1", true);
-        setValue("incluirMoto2", false);
+    // const clearMotos = React.useCallback(() => {
+    //     setValue("incluirMoto1", true);
+    //     setValue("incluirMoto2", false);
 
-        setValue("marca1", ""); setValue("moto1", "");
-        setValue("garantia1", ""); setValue("accesorios1", "0");
-        setValue("segurosIds1", []); setValue("otroSeguro1", "0");
-        setValue("precioDocumentos1", "0"); setValue("descuento1", "0");
-        setValue("cuotaInicial1", "0");
+    //     setValue("marca1", ""); setValue("moto1", "");
+    //     setValue("garantia1", ""); setValue("accesorios1", "0");
+    //     setValue("segurosIds1", []); setValue("otroSeguro1", "0");
+    //     setValue("precioDocumentos1", "0"); setValue("descuento1", "0");
+    //     setValue("cuotaInicial1", "0");
 
-        setValue("marca2", ""); setValue("moto2", "");
-        setValue("garantia2", ""); setValue("accesorios2", "0");
-        setValue("segurosIds2", []); setValue("otroSeguro2", "0");
-        setValue("precioDocumentos2", "0"); setValue("descuento2", "0");
-        setValue("cuotaInicial2", "0");
-    }, [setValue]);
+    //     setValue("marca2", ""); setValue("moto2", "");
+    //     setValue("garantia2", ""); setValue("accesorios2", "0");
+    //     setValue("segurosIds2", []); setValue("otroSeguro2", "0");
+    //     setValue("precioDocumentos2", "0"); setValue("descuento2", "0");
+    //     setValue("cuotaInicial2", "0");
+    // }, [setValue]);
 
 
     React.useEffect(() => {
         if (metodo === "terceros") {
-            clearMotos();
-            setValue("categoria", "");
-        } else if (metodo === "contado") {
+            // forzar categoría motos y limpiar productos
             setValue("categoria", "motos");
+            setValue("producto1Nombre", "");
+            setValue("producto1Descripcion", "");
+            setValue("producto1Precio", "0");
+            setValue("producto1CuotaInicial", "0");
+            setValue("producto2Nombre", "");
+            setValue("producto2Descripcion", "");
+            setValue("producto2Precio", "0");
+            setValue("producto2CuotaInicial", "0");
         }
-    }, [metodo, clearMotos, setValue]);
+    }, [metodo, setValue]);
+
+
+
+    React.useEffect(() => {
+        if (metodo === "contado") {
+            setValue("categoria", "motos");
+        } else if (metodo === "terceros") {
+            setValue("categoria", "motos"); // mantenemos motos activas
+            // NO llamar clearMotos();
+        }
+    }, [metodo, setValue]);
 
     // ===== cálculos MOTO 1 =====
     const segurosIds1 = watch("segurosIds1") ?? [];
@@ -410,7 +471,18 @@ const CotizacionFormulario: React.FC = () => {
         };
 
         console.log("SUBMIT (payload EXACTO BD):", payload);
-        cotizacion(payload);
+     cotizacion(payload, {
+    onSuccess: () => {
+      // vuelve TODO al estado inicial
+      reset(); // o simplemente reset(); para regresar a defaultValues
+      // si quieres mantener los defaultValues actuales internamente:
+      // reset(DEFAULTS, { keepDefaultValues: true });
+    },
+    onError: (err) => {
+      console.error(err);
+      // opcional: mostrar toast/error
+    },
+  });
     };
 
     return (
@@ -436,24 +508,7 @@ const CotizacionFormulario: React.FC = () => {
                 {errors.metodoPago && <p className="text-sm text-error">Selecciona una opción.</p>}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 w-full gap-6">
-                    <FormSelect<FormValues>
-                        name="canal"
-                        label="Canal de contacto"
-                        control={control}
-                        options={canalOptions}
-                        placeholder={loadingCanales ? "Cargando canales..." : "Seleccione un canal"}
-                        disabled={loadingCanales}
-                        rules={{ required: "El canal de contacto es obligatorio." }}
-                    />
-                    <FormSelect<FormValues>
-                        name="pregunta"
-                        label="Pregunta al cliente: ¿Para ti cuál de estas categorías describen mejor su relación con las motos?"
-                        control={control}
-                        options={preguntaOptions}
-                        placeholder={loadingPregs ? "Cargando opciones..." : "Seleccione una opción"}
-                        disabled={loadingPregs}
-                        rules={{ required: "Este campo es obligatorio." }}
-                    />
+
 
                     {(metodo === "credibike" || metodo === "terceros") && (
                         <>
@@ -476,6 +531,25 @@ const CotizacionFormulario: React.FC = () => {
                             />
                         </>
                     )}
+
+                    <FormSelect<FormValues>
+                        name="canal"
+                        label="Canal de contacto"
+                        control={control}
+                        options={canalOptions}
+                        placeholder={loadingCanales ? "Cargando canales..." : "Seleccione un canal"}
+                        disabled={loadingCanales}
+                        rules={{ required: "El canal de contacto es obligatorio." }}
+                    />
+                    <FormSelect<FormValues>
+                        name="pregunta"
+                        label="Pregunta al cliente: ¿Para ti cuál de estas categorías describen mejor su relación con las motos?"
+                        control={control}
+                        options={preguntaOptions}
+                        placeholder={loadingPregs ? "Cargando opciones..." : "Seleccione una opción"}
+                        disabled={loadingPregs}
+                        rules={{ required: "Este campo es obligatorio." }}
+                    />
                 </div>
             </div>
 
@@ -549,16 +623,20 @@ const CotizacionFormulario: React.FC = () => {
                                         control={control}
                                         placeholder="Ej. 2025 / Edición especial"
                                         disabled={!showMotos || !incluirMoto1}
+                                           className="hidden"
                                     />
 
 
-                                    <FormInput<FormValues>
+                                    <FormSelect<FormValues>
                                         name="garantia1"
-                                        label="Garantía (ej. 3 años)"
+                                        label="¿Incluye garantía?"
                                         control={control}
-                                        placeholder="3 años"
+                                        options={garantiaOptions}
+                                        placeholder="Seleccione..."
+                                        disabled={!showMotos || !incluirMoto1}
                                         rules={reqIf(showMotos && incluirMoto1, "La garantía es obligatoria")}
                                     />
+
 
                                     <FormInput<FormValues>
                                         name="accesorios1"
@@ -575,9 +653,9 @@ const CotizacionFormulario: React.FC = () => {
                                     />
 
                                     {/* SEGUROS MULTI */}
-                                    <div className="p-3 rounded-md bg-[#3498DB] text-white">
-                                        <p className="font-semibold mb-2">Selecciona uno o varios seguros</p>
-                                        <div className="flex flex-col gap-2">
+                                    <div className="p-3 rounded-md bg-[#3498DB] ">
+                                        <p className="font-semibold mb-2 text-white">Selecciona uno o varios seguros</p>
+                                        <div className="flex flex-col gap-2 text-white">
                                             {loadingSeguros && <span>Cargando seguros...</span>}
                                             {!loadingSeguros && seguros.map((s: any) => (
                                                 <label key={`m1-${s.id}`} className="flex items-center gap-2">
@@ -602,12 +680,12 @@ const CotizacionFormulario: React.FC = () => {
                                     </div>
 
                                     <FormInput<FormValues>
-                                        name="cuotaInicial1" label="Cuota inicial" control={control} type="number" 
+                                        name="cuotaInicial1" label="Cuota inicial" control={control} type="number"
                                         rules={reqIf(showMotos && incluirMoto1, "Ingresa la cuota inicial")} disabled={!showMotos || !incluirMoto1} />
 
                                     {/* CAMBIO DE NOMBRE */}
                                     <FormInput<FormValues>
-                                        name="precioDocumentos1" label="Precio documentos / matrícula y SOAT" control={control} type="number" 
+                                        name="precioDocumentos1" label="Precio documentos / matrícula y SOAT" control={control} type="number"
                                         disabled={!showMotos || !incluirMoto1}
                                         rules={reqIf(showMotos && incluirMoto1, "El precio es obligatoria")}
 
@@ -679,16 +757,21 @@ const CotizacionFormulario: React.FC = () => {
                                         control={control}
                                         placeholder="Ej. 2025 / Edición especial"
                                         disabled={!showMotos || !incluirMoto2}
+                                        className="hidden"
+                                    
                                     />
 
 
-                                    <FormInput<FormValues>
+                                    <FormSelect<FormValues>
                                         name="garantia2"
-                                        label="Garantía (ej. 2 años)"
+                                        label="¿Incluye garantía?"
                                         control={control}
-                                        placeholder="2 años"
+                                        options={garantiaOptions}
+                                        placeholder="Seleccione..."
+                                        disabled={!showMotos || !incluirMoto2}
                                         rules={reqIf(showMotos && incluirMoto2, "La garantía es obligatoria")}
                                     />
+
 
                                     <FormInput<FormValues>
                                         name="accesorios2"
@@ -705,9 +788,9 @@ const CotizacionFormulario: React.FC = () => {
                                     />
 
                                     {/* SEGUROS MULTI */}
-                                    <div className="p-3 rounded-md bg-[#3498DB] text-white">
-                                        <p className="font-semibold mb-2">Selecciona uno o varios seguros</p>
-                                        <div className="flex flex-col gap-2">
+                                    <div className="p-3 rounded-md bg-[#3498DB]">
+                                        <p className="font-semibold mb-2 text-white">Selecciona uno o varios seguros</p>
+                                        <div className="flex flex-col gap-2 text-white">
                                             {loadingSeguros && <span>Cargando seguros...</span>}
                                             {!loadingSeguros && seguros.map((s: any) => (
                                                 <label key={`m2-${s.id}`} className="flex items-center gap-2">
@@ -736,8 +819,8 @@ const CotizacionFormulario: React.FC = () => {
                                         rules={reqIf(showMotos && incluirMoto2, "Ingresa la cuota inicial")} disabled={!showMotos || !incluirMoto2} />
                                     {/* CAMBIO DE NOMBRE */}
                                     <FormInput<FormValues> rules={reqIf(showMotos && incluirMoto1, "El precio es obligatoria")}
-                                        name="precioDocumentos2" label="Precio documentos / matrícula y SOAT" control={control} type="number"  disabled={!showMotos || !incluirMoto2} />
-                                    <FormInput<FormValues> name="descuento2" label="Descuentos" control={control} type="number"  disabled={!showMotos || !incluirMoto2} />
+                                        name="precioDocumentos2" label="Precio documentos / matrícula y SOAT" control={control} type="number" disabled={!showMotos || !incluirMoto2} />
+                                    <FormInput<FormValues> name="descuento2" label="Descuentos" control={control} type="number" disabled={!showMotos || !incluirMoto2} />
 
                                     <div className="bg-base-100 shadow-lg rounded-xl p-6 border border-base-300">
                                         <h3 className="text-lg font-bold mb-4 text-success">Resumen de costos</h3>
@@ -833,7 +916,7 @@ const CotizacionFormulario: React.FC = () => {
 
                             <div className="grid grid-cols-1 gap-4">
                                 <FormInput<FormValues> name="producto2Nombre" label="Producto 2 *" control={control} placeholder="Producto"
-                                    rules={reqIf(true, "El nombre del producto es obligatorio.")} />
+                                />
                                 <div className="form-control w-full">
                                     <label className="label"><span className="label-text">Descripción *</span></label>
                                     <textarea

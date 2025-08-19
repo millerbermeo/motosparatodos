@@ -1,7 +1,7 @@
 // MainLayout.tsx
 import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { ChevronLeft, Menu } from "lucide-react";
 import Sidebar from "../shared/components/Sidebar";
 import Navbar from "../shared/components/Navbar";
 
@@ -22,10 +22,10 @@ const MainLayout: React.FC = () => {
   {/* Botón pegado al borde derecho del sidebar */}
   <button
     onClick={toggleSidebar}
-    className={`absolute top-3  p-2 rounded bg-[#3498DB] text-white shadow ${isOpen ? 'right-[-60px] lg:right-[-60px]' : 'right-[-100px] lg:right-[-100px]'}`}
+    className={`absolute top-3  p-2 cursor-pointer rounded bg-[#3498DB] text-white shadow ${isOpen ? 'right-[-60px] lg:right-[-60px]' : 'right-[-100px] lg:right-[-100px]'}`}
     aria-label="Toggle sidebar"
   >
-    {isOpen ? <X size={20} /> : <Menu size={20} />}
+    {isOpen ? <ChevronLeft size={20} /> : <Menu size={20} />}
   </button>
 </div>
 

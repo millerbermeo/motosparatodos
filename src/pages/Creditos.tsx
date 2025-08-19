@@ -1,10 +1,10 @@
 import React from 'react'
-import LineCreditos from './LineCreditos'
+import TablaCreditos from '../features/creditos/TablaCreditos'
 
 const Creditos: React.FC = () => {
   return (
     <>
-    <LineCreditos />
+    <TablaCreditos />
     </>
   )
 }

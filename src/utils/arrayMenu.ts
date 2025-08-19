@@ -2,7 +2,7 @@
 import type { MenuItem } from "../shared/types/menu";
 
 export const MENU_ESTATICO: MenuItem[] = [
-  
+
   { nombre: "Dashboard", ruta: "/", icono: "LayoutDashboard", requireModule: "Dashboard", orden: 1 },
   { nombre: "Clientes", ruta: "/clientes", icono: "Users", requireModule: "Clientes", orden: 2 },
   { nombre: "Motocicletas", ruta: "/motocicletas", icono: "Bike", requireModule: "Motocicletas", orden: 3 },
@@ -28,9 +28,9 @@ export const MENU_ESTATICO: MenuItem[] = [
     icono: "HelpCircle",
     orden: 8,
     children: [
-      { nombre: "Cumple", ruta: "/happy", icono: "Gift", requireModule: "Cumple", orden: 1 },
-      { nombre: "Soat", ruta: "/soat", icono: "Shield", requireModule: "Soat", orden: 2 },
-      { nombre: "Revisiones", ruta: "/revisiones", icono: "Wrench", requireModule: "Revisiones", orden: 3 },
+      { nombre: "Cumple", ruta: "/happy", icono: "Gift", requireModule: "Alertas", orden: 1 },
+      { nombre: "Soat", ruta: "/soat", icono: "Shield", requireModule: "Alertas", orden: 2 },
+      { nombre: "Revisiones", ruta: "/revisiones", icono: "Wrench", requireModule: "Alertas", orden: 3 },
     ],
   },
 

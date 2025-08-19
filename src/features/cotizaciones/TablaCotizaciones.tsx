@@ -353,7 +353,16 @@ const TablaCotizaciones: React.FC = () => {
                                             <Eye size="18px" />
                                         </Link>
                                         {r.estado ? (
-                                        <></>
+                                        <>
+                                        
+                                          <button
+                                                className="btn btn-sm bg-white btn-circle"
+                                                onClick={() => handleChangeEstado(r)}
+                                                title="Editar estado"
+                                            >
+                                                <Edit3 size="18px" />
+                                            </button>
+                                        </>
                                         ) : (
                                             <button
                                                 className="btn btn-sm bg-white btn-circle"

@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { FormSelect, type SelectOption } from "../../../shared/components/FormSelect";
 import { FormInput } from "../../../shared/components/FormInput";
 import { useDeudor, useRegistrarDeudor, useActualizarDeudor } from "../../../services/creditosServices";
+import { useParams } from "react-router-dom";
 
 // ============================ Tipos ============================
 
@@ -154,22 +155,33 @@ const mapFincaRaiz = (v: any): "Si" | "No" | "Otro" => {
 
 // ============================ Props ============================
 
-type Props = {
-    idCotizacion?: number;
-};
 
 // ============================ Componente ============================
 
-const InfoPersonalFormulario: React.FC<Props> = ({ idCotizacion }) => {
+const InfoPersonalFormulario: React.FC = () => {
+
+    const { id } = useParams<{ id: string }>();
+
+    if (!id) {
+  return <div>Error: no se encontró el parámetro en la URL</div>;
+}
+   const [idCot, idDeudor] = id.split("-").map(Number);
+   
+
+console.log(idCot, idDeudor);
+
     // hooks siempre arriba
-    const { data, isLoading, error } = useDeudor(6);
+    const { data } = useDeudor(idDeudor);
     const registrarDeudor = useRegistrarDeudor();
     const actualizarDeudor = useActualizarDeudor();
 
 
+
+
+
     const { control, handleSubmit, watch, setValue, reset } = useForm<InfoPersonalFormValues>({
         defaultValues: {
-            id_cotizacion: idCotizacion ?? 1,
+            id_cotizacion: idCot,
             numero_documento: "",
             tipo_documento: "Cédula de ciudadanía",
             fecha_expedicion: "",
@@ -216,71 +228,71 @@ const InfoPersonalFormulario: React.FC<Props> = ({ idCotizacion }) => {
     });
 
     // Cargar data del backend → reset con mapeo correcto
-React.useEffect(() => {
-  if (!data) return;
+    React.useEffect(() => {
+        if (!data) return;
 
-  const p = (data.data as any).informacion_personal ?? {};
-  const l = (data.data as any).informacion_laboral ?? {};
-  const v = (data.data as any).vehiculo ?? {};
+        const p = (data.data as any).informacion_personal ?? {};
+        const l = (data.data as any).informacion_laboral ?? {};
+        const v = (data.data as any).vehiculo ?? {};
 
-  // ← FIX: tomar referencias desde data.data.referencias
-  const rRaw: any[] = Array.isArray((data?.data as any)?.referencias)
-    ? (data!.data as any).referencias
-    : [];
+        // ← FIX: tomar referencias desde data.data.referencias
+        const rRaw: any[] = Array.isArray((data?.data as any)?.referencias)
+            ? (data!.data as any).referencias
+            : [];
 
-  // ← Garantiza 3 referencias y normaliza
-  const r3 = rRaw.slice(0, 3);
-  while (r3.length < 3) {
-    r3.push({ nombre_completo: "", tipo_referencia: "", direccion: "", telefono: "" });
-  }
-  const referenciasNorm = r3.map(normalizaRef);
+        // ← Garantiza 3 referencias y normaliza
+        const r3 = rRaw.slice(0, 3);
+        while (r3.length < 3) {
+            r3.push({ nombre_completo: "", tipo_referencia: "", direccion: "", telefono: "" });
+        }
+        const referenciasNorm = r3.map(normalizaRef);
 
-  reset({
-    id_cotizacion: p.id_cotizacion ?? idCotizacion ?? 1,
-    numero_documento: p.numero_documento ?? "",
-    tipo_documento: p.tipo_documento ?? "Cédula de ciudadanía",
-    fecha_expedicion: p.fecha_expedicion ?? "",
-    lugar_expedicion: p.lugar_expedicion ?? "",
-    primer_nombre: p.primer_nombre ?? "",
-    segundo_nombre: p.segundo_nombre ?? "",
-    primer_apellido: p.primer_apellido ?? "",
-    segundo_apellido: p.segundo_apellido ?? "",
-    fecha_nacimiento: p.fecha_nacimiento ?? "",
-    nivel_estudios: p.nivel_estudios ?? "",
-    ciudad_residencia: p.ciudad_residencia ?? "",
-    barrio_residencia: p.barrio_residencia ?? "",
-    direccion_residencia: p.direccion_residencia ?? "",
-    telefono_fijo: p.telefono_fijo ?? "",
-    celular: p.celular ?? "",
-    email: p.email ?? "",
-    estado_civil: p.estado_civil ?? "",
-    personas_a_cargo: toNumber(p.personas_a_cargo ?? 0),
-    tipo_vivienda: p.tipo_vivienda ?? "",
-    costo_arriendo: toNumber(p.costo_arriendo ?? 0),
-    finca_raiz: mapFincaRaiz(p.finca_raiz),
+        reset({
+            id_cotizacion: p.id_cotizacion ?? idCot,
+            numero_documento: p.numero_documento ?? "",
+            tipo_documento: p.tipo_documento ?? "Cédula de ciudadanía",
+            fecha_expedicion: p.fecha_expedicion ?? "",
+            lugar_expedicion: p.lugar_expedicion ?? "",
+            primer_nombre: p.primer_nombre ?? "",
+            segundo_nombre: p.segundo_nombre ?? "",
+            primer_apellido: p.primer_apellido ?? "",
+            segundo_apellido: p.segundo_apellido ?? "",
+            fecha_nacimiento: p.fecha_nacimiento ?? "",
+            nivel_estudios: p.nivel_estudios ?? "",
+            ciudad_residencia: p.ciudad_residencia ?? "",
+            barrio_residencia: p.barrio_residencia ?? "",
+            direccion_residencia: p.direccion_residencia ?? "",
+            telefono_fijo: p.telefono_fijo ?? "",
+            celular: p.celular ?? "",
+            email: p.email ?? "",
+            estado_civil: p.estado_civil ?? "",
+            personas_a_cargo: toNumber(p.personas_a_cargo ?? 0),
+            tipo_vivienda: p.tipo_vivienda ?? "",
+            costo_arriendo: toNumber(p.costo_arriendo ?? 0),
+            finca_raiz: mapFincaRaiz(p.finca_raiz),
 
-    informacion_laboral: {
-      empresa: l.empresa ?? "",
-      direccion_empleador: l.direccion_empleador ?? "",
-      telefono_empleador: l.telefono_empleador ?? "",
-      cargo: l.cargo ?? "",
-      tipo_contrato: l.tipo_contrato ?? "Indefinido",
-      salario: toNumber(l.salario ?? 0),
-      tiempo_servicio: l.tiempo_servicio ?? "",
-    },
+            informacion_laboral: {
+                empresa: l.empresa ?? "",
+                direccion_empleador: l.direccion_empleador ?? "",
+                telefono_empleador: l.telefono_empleador ?? "",
+                cargo: l.cargo ?? "",
+                tipo_contrato: l.tipo_contrato ?? "Indefinido",
+                salario: toNumber(l.salario ?? 0),
+                tiempo_servicio: l.tiempo_servicio ?? "",
+            },
 
-    vehiculo: {
-      placa: v.placa ?? "",
-      marca: v.marca ?? "",
-      modelo: v.modelo ?? "",
-      tipo: v.tipo ?? "",
-      numero_motor: v.numero_motor ?? "",
-    },
+            vehiculo: {
+                placa: v.placa ?? "",
+                marca: v.marca ?? "",
+                modelo: v.modelo ?? "",
+                tipo: v.tipo ?? "",
+                numero_motor: v.numero_motor ?? "",
+            },
 
-    // ← Aquí el arreglo ya está limpio y completo
-    referencias: referenciasNorm,
-  });
-}, [data, reset, idCotizacion]);
+            // ← Aquí el arreglo ya está limpio y completo
+            referencias: referenciasNorm,
+        });
+    }, [data, reset, idCot]);
 
 
     // Si NO es arriendo → costo_arriendo = 0
@@ -298,7 +310,7 @@ React.useEffect(() => {
 
         const payload: InfoPersonalFormValues = {
             ...values,
-            id_cotizacion: values.id_cotizacion ?? idCotizacion ?? 1,
+            id_cotizacion: values.id_cotizacion ?? idCot,
             personas_a_cargo: toNumber(values.personas_a_cargo),
             costo_arriendo: toNumber(values.costo_arriendo),
             informacion_laboral: {
@@ -338,9 +350,9 @@ React.useEffect(() => {
 
     const grid = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3";
 
-    // UI
-    if (isLoading) return <p>Cargando datos del deudor…</p>;
-    if (error) return <p>No se pudo cargar el deudor.</p>;
+    // // UI
+    // if (isLoading) return <p>Cargando datos del deudor…</p>;
+    // if (error) return <p>No se pudo cargar el deudor.</p>;
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
@@ -627,7 +639,7 @@ React.useEffect(() => {
                     type="button"
                     onClick={() =>
                         reset({
-                            id_cotizacion: idCotizacion,
+                            id_cotizacion: idCot,
                             numero_documento: "",
                             tipo_documento: "Cédula de ciudadanía",
                             fecha_expedicion: "",

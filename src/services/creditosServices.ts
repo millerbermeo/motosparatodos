@@ -261,3 +261,112 @@ export const useActualizarCodeudor = () => {
     },
   });
 };
+
+
+
+
+
+
+
+export interface CreditoRaw {
+  id: string | number;
+  asesor?: string;
+  codigo_credito?: string;
+  nombre_cliente?: string;
+  producto?: string;
+  valor_producto?: string | number;   // viene como "68655602.00"
+  plazo_meses?: string | number;      // viene como "6"
+  estado?: string;
+  poraprobado?: string;               // "Sí"/"No" o "No"
+  analista?: string;                  // "Sin analista"
+  revisado?: string;                  // "Sí"/"No"
+  entrega_autorizada?: string;        // "No hay factura"
+  cambio_ci?: string;                 // "Sí"/"No"
+  fecha_creacion?: string;            // "YYYY-MM-DD HH:mm:ss"
+  actualizado?: string;               // "YYYY-MM-DD HH:mm:ss"
+  deudor_id?: string | number;        // "6"
+  cotizacion_id: string | number;        // "6"
+  codeudor_id: string | number; 
+}
+
+export interface Credito {
+  id: number;
+  asesor: string;
+  codigo_credito: string;
+  nombre_cliente: string;
+  producto: string;
+  valor_producto: number;             // normalizado a number
+  plazo_meses: number;                // normalizado a number
+  estado: string;
+  poraprobado: string;
+  analista: string;
+  revisado: string;
+  entrega_autorizada: string;
+  cambio_ci: string;
+  fecha_creacion: string;             // sin tocar (ISO-like del backend)
+  actualizado: string;                // sin tocar
+  deudor_id: number;
+    cotizacion_id: string | number;        // "6"
+  codeudor_id: string | number; 
+
+}
+
+export interface ListCreditosResponseRaw {
+  success?: boolean;
+  creditos?: CreditoRaw[];            // según la captura
+  data?: CreditoRaw[];                // por si el backend envía {data:[]}
+  message?: string;
+}
+
+const toNumberSafe = (v: unknown): number => {
+  if (typeof v === "number") return Number.isFinite(v) ? v : 0;
+  if (typeof v !== "string") return 0;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const mapCredito = (r: CreditoRaw): Credito => ({
+  id: toNumberSafe(r.id),
+  asesor: r.asesor ?? "",
+  codigo_credito: r.codigo_credito ?? "",
+  nombre_cliente: r.nombre_cliente ?? "",
+  producto: r.producto ?? "",
+  valor_producto: toNumberSafe(r.valor_producto),
+  plazo_meses: toNumberSafe(r.plazo_meses),
+  estado: r.estado ?? "",
+  poraprobado: r.poraprobado ?? "",
+  analista: r.analista ?? "",
+  revisado: r.revisado ?? "",
+  entrega_autorizada: r.entrega_autorizada ?? "",
+  cambio_ci: r.cambio_ci ?? "",
+  fecha_creacion: r.fecha_creacion ?? "",
+  actualizado: r.actualizado ?? "",
+  deudor_id: toNumberSafe(r.deudor_id),
+  cotizacion_id: toNumberSafe(r.cotizacion_id),
+    codeudor_id: toNumberSafe(r.codeudor_id),
+  
+});
+
+/**
+ * Hook: useCreditos
+ * Lista los créditos (sin filtros, tal cual el endpoint de tu captura).
+ *
+ * Uso:
+ *   const { data, isLoading, error } = useCreditos();
+ *   // data: Credito[]
+ */
+export const useCreditos = () => {
+  return useQuery<Credito[]>({
+    queryKey: ["creditos"],
+    queryFn: async () => {
+      const { data } = await api.get<ListCreditosResponseRaw>("/list_creditos.php");
+      // el backend puede devolver { creditos: [...] } o { data: [...] }
+      const arr = Array.isArray(data?.creditos)
+        ? data!.creditos!
+        : Array.isArray(data?.data)
+        ? data!.data!
+        : [];
+      return arr.map(mapCredito);
+    },
+  });
+};

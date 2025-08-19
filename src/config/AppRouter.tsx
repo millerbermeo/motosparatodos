@@ -28,6 +28,9 @@ const Creditos = lazy(() => import("../pages/Creditos")); // 👈 crea esta pág
 const Detalles = lazy(() => import("../pages/Detalles")); // 👈 crea esta página simple
 const CrearCotizaciones = lazy(() => import("../pages/CrearCotizaciones")); // 👈 crea esta página simple
 
+const CreditosForm = lazy(() => import("../pages/CreditosForm")); // 👈 crea esta página simple
+
+
 
 const Fallback = () => <div style={{ padding: 16 }}>Cargando…</div>;
 
@@ -67,6 +70,7 @@ const AppRouter: React.FC = () => {
 
               <Route element={<RequireModule name="Créditos" />}>
                 <Route path="/creditos" element={<Creditos />} />
+                <Route path="/creditos/registrar/:id" element={<CreditosForm />} />
               </Route>
 
 
@@ -89,15 +93,15 @@ const AppRouter: React.FC = () => {
 
               {/* -------------------- SUBEMENU ALERTAS -------------------- */}
 
-              <Route element={<RequireModule name="Cumple" />}>
+              <Route element={<RequireModule name="Alertas" />}>
                 <Route path="/happy" element={<Happy />} />
               </Route>
 
-              <Route element={<RequireModule name="Soat" />}>
+              <Route element={<RequireModule name="Alertas" />}>
                 <Route path="/soat" element={<Soat />} />
               </Route>
 
-              <Route element={<RequireModule name="Revisiones" />}>
+              <Route element={<RequireModule name="Alertas" />}>
                 <Route path="/revisiones" element={<Revisiones />} />
               </Route>
 
