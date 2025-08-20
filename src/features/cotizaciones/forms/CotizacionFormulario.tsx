@@ -6,6 +6,7 @@ import { useCanales, useFinancieras, usePreguntas, useSeguros } from "../../../s
 import { useMarcas, useMotosPorMarca } from "../../../services/marcasServices";
 import { useCreateCotizaciones } from "../../../services/cotizacionesServices";
 import { useAuthStore } from "../../../store/auth.store";
+import ButtonLink from "../../../shared/components/ButtonLink";
 
 type MetodoPago = "contado" | "credibike" | "terceros";
 
@@ -79,7 +80,7 @@ const CotizacionFormulario: React.FC = () => {
         formState: { errors },
         watch,
         setValue,
-        reset,  
+        reset,
     } = useForm<FormValues>({
         defaultValues: {
             metodoPago: "contado",
@@ -177,7 +178,7 @@ const CotizacionFormulario: React.FC = () => {
 
     const { data: motos1 } = useMotosPorMarca(selectedMarca1 || undefined);
     const { data: motos2 } = useMotosPorMarca(selectedMarca2 || undefined);
-console.log(motos1)
+    console.log(motos1)
     const motoOptions1: SelectOption[] = (motos1?.motos ?? []).map((m) => ({
         value: m.linea,
         label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP - Modelo ${m.modelo ?? ''}`,
@@ -186,7 +187,7 @@ console.log(motos1)
     console.log(motoOptions1)
     const motoOptions2: SelectOption[] = (motos2?.motos ?? []).map((m) => ({
         value: m.linea,
-        label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP Modelo ${m.modelo ?? '' }`,
+        label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP Modelo ${m.modelo ?? ''}`,
     }));
 
 
@@ -471,23 +472,25 @@ console.log(motos1)
         };
 
         console.log("SUBMIT (payload EXACTO BD):", payload);
-     cotizacion(payload, {
-    onSuccess: () => {
-      // vuelve TODO al estado inicial
-      reset(); // o simplemente reset(); para regresar a defaultValues
-      // si quieres mantener los defaultValues actuales internamente:
-      // reset(DEFAULTS, { keepDefaultValues: true });
-    },
-    onError: (err) => {
-      console.error(err);
-      // opcional: mostrar toast/error
-    },
-  });
+        cotizacion(payload, {
+            onSuccess: () => {
+                // vuelve TODO al estado inicial
+                reset(); // o simplemente reset(); para regresar a defaultValues
+                // si quieres mantener los defaultValues actuales internamente:
+                // reset(DEFAULTS, { keepDefaultValues: true });
+            },
+            onError: (err) => {
+                console.error(err);
+                // opcional: mostrar toast/error
+            },
+        });
     };
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <h2 className="text-lg font-semibold">Método de pago</h2>
+            <div className='pt-4 mb-3'>
+                <ButtonLink to="/cotizaciones" label="Volver a cotizaciones" />
+            </div>
 
             <div className="flex gap-6 flex-col w-full bg-white p-3 rounded-xl">
                 <div className="flex items-center justify-between gap-6 w-full">
@@ -623,7 +626,7 @@ console.log(motos1)
                                         control={control}
                                         placeholder="Ej. 2025 / Edición especial"
                                         disabled={!showMotos || !incluirMoto1}
-                                           className="hidden"
+                                        className="hidden"
                                     />
 
 
@@ -758,7 +761,7 @@ console.log(motos1)
                                         placeholder="Ej. 2025 / Edición especial"
                                         disabled={!showMotos || !incluirMoto2}
                                         className="hidden"
-                                    
+
                                     />
 
 

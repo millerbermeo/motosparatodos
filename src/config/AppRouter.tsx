@@ -29,6 +29,7 @@ const Detalles = lazy(() => import("../pages/Detalles")); // 👈 crea esta pág
 const CrearCotizaciones = lazy(() => import("../pages/CrearCotizaciones")); // 👈 crea esta página simple
 
 const CreditosForm = lazy(() => import("../pages/CreditosForm")); // 👈 crea esta página simple
+const DetalleEstado = lazy(() => import("../pages/DetalleEstado")); // 👈 crea esta página simple
 
 
 
@@ -65,6 +66,7 @@ const AppRouter: React.FC = () => {
 
                 <Route path="/cotizaciones" element={<Cotizaciones />} />
                 <Route path="/cotizaciones/:id" element={<Detalles />} /> {/* 👈 aquí */}
+                <Route path="/cotizaciones/estado/:id" element={<DetalleEstado />} /> {/* 👈 aquí */}
 
               </Route>
 

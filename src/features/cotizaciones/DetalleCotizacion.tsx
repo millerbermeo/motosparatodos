@@ -1,10 +1,26 @@
 // src/pages/DetalleCotizacion.tsx
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import { useCotizacionById } from '../../services/cotizacionesServices'; // ajusta ruta si cambia
+import { useCotizacionById } from '../../services/cotizacionesServices';
+import {
+  UserRound,
+  Bike,
+  Calculator,
+  Activity,
+  CalendarPlus,
+  Mail as MailIcon,
+  Download,
+  FileDown,
+  Fingerprint,
+  Building2,
+  UserCircle2,
+  MessageSquareQuote,
+  BadgeCheck,
+} from 'lucide-react';
+import ButtonLink from '../../shared/components/ButtonLink';
 
 /* =======================
-   Tipos (igual que los tuyos)
+   Tipos
    ======================= */
 type Cuotas = {
   inicial: number;
@@ -17,15 +33,16 @@ type Cuotas = {
 };
 
 type Motocicleta = {
-  modelo: string;
+  modelo: string;                  // "Yamaha fz250 – 2025"
   precioBase: number;
   precioDocumentos: number;
-  descuentos: number;
+  descuentos: number;              // si llega luego, lo mapeamos
   accesorios: number;
-  seguros: number;
-  garantiaExtendida: number;
+  seguros: number;                 // suma de seguros del backend
+  garantiaExtendida: number;       // si tu backend manda $ cámbialo en el mapeo
   total: number;
   cuotas: Cuotas;
+  lado: 'A' | 'B';
 };
 
 type Evento = {
@@ -45,55 +62,26 @@ type Cotizacion = {
     email?: string;
     telefono?: string;
     comentario?: string;
+    comentario2?: string;
+    cedula?: string;
   };
-  moto: Motocicleta;
+  comercial?: {
+    asesor?: string;
+    canal_contacto?: string;
+    financiera?: string | null;
+    tipo_pago?: string | null;
+    prospecto?: string | null;
+    pregunta?: string | null;
+  };
+  motoA?: Motocicleta;
+  motoB?: Motocicleta;
   actividad: Evento[];
-};
-
-/* =======================
-   Ejemplo estático (fallback)
-   ======================= */
-const demo: Cotizacion = {
-  id: 'COT-2025-00123',
-  estado: 'abierta',
-  creada: 'agosto 14 2025, 1:01 pm',
-  cliente: {
-    nombres: 'Germán',
-    apellidos: 'Muñoz',
-    email: '',
-    telefono: '3115380028',
-    comentario: 'Venta prueba',
-  },
-  moto: {
-    modelo: 'SUZUKI GN 125 EURO 3 2024',
-    precioBase: 6_280_000,
-    precioDocumentos: 770_001,
-    descuentos: 0,
-    accesorios: 0,
-    seguros: 0,
-    garantiaExtendida: 816_400,
-    total: 7_050_001,
-    cuotas: {
-      inicial: 0,
-      meses6: 1_225_000,
-      meses12: 670_000,
-      meses18: 523_000,
-      meses24: 435_000,
-      meses30: 386_000,
-      meses36: 354_000,
-    },
-  },
-  actividad: [
-    { fecha: 'agosto 14 2025, 1:06 pm', titulo: 'Se inicia la solicitud de crédito', etiqueta: 'solicitud de crédito', color: 'success' },
-    { fecha: 'agosto 14 2025, 1:01 pm', titulo: 'Primer recordatorio', etiqueta: 'sin estado', color: 'warning' },
-    { fecha: 'agosto 14 2025, 1:01 pm', titulo: 'Se crea la cotización', etiqueta: 'sin estado', color: 'warning' },
-  ],
 };
 
 /* =======================
    Helpers
    ======================= */
-const fmt = (v: number) =>
+const fmtCOP = (v: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
 
 const badgeEstado = (estado: Cotizacion['estado']) => {
@@ -106,109 +94,197 @@ const badgeEstado = (estado: Cotizacion['estado']) => {
   return map[estado];
 };
 
-const waUrl = (tel?: string, msg?: string) =>
-  tel ? `https://wa.me/57${tel.replace(/\D/g, '')}?text=${encodeURIComponent(msg || 'Hola, sobre tu cotización…')}` : '#';
-
-const renderCuotaTile = (label: string, valor?: number) =>
-  typeof valor === 'number' ? <StatTile key={label} label={label} value={fmt(valor)} /> : null;
-
-// Formatea fecha "YYYY-MM-DD HH:mm:ss" -> "agosto 18 2025, 8:27 pm"
+// "2025-08-19 05:53:12" -> "19 de agosto de 2025, 5:53 a. m."
 const fmtFecha = (isoLike?: string) => {
   if (!isoLike) return '';
-  const parts = isoLike.replace(' ', 'T'); // "2025-08-18T20:27:17"
-  const d = new Date(parts);
+  const d = new Date(isoLike.replace(' ', 'T'));
   return d.toLocaleString('es-CO', {
-    month: 'long',
     day: '2-digit',
+    month: 'long',
     year: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
   });
 };
 
-// Mapea el JSON del backend -> Cotizacion (lado A por defecto)
-const mapApiToCotizacion = (data: any): Cotizacion => {
-  const nombres = [data.name, data.s_name].filter(Boolean).join(' ').trim() || '—';
-  const apellidos = [data.last_name, data.s_last_name].filter(Boolean).join(' ').trim() || undefined;
-  const email = data.email && data.email !== '0' ? String(data.email) : undefined;
-  const comentario = data.comentario && data.comentario !== '0' ? String(data.comentario) : undefined;
+// URLs de descarga (ajusta VITE_API_URL a tu backend)
+const API_BASE = (import.meta as any)?.env?.VITE_API_URL || '';
+const urlCotizacionPDF = (id: string) => `${API_BASE}/cotizaciones/${id}/pdf`;
+const urlRuntPDF = (id: string) => `${API_BASE}/cotizaciones/${id}/runt`;
 
-  const modelo = [data.marca_a, data.linea_a].filter(Boolean).join(' ');
-  const precioBase = Number(data.precio_base_a) || 0;
-  const precioDocumentos = Number(data.precio_documentos_a) || 0;
-  const total = Number(data.precio_total_a) || precioBase + precioDocumentos;
+const numOrUndef = (v: any) => {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : undefined;
+};
 
-  // Si accesorios/seguros llegan como 0/1, aquí no hay valores $, así que los dejamos en 0 monetario
-  const accesorios = 0;
-  const seguros = 0;
-  const garantiaExtendida = 0; // "3 años" no es valor monetario
+/* =======================
+   Mapeo de API -> UI
+   ======================= */
+const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
+  const prefix = lado === 'A' ? '_a' : '_b';
+
+  const marca = data?.[`marca${prefix}`];
+  const linea = data?.[`linea${prefix}`];
+
+  // Si no hay marca/linea ni precios, no devolvemos la moto
+  const hasCore =
+    marca || linea || data?.[`precio_base${prefix}`] || data?.[`precio_total${prefix}`];
+
+  if (!hasCore) return undefined;
+
+  const modelo = [marca, linea].filter(Boolean).join(' ').trim() || '—';
+  const precioBase = Number(data?.[`precio_base${prefix}`]) || 0;
+  const precioDocumentos = Number(data?.[`precio_documentos${prefix}`]) || 0;
+  const total =
+    Number(data?.[`precio_total${prefix}`]) || (precioBase + precioDocumentos);
+
+  const accesorios = Number(data?.[`accesorios${prefix}`]) || 0;
+
+  // Seguros (sumatoria)
+  const seguros =
+    (Number(data?.[`seguro_vida${prefix}`]) || 0) +
+    (Number(data?.[`seguro_mascota_s${prefix}`]) || 0) +
+    (Number(data?.[`seguro_mascota_a${prefix}`]) || 0) +
+    (Number(data?.[`otro_seguro${prefix}`]) || 0);
+
+  // Descuentos y garantía (si llegan luego en $ cámbialos acá)
+  const descuentos = 0;
+  const garantiaExtendida = data?.[`garantia${prefix}`] ? 0 : 0;
 
   const cuotas: Cuotas = {
-    inicial: Number(data.cuota_inicial_a) || 0,
-    meses6: Number(data.cuota_6_a) || undefined,
-    meses12: Number(data.cuota_12_a) || undefined,
-    meses18: Number(data.cuota_18_a) || undefined,
-    meses24: Number(data.cuota_24_a) || undefined,
-    meses30: Number(data.cuota_30_a) || undefined,
-    meses36: Number(data.cuota_36_a) || undefined,
+    inicial: Number(data?.[`cuota_inicial${prefix}`]) || 0,
+    meses6: numOrUndef(data?.[`cuota_6${prefix}`]),
+    meses12: numOrUndef(data?.[`cuota_12${prefix}`]),
+    meses18: numOrUndef(data?.[`cuota_18${prefix}`]),
+    meses24: numOrUndef(data?.[`cuota_24${prefix}`]),
+    meses30: numOrUndef(data?.[`cuota_30${prefix}`]),
+    meses36: numOrUndef(data?.[`cuota_36${prefix}`]),
   };
 
-  const estadoBackend = (data.estado || '').toString().toLowerCase();
-  const estado: Cotizacion['estado'] =
-    estadoBackend.includes('aprob') ? 'aprobada'
-    : estadoBackend.includes('rechaz') ? 'rechazada'
-    : estadoBackend.includes('borr') ? 'borrador'
-    : 'abierta';
+  return {
+    modelo,
+    precioBase,
+    precioDocumentos,
+    descuentos,
+    accesorios,
+    seguros,
+    garantiaExtendida,
+    total,
+    cuotas,
+    lado,
+  };
+};
 
-  const creadaFmt = fmtFecha(data.fecha_creacion);
+const mapApiToCotizacion = (data: any): Cotizacion => {
+  // Cliente
+  const nombres = [data?.name, data?.s_name].filter(Boolean).join(' ').trim() || '—';
+  const apellidos = [data?.last_name, data?.s_last_name].filter(Boolean).join(' ').trim() || undefined;
+  const email = data?.email && data.email !== '0' ? String(data.email) : undefined;
+  const telefono: string | undefined = undefined; // no viene en el JSON de ejemplo
+  const comentario = data?.comentario && data.comentario !== '0' ? String(data.comentario) : undefined;
+  const comentario2 = data?.comentario2 && data.comentario2 !== '0' ? String(data.comentario2) : undefined;
+  const cedula = data?.cedula || undefined;
+
+  // Comercial
+  const comercial = {
+    asesor: data?.asesor || undefined,
+    canal_contacto: data?.canal_contacto || undefined,
+    financiera: data?.financiera ?? null,
+    tipo_pago: data?.tipo_pago ?? null,
+    prospecto: data?.prospecto ?? null,
+    pregunta: data?.pregunta ?? null,
+  };
+
+  // Motos
+  const motoA = buildMoto(data, 'A');
+  const motoB = buildMoto(data, 'B');
+
+  // Estado
+  const rawEstado = String(data?.estado || '').toLowerCase();
+  const estado: Cotizacion['estado'] =
+    rawEstado.includes('aprob') ? 'aprobada' :
+      rawEstado.includes('rechaz') ? 'rechazada' :
+        rawEstado.includes('borr') ? 'borrador' : 'abierta';
+
+  const creada = fmtFecha(data?.fecha_creacion);
 
   const actividad: Evento[] = [
-    { fecha: fmtFecha(data.fecha_actualizacion), titulo: 'Actualización de cotización', etiqueta: data.estado || 'sin estado', color: 'info' },
-    { fecha: fmtFecha(data.fecha_creacion), titulo: 'Se crea la cotización', etiqueta: data.estado || 'sin estado', color: 'warning' },
+    { fecha: fmtFecha(data?.fecha_actualizacion), titulo: 'Actualización de cotización', etiqueta: data?.estado || 'Sin estado', color: 'info' },
+    { fecha: fmtFecha(data?.fecha_creacion), titulo: 'Se crea la cotización', etiqueta: data?.estado || 'Sin estado', color: 'warning' },
   ];
 
   return {
-    id: String(data.id ?? ''),
+    id: String(data?.id ?? ''),
     estado,
-    creada: creadaFmt,
-    cliente: { nombres, apellidos, email, telefono: undefined, comentario },
-    moto: {
-      modelo: modelo || '—',
-      precioBase,
-      precioDocumentos,
-      descuentos: 0,
-      accesorios,
-      seguros,
-      garantiaExtendida,
-      total,
-      cuotas,
-    },
+    creada,
+    cliente: { nombres, apellidos, email, telefono, comentario, comentario2, cedula },
+    comercial,
+    motoA,
+    motoB,
     actividad,
   };
 };
 
 /* =======================
-   Componente principal
+   Componente
    ======================= */
 const DetalleCotizacion: React.FC = () => {
-  // 1) tomar id de la URL: /cotizaciones/:id
   const { id } = useParams<{ id: string }>();
-
-  // 2) pedir al backend usando tu hook
   const { data, isLoading, error } = useCotizacionById(id);
 
-  // 3) elegir qué mostrar
-  const q: Cotizacion = React.useMemo(() => {
-    const payload = data?.data; // tu backend: { success, data }
-    if (payload) return mapApiToCotizacion(payload);
-    return demo; // fallback mientras no hay data
-  }, [data]);
+  const payload = (data as any)?.data ?? data;
+  const q: Cotizacion | undefined = React.useMemo(
+    () => (payload ? mapApiToCotizacion(payload) : undefined),
+    [payload]
+  );
 
+  // Estado de tab (A/B)
+  const [tab, setTab] = React.useState<'A' | 'B'>('A');
+  React.useEffect(() => {
+    if (q?.motoB) setTab('A'); // default A si hay B
+  }, [q?.motoB]);
+
+  const moto = tab === 'A' ? q?.motoA : q?.motoB;
+
+  // Handlers barra de acciones
+  const handleCrearRecordatorio = () => {
+    console.log('Crear recordatorio para cotización', q?.id);
+  };
+
+  const handleEnviarCorreo = () => {
+    if (!q) return;
+    const to = q.cliente.email || '';
+    const subject = `Tu cotización #${q.id}`;
+    const body = [
+      `Hola ${q.cliente.nombres || ''},`,
+      '',
+      `Te compartimos el detalle de tu cotización #${q.id}.`,
+      q.motoA ? `Moto A: ${q.motoA.modelo} | Total: ${fmtCOP(q.motoA.total)}` : '',
+      q.motoB ? `Moto B: ${q.motoB.modelo} | Total: ${fmtCOP(q.motoB.total)}` : '',
+      '',
+      'Quedo atento/a.',
+    ]
+      .filter(Boolean)
+      .join('\n');
+    window.location.href = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
+
+  const handleDescargarCotizacion = () => {
+    if (!q) return;
+    window.open(urlCotizacionPDF(q.id), '_blank');
+  };
+
+  const handleDescargarRunt = () => {
+    if (!q) return;
+    window.open(urlRuntPDF(q.id), '_blank');
+  };
+
+  // Blocs de estados
   if (!id) {
     return (
       <main className="w-full min-h-screen flex items-center justify-center">
         <div className="alert alert-error max-w-lg">
-          <span>Falta el parámetro <code>id</code> en la URL. Debe ser /cotizaciones/:id</span>
+          <span>Falta el parámetro <code>id</code> en la URL. Debe ser <code>/cotizaciones/:id</code></span>
         </div>
       </main>
     );
@@ -226,21 +302,35 @@ const DetalleCotizacion: React.FC = () => {
     return (
       <main className="w-full min-h-screen flex items-center justify-center">
         <div className="alert alert-warning max-w-lg">
-          <span>Hubo un problema cargando la cotización #{id}. Mostrando demo.</span>
+          <span>Hubo un problema cargando la cotización #{id}.</span>
         </div>
-        {/* Aún así renderizamos abajo con demo */}
+      </main>
+    );
+  }
+
+  if (!q) {
+    return (
+      <main className="w-full min-h-screen flex items-center justify-center">
+        <div className="alert alert-info max-w-lg">
+          <span>No se encontró información para la cotización #{id}.</span>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="w-full min-h-screen bg-base-100 px-4 md:px-6 py-6">
-      {/* Header / título y acciones */}
+    <main className="w-full min-h-screen px-4 md:px-6 pb-6">
+      {/* Header */}
+      <div className='pt-4 mb-3'>
+        <ButtonLink to="/cotizaciones" label="Volver a cotizaciones" />
+      </div>
+
       <section className="w-full mb-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div>
+
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Información de la cotización</h1>
-            <div className="mt-2 flex items-center gap-2 text-sm">
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
               <span className={`badge ${badgeEstado(q.estado)}`}>{q.estado}</span>
               <span className="opacity-70">Creada:</span>
               <span className="font-medium">{q.creada || '—'}</span>
@@ -248,129 +338,161 @@ const DetalleCotizacion: React.FC = () => {
               <span className="font-mono">{q.id}</span>
             </div>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <a className="btn btn-primary btn-sm" href="#" onClick={(e) => e.preventDefault()}>
-              <PdfIcon className="w-4 h-4" /> Descargar PDF
-            </a>
-            <a className="btn btn-outline btn-sm" href={waUrl(q.cliente.telefono, `Hola ${q.cliente.nombres}, te comparto la cotización ${q.id}`)} target="_blank" rel="noopener noreferrer">
-              <WhatsIcon className="w-4 h-4" /> WhatsApp
-            </a>
-            <a
-              className="btn btn-ghost btn-sm"
-              href={`mailto:${q.cliente.email || ''}?subject=${encodeURIComponent('Tu cotización')}&body=${encodeURIComponent('Adjuntamos detalle de tu cotización…')}`}
-            >
-              <MailIcon className="w-4 h-4" /> Email
-            </a>
-            <button className="btn btn-ghost btn-sm" onClick={() => navigator.clipboard?.writeText(window.location.href)}>
-              <CopyIcon className="w-4 h-4" /> Copiar link
-            </button>
-          </div>
         </div>
       </section>
 
-      {/* Secciones */}
       <div className="flex flex-col gap-6">
         {/* Información del cliente */}
-        <section className="card bg-base-100 border border-base-300/60 shadow-sm">
+        <section className="card bg-white border border-base-300/60 shadow-sm rounded-2xl">
           <div className="card-body">
-            <div className="flex items-center gap-2 mb-2">
-              <UserIcon className="w-5 h-5" />
+            <div className="flex items-center gap-2 mb-2 bg-[#3498DB]/70 text-white p-2 rounded-xl">
+              <UserRound className="w-5 h-5" />
               <h2 className="card-title text-lg">Información del cliente</h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-2">
               <InfoRow label="Nombres" value={q.cliente.nombres} />
-              <InfoRow label="Apellidos" value={q.cliente.apellidos || '—'} />
-              <InfoRow label="Email" value={q.cliente.email || '—'} />
-              <InfoRow label="Teléfono" value={q.cliente.telefono || '—'} />
-              <InfoRow label="Comentario" value={q.cliente.comentario || '—'} full />
+              <InfoRow label="Apellidos" value={q.cliente.apellidos || ''} />
+              <InfoRow label="Email" value={q.cliente.email || ''} />
+              <InfoRow label="Teléfono" value={q.cliente.telefono || ''} />
+              <InfoRow label="Cédula" value={q.cliente.cedula || ''} />
+              <InfoRow label="Comentario" value={q.cliente.comentario || q.cliente.comentario2 || ''} full />
+            </div>
+
+            {/* Datos comerciales */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-2 mt-2">
+              <InfoPill icon={<UserCircle2 className="w-4 h-4" />} label="Asesor" value={q.comercial?.asesor || '—'} />
+              <InfoPill icon={<Building2 className="w-4 h-4" />} label="Financiera" value={q.comercial?.financiera || '—'} />
+              <InfoPill icon={<Fingerprint className="w-4 h-4" />} label="Tipo de pago" value={q.comercial?.tipo_pago || '—'} />
+              <InfoPill icon={<MessageSquareQuote className="w-4 h-4" />} label="Canal de contacto" value={q.comercial?.canal_contacto || '—'} />
+              <InfoPill icon={<BadgeCheck className="w-4 h-4" />} label="Prospecto" value={q.comercial?.prospecto || '—'} />
+              <InfoPill icon={<MessageSquareQuote className="w-4 h-4" />} label="Pregunta" value={q.comercial?.pregunta || '—'} />
             </div>
           </div>
         </section>
 
-        {/* Motocicleta */}
-        <section className="card bg-base-100 border border-base-300/60 shadow-sm">
+        {/* Motocicletas con tabs A/B si aplica */}
+        <section className="card bg-base-100 border border-base-300/60 shadow-sm rounded-2xl">
           <div className="card-body">
             <div className="flex items-center justify-between gap-2 mb-2">
               <div className="flex items-center gap-2">
-                <BikeIcon className="w-5 h-5" />
+                <Bike className="w-5 h-5" />
                 <h2 className="card-title text-lg">Motocicletas</h2>
               </div>
-              <span className="badge badge-ghost">{q.moto.modelo}</span>
+
+              {/* Tabs A/B si existe B */}
+              {q.motoB && (
+                <div role="tablist" className="tabs tabs-boxed">
+                  <button
+                    role="tab"
+                    className={`tab rounded-lg px-4 py-2 ${tab === 'A'
+                      ? 'tab-active bg-green-500 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    onClick={() => setTab('A')}
+                  >
+                    Moto A
+                  </button>
+                  <button
+                    role="tab"
+                    className={`tab rounded-lg px-4 py-2 ml-2 ${tab === 'B'
+                      ? 'tab-active bg-green-500 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    onClick={() => setTab('B')}
+                  >
+                    Moto B
+                  </button>
+                </div>
+              )}
+
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Col 1 */}
-              <div className="space-y-2">
-                <DataRow label="Precio base" value={fmt(q.moto.precioBase)} />
-                <DataRow label="Descuentos" value={fmt(q.moto.descuentos)} valueClass="text-error font-semibold" />
-                <DataRow label="Seguros" value={fmt(q.moto.seguros)} />
-                <DataRow label="Garantía extendida" value={fmt(q.moto.garantiaExtendida)} />
+            {/* Cabecera del modelo */}
+            {moto && (
+              <div className="mb-3">
+                <span className="badge badge-ghost">{moto.modelo}</span>
               </div>
-              {/* Col 2 */}
-              <div className="space-y-2">
-                <DataRow label="Precio Documentos" value={fmt(q.moto.precioDocumentos)} />
-                <DataRow label="Accesorios / Marcadas / Personalizadas" value={fmt(q.moto.accesorios)} />
-                <DataRow label="Total" value={fmt(q.moto.total)} strong />
+            )}
+
+            {/* Detalle precios */}
+            {moto ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <DataRow label="Precio base" value={fmtCOP(moto.precioBase)} />
+                  <DataRow label="Descuentos" value={fmtCOP(moto.descuentos)} valueClass="text-error font-semibold" />
+                  <DataRow label="Seguros" value={fmtCOP(moto.seguros)} />
+                  <DataRow label="Garantía extendida" value={fmtCOP(moto.garantiaExtendida)} />
+                </div>
+                <div className="space-y-2">
+                  <DataRow label="Precio Documentos" value={fmtCOP(moto.precioDocumentos)} />
+                  <DataRow label="Accesorios / Marcadas / Personalizadas" value={fmtCOP(moto.accesorios)} />
+                  <DataRow label="Total" value={fmtCOP(moto.total)} strong />
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="text-sm opacity-70">No hay información de la {tab === 'A' ? 'Moto A' : 'Moto B'}.</div>
+            )}
           </div>
         </section>
 
-        {/* Cuotas */}
-        <section className="card bg-base-100 border border-base-300/60 shadow-sm">
+        {/* Cuotas (dependen de la moto seleccionada) */}
+        <section className="card bg-base-100 border border-base-300/60 shadow-sm rounded-2xl">
           <div className="card-body">
             <div className="flex items-center gap-2 mb-2">
-              <CalcIcon className="w-5 h-5" />
-              <h2 className="card-title text-lg">Cuotas</h2>
+              <Calculator className="w-5 h-5" />
+              <h2 className="card-title text-lg">Cuotas {q.motoB ? `(${tab})` : ''}</h2>
             </div>
 
-            {/* Tiles resumidas */}
-            <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-3">
-              <StatTile label="Cuota inicial" value={fmt(q.moto.cuotas.inicial)} badge="Inicial" />
-              {renderCuotaTile('6 cuotas', q.moto.cuotas.meses6)}
-              {renderCuotaTile('12 cuotas', q.moto.cuotas.meses12)}
-              {renderCuotaTile('18 cuotas', q.moto.cuotas.meses18)}
-              {renderCuotaTile('24 cuotas', q.moto.cuotas.meses24)}
-              {renderCuotaTile('30 cuotas', q.moto.cuotas.meses30)}
-              {renderCuotaTile('36 cuotas', q.moto.cuotas.meses36)}
-            </div>
+            {moto ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-3">
+                  <StatTile label="Cuota inicial" value={fmtCOP(moto.cuotas.inicial)} badge="Inicial" />
+                  {renderCuotaTile('6 cuotas', moto.cuotas.meses6)}
+                  {renderCuotaTile('12 cuotas', moto.cuotas.meses12)}
+                  {renderCuotaTile('18 cuotas', moto.cuotas.meses18)}
+                  {renderCuotaTile('24 cuotas', moto.cuotas.meses24)}
+                  {renderCuotaTile('30 cuotas', moto.cuotas.meses30)}
+                  {renderCuotaTile('36 cuotas', moto.cuotas.meses36)}
+                </div>
 
-            {/* Tabla compacta de cuotas */}
-            <div className="overflow-x-auto mt-4">
-              <table className="table table-sm">
-                <thead>
-                  <tr>
-                    <th>Plazo</th>
-                    <th className="text-right">Valor cuota</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {renderCuotaRow('6 cuotas', q.moto.cuotas.meses6)}
-                  {renderCuotaRow('12 cuotas', q.moto.cuotas.meses12)}
-                  {renderCuotaRow('18 cuotas', q.moto.cuotas.meses18)}
-                  {renderCuotaRow('24 cuotas', q.moto.cuotas.meses24)}
-                  {renderCuotaRow('30 cuotas', q.moto.cuotas.meses30)}
-                  {renderCuotaRow('36 cuotas', q.moto.cuotas.meses36)}
-                </tbody>
-              </table>
-            </div>
+                <div className="overflow-x-auto mt-4">
+                  <table className="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>Plazo</th>
+                        <th className="text-right">Valor cuota</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {renderCuotaRow('6 cuotas', moto.cuotas.meses6)}
+                      {renderCuotaRow('12 cuotas', moto.cuotas.meses12)}
+                      {renderCuotaRow('18 cuotas', moto.cuotas.meses18)}
+                      {renderCuotaRow('24 cuotas', moto.cuotas.meses24)}
+                      {renderCuotaRow('30 cuotas', moto.cuotas.meses30)}
+                      {renderCuotaRow('36 cuotas', moto.cuotas.meses36)}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            ) : (
+              <div className="text-sm opacity-70">No hay cuotas para la {tab === 'A' ? 'Moto A' : 'Moto B'}.</div>
+            )}
           </div>
         </section>
 
         {/* Actividad reciente */}
-        <section className="card bg-base-100 border border-base-300/60 shadow-sm">
+        <section className="card bg-base-100 border border-base-300/60 shadow-sm rounded-2xl">
           <div className="card-body">
             <div className="flex items-center gap-2 mb-2">
-              <ActivityIcon className="w-5 h-5" />
+              <Activity className="w-5 h-5" />
               <h2 className="card-title text-lg">Actividad reciente</h2>
             </div>
 
             <ol className="relative border-s border-base-300">
               {q.actividad.map((ev, i) => (
                 <li key={i} className="ms-6 mb-5">
-                  <span className="absolute -start-2 mt-1 w-3 h-3 rounded-full bg-base-300"></span>
+                  <span className="absolute -start-2 mt-1 w-3 h-3 rounded-full bg-base-300" />
                   <div className="flex flex-wrap items-center gap-2 text-sm opacity-70">
                     <span>{ev.fecha}</span>
                     {ev.etiqueta && <span className={`badge badge-${ev.color || 'ghost'} badge-sm`}>{ev.etiqueta}</span>}
@@ -382,6 +504,36 @@ const DetalleCotizacion: React.FC = () => {
           </div>
         </section>
       </div>
+
+      {/* Barra de acciones (inferior) */}
+      <section className="sticky bottom-0 mt-4 bg-base-100/90 backdrop-blur border-t border-base-300 px-4 py-3">
+        <div className="max-w-full mx-auto flex flex-wrap items-center justify-end gap-2">
+          <button className="btn btn-success btn-sm" onClick={handleCrearRecordatorio} title="Crear recordatorio">
+            <CalendarPlus className="w-4 h-4" />
+            Crear recordatorio
+          </button>
+
+          <button
+            className="btn btn-success btn-sm"
+            onClick={handleEnviarCorreo}
+            disabled={!q.cliente.email}
+            title="Enviar por correo"
+          >
+            <MailIcon className="w-4 h-4" />
+            Enviar por correo
+          </button>
+
+          <button className="btn btn-success btn-sm" onClick={handleDescargarCotizacion} title="Descargar cotización">
+            <Download className="w-4 h-4" />
+            Descargar cotización
+          </button>
+
+          <button className="btn btn-success btn-sm" onClick={handleDescargarRunt} title="Descargar RUNT">
+            <FileDown className="w-4 h-4" />
+            Descargar RUNT
+          </button>
+        </div>
+      </section>
     </main>
   );
 };
@@ -396,20 +548,34 @@ const InfoRow: React.FC<{ label: string; value: React.ReactNode; full?: boolean 
   </div>
 );
 
+const InfoPill: React.FC<{ icon: React.ReactNode; label: string; value: React.ReactNode }> = ({
+  icon,
+  label,
+  value,
+}) => (
+  <div className="flex items-center gap-2 bg-[#F5F5F5] rounded-lg px-3 py-2">
+    <span className="opacity-80">{icon}</span>
+    <div>
+      <div className="text-xs opacity-60">{label}</div>
+      <div className="text-sm font-medium">{value}</div>
+    </div>
+  </div>
+);
+
 const DataRow: React.FC<{ label: string; value: React.ReactNode; strong?: boolean; valueClass?: string }> = ({
   label,
   value,
   strong,
   valueClass,
 }) => (
-  <div className="flex items-center justify-between bg-base-200 px-3 py-2 rounded-md">
+  <div className="flex items-center justify-between bg-[#3498DB]/70 text-white px-3 py-2 rounded-md">
     <span className="font-medium">{label}</span>
     <span className={strong ? 'font-bold' : valueClass || ''}>{value}</span>
   </div>
 );
 
 const StatTile: React.FC<{ label: string; value: string; badge?: string }> = ({ label, value, badge }) => (
-  <div className="stats shadow-sm bg-base-100 w-full">
+  <div className="stats shadow-sm bg-[#F5F5F5] w-full rounded-xl">
     <div className="stat">
       <div className="stat-title">{label}</div>
       <div className="stat-value text-lg">{value}</div>
@@ -422,65 +588,15 @@ const StatTile: React.FC<{ label: string; value: string; badge?: string }> = ({ 
   </div>
 );
 
+const renderCuotaTile = (label: string, valor?: number) =>
+  typeof valor === 'number' ? <StatTile key={label} label={label} value={fmtCOP(valor)} /> : null;
+
 const renderCuotaRow = (label: string, valor?: number) =>
   typeof valor === 'number' ? (
     <tr key={label}>
       <td>{label}</td>
-      <td className="text-right">{fmt(valor)}</td>
+      <td className="text-right">{fmtCOP(valor)}</td>
     </tr>
   ) : null;
-
-/* =======================
-   Íconos (SVG inline)
-   ======================= */
-const PdfIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" opacity=".2" />
-    <path d="M14 2v6h6M9 13h6M9 17h6M9 9h3" />
-  </svg>
-);
-
-const WhatsIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
-    <path d="M20.52 3.48A11.94 11.94 0 0 0 12.06 0C5.46 0 .1 5.36.1 11.96c0 2.1.56 4.1 1.63 5.88L0 24l6.29-1.64a11.9 11.9 0 0 0 5.77 1.47h.01c6.6 0 11.96-5.36 11.96-11.96 0-3.2-1.25-6.22-3.51-8.39z" />
-    <path d="M17.27 14.2c-.23-.11-1.37-.68-1.58-.76-.21-.08-.36-.11-.52.11-.15.22-.6.75-.73.9-.13.15-.27.17-.5.06-.23-.11-.98-.36-1.86-1.12-.69-.61-1.16-1.36-1.3-1.59-.13-.23-.01-.35.1-.46.11-.11.23-.27.34-.4.11-.13.15-.23.23-.38.08-.15.04-.28-.02-.4-.06-.11-.52-1.26-.71-1.72-.18-.43-.37-.37-.52-.38h-.45c-.15 0-.4.06-.61.28-.21.22-.8.78-.8 1.9 0 1.12.82 2.2.94 2.35.11.15 1.6 2.45 3.87 3.33.54.23.96.37 1.29.47.54.17 1.03.15 1.42.09.43-.06 1.37-.56 1.56-1.1.19-.54.19-1 .13-1.1-.06-.11-.21-.17-.44-.28z" />
-  </svg>
-);
-
-const MailIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
-    <path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Zm0 2v.01L12 12 4 6.01V6h16ZM4 18V8.24l7.4 5.55a1 1 0 0 0 1.2 0L20 8.24V18H4Z" />
-  </svg>
-);
-
-const UserIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
-    <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-5 0-9 2.5-9 5.5V22h18v-2.5C21 16.5 17 14 12 14Z" />
-  </svg>
-);
-
-const BikeIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
-    <path d="M5 17a4 4 0 1 1 3.874-5h2.252l-1.2-3H8a1 1 0 0 1 0-2h3a1 1 0 0 1 .94.66l2.5 6.34H12.5A4 4 0 1 1 5 17Zm14 0a4 4 0 1 0-3.874-5h-1.9l.8 2H19a4 4 0 0 0 0 8 4 4 0 0 0 0-8Z" />
-  </svg>
-);
-
-const CalcIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
-    <path d="M6 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm3 4h6v4H9V6zm-2 7h2v2H7v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-8 3h2v2H7v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2z" />
-  </svg>
-);
-
-const ActivityIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
-    <path d="M3 13h3l3-8 4 14 3-6h5" />
-  </svg>
-);
-
-const CopyIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
-    <path d="M16 1H4a2 2 0 0 0-2 2v12h2V3h12V1Zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Z" />
-  </svg>
-);
 
 export default DetalleCotizacion;

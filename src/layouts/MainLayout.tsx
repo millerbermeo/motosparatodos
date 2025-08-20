@@ -22,7 +22,7 @@ const MainLayout: React.FC = () => {
   {/* Botón pegado al borde derecho del sidebar */}
   <button
     onClick={toggleSidebar}
-    className={`absolute top-3  p-2 cursor-pointer rounded bg-[#3498DB] text-white shadow ${isOpen ? 'right-[-60px] lg:right-[-60px]' : 'right-[-100px] lg:right-[-100px]'}`}
+    className={`absolute top-3  p-2 cursor-pointer rounded-full bg-[#3498DB] border-white border text-white shadow ${isOpen ? 'right-[-60px] lg:right-[-20px]' : 'right-[-100px] lg:right-[-95px]'}`}
     aria-label="Toggle sidebar"
   >
     {isOpen ? <ChevronLeft size={20} /> : <Menu size={20} />}

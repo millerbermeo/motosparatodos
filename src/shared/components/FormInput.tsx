@@ -40,7 +40,7 @@ export function FormInput<T extends FieldValues>({
         <div className="w-full">
           <div
             className={[
-              "relative bg-base-200 rounded-lg shadow-sm",
+              "relative bg-base-300/70 rounded-lg shadow-sm",
               "focus-within:ring-2 focus-within:ring-neutral-content",
               "transition-[box-shadow,ring] duration-150",
               disabled ? "opacity-90" : "",

@@ -277,7 +277,7 @@ export interface CreditoRaw {
   valor_producto?: string | number;   // viene como "68655602.00"
   plazo_meses?: string | number;      // viene como "6"
   estado?: string;
-  poraprobado?: string;               // "Sí"/"No" o "No"
+  proaprobado?: string;               // "Sí"/"No" o "No"
   analista?: string;                  // "Sin analista"
   revisado?: string;                  // "Sí"/"No"
   entrega_autorizada?: string;        // "No hay factura"
@@ -298,7 +298,7 @@ export interface Credito {
   valor_producto: number;             // normalizado a number
   plazo_meses: number;                // normalizado a number
   estado: string;
-  poraprobado: string;
+  proaprobado: string;
   analista: string;
   revisado: string;
   entrega_autorizada: string;
@@ -334,7 +334,7 @@ const mapCredito = (r: CreditoRaw): Credito => ({
   valor_producto: toNumberSafe(r.valor_producto),
   plazo_meses: toNumberSafe(r.plazo_meses),
   estado: r.estado ?? "",
-  poraprobado: r.poraprobado ?? "",
+  proaprobado: r.proaprobado ?? "",
   analista: r.analista ?? "",
   revisado: r.revisado ?? "",
   entrega_autorizada: r.entrega_autorizada ?? "",

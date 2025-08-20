@@ -3,6 +3,7 @@ import React from "react";
 import { Pen } from "lucide-react";
 import { useCreditos } from "../../services/creditosServices";
 import { Link } from "react-router-dom";
+import { useAuthStore } from "../../store/auth.store";
 
 const DEFAULT_PAGE_SIZE = 10;
 const SIBLING_COUNT = 1;
@@ -60,16 +61,22 @@ const gridToolbar = "flex items-center gap-2 flex-wrap hidden";
 const moneyCOP = (n: number) => `${Number(n || 0).toLocaleString()} COP`;
 
 const badgeSiNo = (v?: string) => {
-    const isYes = String(v || "").toLowerCase().startsWith("s"); // "Sí"/"Si"
-    const isNo = String(v || "").toLowerCase().startsWith("n");  // "No"
+    const value = (v || "").trim().toLowerCase();
+
+    const isYes = value === "si" || value === "sí" || value === "s";
+    const isNo = value === "no" || value === "n";
+
     const cls = isYes
         ? "badge-success"
         : isNo
             ? "badge-ghost"
             : "badge-ghost";
+
     const text = isYes ? "Sí" : isNo ? "No" : v ?? "-";
+
     return <span className={`badge ${cls}`}>{text}</span>;
 };
+
 
 const badgeEstado = (estado?: string) => {
     const e = (estado || "").toLowerCase();
@@ -107,6 +114,10 @@ const TablaCreditos: React.FC = () => {
     const [estadoFilter, setEstadoFilter] = React.useState<string>("");
 
     const creditos = Array.isArray(data) ? data : data ?? [];
+
+
+    const user = useAuthStore((state) => state.user);
+
 
     // opciones de estado (dinámicas desde data)
     const estados = React.useMemo(() => {
@@ -172,9 +183,13 @@ const TablaCreditos: React.FC = () => {
                     Créditos
                 </h3>
 
-                      <Link to="/cotizaciones/crear-cotizaciones">
-                                    <button className="btn bg-[#2BB352] text-white">Crear Credito</button>
-                                </Link>
+                {user?.rol === "Asesor" && (
+                    <>
+                        <Link to="/cotizaciones/crear-cotizaciones">
+                            <button className="btn bg-[#2BB352] text-white">Crear Credito</button>
+                        </Link>
+                    </>
+                )}
 
                 <div className={gridToolbar}>
                     {/* Búsqueda */}
@@ -225,7 +240,7 @@ const TablaCreditos: React.FC = () => {
                             <th>Valor producto</th>
                             <th>Plazo(meses)</th>
                             <th>Estado</th>
-                            <th>Proaprobado</th>
+                            <th>Preaprobado</th>
                             <th>Analista</th>
                             <th>Revisado</th>
                             <th>¿Entrega autorizada?</th>
@@ -254,7 +269,7 @@ const TablaCreditos: React.FC = () => {
                                 <td className="whitespace-nowrap">{moneyCOP(c.valor_producto)}</td>
                                 <td className="text-center">{c.plazo_meses ?? "-"}</td>
                                 <td>{badgeEstado(c.estado)}</td>
-                                <td>{badgeSiNo(c.poraprobado)}</td>
+                                <td>{badgeSiNo(c.proaprobado)}</td>
                                 <td>{c.analista || "-"}</td>
                                 <td>{badgeSiNo(c.revisado)}</td>
                                 <td>{badgeSiNo(c.entrega_autorizada)}</td>
@@ -265,14 +280,14 @@ const TablaCreditos: React.FC = () => {
                                     {/* <button className="btn btn-sm bg-white btn-circle" title="Ver">
                                         <Eye size="18px" />
                                     </button> */}
-<Link
-  to={`/creditos/registrar/${c.cotizacion_id}${c.deudor_id ? '-' + c.deudor_id : ''}${c.codeudor_id ? '-' + c.codeudor_id : ''}`}
->
+                                    <Link
+                                        to={`/creditos/registrar/${c.cotizacion_id}${c.deudor_id ? '-' + c.deudor_id : ''}${c.codeudor_id ? '-' + c.codeudor_id : ''}`}
+                                    >
 
-                                      <button className="btn btn-sm bg-white btn-circle" title="Ver">
-                                        <Pen size="18px" />
-                                    </button>
-                                      </Link>
+                                        <button className="btn btn-sm bg-white btn-circle" title="Ver">
+                                            <Pen size="18px" />
+                                        </button>
+                                    </Link>
                                 </td>
                             </tr>
                         ))}

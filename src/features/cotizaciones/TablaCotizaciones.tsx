@@ -1,10 +1,9 @@
 // src/components/cotizaciones/TablaCotizaciones.tsx
 import React from 'react';
-import { Eye, Edit3 } from 'lucide-react';
+import { Eye, ScanEye } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import Swal from 'sweetalert2';
 import { useCotizaciones } from '../../services/cotizacionesServices';
-import { api } from '../../services/axiosInstance';
+import { useAuthStore } from '../../store/auth.store';
 
 /* =======================
    Paginación (mismo estilo que motos)
@@ -51,18 +50,6 @@ const btnGhost = `${btnBase} btn-ghost bg-base-200 text-base-content/70 hover:bg
 const btnActive = `${btnBase} btn-primary text-primary-content`;
 const btnEllipsis = 'btn btn-xs rounded-xl min-w-8 h-8 px-3 bg-base-200 text-base-content/60 pointer-events-none';
 
-/* =======================
-   Estados (ID -> label)
-   ======================= */
-const estados: Record<string, string> = {
-    '': 'Seleccione...',
-    '3': 'Continúa interesado',
-    '4': 'Alto interés',
-    '6': 'Solicitar facturación',
-    '7': 'Solicitar crédito express',
-    '2': 'Sin interés',
-
-};
 
 /* =======================
    Utils de presentación
@@ -149,7 +136,7 @@ const TablaCotizaciones: React.FC = () => {
     const [page, setPage] = React.useState(1);
     const [perPage, setPerPage] = React.useState(10);
 
-    const { data, isLoading, isError, refetch, isFetching } = useCotizaciones(page, perPage);
+    const { data, isLoading, isError, isFetching } = useCotizaciones(page, perPage);
 
     const rows = data?.data ?? [];
     const total = Number(data?.pagination?.total ?? rows.length ?? 0) || 0;
@@ -163,106 +150,8 @@ const TablaCotizaciones: React.FC = () => {
     const goNext = () => setPage((p) => Math.min(lastPage, p + 1));
     const goTo = (p: number) => setPage(Math.min(Math.max(1, p), lastPage));
 
-    const handleChangeEstado = async (row: any) => {
-        // lista de labels (sin "Seleccione...")
-        const options = Object.values(estados).filter((l) => l !== estados['']);
-        // Preselecciona el texto del estado actual si viene
-        const preLabel = typeof row?.estado === 'string' ? row.estado : '';
+    const user = useAuthStore((state) => state.user);
 
-        const maxLen = 500;
-
-        const { value: formValues } = await Swal.fire<{
-            estadoNombre: string;
-            comentario2: string;
-        }>({
-            title: `Editar estado #${row?.id}`,
-            html: `
-        <div class="flex flex-col gap-3 text-left">
-          <label class="text-sm opacity-70" for="sw-estado">Estado</label>
-          <select id="sw-estado" class="swal2-select bg-gray-200 rounded-sm"         style="padding:.625em; border-radius:.5rem; background-color:#f1f1f1; color:#333; border:1px solid #ccc;">
-            ${options
-                    .map(
-                        (label) =>
-                            `<option value="${label}" ${label === preLabel ? 'selected' : ''}>${label}</option>`
-                    )
-                    .join('')}
-          </select>
-
-          <label class="text-sm opacity-70" for="sw-comentario">Comentario</label>
-          <textarea
-            id="sw-comentario"
-            class="swal2-textarea"
-            placeholder="Escribe un comentario (máx. ${maxLen} caracteres)"
-            maxlength="${maxLen}"
-            style="min-height:96px;border-radius:.5rem"
-          ></textarea>
-          <div id="sw-count" class="text-xs opacity-60 text-right">0 / ${maxLen}</div>
-        </div>
-      `,
-            customClass: {
-                confirmButton: 'btn btn-primary',
-                cancelButton: 'btn btn-ghost ml-2',
-                popup: 'rounded-2xl',
-            },
-            didOpen: () => {
-                // Carga valor por defecto del comentario si existe
-                const ta = document.getElementById('sw-comentario') as HTMLTextAreaElement | null;
-                const counter = document.getElementById('sw-count') as HTMLDivElement | null;
-                if (ta && counter) {
-                    ta.value = (row?.comentario2 ?? '').toString();
-                    const update = () => (counter.textContent = `${ta.value.length} / ${maxLen}`);
-                    ta.addEventListener('input', update);
-                    update();
-                }
-                // Foco en el select
-                (document.getElementById('sw-estado') as HTMLSelectElement | null)?.focus();
-            },
-            focusConfirm: false,
-            showCancelButton: true,
-            confirmButtonText: 'Guardar',
-            cancelButtonText: 'Cancelar',
-            preConfirm: () => {
-                const estadoNombre = (document.getElementById('sw-estado') as HTMLSelectElement)?.value || '';
-                const comentario2 = (document.getElementById('sw-comentario') as HTMLTextAreaElement)?.value?.trim() || '';
-
-                if (!estadoNombre) {
-                    Swal.showValidationMessage('Selecciona un estado');
-                    return;
-                }
-                if (!comentario2) {
-                    Swal.showValidationMessage('Escribe un comentario');
-                    return;
-                }
-
-                return { estadoNombre, comentario2 };
-            },
-        });
-
-        if (!formValues) return;
-
-        try {
-            const payload = {
-                id: row.id,
-                estado: formValues.estadoNombre, // ← NOMBRE del estado
-                comentario2: formValues.comentario2,
-            };
-
-            await api.put('/actualizar_cotizacion.php', payload);
-
-            await Swal.fire({
-                icon: 'success',
-                title: 'Estado actualizado',
-                text: `Nuevo estado: ${formValues.estadoNombre}`,
-                timer: 1400,
-                showConfirmButton: false,
-            });
-
-            refetch();
-        } catch (e: any) {
-            const msg = e?.response?.data?.message || 'No se pudo actualizar el estado';
-            Swal.fire({ icon: 'error', title: 'Error', text: String(msg) });
-        }
-    };
 
     if (isLoading) {
         return (
@@ -287,9 +176,17 @@ const TablaCotizaciones: React.FC = () => {
         <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
             <div className="px-4 pt-4 flex items-center w-full justify-between gap-3 flex-wrap my-3">
                 <h3 className="text-sm font-semibold tracking-wide text-base-content/70">Módulo de cotizaciones</h3>
-                <Link to="/cotizaciones/crear-cotizaciones">
-                    <button className="btn bg-[#2BB352] text-white">Crear Cotización</button>
-                </Link>
+
+
+                {user?.rol === "Asesor" && (
+                    <>
+                        <Link to="/cotizaciones/crear-cotizaciones">
+                            <button className="btn bg-[#2BB352] text-white">Crear Cotización</button>
+                        </Link>
+                    </>
+                )}
+
+
             </div>
 
             <div className="px-4 pt-4 flex items-center justify-between gap-3 flex-wrap my-3">
@@ -352,26 +249,22 @@ const TablaCotizaciones: React.FC = () => {
                                         <Link to={`/cotizaciones/${r.id}`} className="btn btn-sm bg-white btn-circle" title="Ver cotización">
                                             <Eye size="18px" />
                                         </Link>
-                                        {r.estado ? (
-                                        <>
-                                        
-                                          <button
-                                                className="btn btn-sm bg-white btn-circle"
-                                                onClick={() => handleChangeEstado(r)}
-                                                title="Editar estado"
-                                            >
-                                                <Edit3 size="18px" />
-                                            </button>
-                                        </>
-                                        ) : (
-                                            <button
-                                                className="btn btn-sm bg-white btn-circle"
-                                                onClick={() => handleChangeEstado(r)}
-                                                title="Editar estado"
-                                            >
-                                                <Edit3 size="18px" />
-                                            </button>
+
+
+                                        {user?.rol === "Asesor" && (
+                                            <>
+
+                                                <Link
+                                                    to={`/cotizaciones/estado/${r.id}`}
+                                                    className="btn btn-sm bg-white btn-circle"
+                                                    title="Cambiar estado"
+                                                >
+                                                    <ScanEye size="18px" />
+                                                </Link>
+                                            </>
                                         )}
+
+
                                     </div>
                                 </td>
                             </tr>
