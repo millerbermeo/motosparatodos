@@ -281,7 +281,7 @@ const TablaCreditos: React.FC = () => {
                                         <Eye size="18px" />
                                     </button> */}
                                     <Link
-                                        to={`/creditos/registrar/${c.cotizacion_id}${c.deudor_id ? '-' + c.deudor_id : ''}${c.codeudor_id ? '-' + c.codeudor_id : ''}`}
+                                        to={`/creditos/registrar/${c.codigo_credito}`}
                                     >
 
                                         <button className="btn btn-sm bg-white btn-circle" title="Ver">

@@ -31,7 +31,7 @@ export interface Referencia {
 }
 
 export interface RegistroDeudorPayload {
-  id_cotizacion: number;
+  codigo_credito: number;
   numero_documento: string;
   tipo_documento: string;
   fecha_expedicion: string;    // "YYYY-MM-DD"
@@ -77,7 +77,7 @@ export const useRegistrarDeudor = () => {
     onSuccess: async (_data, variables) => {
       // Invalida lo que tenga sentido para tu UI
       await Promise.all([
-        qc.invalidateQueries({ queryKey: ["deudor", variables.id_cotizacion] }),
+        qc.invalidateQueries({ queryKey: ["deudor", variables.codigo_credito] }),
         qc.invalidateQueries({ queryKey: ["creditos"] }),
       ]);
    
@@ -98,14 +98,14 @@ export const useRegistrarDeudor = () => {
 
 
 
-export const useDeudor = (id: number) => {
+export const useDeudor = (id: string) => {
   return useQuery<any>({
     queryKey: ["deudor", id],
     queryFn: async () => {
       const { data } = await api.get<any>(
         "/deudores_id.php", // endpoint correcto
         {
-          params: { id }, // pasa el id en query string
+          params: { codigo_credito: id }, // pasa el id en query string
     
         }
       );
@@ -134,7 +134,7 @@ export const useActualizarDeudor = () => {
     mutationFn: async ({ id, payload }) => {
       // Igual que registrar, solo cambia a PUT y la ruta/params:
       const { data } = await api.put<ServerOk>("/deudor_actualizar.php", payload, {
-        params: { id }, // ← tal como en tu Postman
+        params: { codigo_credito: id }, // ← tal como en tu Postman
         headers: { "Content-Type": "application/json" },
       });
       return data;
@@ -205,12 +205,12 @@ export const useRegistrarCodeudor = () => {
    Obtener Codeudor por ID (si necesitas ver/editar uno)
    GET /codeudores_id.php?id={id}
 -------------------------------------------- */
-export const useCodeudoresByDeudor = (id: number) => {
+export const useCodeudoresByDeudor = (id: string) => {
   return useQuery<any>({
     queryKey: ["codeudor", id],
     queryFn: async () => {
       const { data } = await api.get<any>("/list_codeudores.php", {
-        params: { deudor_id: id },
+        params: { codigo_credito: id },
       });
       return data;
     },
@@ -234,8 +234,10 @@ export const useActualizarCodeudor = () => {
 
   return useMutation<ServerOk, AxiosError<ServerError>, ActualizarCodeudorInput>({
     mutationFn: async ({ id, payload }) => {
+
+      console.log(id, payload)
       const { data } = await api.put<ServerOk>("/codeudor_actualizar.php", payload, {
-        params: { id },
+        params: { codigo_credito: id },
         headers: { "Content-Type": "application/json" },
       });
       return data;

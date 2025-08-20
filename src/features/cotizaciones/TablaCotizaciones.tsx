@@ -101,7 +101,15 @@ const formatFechaLarga = (dateStr?: string) => {
     return fmt.format(d); // ej: 18/08/2025, 9:33:49 p. m.
 };
 
-const tipoFrom = (r: any) => (Number(r?.cant_cuotas) > 0 ? 'Crédito directo' : 'Contado');
+// 1 = contado, 2 = Credibike, 3 = terceros
+const tipoFrom = (r: any) => {
+  switch (Number(r?.tipo_pago)) {
+    case 1: return "Contado";
+    case 2: return "Credibike de Colombia";
+    case 3: return "Crédito de terceros";
+    default: return "N/A";
+  }
+};
 
 const prospectoFrom = (r: any) => {
     if (typeof r?.prospecto === 'string' && r.prospecto.trim() !== '') {

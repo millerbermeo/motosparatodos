@@ -202,9 +202,8 @@ const prune = (obj: any): any => {
 
 /* ========================= Mapeos form ⇄ backend ========================= */
 // antes: const toBackendPayload = (c: Coodeudor, deudorId?: number) => {
-const toBackendPayload = (c: Coodeudor, deudorId?: number, codeudorId?: number) => {
+const toBackendPayload = (c: Coodeudor, credito?: string,) => {
 
-    console.log("ids",deudorId, codeudorId)
   const personas_a_cargo = c.personasACargo === "" ? undefined : Number(c.personasACargo);
   const costo_arriendo_in = c.costoArriendo === "" ? undefined : Number(c.costoArriendo);
   const salario = c.salario === "" ? undefined : Number(c.salario);
@@ -222,8 +221,7 @@ const toBackendPayload = (c: Coodeudor, deudorId?: number, codeudorId?: number) 
   ].filter(Boolean);
 
   const payload = {
-    deudor_id: deudorId,          // <- desde URL
-    codeudor_id: codeudorId,      // <- desde URL (puede ser undefined)
+    codigo_credito: String(credito), // <- viene de la URL
     informacion_personal: {
       numero_documento: c.numDocumento,
       tipo_documento: c.tipoDocumento,
@@ -348,17 +346,9 @@ const CoodeudoresFormulario: React.FC = () => {
 
 
 
-      const { id } = useParams<{ id: string }>();
-  if (!id) return <div>Error: no se encontró el parámetro en la URL</div>;
+const { id: codigoCredito } = useParams<{ id: string }>();
+if (!codigoCredito) return <div>Error: no se encontró el parámetro en la URL</div>;
 
-  // "11-6-3" → [11, 6, 3]
-  const [id_coti, idDeudor, idCodeudor] = id.split("-").map(Number);
-
-  console.log(id_coti)
-
-  // Fallback por si alguna URL viene con solo 2 números
-  const effectiveDeudorId = Number.isFinite(idDeudor) ? idDeudor : undefined;
-  const effectiveCodeudorId = Number.isFinite(idCodeudor) ? idCodeudor : undefined;
 
   
   const { control, handleSubmit, watch, setValue, reset } = useForm<FormValues>({
@@ -373,7 +363,7 @@ const CoodeudoresFormulario: React.FC = () => {
 
   // lista existente
 const { data: listResp, isLoading: listLoading, refetch } =
-  useCodeudoresByDeudor(Number(effectiveDeudorId));
+  useCodeudoresByDeudor(String(codigoCredito));
 
   // ids de edición por índice (0..1)
   const [editingIds, setEditingIds] = React.useState<(number | null)[]>([null]);
@@ -436,18 +426,19 @@ const { data: listResp, isLoading: listLoading, refetch } =
   // submit: por cada bloque, si hay id → actualizar; si no → registrar
 const onSubmit = (values: FormValues) => {
   const payloads = values.codeudores
-    .map((c) => prune(toBackendPayload(c, effectiveDeudorId, effectiveCodeudorId)))
+    .map((c) => prune(toBackendPayload(c, codigoCredito))) // <- usa codigoCredito
     .filter(Boolean);
 
-  payloads.forEach((payload, idx) => {
-    const id = editingIds[idx];
-    if (id) {
-      actualizar.mutate({ id, payload }, { onSuccess: () => refetch() });
+  payloads.forEach((payload) => {
+    const codeudorId = editingIds[0]; // <- NO lo llames "id" para no confundir
+    if (codeudorId) {
+      actualizar.mutate({ id: payload.codigo_credito, payload }, { onSuccess: () => refetch() });
     } else {
       registrar.mutate(payload as any, { onSuccess: () => refetch() });
     }
   });
 };
+
 
 
   // cancelar: vuelve al estado inicial (lo que haya en servidor o vacío)

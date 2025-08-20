@@ -404,7 +404,13 @@ const CotizacionFormulario: React.FC = () => {
 
 
 
-        const tipo_pago = data.metodoPago === "contado" ? "contado" : "financiado";
+        // 1 = contado, 2 = credibike, 3 = terceros
+        const tipo_pago_num =
+            data.metodoPago === "contado" ? 1 :
+                data.metodoPago === "credibike" ? 2 :
+                    3;
+
+        const esFinanciado = data.metodoPago !== "contado";
 
         // justo antes de construir payload:
         const lineaA_final = incluirMoto1
@@ -456,11 +462,12 @@ const CotizacionFormulario: React.FC = () => {
             modelo_b: incluirMoto2 ? (data.modelo_b?.trim() || "") : null,
 
             // Pago / financiación
-            tipo_pago,
+            // Pago / financiación
+            tipo_pago: tipo_pago_num, // <-- ahora es 1|2|3
             cuota_inicial_a: incluirMoto1 ? inicial1 : null,
             cuota_inicial_b: incluirMoto2 ? inicial2 : null,
-            financiera: tipo_pago === "financiado" ? (data.financiera || null) : null,
-            cant_cuotas: tipo_pago === "financiado" ? (data.cuotas ? Number(data.cuotas) : null) : null,
+            financiera: esFinanciado ? (data.financiera || null) : null,
+            cant_cuotas: esFinanciado ? (data.cuotas ? Number(data.cuotas) : null) : null,
 
             // Cuotas manuales (opcionales)
             cuota_6_a: toNumberOrNull(data.cuota_6_a), cuota_6_b: toNumberOrNull(data.cuota_6_b),

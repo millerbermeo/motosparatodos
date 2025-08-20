@@ -57,53 +57,45 @@ const fmtCOP = (v: any) =>
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(v || 0));
 
 const estadoBadgeClass = (estado?: string) => {
-  switch (estado) {
-    case 'Continúa interesado':
-    case 'Alto interés':
-      return 'badge-warning';
-    case 'Solicitar facturación':
-    case 'Solicitar crédito':
-      return 'badge-success';
-    case 'Solicitar crédito express':
-      return 'badge-info';
-    case 'Sin interés':
-      return 'badge-error';
-    default:
-      return 'badge-ghost';
-  }
+    switch (estado) {
+        case 'Continúa interesado':
+        case 'Alto interés':
+            return 'badge-warning';
+        case 'Solicitar facturación':
+        case 'Solicitar crédito':
+            return 'badge-success';
+        case 'Solicitar crédito express':
+            return 'badge-info';
+        case 'Sin interés':
+            return 'badge-error';
+        default:
+            return 'badge-ghost';
+    }
 };
 
 
 // Normaliza strings
-const norm = (v: any) => (safeText(v) || '').toLowerCase();
+// const norm = (v: any) => (safeText(v) || '').toLowerCase();
 
-// Detecta tipo de financiación desde varios posibles campos
-const esCreditoDirecto = (row: any) => {
-  const t =
-    norm(row?.tipo_credito) ||
-    norm(row?.tipo) ||
-    norm(row?.forma_pago) ||
-    norm(row?.financiacion);
+// ❌ Elimina todo esto
+// const esCreditoDirecto = (row: any) => { ... }
 
-  // Ajusta los patrones si en tu data vienen distintos textos
-  if (!t) return false;
-  return /directo/.test(t); // "crédito directo"
-};
+// ✅ Agrega esto
+const tipoPagoNum = (row: any) => Number(row?.tipo_pago) || 0;
+const esFinanciado = (row: any) => [2, 3].includes(tipoPagoNum(row)); // 2=Credibike, 3=Terceros
 
-// Genera las opciones del select según el tipo
-type OpcionEstado = { value: string; label: string };
-const opcionesEstados = (row: any): OpcionEstado[] => {
-  const isDirecto = esCreditoDirecto(row);
 
-  // Nota: el backend recibe el *nombre* (label) en `estado`
+const opcionesEstados = (row: any): any[] => {
+  const financiado = esFinanciado(row); // true si tipo_pago es 2 o 3
+
   return [
     { value: '', label: 'Seleccione...' },
     { value: '3', label: 'Continúa interesado' },
     { value: '4', label: 'Alto interés' },
-       isDirecto
+    financiado
       ? { value: '5', label: 'Solicitar crédito' }
       : { value: '6', label: 'Solicitar facturación' },
-    { value: '7', label: 'Solicitar crédito express' },
+    { value: '7', label: 'Solicitar crédito express' }, // se mantiene visible (si tu lógica requiere ocultarlo en contado, dímelo y lo ajusto)
     { value: '2', label: 'Sin interés' },
   ];
 };
@@ -136,22 +128,29 @@ const DetalleCambiarEstado: React.FC = () => {
 
     // Payload tal cual tu backend ({ success, data }) o data directa
     const row = (data as any)?.data ?? data;
-const opts = React.useMemo(() => opcionesEstados(row), [row]);
+    const opts = React.useMemo(() => opcionesEstados(row), [row]);
 
     // Estado de form
     const [estadoNombre, setEstadoNombre] = React.useState<string>('');
     const [comentario2, setComentario2] = React.useState<string>('');
 
-React.useEffect(() => {
-  if (!row) return;
+    React.useEffect(() => {
+        if (!row) return;
 
-  const preEstado = typeof row?.estado === 'string' ? row.estado.trim() : '';
-  const labelsValidos = new Set(opcionesEstados(row).map(o => o.label));
+        const preEstado = typeof row?.estado === 'string' ? row.estado.trim() : '';
+        const labelsValidos = new Set(opcionesEstados(row).map(o => o.label));
 
-  setEstadoNombre(preEstado && labelsValidos.has(preEstado) ? preEstado : '');
-  setComentario2(safeText(row?.comentario2) || '');
-}, [row]);
+        setEstadoNombre(preEstado && labelsValidos.has(preEstado) ? preEstado : '');
+        setComentario2(safeText(row?.comentario2) || '');
+    }, [row]);
 
+
+    const esSolicitarCredito = (s?: string) =>
+        (s || '')
+            .normalize('NFD')
+            .replace(/\p{Diacritic}/gu, '')
+            .trim()
+            .toLowerCase() === 'solicitar credito';
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -167,11 +166,16 @@ React.useEffect(() => {
         }
 
         try {
-            await api.put('/actualizar_cotizacion.php', {
+            // Hacemos el update y capturamos la respuesta
+            const resp = await api.put('/actualizar_cotizacion.php', {
                 id: Number(id),
-                estado: estadoNombre,   // IMPORTANTE: envías el NOMBRE igual que en la tabla
+                estado: estadoNombre, // el backend recibe el NOMBRE
                 comentario2: comentario2.trim(),
             });
+
+            // El backend puede devolver codigo_credito en la raíz o dentro de data
+            const codigoCredito: string | undefined =
+                resp?.data?.codigo_credito ?? resp?.data?.data?.codigo_credito;
 
             await Swal.fire({
                 icon: 'success',
@@ -181,7 +185,14 @@ React.useEffect(() => {
                 showConfirmButton: false,
             });
 
-            navigate('/cotizaciones');
+            // Navegación según el estado
+            if (esSolicitarCredito(estadoNombre) && codigoCredito) {
+                // Solo si es "Solicitar crédito" y hay código → /credito/{codigo}
+                navigate(`/creditos/registrar/${encodeURIComponent(codigoCredito)}`);
+            } else {
+                // Para cualquier otro estado (o si no vino código) → /credito
+                navigate('/creditos');
+            }
         } catch (err: any) {
             const msg = err?.response?.data?.message || 'No se pudo actualizar el estado.';
             Swal.fire({ icon: 'error', title: 'Error', text: String(msg) });
@@ -248,6 +259,8 @@ React.useEffect(() => {
                 <div className='pt-4 mb-3'>
                     <ButtonLink to="/cotizaciones" label="Volver a cotizaciones" />
                 </div>
+{/* 
+                {row} */}
 
             </section>
 
@@ -368,18 +381,18 @@ React.useEffect(() => {
                                     Estado <span className="text-error">*</span>
                                 </span>
                             </label>
-                          <select
-  className="select select-bordered"
-  value={estadoNombre}
-  onChange={(e) => setEstadoNombre(e.target.value)}
-  required
->
-  {opts.map(({ value, label }) => (
-    <option key={value || 'empty'} value={label} disabled={value === ''}>
-      {label}
-    </option>
-  ))}
-</select>
+                            <select
+                                className="select select-bordered"
+                                value={estadoNombre}
+                                onChange={(e) => setEstadoNombre(e.target.value)}
+                                required
+                            >
+                                {opts.map(({ value, label }) => (
+                                    <option key={value || 'empty'} value={label} disabled={value === ''}>
+                                        {label}
+                                    </option>
+                                ))}
+                            </select>
 
                         </div>
 

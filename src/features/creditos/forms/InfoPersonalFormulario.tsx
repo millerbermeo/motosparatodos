@@ -16,7 +16,7 @@ type Referencia = {
 };
 
 type InfoPersonalFormValues = {
-    id_cotizacion?: number;
+    codigo_credito?: string;
     numero_documento: string;
     tipo_documento: string;
     fecha_expedicion: string;     // YYYY-MM-DD
@@ -161,17 +161,13 @@ const mapFincaRaiz = (v: any): "Si" | "No" | "Otro" => {
 const InfoPersonalFormulario: React.FC = () => {
 
     const { id } = useParams<{ id: string }>();
+    console.log("ID recibido:", id); // "21wcrbB"
 
-    if (!id) {
-  return <div>Error: no se encontró el parámetro en la URL</div>;
-}
-   const [idCot, idDeudor] = id.split("-").map(Number);
-   
-
-console.log(id);
-
+    if (!id) { return <div>Error: no se encontró el parámetro en la URL</div>; }
     // hooks siempre arriba
-    const { data } = useDeudor(idDeudor);
+    const { data } = useDeudor(String(id));
+
+    
     const registrarDeudor = useRegistrarDeudor();
     const actualizarDeudor = useActualizarDeudor();
 
@@ -181,7 +177,7 @@ console.log(id);
 
     const { control, handleSubmit, watch, setValue, reset } = useForm<InfoPersonalFormValues>({
         defaultValues: {
-            id_cotizacion: idCot,
+            codigo_credito: String(id),
             numero_documento: "",
             tipo_documento: "Cédula de ciudadanía",
             fecha_expedicion: "",
@@ -248,7 +244,7 @@ console.log(id);
         const referenciasNorm = r3.map(normalizaRef);
 
         reset({
-            id_cotizacion: p.id_cotizacion ?? idCot,
+            codigo_credito: p.codigo_credito ?? id,
             numero_documento: p.numero_documento ?? "",
             tipo_documento: p.tipo_documento ?? "Cédula de ciudadanía",
             fecha_expedicion: p.fecha_expedicion ?? "",
@@ -292,7 +288,7 @@ console.log(id);
             // ← Aquí el arreglo ya está limpio y completo
             referencias: referenciasNorm,
         });
-    }, [data, reset, idCot]);
+    }, [data, reset, id]);
 
 
     // Si NO es arriendo → costo_arriendo = 0
@@ -310,7 +306,7 @@ console.log(id);
 
         const payload: InfoPersonalFormValues = {
             ...values,
-            id_cotizacion: values.id_cotizacion ?? idCot,
+            codigo_credito: values.codigo_credito ?? String(id),
             personas_a_cargo: toNumber(values.personas_a_cargo),
             costo_arriendo: toNumber(values.costo_arriendo),
             informacion_laboral: {
@@ -335,15 +331,20 @@ console.log(id);
 
         // Detecta si hay registro existente (id del deudor)
         const existingId =
-            (data as any)?.informacion_personal?.id ??
-            (data as any)?.data?.informacion_personal?.id ??
+            (data as any)?.informacion_personal?.codigo_credito ??
+            (data as any)?.data?.informacion_personal?.codigo_credito ??
             null;
 
         if (existingId) {
             // ACTUALIZAR
+
+            console.log("update", payload)
             actualizarDeudor.mutate({ id: existingId, payload });
         } else {
             // REGISTRAR
+
+            console.log("register", payload)
+
             registrarDeudor.mutate(payload);
         }
     };
@@ -639,7 +640,7 @@ console.log(id);
                     type="button"
                     onClick={() =>
                         reset({
-                            id_cotizacion: idCot,
+                            codigo_credito: String(id),
                             numero_documento: "",
                             tipo_documento: "Cédula de ciudadanía",
                             fecha_expedicion: "",
