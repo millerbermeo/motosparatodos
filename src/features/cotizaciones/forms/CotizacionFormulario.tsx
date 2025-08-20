@@ -375,6 +375,10 @@ const CotizacionFormulario: React.FC = () => {
         return isNaN(n) || String(v).trim() === "" ? null : n;
     };
 
+
+    const moto1Seleccionada = Boolean(watch("moto1"));
+    const moto2Seleccionada = Boolean(watch("moto2"));
+
     const onSubmit = (data: FormValues) => {
 
 
@@ -513,7 +517,7 @@ const CotizacionFormulario: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 w-full gap-6">
 
 
-                    {(metodo === "credibike" || metodo === "terceros") && (
+                    {metodo === "terceros" && (
                         <>
                             <FormSelect<FormValues>
                                 name="financiera"
@@ -629,106 +633,113 @@ const CotizacionFormulario: React.FC = () => {
                                         className="hidden"
                                     />
 
-
-                                    <FormSelect<FormValues>
-                                        name="garantia1"
-                                        label="¿Incluye garantía?"
-                                        control={control}
-                                        options={garantiaOptions}
-                                        placeholder="Seleccione..."
-                                        disabled={!showMotos || !incluirMoto1}
-                                        rules={reqIf(showMotos && incluirMoto1, "La garantía es obligatoria")}
-                                    />
+                                    {/* Todo lo siguiente SOLO si hay una moto seleccionada */}
+                                    {moto1Seleccionada && (
+                                        <>
 
 
-                                    <FormInput<FormValues>
-                                        name="accesorios1"
-                                        label="Accesorios (entero)"
-                                        control={control}
-                                        placeholder="0"
-                                        type="number"
-                                        disabled={!showMotos || !incluirMoto1}
-                                        rules={{
-                                            ...reqIf(showMotos && incluirMoto1, "Ingresa accesorios"),
-                                            validate: (v) => (!showMotos || !incluirMoto1 ? true : Number.isInteger(Number(v)) && Number(v) >= 0 || "Ingrese un entero ≥ 0"),
-                                            setValueAs: (v) => (v === "" ? "" : Number(v)),
-                                        }}
-                                    />
-
-                                    {/* SEGUROS MULTI */}
-                                    <div className="p-3 rounded-md bg-[#3498DB] ">
-                                        <p className="font-semibold mb-2 text-white">Selecciona uno o varios seguros</p>
-                                        <div className="flex flex-col gap-2 text-white">
-                                            {loadingSeguros && <span>Cargando seguros...</span>}
-                                            {!loadingSeguros && seguros.map((s: any) => (
-                                                <label key={`m1-${s.id}`} className="flex items-center gap-2">
-                                                    <input
-                                                        type="checkbox"
-                                                        value={String(s.id)}
-                                                        className="checkbox checkbox-sm"
-                                                        {...register("segurosIds1")}
-                                                        disabled={!showMotos || !incluirMoto1}
-                                                    />
-                                                    <span>{s.nombre} – {Number(s.valor).toLocaleString("es-CO")} COP</span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                        <div className="mt-2">
-                                            <FormInput<FormValues>
-                                                name="otroSeguro1" label="Otros seguros (monto adicional)" control={control}
-                                                placeholder="0" type="number" disabled={!showMotos || !incluirMoto1}
-                                                rules={{ setValueAs: (v) => (v === "" ? "" : Number(v)) }}
+                                            <FormSelect<FormValues>
+                                                name="garantia1"
+                                                label="¿Incluye garantía?"
+                                                control={control}
+                                                options={garantiaOptions}
+                                                placeholder="Seleccione..."
+                                                disabled={!showMotos || !incluirMoto1}
+                                                rules={reqIf(showMotos && incluirMoto1, "La garantía es obligatoria")}
                                             />
-                                        </div>
-                                    </div>
 
-                                    <FormInput<FormValues>
-                                        name="cuotaInicial1" label="Cuota inicial" control={control} type="number"
-                                        rules={reqIf(showMotos && incluirMoto1, "Ingresa la cuota inicial")} disabled={!showMotos || !incluirMoto1} />
 
-                                    {/* CAMBIO DE NOMBRE */}
-                                    <FormInput<FormValues>
-                                        name="precioDocumentos1" label="Precio documentos / matrícula y SOAT" control={control} type="number"
-                                        disabled={!showMotos || !incluirMoto1}
-                                        rules={reqIf(showMotos && incluirMoto1, "El precio es obligatoria")}
+                                            <FormInput<FormValues>
+                                                name="accesorios1"
+                                                label="Accesorios (entero)"
+                                                control={control}
+                                                placeholder="0"
+                                                type="number"
+                                                disabled={!showMotos || !incluirMoto1}
+                                                rules={{
+                                                    ...reqIf(showMotos && incluirMoto1, "Ingresa accesorios"),
+                                                    validate: (v) => (!showMotos || !incluirMoto1 ? true : Number.isInteger(Number(v)) && Number(v) >= 0 || "Ingrese un entero ≥ 0"),
+                                                    setValueAs: (v) => (v === "" ? "" : Number(v)),
+                                                }}
+                                            />
 
-                                    />
-                                    <FormInput<FormValues> name="descuento1" label="Descuentos" control={control} type="number" disabled={!showMotos || !incluirMoto1} />
+                                            {/* SEGUROS MULTI */}
+                                            <div className="p-3 rounded-md bg-[#3498DB] ">
+                                                <p className="font-semibold mb-2 text-white">Selecciona uno o varios seguros</p>
+                                                <div className="flex flex-col gap-2 text-white">
+                                                    {loadingSeguros && <span>Cargando seguros...</span>}
+                                                    {!loadingSeguros && seguros.map((s: any) => (
+                                                        <label key={`m1-${s.id}`} className="flex items-center gap-2">
+                                                            <input
+                                                                type="checkbox"
+                                                                value={String(s.id)}
+                                                                className="checkbox checkbox-sm"
+                                                                {...register("segurosIds1")}
+                                                                disabled={!showMotos || !incluirMoto1}
+                                                            />
+                                                            <span>{s.nombre} – {Number(s.valor).toLocaleString("es-CO")} COP</span>
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                                <div className="mt-2">
+                                                    <FormInput<FormValues>
+                                                        name="otroSeguro1" label="Otros seguros (monto adicional)" control={control}
+                                                        placeholder="0" type="number" disabled={!showMotos || !incluirMoto1}
+                                                        rules={{ setValueAs: (v) => (v === "" ? "" : Number(v)) }}
+                                                    />
+                                                </div>
+                                            </div>
 
-                                    {/* RESUMEN */}
-                                    <div className="bg-base-100 shadow-lg rounded-xl p-6 border border-base-300">
-                                        <h3 className="text-lg font-bold mb-4 text-success">Resumen de costos</h3>
+                                            <FormInput<FormValues>
+                                                name="cuotaInicial1" label="Cuota inicial" control={control} type="number"
+                                                rules={reqIf(showMotos && incluirMoto1, "Ingresa la cuota inicial")} disabled={!showMotos || !incluirMoto1} />
 
-                                        <div className="grid grid-cols-1 gap-2 mb-4">
-                                            <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                <span className="font-medium text-gray-500">Precio documentos:</span>
-                                                <span>{fmt(precioDocumentos1Val)}</span>
-                                            </div>
-                                            <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                <span className="font-medium text-gray-500">Descuentos:</span>
-                                                <span className="text-error font-semibold">-{fmt(descuento1Val)}</span>
-                                            </div>
-                                            <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                <span className="font-medium text-gray-500">Accesorios (entero):</span>
-                                                <span>{N(watch("accesorios1"))}</span>
-                                            </div>
-                                            <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                <span className="font-medium text-gray-500">Inicial:</span>
-                                                <span>{fmt(inicial1)}</span>
-                                            </div>
-                                        </div>
+                                            {/* CAMBIO DE NOMBRE */}
+                                            <FormInput<FormValues>
+                                                name="precioDocumentos1" label="Precio documentos / matrícula y SOAT" control={control} type="number"
+                                                disabled={!showMotos || !incluirMoto1}
+                                                rules={reqIf(showMotos && incluirMoto1, "El precio es obligatoria")}
 
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between items-center bg-warning/10 px-4 py-2 rounded-md">
-                                                <span className="font-semibold text-warning">TOTAL SIN SEGUROS:</span>
-                                                <span className="font-bold">{fmt(totalSinSeguros1)}</span>
+                                            />
+                                            <FormInput<FormValues> name="descuento1" label="Descuentos" control={control} type="number" disabled={!showMotos || !incluirMoto1} />
+
+                                            {/* RESUMEN */}
+                                            <div className="bg-base-100 shadow-lg rounded-xl p-6 border border-base-300">
+                                                <h3 className="text-lg font-bold mb-4 text-success">Resumen de costos</h3>
+
+                                                <div className="grid grid-cols-1 gap-2 mb-4">
+                                                    <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
+                                                        <span className="font-medium text-gray-500">Precio documentos:</span>
+                                                        <span>{fmt(precioDocumentos1Val)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
+                                                        <span className="font-medium text-gray-500">Descuentos:</span>
+                                                        <span className="text-error font-semibold">-{fmt(descuento1Val)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
+                                                        <span className="font-medium text-gray-500">Accesorios (entero):</span>
+                                                        <span>{N(watch("accesorios1"))}</span>
+                                                    </div>
+                                                    <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
+                                                        <span className="font-medium text-gray-500">Inicial:</span>
+                                                        <span>{fmt(inicial1)}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <div className="flex justify-between items-center bg-warning/10 px-4 py-2 rounded-md">
+                                                        <span className="font-semibold text-warning">TOTAL SIN SEGUROS:</span>
+                                                        <span className="font-bold">{fmt(totalSinSeguros1)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center bg-success/20 px-4 py-2 rounded-md">
+                                                        <span className="font-bold text-success">TOTAL CON SEGUROS:</span>
+                                                        <span className="text-success font-extrabold text-lg">{fmt(totalConSeguros1)}</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="flex justify-between items-center bg-success/20 px-4 py-2 rounded-md">
-                                                <span className="font-bold text-success">TOTAL CON SEGUROS:</span>
-                                                <span className="text-success font-extrabold text-lg">{fmt(totalConSeguros1)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                        </>
+                                    )}
+
                                 </div>
                             </div>
 
@@ -763,102 +774,107 @@ const CotizacionFormulario: React.FC = () => {
                                         className="hidden"
 
                                     />
-
-
-                                    <FormSelect<FormValues>
-                                        name="garantia2"
-                                        label="¿Incluye garantía?"
-                                        control={control}
-                                        options={garantiaOptions}
-                                        placeholder="Seleccione..."
-                                        disabled={!showMotos || !incluirMoto2}
-                                        rules={reqIf(showMotos && incluirMoto2, "La garantía es obligatoria")}
-                                    />
-
-
-                                    <FormInput<FormValues>
-                                        name="accesorios2"
-                                        label="Accesorios (entero)"
-                                        control={control}
-                                        placeholder="0"
-                                        type="number"
-                                        disabled={!showMotos || !incluirMoto2}
-                                        rules={{
-                                            ...reqIf(showMotos && incluirMoto2, "Ingresa accesorios"),
-                                            validate: (v) => (!showMotos || !incluirMoto2 ? true : Number.isInteger(Number(v)) && Number(v) >= 0 || "Ingrese un entero ≥ 0"),
-                                            setValueAs: (v) => (v === "" ? "" : Number(v)),
-                                        }}
-                                    />
-
-                                    {/* SEGUROS MULTI */}
-                                    <div className="p-3 rounded-md bg-[#3498DB]">
-                                        <p className="font-semibold mb-2 text-white">Selecciona uno o varios seguros</p>
-                                        <div className="flex flex-col gap-2 text-white">
-                                            {loadingSeguros && <span>Cargando seguros...</span>}
-                                            {!loadingSeguros && seguros.map((s: any) => (
-                                                <label key={`m2-${s.id}`} className="flex items-center gap-2">
-                                                    <input
-                                                        type="checkbox"
-                                                        value={String(s.id)}
-                                                        className="checkbox checkbox-sm"
-                                                        {...register("segurosIds2")}
-                                                        disabled={!showMotos || !incluirMoto2}
-                                                    />
-                                                    <span>{s.nombre} – {Number(s.valor).toLocaleString("es-CO")} COP</span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                        <div className="mt-2">
-                                            <FormInput<FormValues>
-                                                name="otroSeguro2" label="Otros seguros (monto adicional)" control={control}
-                                                placeholder="0" type="number" disabled={!showMotos || !incluirMoto2}
-                                                rules={{ setValueAs: (v) => (v === "" ? "" : Number(v)) }}
+                                    {/* Todo lo siguiente SOLO si hay una moto seleccionada */}
+                                    {moto2Seleccionada && (
+                                        <>
+                                            <FormSelect<FormValues>
+                                                name="garantia2"
+                                                label="¿Incluye garantía?"
+                                                control={control}
+                                                options={garantiaOptions}
+                                                placeholder="Seleccione..."
+                                                disabled={!showMotos || !incluirMoto2}
+                                                rules={reqIf(showMotos && incluirMoto2, "La garantía es obligatoria")}
                                             />
-                                        </div>
-                                    </div>
 
-                                    <FormInput<FormValues>
-                                        name="cuotaInicial2" label="Cuota inicial" control={control} type="number" placeholder="0"
-                                        rules={reqIf(showMotos && incluirMoto2, "Ingresa la cuota inicial")} disabled={!showMotos || !incluirMoto2} />
-                                    {/* CAMBIO DE NOMBRE */}
-                                    <FormInput<FormValues> rules={reqIf(showMotos && incluirMoto1, "El precio es obligatoria")}
-                                        name="precioDocumentos2" label="Precio documentos / matrícula y SOAT" control={control} type="number" disabled={!showMotos || !incluirMoto2} />
-                                    <FormInput<FormValues> name="descuento2" label="Descuentos" control={control} type="number" disabled={!showMotos || !incluirMoto2} />
 
-                                    <div className="bg-base-100 shadow-lg rounded-xl p-6 border border-base-300">
-                                        <h3 className="text-lg font-bold mb-4 text-success">Resumen de costos</h3>
+                                            <FormInput<FormValues>
+                                                name="accesorios2"
+                                                label="Accesorios (entero)"
+                                                control={control}
+                                                placeholder="0"
+                                                type="number"
+                                                disabled={!showMotos || !incluirMoto2}
+                                                rules={{
+                                                    ...reqIf(showMotos && incluirMoto2, "Ingresa accesorios"),
+                                                    validate: (v) => (!showMotos || !incluirMoto2 ? true : Number.isInteger(Number(v)) && Number(v) >= 0 || "Ingrese un entero ≥ 0"),
+                                                    setValueAs: (v) => (v === "" ? "" : Number(v)),
+                                                }}
+                                            />
 
-                                        <div className="grid grid-cols-1 gap-2 mb-4">
-                                            <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                <span className="font-medium text-gray-500">Precio documentos:</span>
-                                                <span>{fmt(precioDocumentos2Val)}</span>
+                                            {/* SEGUROS MULTI */}
+                                            <div className="p-3 rounded-md bg-[#3498DB]">
+                                                <p className="font-semibold mb-2 text-white">Selecciona uno o varios seguros</p>
+                                                <div className="flex flex-col gap-2 text-white">
+                                                    {loadingSeguros && <span>Cargando seguros...</span>}
+                                                    {!loadingSeguros && seguros.map((s: any) => (
+                                                        <label key={`m2-${s.id}`} className="flex items-center gap-2">
+                                                            <input
+                                                                type="checkbox"
+                                                                value={String(s.id)}
+                                                                className="checkbox checkbox-sm"
+                                                                {...register("segurosIds2")}
+                                                                disabled={!showMotos || !incluirMoto2}
+                                                            />
+                                                            <span>{s.nombre} – {Number(s.valor).toLocaleString("es-CO")} COP</span>
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                                <div className="mt-2">
+                                                    <FormInput<FormValues>
+                                                        name="otroSeguro2" label="Otros seguros (monto adicional)" control={control}
+                                                        placeholder="0" type="number" disabled={!showMotos || !incluirMoto2}
+                                                        rules={{ setValueAs: (v) => (v === "" ? "" : Number(v)) }}
+                                                    />
+                                                </div>
                                             </div>
-                                            <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                <span className="font-medium text-gray-500">Descuentos:</span>
-                                                <span className="text-error font-semibold">-{fmt(descuento2Val)}</span>
-                                            </div>
-                                            <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                <span className="font-medium text-gray-500">Accesorios (entero):</span>
-                                                <span>{N(watch("accesorios2"))}</span>
-                                            </div>
-                                            <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                <span className="font-medium text-gray-500">Inicial:</span>
-                                                <span>{fmt(inicial2)}</span>
-                                            </div>
-                                        </div>
 
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between items-center bg-warning/10 px-4 py-2 rounded-md">
-                                                <span className="font-semibold text-warning">TOTAL SIN SEGUROS:</span>
-                                                <span className="font-bold">{fmt(totalSinSeguros2)}</span>
+                                            <FormInput<FormValues>
+                                                name="cuotaInicial2" label="Cuota inicial" control={control} type="number" placeholder="0"
+                                                rules={reqIf(showMotos && incluirMoto2, "Ingresa la cuota inicial")} disabled={!showMotos || !incluirMoto2} />
+                                            {/* CAMBIO DE NOMBRE */}
+                                            <FormInput<FormValues> rules={reqIf(showMotos && incluirMoto1, "El precio es obligatoria")}
+                                                name="precioDocumentos2" label="Precio documentos / matrícula y SOAT" control={control} type="number" disabled={!showMotos || !incluirMoto2} />
+                                            <FormInput<FormValues> name="descuento2" label="Descuentos" control={control} type="number" disabled={!showMotos || !incluirMoto2} />
+
+                                            <div className="bg-base-100 shadow-lg rounded-xl p-6 border border-base-300">
+                                                <h3 className="text-lg font-bold mb-4 text-success">Resumen de costos</h3>
+
+                                                <div className="grid grid-cols-1 gap-2 mb-4">
+                                                    <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
+                                                        <span className="font-medium text-gray-500">Precio documentos:</span>
+                                                        <span>{fmt(precioDocumentos2Val)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
+                                                        <span className="font-medium text-gray-500">Descuentos:</span>
+                                                        <span className="text-error font-semibold">-{fmt(descuento2Val)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
+                                                        <span className="font-medium text-gray-500">Accesorios (entero):</span>
+                                                        <span>{N(watch("accesorios2"))}</span>
+                                                    </div>
+                                                    <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
+                                                        <span className="font-medium text-gray-500">Inicial:</span>
+                                                        <span>{fmt(inicial2)}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <div className="flex justify-between items-center bg-warning/10 px-4 py-2 rounded-md">
+                                                        <span className="font-semibold text-warning">TOTAL SIN SEGUROS:</span>
+                                                        <span className="font-bold">{fmt(totalSinSeguros2)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center bg-success/20 px-4 py-2 rounded-md">
+                                                        <span className="font-bold text-success">TOTAL CON SEGUROS:</span>
+                                                        <span className="text-success font-extrabold text-lg">{fmt(totalConSeguros2)}</span>
+                                                    </div>
+                                                </div>
+
                                             </div>
-                                            <div className="flex justify-between items-center bg-success/20 px-4 py-2 rounded-md">
-                                                <span className="font-bold text-success">TOTAL CON SEGUROS:</span>
-                                                <span className="text-success font-extrabold text-lg">{fmt(totalConSeguros2)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                        </>
+                                    )}
                                 </div>
+
                             </div>
                         </div>
 
@@ -869,24 +885,36 @@ const CotizacionFormulario: React.FC = () => {
 
 
 
-                {metodo === "terceros" && (
+                {/* Cuotas manuales MOTO 1 */}
+                {metodo === "terceros" && moto1Seleccionada && (
                     <div className="flex gap-6 flex-col w-full bg-white p-3 rounded-xl">
+                        <div className="badge text-lg badge-success text-white">Cuotas Moto 1 (A)</div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <FormInput<FormValues> name="cuota_6_a" label="Cuota 6 meses A" type="number" control={control} placeholder="Opcional" />
-                            <FormInput<FormValues> name="cuota_6_b" label="Cuota 6 meses B" type="number" control={control} placeholder="Opcional" />
                             <FormInput<FormValues> name="cuota_12_a" label="Cuota 12 meses A" type="number" control={control} placeholder="Opcional" />
-                            <FormInput<FormValues> name="cuota_12_b" label="Cuota 12 meses B" type="number" control={control} placeholder="Opcional" />
                             <FormInput<FormValues> name="cuota_18_a" label="Cuota 18 meses A" type="number" control={control} placeholder="Opcional" />
-                            <FormInput<FormValues> name="cuota_18_b" label="Cuota 18 meses B" type="number" control={control} placeholder="Opcional" />
                             <FormInput<FormValues> name="cuota_24_a" label="Cuota 24 meses A" type="number" control={control} placeholder="Opcional" />
-                            <FormInput<FormValues> name="cuota_24_b" label="Cuota 24 meses B" type="number" control={control} placeholder="Opcional" />
                             <FormInput<FormValues> name="cuota_30_a" label="Cuota 30 meses A" type="number" control={control} placeholder="Opcional" />
-                            <FormInput<FormValues> name="cuota_30_b" label="Cuota 30 meses B" type="number" control={control} placeholder="Opcional" />
                             <FormInput<FormValues> name="cuota_36_a" label="Cuota 36 meses A" type="number" control={control} placeholder="Opcional" />
+                        </div>
+                    </div>
+                )}
+
+                {/* Cuotas manuales MOTO 2 */}
+                {metodo === "terceros" && moto2Seleccionada && (
+                    <div className="flex gap-6 flex-col w-full bg-white p-3 rounded-xl">
+                        <div className="badge text-lg badge-success text-white">Cuotas Moto 2 (B)</div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormInput<FormValues> name="cuota_6_b" label="Cuota 6 meses B" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> name="cuota_12_b" label="Cuota 12 meses B" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> name="cuota_18_b" label="Cuota 18 meses B" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> name="cuota_24_b" label="Cuota 24 meses B" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> name="cuota_30_b" label="Cuota 30 meses B" type="number" control={control} placeholder="Opcional" />
                             <FormInput<FormValues> name="cuota_36_b" label="Cuota 36 meses B" type="number" control={control} placeholder="Opcional" />
                         </div>
                     </div>
                 )}
+
 
                 {/* OTROS PRODUCTOS (igual que antes) */}
                 {showProductos && (
