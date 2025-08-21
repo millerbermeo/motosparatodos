@@ -70,9 +70,9 @@ const tipoDocumentoOptions: SelectOption[] = [
 const nivelEstudiosOptions: SelectOption[] = [
     { value: "Primaria", label: "Primaria" },
     { value: "Educación media", label: "Educación media" },
-    { value: "Técnico / Tecnólogo", label: "Técnico / Tecnólogo" },
-    { value: "Universitario", label: "Universitario" },
-    { value: "Postgrado", label: "Postgrado" },
+    // { value: "Técnico / Tecnólogo", label: "Técnico / Tecnólogo" },
+    // { value: "Universitario", label: "Universitario" },
+    // { value: "Postgrado", label: "Postgrado" },
     { value: "Educación superior", label: "Educación superior" }, // ← coincide con backend
 ];
 
