@@ -249,7 +249,9 @@ const TablaCotizaciones: React.FC = () => {
                                 <td className="text-right">
                                     <div className="flex justify-end gap-2">
                                         <Link to={`/cotizaciones/${r.id}`} className="btn btn-sm bg-white btn-circle" title="Ver cotización">
-                                            <Eye size="18px" />
+                                            <div className='text-info'>
+                                                <Eye size="18px" />
+                                            </div>
                                         </Link>
 
 
@@ -261,7 +263,9 @@ const TablaCotizaciones: React.FC = () => {
                                                     className="btn btn-sm bg-white btn-circle"
                                                     title="Cambiar estado"
                                                 >
-                                                    <ScanEye size="18px" />
+                                                    <div className='text-warning'>
+                                                        <ScanEye size="18px" />
+                                                    </div>
                                                 </Link>
                                             </>
                                         )}

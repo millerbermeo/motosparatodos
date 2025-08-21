@@ -23,7 +23,9 @@ export const useUsuarioById = (id: string) => {
   return useQuery<Usuario>({
     queryKey: ['user', id],
     queryFn: async () => {
-      const { data } = await api.get<Usuario>(`/list_users.php/${id}`);
+const { data } = await api.get<Usuario>("/list_users.php", {
+  params: { id }
+});
       return data;
     },
     enabled: Boolean(id), // solo ejecuta si hay un id válido
