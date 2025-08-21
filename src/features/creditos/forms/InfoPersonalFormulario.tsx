@@ -91,7 +91,7 @@ const tipoViviendaOptions: SelectOption[] = [
 ];
 
 const siNoOtroOptions: SelectOption[] = [
-    { value: "No", label: "No" },
+    // { value: "No", label: "No" },
     { value: "Si", label: "Sí" },
     { value: "Otro", label: "Otro" },
 ];
@@ -311,7 +311,6 @@ const onSubmit = (values: InfoPersonalFormValues) => {
     .slice(0, 3)
     .map(normalizaRef)
     .filter(r =>
-      // nombre razonable y teléfono con 7–10 dígitos
       /^[A-Za-zÁÉÍÓÚÑáéíóúñ\s'.-]{3,}$/.test(r.nombre_completo) &&
       /^[0-9]{7,10}$/.test(r.telefono)
     );
@@ -320,13 +319,13 @@ const onSubmit = (values: InfoPersonalFormValues) => {
     codigo_credito: values.codigo_credito ?? String(id),
     numero_documento: values.numero_documento.trim(),
     tipo_documento: values.tipo_documento.trim(),
-    fecha_expedicion: values.fecha_expedicion,   // YYYY-MM-DD
+    fecha_expedicion: values.fecha_expedicion,
     lugar_expedicion: values.lugar_expedicion,
     primer_nombre: values.primer_nombre.trim(),
     segundo_nombre: (values.segundo_nombre ?? "").trim(),
     primer_apellido: values.primer_apellido.trim(),
     segundo_apellido: (values.segundo_apellido ?? "").trim(),
-    fecha_nacimiento: values.fecha_nacimiento,   // YYYY-MM-DD
+    fecha_nacimiento: values.fecha_nacimiento,
     nivel_estudios: values.nivel_estudios,
     ciudad_residencia: values.ciudad_residencia,
     barrio_residencia: (values.barrio_residencia ?? "").trim(),
@@ -359,26 +358,34 @@ const onSubmit = (values: InfoPersonalFormValues) => {
     numero_motor: values.vehiculo?.numero_motor?.trim() || "",
   };
 
-  const payload = {
-    informacion_personal,
-    informacion_laboral,
-    vehiculo,
-    referencias: referenciasLimpias,
-  };
-
   const existingId =
     (data as any)?.informacion_personal?.codigo_credito ??
     (data as any)?.data?.informacion_personal?.codigo_credito ??
     null;
 
   if (existingId) {
+    // 🔹 UPDATE → payload con secciones
+    const payload = {
+      informacion_personal,
+      informacion_laboral,
+      vehiculo,
+      referencias: referenciasLimpias,
+    };
     console.log("update", payload);
     actualizarDeudor.mutate({ id: existingId, payload });
   } else {
+    // 🔹 REGISTER → informacion_personal desestructurado al raíz
+    const payload = {
+      ...informacion_personal, // 👈 directamente las claves
+      informacion_laboral,
+      vehiculo,
+      referencias: referenciasLimpias,
+    };
     console.log("register", payload);
     registrarDeudor.mutate(payload as any);
   }
 };
+
     const grid = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3";
 
     // // UI

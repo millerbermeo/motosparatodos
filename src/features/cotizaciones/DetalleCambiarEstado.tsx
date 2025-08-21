@@ -81,24 +81,37 @@ const estadoBadgeClass = (estado?: string) => {
 // const esCreditoDirecto = (row: any) => { ... }
 
 // ✅ Agrega esto
-const tipoPagoNum = (row: any) => Number(row?.tipo_pago) || 0;
-const esFinanciado = (row: any) => [2, 3].includes(tipoPagoNum(row)); // 2=Credibike, 3=Terceros
+// ✅ Reemplaza los helpers de tipo de pago (quita el numérico)
+const tipoPagoLabel = (row: any) =>
+  (safeText(row?.tipo_pago) || '')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .trim()
+    .toLowerCase();
+
+const esCreditoDirecto = (row: any) =>
+  tipoPagoLabel(row) === 'credito directo';
 
 
+// ✅ Actualiza las opciones de estados
 const opcionesEstados = (row: any): any[] => {
-  const financiado = esFinanciado(row); // true si tipo_pago es 2 o 3
+  const soloCreditoEnDirecto = esCreditoDirecto(row); // true solo si "Crédito directo"
 
   return [
     { value: '', label: 'Seleccione...' },
     { value: '3', label: 'Continúa interesado' },
     { value: '4', label: 'Alto interés' },
-    financiado
+
+    // Solo "Solicitar crédito" cuando es "Crédito directo", en los otros dos "Solicitar facturación"
+    soloCreditoEnDirecto
       ? { value: '5', label: 'Solicitar crédito' }
       : { value: '6', label: 'Solicitar facturación' },
-    { value: '7', label: 'Solicitar crédito express' }, // se mantiene visible (si tu lógica requiere ocultarlo en contado, dímelo y lo ajusto)
+
+    { value: '7', label: 'Solicitar crédito express' }, // lo dejo como estaba (visible siempre)
     { value: '2', label: 'Sin interés' },
   ];
 };
+
 
 /* =======================
    Motos helpers
