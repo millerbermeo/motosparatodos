@@ -207,7 +207,7 @@ const TablaCotizaciones: React.FC = () => {
                                 {n}
                             </option>
                         ))}
-                        
+
                     </select>
                     {isFetching && <span className="loading loading-spinner loading-xs" />}
                 </div>
@@ -253,7 +253,7 @@ const TablaCotizaciones: React.FC = () => {
                                         </Link>
 
 
-                                        {user?.rol === "Asesor" && (
+                                        {user?.rol === "Asesor" && r?.estado === "Sin estado" && (
                                             <>
 
                                                 <Link
