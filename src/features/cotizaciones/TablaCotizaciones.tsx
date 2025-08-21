@@ -214,6 +214,7 @@ const TablaCotizaciones: React.FC = () => {
                                 {n}
                             </option>
                         ))}
+                        
                     </select>
                     {isFetching && <span className="loading loading-spinner loading-xs" />}
                 </div>
@@ -239,7 +240,7 @@ const TablaCotizaciones: React.FC = () => {
                             <tr key={r.id} className="transition-colors">
                                 <td className="text-sm text-base-content/70">{r?.asesor || '—'}</td>
                                 <td className="font-medium">{fullName(r)}</td>
-                                <td className="text-sm text-base-content/70">—{/* teléfono no está en payload */}</td>
+                                <td className="text-sm text-base-content/70">{r.celular || ''}</td>
                                 <td>{tipoFrom(r)}</td>
                                 <td>
                                     <span className={`badge ${estadoBadgeClass(r?.estado)}`}>{r?.estado || 'Sin estado'}</span>

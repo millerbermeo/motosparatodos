@@ -1,127 +1,132 @@
 // src/pages/Formatos.tsx
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from "react";
+import Swal from "sweetalert2";
+import { useFormatos, useCreateFormato, useDeleteFormato } from "../services/formatosServices";
 
-type Formato = {
-  id: string;
-  title: string;
-  // IMPORTANT: poner aquí el nombre EXACTO del archivo como está en el servidor (si ya viene con %20, %cc%81, etc. déjalo así)
-  file: string; // e.g. "CONTRATO%20DE%20DACIO%cc%81N%20EN%20PAGO.docx"
+type UiFormato = {
+  id: number | string;
+  title: string; // name
+  ruta: string;  // docs_formatos/archivo.docx
   size?: string;
   date?: string;
 };
 
-const baseUrl = 'https://tuclick.vozipcolombia.net.co/motos/back/archivos/';
+// === Helpers URL/Visor ===
+const backendBase = "https://tuclick.vozipcolombia.net.co/motos/back/";
 
-// helper: devuelve url absoluta
-const getFileUrl = (file: string) => `${baseUrl}${file}`;
+const toAbsoluteUrl = (ruta: string) =>
+  /^https?:\/\//i.test(ruta) ? ruta : `${backendBase}${ruta.replace(/^\/+/, "")}`;
 
-// helper: extrae extensión
 const getExt = (file: string) => {
-  const q = file.split('?')[0];
-  const dot = q.lastIndexOf('.');
-  return dot >= 0 ? q.slice(dot + 1).toLowerCase() : '';
+  const q = file.split("?")[0];
+  const dot = q.lastIndexOf(".");
+  return dot >= 0 ? q.slice(dot + 1).toLowerCase() : "";
 };
 
-// para DOCX usamos el visor de Office online
 const getViewerUrl = (absoluteUrl: string, ext: string) => {
-  if (ext === 'docx' || ext === 'doc' || ext === 'xlsx' || ext === 'pptx') {
+  if (["doc", "docx", "xlsx", "pptx"].includes(ext)) {
     return `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(absoluteUrl)}`;
   }
-  // PDFs u otros: abrir directo
   return absoluteUrl;
 };
 
-const formatos: Formato[] = [
-  {
-    id: 'dacion',
-    title: 'CONTRATO DE DACIÓN EN PAGO',
-    file: 'CONTRATO%20DE%20DACIO%cc%81N%20EN%20PAGO.docx',
-    size: '45 KB',
-    date: '2025-08-17 20:10',
-  },
-  {
-    id: 'aplicacion',
-    title: 'Formato Aplicación & Traslados',
-    file: 'Formato%20Aplicacion%20&amp;%20Traslados.docx',
-    size: '20 KB',
-    date: '2025-08-17 20:10',
-  },
-  {
-    id: 'autorizacion',
-    title: 'Formato Carta Autorización Entrega',
-    file: 'Formato%20Carta%20Autorizacion%20Entrega.docx',
-    size: '20 KB',
-    date: '2025-08-17 20:10',
-  },
-  {
-    id: 'responsabilidad',
-    title: 'Formato Carta Responsabilidad trámite de matrícula',
-    file: 'Formato%20Carta%20Responsabilidad%20tramite%20de%20matricula.docx',
-    size: '16 KB',
-    date: '2025-08-17 20:10',
-  },
-  {
-    id: 'entrega-voluntaria',
-    title: 'Formato Entrega Voluntaria Motocicleta',
-    file: 'Formato%20Entrega%20Voluntaria%20Motocicleta.docx',
-    size: '18 KB',
-    date: '2025-08-17 20:10',
-  },
-  {
-    id: 'anticipo',
-    title: 'Formato Solicitud Anticipo Actividad Comercial',
-    file: 'Formato%20Solicitud%20Anticipo%20Actividad%20Comercial.docx',
-    size: '18 KB',
-    date: '2025-08-17 20:10',
-  },
-  {
-    id: 'devolucion',
-    title: 'Formato Solicitud Devolución de Dineros',
-    file: 'Formato%20Solicitud%20Devol%20Dineros.docx',
-    size: '20 KB',
-    date: '2025-08-17 20:10',
-  },
-  {
-    id: 'gastos',
-    title: 'Gastos de Viaje Legalización v0',
-    file: 'Gastos%20de%20Viaje%20Legalizacion%20v0.xls',
-    size: '59 KB',
-    date: '2025-08-17 20:10',
-  },
-];
-
-
 const Formatos: React.FC = () => {
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const [copied, setCopied] = useState<string | null>(null);
+  // ====== Data ======
+  const { data, isLoading, isError, refetch } = useFormatos();
+  const createFormato = useCreateFormato();
+  const deleteFormato = useDeleteFormato();
+
+  // Adaptación del array (ya viene del hook como array)
+  const formatos: UiFormato[] = (data ?? []).map((f: any) => ({
+    id: f.id,
+    title: f.name,
+    ruta: f.ruta,
+    size: f.size,
+    date: f.date ?? f.created_at,
+  }));
+
+  // ====== Local UI state ======
+  const [downloadingId, setDownloadingId] = useState<string | number | null>(null);
+  const [copied, setCopied] = useState<string | number | null>(null);
+  const [name, setName] = useState("");
+  const [file, setFile] = useState<File | null>(null);
 
   const visibleAlert = useMemo(
-    () => formatos.find(f => f.id === downloadingId)?.title,
-    [downloadingId]
+    () => formatos.find((f) => f.id === downloadingId)?.title,
+    [downloadingId, formatos]
   );
 
-  const startDownload = (f: Formato) => {
+  // ====== Actions ======
+  const startDownload = (f: UiFormato) => {
     setDownloadingId(f.id);
-    const url = getFileUrl(f.file);
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = ''; // sugiere descarga manteniendo el nombre del servidor
-    a.rel = 'noopener';
-    a.target = '_blank';
+    const abs = toAbsoluteUrl(f.ruta);
+    const a = document.createElement("a");
+    a.href = abs;
+    a.download = "";
+    a.rel = "noopener";
+    a.target = "_blank";
     document.body.appendChild(a);
     a.click();
     a.remove();
-
-    setTimeout(() => setDownloadingId(prev => (prev === f.id ? null : prev)), 3500);
+    setTimeout(() => setDownloadingId((prev) => (prev === f.id ? null : prev)), 3000);
   };
 
-  const copyLink = async (f: Formato) => {
-    await navigator.clipboard.writeText(getFileUrl(f.file));
+  const copyLink = async (f: UiFormato) => {
+    await navigator.clipboard.writeText(toAbsoluteUrl(f.ruta));
     setCopied(f.id);
-    setTimeout(() => setCopied(null), 2000);
+    setTimeout(() => setCopied(null), 1800);
   };
 
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !file) {
+      Swal.fire({ icon: "warning", title: "Datos incompletos", text: "Ingresa el nombre y selecciona un archivo." });
+      return;
+    }
+
+    const { isConfirmed } = await Swal.fire({
+      icon: "question",
+      title: "¿Registrar formato?",
+      html: `<div style="text-align:left">
+               <p><b>Nombre:</b> ${name}</p>
+               <p><b>Archivo:</b> ${file.name}</p>
+             </div>`,
+      showCancelButton: true,
+      confirmButtonText: "Sí, registrar",
+      cancelButtonText: "Cancelar",
+    });
+    if (!isConfirmed) return;
+
+    createFormato.mutate(
+      { name, documento: file },
+      {
+        onSuccess: () => {
+          setName("");
+          setFile(null);
+          const el = document.getElementById("file-input") as HTMLInputElement | null;
+          if (el) el.value = "";
+        },
+      }
+    );
+  };
+
+  const handleDelete = async (item: UiFormato) => {
+    const { isConfirmed } = await Swal.fire({
+      icon: "warning",
+      title: "¿Eliminar formato?",
+      html: `<div style="text-align:left">
+               <p>Se eliminará <b>${item.title}</b>.</p>
+             </div>`,
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+    if (!isConfirmed) return;
+
+    deleteFormato.mutate(Number(item.id));
+  };
+
+  // ====== Render ======
   return (
     <main className="w-full min-h-screen bg-base-100" aria-labelledby="formatos-title">
       {/* HERO */}
@@ -130,80 +135,143 @@ const Formatos: React.FC = () => {
           <div className="hero-content w-full flex-col items-stretch gap-6">
             <div className="w-full">
               <h1 id="formatos-title" className="text-3xl md:text-4xl font-extrabold tracking-tight">
-                Formatos descargables
+                Formatos
               </h1>
               <p className="mt-3 text-base md:text-lg opacity-80">
-                Abra para visualizar o descargue el archivo original. Los documentos .docx se
-                visualizan con Office Online.
+                Visualiza, descarga, sube nuevos formatos y elimínalos con confirmación.
               </p>
             </div>
+
+            {/* FORM UPLOAD */}
+            <form
+              onSubmit={handleCreate}
+              className="w-full bg-base-100 border border-base-300 rounded-xl p-4 md:p-5 flex flex-col md:flex-row gap-3 md:items-end"
+            >
+              <div className="form-control w-full md:max-w-sm">
+                <label className="label"><span className="label-text">Nombre del formato</span></label>
+                <input
+                  type="text"
+                  placeholder="Ej. CONTRATO DE DACIÓN EN PAGO"
+                  className="input input-bordered w-full"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+              <div className="form-control w-full md:max-w-md">
+                <label className="label"><span className="label-text">Archivo</span></label>
+                <input
+                  id="file-input"
+                  type="file"
+                  className="file-input file-input-bordered w-full"
+                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                  accept=".doc,.docx,.pdf,.xlsx,.pptx"
+                />
+              </div>
+              <button
+                type="submit"
+                className={`btn btn-primary md:self-end ${createFormato.isPending ? "btn-disabled" : ""}`}
+              >
+                {createFormato.isPending ? <span className="loading loading-spinner mr-2" /> : null}
+                Registrar
+              </button>
+            </form>
           </div>
         </div>
       </section>
 
-      {/* GRID */}
+      {/* LISTADO */}
       <section className="w-full px-4 md:px-8 pb-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 md:gap-6">
-          {formatos.map((f) => {
-            const abs = getFileUrl(f.file);
-            const ext = getExt(f.file);
-            const viewer = getViewerUrl(abs, ext);
-            const isDoc = ext === 'doc' || ext === 'docx';
+        {isLoading && (
+          <div className="flex items-center gap-2 opacity-70">
+            <span className="loading loading-spinner" /> Cargando formatos…
+          </div>
+        )}
+        {isError && (
+          <div className="alert alert-error">
+            <span>Hubo un error cargando los formatos.</span>
+            <button className="btn btn-sm" onClick={() => refetch()}>Reintentar</button>
+          </div>
+        )}
 
-            return (
-              <article key={f.id} className="card bg-base-200 border border-base-300 hover:shadow-md transition-shadow">
-                <div className="card-body">
-                  <div className="flex items-start gap-3">
-                    <span className="inline-flex p-2 rounded-lg bg-primary/10 shrink-0">
-                      {isDoc ? <WordIcon className="w-6 h-6 text-primary" /> : <FileIcon className="w-6 h-6 text-primary" />}
-                    </span>
-                    <div className="flex-1">
-                      <h2 className="card-title text-base leading-snug">{f.title}</h2>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-sm opacity-70">
-                        {f.size && <span className="badge badge-ghost">{f.size}</span>}
-                        {f.date && <span className="badge badge-ghost">{f.date}</span>}
-                        <span className="badge badge-outline">{isDoc ? 'DOCX' : ext.toUpperCase() || 'FILE'}</span>
+        {!isLoading && !isError && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 md:gap-6">
+            {formatos.map((f) => {
+              const abs = toAbsoluteUrl(f.ruta);
+              const ext = getExt(abs);
+              const viewer = getViewerUrl(abs, ext);
+              const isDoc = ["doc", "docx"].includes(ext);
+
+              return (
+                <article key={f.id} className="card bg-base-200 border border-base-300 hover:shadow-md transition-shadow relative">
+                  {/* Botón eliminar */}
+                  <button
+                    onClick={() => handleDelete(f)}
+                    className="btn btn-circle btn-ghost absolute right-2 top-2"
+                    title="Eliminar formato"
+                    aria-label={`Eliminar ${f.title}`}
+                  >
+                    <TrashIcon className="w-5 h-5" />
+                  </button>
+
+                  <div className="card-body">
+                    <div className="flex items-start gap-3">
+                      <span className="inline-flex p-2 rounded-lg bg-primary/10 shrink-0">
+                        {isDoc ? <WordIcon className="w-6 h-6 text-primary" /> : <FileIcon className="w-6 h-6 text-primary" />}
+                      </span>
+                      <div className="flex-1">
+                        <h2 className="card-title text-base leading-snug break-words">{f.title}</h2>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm opacity-70">
+                          {f.size && <span className="badge badge-ghost">{f.size}</span>}
+                          {f.date && <span className="badge badge-ghost">{f.date}</span>}
+                          <span className="badge badge-outline">{ext ? ext.toUpperCase() : "FILE"}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="card-actions justify-between pt-4">
+                      <button
+                        onClick={() => startDownload(f)}
+                        className="btn btn-success btn-sm"
+                        aria-label={`Descargar ${f.title}`}
+                      >
+                        <DownloadIcon className="w-4 h-4" />
+                        Descargar
+                      </button>
+
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={viewer}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-ghost btn-sm"
+                          aria-label={`Ver ${f.title}`}
+                        >
+                          Ver
+                        </a>
+                        <button
+                          onClick={() => copyLink(f)}
+                          className="btn btn-ghost btn-sm"
+                          aria-live="polite"
+                        >
+                          {copied === f.id ? "¡Copiado!" : "Copiar enlace"}
+                        </button>
                       </div>
                     </div>
                   </div>
+                </article>
+              );
+            })}
 
-                  <div className="card-actions justify-between pt-4">
-                    <button
-                      onClick={() => startDownload(f)}
-                      className="btn btn-success btn-sm"
-                      aria-label={`Descargar ${f.title}`}
-                    >
-                      <DownloadIcon className="w-4 h-4" />
-                      Descargar
-                    </button>
-
-                    <div className="flex items-center gap-2">
-                      <a
-                        href={viewer}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn-ghost btn-sm"
-                        aria-label={`Ver ${f.title}`}
-                      >
-                        Ver
-                      </a>
-                      <button
-                        onClick={() => copyLink(f)}
-                        className="btn btn-ghost btn-sm"
-                        aria-live="polite"
-                      >
-                        {copied === f.id ? '¡Copiado!' : 'Copiar enlace'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
-        </div>
+            {formatos.length === 0 && (
+              <div className="col-span-full text-sm opacity-70">
+                No hay formatos aún. Sube el primero con el formulario arriba.
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
-      {/* TOAST */}
+      {/* TOAST de descarga */}
       {visibleAlert && (
         <div className="toast toast-end z-50">
           <div className="alert shadow-lg bg-base-100 border border-base-300/60">
@@ -242,6 +310,12 @@ const DownloadIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
     <path d="M12 3a1 1 0 0 1 1 1v9.586l2.293-2.293a1 1 0 1 1 1.414 1.414l-4 4a1 1 0 0 1-1.414 0l-4-4A1 1 0 1 1 8.707 11.293L11 13.586V4a1 1 0 0 1 1-1Z" />
     <path d="M4 19a1 1 0 0 1 1-1h14a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1Z" />
+  </svg>
+);
+
+const TrashIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+    <path d="M9 3h6a1 1 0 0 1 1 1v1h4a1 1 0 1 1 0 2h-1v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7H3a1 1 0 1 1 0-2h4V4a1 1 0 0 1 1-1Zm-1 6a1 1 0 1 1 2 0v8a1 1 0 1 1-2 0V9Zm6 0a1 1 0 1 1 2 0v8a1 1 0 1 1-2 0V9Z" />
   </svg>
 );
 

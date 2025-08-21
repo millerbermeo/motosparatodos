@@ -60,7 +60,7 @@ type Cotizacion = {
     nombres: string;
     apellidos?: string;
     email?: string;
-    telefono?: string;
+    celular?: string;
     comentario?: string;
     comentario2?: string;
     cedula?: string;
@@ -105,6 +105,16 @@ const fmtFecha = (isoLike?: string) => {
     hour: 'numeric',
     minute: '2-digit',
   });
+};
+
+// helper opcional
+const sanitizePhone = (v: any): string | undefined => {
+  const s = String(v ?? "").trim();
+  if (!s || s === "0" || s === "-") return undefined;
+  const digits = s.replace(/\D+/g, ""); // deja solo dígitos
+  // si quieres forzar longitud (7–10), descomenta:
+  // if (digits.length < 7 || digits.length > 10) return undefined;
+  return digits || undefined;
 };
 
 // URLs de descarga (ajusta VITE_API_URL a tu backend)
@@ -180,9 +190,9 @@ const mapApiToCotizacion = (data: any): Cotizacion => {
   const nombres = [data?.name, data?.s_name].filter(Boolean).join(' ').trim() || '—';
   const apellidos = [data?.last_name, data?.s_last_name].filter(Boolean).join(' ').trim() || undefined;
   const email = data?.email && data.email !== '0' ? String(data.email) : undefined;
-  const telefono: string | undefined = undefined; // no viene en el JSON de ejemplo
-  const comentario = data?.comentario && data.comentario !== '0' ? String(data.comentario) : undefined;
-  const comentario2 = data?.comentario2 && data.comentario2 !== '0' ? String(data.comentario2) : undefined;
+  const celular = sanitizePhone(data?.celular ?? data?.cel ?? data?.telefono ?? data?.phone); // ✅ asignación
+  const comentario = data?.comentario && data.comentario !== '' ? String(data.comentario) : undefined;
+  const comentario2 = data?.comentario2 && data.comentario2 !== '' ? String(data.comentario2) : undefined;
   const cedula = data?.cedula || undefined;
 
   // Comercial
@@ -217,7 +227,7 @@ const mapApiToCotizacion = (data: any): Cotizacion => {
     id: String(data?.id ?? ''),
     estado,
     creada,
-    cliente: { nombres, apellidos, email, telefono, comentario, comentario2, cedula },
+    cliente: { nombres, apellidos, email, celular, comentario, comentario2, cedula },
     comercial,
     motoA,
     motoB,
@@ -354,7 +364,7 @@ const DetalleCotizacion: React.FC = () => {
               <InfoRow label="Nombres" value={q.cliente.nombres} />
               <InfoRow label="Apellidos" value={q.cliente.apellidos || ''} />
               <InfoRow label="Email" value={q.cliente.email || ''} />
-              <InfoRow label="Teléfono" value={q.cliente.telefono || ''} />
+              <InfoRow label="Teléfono" value={q.cliente.celular || ''} />
               <InfoRow label="Cédula" value={q.cliente.cedula || ''} />
               <InfoRow label="Comentario" value={q.cliente.comentario || q.cliente.comentario2 || ''} full />
             </div>

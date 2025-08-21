@@ -1,11 +1,13 @@
 // src/components/motos/TablaMotos.tsx
 import React from "react";
-import { Banknote, Pen, Trash2 } from "lucide-react";
+import { Banknote, Pen, Percent, Trash2 } from "lucide-react";
 import { useModalStore } from "../../store/modalStore";
 import { useMotos, useDeleteMoto } from "../../services/motosServices";
 import Swal from "sweetalert2";
 import FormularioMotos from "./forms/FormularioMotos";
 import ImpuestosMotosFormulario from "./forms/ImpuestosMotosFormulario"; // 👈 importa el formulario
+import DescuentosMotosFormulario from "./forms/DescuentosMotosFormulario";
+
 
 const PAGE_SIZE = 10;
 const SIBLING_COUNT = 1;
@@ -73,6 +75,22 @@ const TablaMotos: React.FC = () => {
       { size: "3xl", position: "center" }
     );
   };
+
+  const openDescuentos = (m: any) => {
+  const initialValues = {
+    id: Number(m.id),
+    descuento_empresa: m.descuento_empresa ?? "",
+    descuento_ensambladora: m.descuento_ensambladora ?? "",
+  };
+  open(
+    <DescuentosMotosFormulario key={`desc-${m.id}`} initialValues={initialValues} />,
+    `Descuentos: ${m.marca ?? ""} ${m.linea ?? ""} ${m.modelo ?? ""}`,
+    { size: "md", position: "center" }
+  );
+};
+
+
+
   const confirmarEliminar = async (id: number, nombre: string) => {
     const res = await Swal.fire({
       icon: "warning",
@@ -145,6 +163,13 @@ const TablaMotos: React.FC = () => {
                 </td>
                 <td className="text-right">
                   <div className="flex justify-end gap-2">
+                      <button
+    className="btn btn-sm bg-white btn-circle"
+    onClick={() => openDescuentos(m)}
+    title="Editar descuentos"
+  >
+    <Percent size="18px" />
+  </button>
                     <button
                       className="btn btn-sm bg-white btn-circle"
                       onClick={() => openImpuestos(m)}

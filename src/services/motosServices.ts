@@ -17,6 +17,13 @@ export interface Moto {
   imagen?: any;       // URL/filename guardado por el backend
   empresa?: string
   subdistribucion: string
+  soat?: string
+  matricula_contado?: string
+  matricula_credito?: string
+  impuestos?: string
+  descuento_empresa?: string
+  descuento_ensambladora?: string
+
 }
 
 export type NewMoto = Omit<Moto, "id" | "imagen"> & { imagen?: File | null };
@@ -43,8 +50,16 @@ const toFormData = (data: Partial<Moto> & { imagen?: File | null }) => {
   // 🔹 Agregar los dos campos nuevos (nombres en string)
   if (data.empresa != null) fd.append("empresa", data.empresa);
   if (data.subdistribucion != null) fd.append("subdistribucion", data.subdistribucion);
-  
+  if (data.soat != null) fd.append("soat", data.soat);
+  if (data.soat != null) fd.append("soat", data.soat);
+  if (data.matricula_contado != null) fd.append("matricula_contado", data.matricula_contado);
+  if (data.matricula_credito != null) fd.append("matricula_credito", data.matricula_credito);
+  if (data.impuestos != null) fd.append("impuestos", data.impuestos);
+  if (data.descuento_empresa != null) fd.append("descuento_empresa", data.descuento_empresa);
+  if (data.impuestos != null) fd.append("impuestos", data.impuestos);
+  if (data.descuento_ensambladora != null) fd.append("descuento_ensambladora", data.descuento_ensambladora);
   if (data.imagen instanceof File) fd.append("imagen", data.imagen);
+
   return fd;
 };
 
@@ -186,6 +201,52 @@ export const useUpdateImpuestosMoto = () => {
     onError: (error: AxiosError<ServerError>) => {
       const raw =
         error.response?.data?.message ?? "Error al actualizar impuestos";
+      const arr = Array.isArray(raw) ? raw : [raw];
+      Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
+    },
+  });
+};
+
+
+// ===== DESCUENTOS =====
+export interface DescuentosMotoPayload {
+  id: number;
+  descuento_empresa?: number | string;        // opcional
+  descuento_ensambladora?: number | string;   // opcional
+}
+
+export const useUpdateDescuentosMoto = () => {
+  const qc = useQueryClient();
+  const close = useModalStore((s) => s.close);
+
+  return useMutation({
+    mutationFn: async (payload: DescuentosMotoPayload) => {
+      const body: Record<string, number> & { id: number } = { id: Number(payload.id) };
+
+      const addIfNumber = (k: "descuento_empresa" | "descuento_ensambladora", v: any) => {
+        if (v !== undefined && v !== null && String(v).trim() !== "" && !Number.isNaN(Number(String(v).replace(/\D/g, "")))) {
+          body[k] = Number(String(v).replace(/\D/g, ""));
+        }
+      };
+
+      addIfNumber("descuento_empresa", payload.descuento_empresa);
+      addIfNumber("descuento_ensambladora", payload.descuento_ensambladora);
+
+      const { data } = await api.put("/descuentos.php", body, {
+        headers: { "Content-Type": "application/json" },
+      });
+      return data;
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["motos"] }),
+        qc.invalidateQueries({ queryKey: ["descuentos"] }),
+      ]);
+      close();
+      Swal.fire({ icon: "success", title: "Descuentos actualizados", timer: 1600, showConfirmButton: false });
+    },
+    onError: (error: AxiosError<ServerError>) => {
+      const raw = error.response?.data?.message ?? "Error al actualizar descuentos";
       const arr = Array.isArray(raw) ? raw : [raw];
       Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
     },

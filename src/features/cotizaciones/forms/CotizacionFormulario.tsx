@@ -583,7 +583,9 @@ const CotizacionFormulario: React.FC = () => {
 
             {/* DATOS PERSONALES */}
             <div className="flex gap-6 flex-col w-full bg-white p-3 rounded-xl">
-                <div className="badge text-xl badge-success text-white">Datos Personales</div>
+                <div className="divider divider-start divider-success"> <div className="badge text-xl badge-success text-white">Datos Personales</div></div>
+
+
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormInput<FormValues> name="cedula" label="Cédula" control={control} placeholder="Número de documento"
@@ -606,7 +608,10 @@ const CotizacionFormulario: React.FC = () => {
                 {/* MOTOS */}
                 {showMotos && (
                     <>
-                        <div className="badge text-xl badge-success text-white">Datos Motocicletas</div>
+
+                        <div className="divider divider-start divider-success"><div className="badge text-xl badge-success text-white">Datos Motocicletas</div></div>
+
+
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* MOTO 1 */}
@@ -986,7 +991,9 @@ const CotizacionFormulario: React.FC = () => {
                 {errors.comentario && <p className="text-sm text-error">{String(errors.comentario.message)}</p>}
             </div>
 
-            <button type="submit" className="btn btn-primary">Continuar</button>
+            <div className="flex justify-end">
+                <button type="submit" className="btn btn-warning px-10">Registrar</button>
+            </div>
         </form>
     );
 };

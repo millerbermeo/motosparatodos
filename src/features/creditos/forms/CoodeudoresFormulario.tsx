@@ -346,11 +346,11 @@ const CoodeudoresFormulario: React.FC = () => {
 
 
 
-const { id: codigoCredito } = useParams<{ id: string }>();
-if (!codigoCredito) return <div>Error: no se encontró el parámetro en la URL</div>;
+  const { id: codigoCredito } = useParams<{ id: string }>();
+  if (!codigoCredito) return <div>Error: no se encontró el parámetro en la URL</div>;
 
 
-  
+
   const { control, handleSubmit, watch, setValue, reset } = useForm<FormValues>({
     mode: "onBlur",
     defaultValues: { codeudores: [emptyCoodeudor] },
@@ -362,8 +362,8 @@ if (!codigoCredito) return <div>Error: no se encontró el parámetro en la URL</
   const actualizar = useActualizarCodeudor();
 
   // lista existente
-const { data: listResp, isLoading: listLoading, refetch } =
-  useCodeudoresByDeudor(String(codigoCredito));
+  const { data: listResp, isLoading: listLoading, refetch } =
+    useCodeudoresByDeudor(String(codigoCredito));
 
   // ids de edición por índice (0..1)
   const [editingIds, setEditingIds] = React.useState<(number | null)[]>([null]);
@@ -424,20 +424,20 @@ const { data: listResp, isLoading: listLoading, refetch } =
   };
 
   // submit: por cada bloque, si hay id → actualizar; si no → registrar
-const onSubmit = (values: FormValues) => {
-  const payloads = values.codeudores
-    .map((c) => prune(toBackendPayload(c, codigoCredito))) // <- usa codigoCredito
-    .filter(Boolean);
+  const onSubmit = (values: FormValues) => {
+    const payloads = values.codeudores
+      .map((c) => prune(toBackendPayload(c, codigoCredito))) // <- usa codigoCredito
+      .filter(Boolean);
 
-  payloads.forEach((payload) => {
-    const codeudorId = editingIds[0]; // <- NO lo llames "id" para no confundir
-    if (codeudorId) {
-      actualizar.mutate({ id: payload.codigo_credito, payload }, { onSuccess: () => refetch() });
-    } else {
-      registrar.mutate(payload as any, { onSuccess: () => refetch() });
-    }
-  });
-};
+    payloads.forEach((payload) => {
+      const codeudorId = editingIds[0]; // <- NO lo llames "id" para no confundir
+      if (codeudorId) {
+        actualizar.mutate({ id: payload.codigo_credito, payload }, { onSuccess: () => refetch() });
+      } else {
+        registrar.mutate(payload as any, { onSuccess: () => refetch() });
+      }
+    });
+  };
 
 
 
@@ -459,10 +459,15 @@ const onSubmit = (values: FormValues) => {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
         {fields.map((field, idx) => (
           <div key={field.id} className="space-y-8 border border-base-300 rounded-xl p-4">
-            <div className="badge text-xl badge-success text-white mb-3">
-              {`Codeudor ${idx + 1} - Información personal`}
-              {editingIds[idx] ? <span className="ml-2">[Editando #{editingIds[idx]}]</span> : null}
+
+
+            <div className="divider divider-start divider-success">
+              <div className="badge text-xl badge-success text-white mb-3">
+                {`Codeudor ${idx + 1} - Información personal`}
+                {editingIds[idx] ? <span className="ml-2">[Editando #{editingIds[idx]}]</span> : null}
+              </div>
             </div>
+
 
             {/* ======== PERSONALES ======== */}
             <div className={grid}>
@@ -509,9 +514,14 @@ const onSubmit = (values: FormValues) => {
             </div>
 
             {/* ======== LABORAL ======== */}
-            <div className="badge text-xl badge-success text-white mb-3">
-              Codeudor {idx + 1} - Información laboral
+
+
+            <div className="divider divider-start divider-success">
+              <div className="badge text-xl badge-success text-white mb-3">
+                Codeudor {idx + 1} - Información laboral
+              </div>
             </div>
+
             <div className={grid}>
               <FormInput control={control} name={`codeudores.${idx}.empresaLabora`} label="Empresa donde labora" />
               <FormInput control={control} name={`codeudores.${idx}.direccionEmpleador`} label="Dirección empleador" />
@@ -525,9 +535,14 @@ const onSubmit = (values: FormValues) => {
             </div>
 
             {/* ======== VEHÍCULO ======== */}
-            <div className="badge text-xl badge-success text-white mb-3">
-              Codeudor {idx + 1} - Vehículo
+
+
+            <div className="divider divider-start divider-success">
+              <div className="badge text-xl badge-success text-white mb-3">
+                Codeudor {idx + 1} - Vehículo
+              </div>
             </div>
+
             <div className={grid}>
               <FormInput control={control} name={`codeudores.${idx}.vehPlaca`} label="Placa" />
               <FormInput control={control} name={`codeudores.${idx}.vehMarca`} label="Marca" />
@@ -537,9 +552,14 @@ const onSubmit = (values: FormValues) => {
             </div>
 
             {/* ======== REFERENCIAS ======== */}
-            <div className="badge text-xl badge-success text-white mb-3">
-              Codeudor {idx + 1} - Referencia 1
+
+
+            <div className="divider divider-start divider-success">
+              <div className="badge text-xl badge-success text-white mb-3">
+                Codeudor {idx + 1} - Referencia 1
+              </div>
             </div>
+
             <div className={grid}>
               <FormInput control={control} name={`codeudores.${idx}.ref1Nombre`} label="Nombre completo" />
               <FormSelect control={control} name={`codeudores.${idx}.ref1Tipo`} label="Tipo de referencia" options={tipoReferenciaOptions} />
@@ -547,9 +567,15 @@ const onSubmit = (values: FormValues) => {
               <FormInput control={control} name={`codeudores.${idx}.ref1Telefono`} label="Número telefónico" rules={{ pattern: { value: /^[0-9]*$/, message: "Solo dígitos" } }} />
             </div>
 
-            <div className="badge text-xl badge-success text-white mb-3">
-              Codeudor {idx + 1} - Referencia 2
+
+
+            <div className="divider divider-start divider-success">
+              <div className="badge text-xl badge-success text-white mb-3">
+                Codeudor {idx + 1} - Referencia 2
+              </div>
             </div>
+
+
             <div className={grid}>
               <FormInput control={control} name={`codeudores.${idx}.ref2Nombre`} label="Nombre completo" />
               <FormSelect control={control} name={`codeudores.${idx}.ref2Tipo`} label="Tipo de referencia" options={tipoReferenciaOptions} />
@@ -557,9 +583,14 @@ const onSubmit = (values: FormValues) => {
               <FormInput control={control} name={`codeudores.${idx}.ref2Telefono`} label="Número telefónico" rules={{ pattern: { value: /^[0-9]*$/, message: "Solo dígitos" } }} />
             </div>
 
-            <div className="badge text-xl badge-success text-white mb-3">
-              Codeudor {idx + 1} - Referencia 3
+
+            <div className="divider divider-start divider-success">
+              <div className="badge text-xl badge-success text-white mb-3">
+                Codeudor {idx + 1} - Referencia 3
+              </div>
             </div>
+
+
             <div className={grid}>
               <FormInput control={control} name={`codeudores.${idx}.ref3Nombre`} label="Nombre completo" />
               <FormSelect control={control} name={`codeudores.${idx}.ref3Tipo`} label="Tipo de referencia" options={tipoReferenciaOptions} />
@@ -596,7 +627,7 @@ const onSubmit = (values: FormValues) => {
             <button type="button" className="btn btn-ghost" onClick={onCancel} disabled={listLoading}>
               Cancelar
             </button>
-            <button type="submit" className="btn btn-primary" disabled={registrar.isPending || actualizar.isPending}>
+            <button type="submit" className="btn btn-warning" disabled={registrar.isPending || actualizar.isPending}>
               {editingIds.some(Boolean) ? "Actualizar" : "Guardar"}
             </button>
           </div>

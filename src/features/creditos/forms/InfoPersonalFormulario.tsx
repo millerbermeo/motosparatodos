@@ -34,10 +34,10 @@ type InfoPersonalFormValues = {
     celular: string;
     email: string;
     estado_civil: string;
-    personas_a_cargo: number | string;
+    personas_a_cargo: number;
     tipo_vivienda: string;
     costo_arriendo: number | string;
-    finca_raiz: "Si" | "No" | "Otro";
+    finca_raiz?: string;
 
     informacion_laboral: {
         empresa?: string;
@@ -127,7 +127,7 @@ const ciudadesEjemplo: SelectOption[] = [
 
 // ============================ Helpers ============================
 
-const hasText = (v?: string) => typeof v === "string" && v.trim() !== "";
+// const hasText = (v?: string) => typeof v === "string" && v.trim() !== "";
 
 const normalizaRef = (r: Referencia): Referencia => ({
     nombre_completo: (r?.nombre_completo ?? "").trim(),
@@ -137,7 +137,7 @@ const normalizaRef = (r: Referencia): Referencia => ({
 });
 
 // referencia válida = nombre + teléfono
-const esReferenciaValida = (r: Referencia) => hasText(r.nombre_completo) && hasText(r.telefono);
+// const esReferenciaValida = (r: Referencia) => hasText(r.nombre_completo) && hasText(r.telefono);
 
 // convierte strings numéricos a número; conserva 0 cuando no hay valor
 const toNumber = (v: any) => {
@@ -167,7 +167,7 @@ const InfoPersonalFormulario: React.FC = () => {
     // hooks siempre arriba
     const { data } = useDeudor(String(id));
 
-    
+
     const registrarDeudor = useRegistrarDeudor();
     const actualizarDeudor = useActualizarDeudor();
 
@@ -197,8 +197,8 @@ const InfoPersonalFormulario: React.FC = () => {
             estado_civil: "",
             personas_a_cargo: 0,
             tipo_vivienda: "",
-            costo_arriendo: 0,
-            finca_raiz: "No",
+            costo_arriendo: "",
+            finca_raiz: "",
             informacion_laboral: {
                 empresa: "",
                 direccion_empleador: "",
@@ -298,57 +298,87 @@ const InfoPersonalFormulario: React.FC = () => {
     }, [tipoVivienda, setValue]);
 
     // Submit
-    const onSubmit = (values: InfoPersonalFormValues) => {
-        const referenciasLimpias = (values.referencias ?? [])
-            .slice(0, 3)
-            .map(normalizaRef)
-            .filter(esReferenciaValida);
+ // traduce valor UI → backend (ej. "Si" -> "Casa")
+const mapFincaRaizToBackend = (v: string | undefined) => {
+  if (!v || v === "No") return "";            // o null, según espere tu API
+  if (v === "Si") return "Casa";              // adapta si puede ser "Apartamento", etc.
+  if (v === "Otro") return "Otro";
+  return String(v);
+};
 
-        const payload: InfoPersonalFormValues = {
-            ...values,
-            codigo_credito: values.codigo_credito ?? String(id),
-            personas_a_cargo: toNumber(values.personas_a_cargo),
-            costo_arriendo: toNumber(values.costo_arriendo),
-            informacion_laboral: {
-                ...values.informacion_laboral,
-                salario: toNumber(values.informacion_laboral?.salario),
-                empresa: values.informacion_laboral?.empresa?.trim() || "",
-                direccion_empleador: values.informacion_laboral?.direccion_empleador?.trim() || "",
-                telefono_empleador: values.informacion_laboral?.telefono_empleador?.trim() || "",
-                cargo: values.informacion_laboral?.cargo?.trim() || "",
-                tipo_contrato: values.informacion_laboral?.tipo_contrato?.trim() || "",
-                tiempo_servicio: values.informacion_laboral?.tiempo_servicio?.trim() || "",
-            },
-            vehiculo: {
-                placa: values.vehiculo?.placa?.trim() || "",
-                marca: values.vehiculo?.marca?.trim() || "",
-                modelo: values.vehiculo?.modelo?.trim() || "",
-                tipo: values.vehiculo?.tipo?.trim() || "",
-                numero_motor: values.vehiculo?.numero_motor?.trim() || "",
-            },
-            referencias: referenciasLimpias,
-        };
+const onSubmit = (values: InfoPersonalFormValues) => {
+  const referenciasLimpias = (values.referencias ?? [])
+    .slice(0, 3)
+    .map(normalizaRef)
+    .filter(r =>
+      // nombre razonable y teléfono con 7–10 dígitos
+      /^[A-Za-zÁÉÍÓÚÑáéíóúñ\s'.-]{3,}$/.test(r.nombre_completo) &&
+      /^[0-9]{7,10}$/.test(r.telefono)
+    );
 
-        // Detecta si hay registro existente (id del deudor)
-        const existingId =
-            (data as any)?.informacion_personal?.codigo_credito ??
-            (data as any)?.data?.informacion_personal?.codigo_credito ??
-            null;
+  const informacion_personal = {
+    codigo_credito: values.codigo_credito ?? String(id),
+    numero_documento: values.numero_documento.trim(),
+    tipo_documento: values.tipo_documento.trim(),
+    fecha_expedicion: values.fecha_expedicion,   // YYYY-MM-DD
+    lugar_expedicion: values.lugar_expedicion,
+    primer_nombre: values.primer_nombre.trim(),
+    segundo_nombre: (values.segundo_nombre ?? "").trim(),
+    primer_apellido: values.primer_apellido.trim(),
+    segundo_apellido: (values.segundo_apellido ?? "").trim(),
+    fecha_nacimiento: values.fecha_nacimiento,   // YYYY-MM-DD
+    nivel_estudios: values.nivel_estudios,
+    ciudad_residencia: values.ciudad_residencia,
+    barrio_residencia: (values.barrio_residencia ?? "").trim(),
+    direccion_residencia: values.direccion_residencia.trim(),
+    telefono_fijo: (values.telefono_fijo ?? "").trim(),
+    celular: values.celular.trim(),
+    email: values.email.trim(),
+    estado_civil: values.estado_civil,
+    personas_a_cargo: toNumber(values.personas_a_cargo),
+    tipo_vivienda: values.tipo_vivienda,
+    costo_arriendo: values.tipo_vivienda === "Arriendo" ? toNumber(values.costo_arriendo) : 0,
+    finca_raiz: mapFincaRaizToBackend(values.finca_raiz as string),
+  };
 
-        if (existingId) {
-            // ACTUALIZAR
+  const informacion_laboral = {
+    empresa: values.informacion_laboral?.empresa?.trim() || "",
+    direccion_empleador: values.informacion_laboral?.direccion_empleador?.trim() || "",
+    telefono_empleador: values.informacion_laboral?.telefono_empleador?.trim() || "",
+    cargo: values.informacion_laboral?.cargo?.trim() || "",
+    tipo_contrato: values.informacion_laboral?.tipo_contrato?.trim() || "Indefinido",
+    salario: toNumber(values.informacion_laboral?.salario),
+    tiempo_servicio: values.informacion_laboral?.tiempo_servicio?.trim() || "",
+  };
 
-            console.log("update", payload)
-            actualizarDeudor.mutate({ id: existingId, payload });
-        } else {
-            // REGISTRAR
+  const vehiculo = {
+    placa: values.vehiculo?.placa?.trim() || "",
+    marca: values.vehiculo?.marca?.trim() || "",
+    modelo: values.vehiculo?.modelo?.trim() || "",
+    tipo: values.vehiculo?.tipo?.trim() || "",
+    numero_motor: values.vehiculo?.numero_motor?.trim() || "",
+  };
 
-            console.log("register", payload)
+  const payload = {
+    informacion_personal,
+    informacion_laboral,
+    vehiculo,
+    referencias: referenciasLimpias,
+  };
 
-            registrarDeudor.mutate(payload);
-        }
-    };
+  const existingId =
+    (data as any)?.informacion_personal?.codigo_credito ??
+    (data as any)?.data?.informacion_personal?.codigo_credito ??
+    null;
 
+  if (existingId) {
+    console.log("update", payload);
+    actualizarDeudor.mutate({ id: existingId, payload });
+  } else {
+    console.log("register", payload);
+    registrarDeudor.mutate(payload as any);
+  }
+};
     const grid = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3";
 
     // // UI
@@ -359,9 +389,15 @@ const InfoPersonalFormulario: React.FC = () => {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
             {/* ================== DATOS PERSONALES ================== */}
             <section>
-                <div className="badge text-xl badge-success text-white mb-3">
-                    Deudor - Información Personal
+
+
+                <div className="divider divider-start divider-success">
+                    <div className="badge text-xl badge-success text-white mb-3">
+                        Deudor - Información Personal
+                    </div>
                 </div>
+
+
 
                 <div className={grid}>
                     <FormInput
@@ -512,9 +548,14 @@ const InfoPersonalFormulario: React.FC = () => {
 
             {/* ================== INFORMACIÓN LABORAL ================== */}
             <section>
-                <div className="badge text-xl badge-success text-white mb-3">
-                    Deudor - Información laboral
+
+
+                <div className="divider divider-start divider-success">
+                    <div className="badge text-xl badge-success text-white mb-3">
+                        Deudor - Información laboral
+                    </div>
                 </div>
+
 
                 <div className={grid}>
                     <FormInput name="informacion_laboral.empresa" label="Empresa donde labora" control={control} />
@@ -552,8 +593,12 @@ const InfoPersonalFormulario: React.FC = () => {
 
             {/* ================== VEHÍCULO ================== */}
             <section>
-                <div className="badge text-xl badge-success text-white mb-3">
-                    Deudor - Vehículo
+
+
+                <div className="divider divider-start divider-success">
+                    <div className="badge text-xl badge-success text-white mb-3">
+                        Deudor - Vehículo
+                    </div>
                 </div>
 
                 <div className={grid}>
@@ -567,8 +612,11 @@ const InfoPersonalFormulario: React.FC = () => {
 
             {/* ================== REFERENCIAS ================== */}
             <section>
-                <div className="badge text-xl badge-success text-white mb-3">
-                    Deudor - Referencia 1
+
+                <div className="divider divider-start divider-success">
+                    <div className="badge text-xl badge-success text-white mb-3">
+                        Deudor - Referencia 1
+                    </div>
                 </div>
 
                 <div className={grid}>
@@ -590,8 +638,12 @@ const InfoPersonalFormulario: React.FC = () => {
             </section>
 
             <section>
-                <div className="badge text-xl badge-success text-white mb-3">
-                    Deudor - Referencia 2
+
+
+                <div className="divider divider-start divider-success">
+                    <div className="badge text-xl badge-success text-white mb-3">
+                        Deudor - Referencia 2
+                    </div>
                 </div>
 
                 <div className={grid}>
@@ -613,9 +665,15 @@ const InfoPersonalFormulario: React.FC = () => {
             </section>
 
             <section>
-                <div className="badge text-xl badge-success text-white mb-3">
-                    Deudor - Referencia 3
+
+
+                <div className="divider divider-start divider-success">
+                    <div className="badge text-xl badge-success text-white mb-3">
+                        Deudor - Referencia 3
+                    </div>
                 </div>
+
+
                 <div className={grid}>
                     <FormInput name="referencias.2.nombre_completo" label="Nombre completo" control={control} />
                     <FormSelect
@@ -689,9 +747,13 @@ const InfoPersonalFormulario: React.FC = () => {
                     Limpiar
                 </button>
 
-                <button className="btn btn-primary" type="submit">
-                    Guardar
+                <button className="btn btn-warning" type="submit">
+                    {(data as any)?.informacion_personal?.codigo_credito ||
+                        (data as any)?.data?.informacion_personal?.codigo_credito
+                        ? "Actualizar"
+                        : "Guardar"}
                 </button>
+
             </div>
         </form>
     );
