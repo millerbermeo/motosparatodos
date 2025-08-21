@@ -10,6 +10,12 @@ import ButtonLink from "../../../shared/components/ButtonLink";
 
 type MetodoPago = "contado" | "credibike" | "terceros";
 
+const METODO_PAGO_LABEL: Record<MetodoPago, string> = {
+    contado: "Contado",
+    credibike: "Crédito directo",
+    terceros: "Crédito de terceros",
+};
+
 type FormValues = {
     metodoPago: MetodoPago;
     canal: string;
@@ -200,11 +206,14 @@ const CotizacionFormulario: React.FC = () => {
         const sel = watch("moto1");
         const m = (motos1?.motos ?? []).find((x) => x.linea === sel);
         if (m) {
-            if (m.modelo && m.modelo.trim() !== "") {
-                setValue("modelo_a", m.modelo); // autocompleta
-            } else {
-                setValue("modelo_a", ""); // lo deja vacío para que el usuario lo escriba
-            }
+            // Setear modelo
+            setValue("modelo_a", m.modelo?.trim() || "");
+
+
+            // 👉 Setear descuento automático (suma empresa + ensambladora)
+            const descuento = Number(m.descuento_empresa) + Number(m.descuento_ensambladora);
+            console.log("aa", descuento)
+            setValue("descuento1", descuento.toString());
         }
     }, [watch("moto1"), motos1, setValue]);
 
@@ -213,11 +222,9 @@ const CotizacionFormulario: React.FC = () => {
         const sel = watch("moto2");
         const m = (motos2?.motos ?? []).find((x) => x.linea === sel);
         if (m) {
-            if (m.modelo && m.modelo.trim() !== "") {
-                setValue("modelo_b", m.modelo);
-            } else {
-                setValue("modelo_b", "");
-            }
+            setValue("modelo_b", m.modelo?.trim() || "");
+            const descuento = Number(m.descuento_empresa ?? 0) + Number(m.descuento_ensambladora ?? 0);
+            setValue("descuento2", descuento.toString());
         }
     }, [watch("moto2"), motos2, setValue]);
 
@@ -404,11 +411,7 @@ const CotizacionFormulario: React.FC = () => {
 
 
 
-        // 1 = contado, 2 = credibike, 3 = terceros
-        const tipo_pago_num =
-            data.metodoPago === "contado" ? 1 :
-                data.metodoPago === "credibike" ? 2 :
-                    3;
+
 
         const esFinanciado = data.metodoPago !== "contado";
 
@@ -432,6 +435,8 @@ const CotizacionFormulario: React.FC = () => {
             canal_contacto: data.canal,
             pregunta: data.pregunta,
 
+            celular: data.celular?.replace(/\D/g, "").trim(), // solo dígitos por si acaso
+            fecha_nacimiento: data.fecha_nac,
             // Vehículo A
             marca_a: incluirMoto1 ? data.marca1 : "",
             linea_a: lineaA_final,
@@ -463,7 +468,8 @@ const CotizacionFormulario: React.FC = () => {
 
             // Pago / financiación
             // Pago / financiación
-            tipo_pago: tipo_pago_num, // <-- ahora es 1|2|3
+            tipo_pago: METODO_PAGO_LABEL[data.metodoPago], // 👈 ahora manda el string correcto
+
             cuota_inicial_a: incluirMoto1 ? inicial1 : null,
             cuota_inicial_b: incluirMoto2 ? inicial2 : null,
             financiera: esFinanciado ? (data.financiera || null) : null,
@@ -476,6 +482,7 @@ const CotizacionFormulario: React.FC = () => {
             cuota_24_a: toNumberOrNull(data.cuota_24_a), cuota_24_b: toNumberOrNull(data.cuota_24_b),
             cuota_30_a: toNumberOrNull(data.cuota_30_a), cuota_30_b: toNumberOrNull(data.cuota_30_b),
             cuota_36_a: toNumberOrNull(data.cuota_36_a), cuota_36_b: toNumberOrNull(data.cuota_36_b),
+            metodo_pago: METODO_PAGO_LABEL[data.metodoPago], // 👈 ahora manda el string correcto
 
             comentario: data.comentario?.trim(),
 
@@ -713,7 +720,7 @@ const CotizacionFormulario: React.FC = () => {
                                                 rules={reqIf(showMotos && incluirMoto1, "El precio es obligatoria")}
 
                                             />
-                                            <FormInput<FormValues> name="descuento1" label="Descuentos" control={control} type="number" disabled={!showMotos || !incluirMoto1} />
+                                            <FormInput<FormValues> name="descuento1" label="Descuentos" control={control} className="hidden" type="number" disabled={!showMotos || !incluirMoto1} />
 
                                             {/* RESUMEN */}
                                             <div className="bg-base-100 shadow-lg rounded-xl p-6 border border-base-300">
@@ -847,7 +854,7 @@ const CotizacionFormulario: React.FC = () => {
                                             {/* CAMBIO DE NOMBRE */}
                                             <FormInput<FormValues> rules={reqIf(showMotos && incluirMoto1, "El precio es obligatoria")}
                                                 name="precioDocumentos2" label="Precio documentos / matrícula y SOAT" control={control} type="number" disabled={!showMotos || !incluirMoto2} />
-                                            <FormInput<FormValues> name="descuento2" label="Descuentos" control={control} type="number" disabled={!showMotos || !incluirMoto2} />
+                                            <FormInput<FormValues> name="descuento2" label="Descuentos" control={control} type="number" className="hidden" disabled={!showMotos || !incluirMoto2} />
 
                                             <div className="bg-base-100 shadow-lg rounded-xl p-6 border border-base-300">
                                                 <h3 className="text-lg font-bold mb-4 text-success">Resumen de costos</h3>

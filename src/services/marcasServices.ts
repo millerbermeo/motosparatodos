@@ -140,6 +140,8 @@ export interface Moto {
   matricula_credito: number;
   impuestos: number;
   modelo?: string
+  descuento_empresa?: string
+  descuento_ensambladora?: string
 }
 
 export interface FiltroMarcaResponseRaw {
@@ -154,6 +156,8 @@ export interface FiltroMarcaResponseRaw {
     matricula_credito: string | number;
     impuestos: string | number;
     modelo: string
+    descuento_empresa?: string
+    descuento_ensambladora?: string
   }>;
 }
 
@@ -193,7 +197,9 @@ export const useMotosPorMarca = (marca: string | undefined) => {
           matricula_contado: normalizeNumber(m.matricula_contado),
           matricula_credito: normalizeNumber(m.matricula_credito),
           impuestos: normalizeNumber(m.impuestos),
-                    modelo: m.modelo,
+          modelo: m.modelo,
+            descuento_empresa: m.descuento_empresa,
+              descuento_ensambladora: m.descuento_ensambladora,
 
         })),
       };

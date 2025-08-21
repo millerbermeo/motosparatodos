@@ -102,14 +102,7 @@ const formatFechaLarga = (dateStr?: string) => {
 };
 
 // 1 = contado, 2 = Credibike, 3 = terceros
-const tipoFrom = (r: any) => {
-  switch (Number(r?.tipo_pago)) {
-    case 1: return "Contado";
-    case 2: return "Credibike de Colombia";
-    case 3: return "Crédito de terceros";
-    default: return "N/A";
-  }
-};
+
 
 const prospectoFrom = (r: any) => {
     if (typeof r?.prospecto === 'string' && r.prospecto.trim() !== '') {
@@ -241,7 +234,7 @@ const TablaCotizaciones: React.FC = () => {
                                 <td className="text-sm text-base-content/70">{r?.asesor || '—'}</td>
                                 <td className="font-medium">{fullName(r)}</td>
                                 <td className="text-sm text-base-content/70">{r.celular || ''}</td>
-                                <td>{tipoFrom(r)}</td>
+                                <td>{r.tipo_pago}</td>
                                 <td>
                                     <span className={`badge ${estadoBadgeClass(r?.estado)}`}>{r?.estado || 'Sin estado'}</span>
                                 </td>
