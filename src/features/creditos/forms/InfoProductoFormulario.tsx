@@ -3,159 +3,166 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { FormInput } from "../../../shared/components/FormInput";
 import { FormSelect, type SelectOption } from "../../../shared/components/FormSelect";
+import { useActualizarCredito } from "../../../services/creditosServices";
+import { useParams } from "react-router-dom";
+import { useCredito } from "../../../services/creditosServices"; // si tu hook está aquí
 
 type ProductoValues = {
-    marca: string;
-    linea: string;
-    modelo: string | number;
-    valorMoto: number | string;
+  /** Solo lectura, viene del backend como string "Marca - Línea - Modelo" o similar */
+  producto: string;
+  /** Solo lectura */
+  valorMoto: number | string;
 
-    plazoCuotas: number | string;
-    cuotaInicial: number | string;
-    comentario?: string;
-};
-
-type Props = {
-    // opcional: si ya tienes la info elegida de la moto, pásala aquí
-    initialValues?: Partial<ProductoValues>;
-    onSubmitForm?: (payload: {
-        marca: string;
-        linea: string;
-        modelo: string;
-        valorMoto: number;
-        plazoCuotas: number;
-        cuotaInicial: number;
-        comentario?: string;
-    }) => void;
+  /** Editables */
+  plazoCuotas: number | string;
+  cuotaInicial: number | string;
+  comentario?: string;
 };
 
 const plazosOptions: SelectOption[] = [6, 12, 18, 24, 36, 48, 60].map((p) => ({
-    value: String(p),
-    label: String(p),
+  value: String(p),
+  label: String(p),
 }));
 
-const InfoProductoFormulario: React.FC<Props> = ({ initialValues, onSubmitForm }) => {
-    const { control, handleSubmit, watch } = useForm<ProductoValues>({
-        mode: "onBlur",
-        defaultValues: {
-            marca: initialValues?.marca ?? "",
-            linea: initialValues?.linea ?? "",
-            modelo: initialValues?.modelo ?? "",
-            valorMoto: initialValues?.valorMoto ?? 0,
-            plazoCuotas: initialValues?.plazoCuotas ?? 6,
-            cuotaInicial: initialValues?.cuotaInicial ?? 0,
-            comentario: initialValues?.comentario ?? "",
-        },
-    });
+const toNumber = (v: unknown) => {
+  const n = typeof v === "number" ? v : parseFloat(String(v ?? "").replace(/,/g, "."));
+  return Number.isFinite(n) ? n : 0;
+};
 
-    const valorMoto = Number(watch("valorMoto") || 0);
+// Arma el string "Marca - Línea - Modelo" si vienen campos sueltos
+const buildProducto = (c: any): string => {
+  if (typeof c?.producto === "string" && c.producto.trim()) return c.producto.trim();
+  const marca = (c?.marca ?? "").toString().trim();
+  const linea = (c?.linea ?? "").toString().trim();
+  const modelo = (c?.modelo ?? "").toString().trim();
+  return [marca, linea, modelo].filter(Boolean).join(" - ");
+};
 
-    const onSubmit = (v: ProductoValues) => {
-        const payload = {
-            marca: String(v.marca ?? ""),
-            linea: String(v.linea ?? ""),
-            modelo: String(v.modelo ?? ""),
-            valorMoto: Number(v.valorMoto) || 0,
-            plazoCuotas: Number(v.plazoCuotas) || 0,
-            cuotaInicial: Number(v.cuotaInicial) || 0,
-            comentario: v.comentario?.trim() || undefined,
-        };
-        onSubmitForm ? onSubmitForm(payload) : console.log("InfoProducto payload:", payload);
+const InfoProductoFormulario: React.FC = () => {
+  // 1) Tomar el código desde la URL
+  const { id: codigoFromUrl } = useParams<{ id: string }>();
+  const codigo_credito = String(codigoFromUrl ?? "");
+
+  // 2) RHF
+  const { control, handleSubmit, setValue, formState } = useForm<ProductoValues>({
+    mode: "onBlur",
+    defaultValues: {
+      producto: "",
+      valorMoto: 0,
+      plazoCuotas: 6,
+      cuotaInicial: 0,
+      comentario: "",
+    },
+  });
+
+  const actualizarCredito = useActualizarCredito();
+
+  // 3) Traer el crédito
+  const { data, isLoading, isError } = useCredito({ codigo_credito }, !!codigo_credito);
+
+  // 4) Mapear data -> setValue (listar con setValue, no reset)
+  React.useEffect(() => {
+    if (!data?.success || !data?.creditos?.length) return;
+    const c = data.creditos[0];
+
+    setValue("producto", buildProducto(c), { shouldDirty: false });
+    setValue("valorMoto", c?.valor_producto ?? 0, { shouldDirty: false });
+    setValue("plazoCuotas", c?.plazo_meses ?? 6, { shouldDirty: false });
+    setValue("cuotaInicial", c?.cuota_inicial ?? 0, { shouldDirty: false });
+    setValue("comentario", c?.comentario ?? "", { shouldDirty: false });
+  }, [data, setValue]);
+
+  // 5) Guardar (solo actualiza los 3 campos)
+  const onSubmit = (v: ProductoValues) => {
+    const payload = {
+      plazo_meses: toNumber(v.plazoCuotas) || undefined,
+      cuota_inicial: toNumber(v.cuotaInicial) || 0,
+      comentario: (v.comentario?.trim() ?? "") || null,
     };
-
-    const grid = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3";
-
-    return (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-
-
-            <div className="badge text-xl badge-success text-white  mb-3">
-                Solicitud de crédito - Información del producto
-            </div>
-
-            <div className={grid}>
-                {/* Marca (solo lectura) */}
-                <FormInput
-                    name="marca"
-                    label="Marca"
-                    control={control}
-                    disabled
-                    placeholder="—"
-                />
-
-                {/* Línea (solo lectura) */}
-                <FormInput
-                    name="linea"
-                    label="Línea"
-                    control={control}
-                    disabled
-                    placeholder="—"
-                />
-
-                {/* Modelo (solo lectura) */}
-                <FormInput
-                    name="modelo"
-                    label="Modelo"
-                    control={control}
-                    disabled
-                    placeholder="—"
-                />
-
-                {/* Valor de la moto (solo lectura) */}
-                <FormInput
-                    name="valorMoto"
-                    label="Valor de la moto"
-                    type="number"
-                    control={control}
-                    disabled
-                    placeholder="0"
-                />
-
-                {/* Plazo (cuotas) */}
-                <FormSelect
-                    name="plazoCuotas"
-                    label="Plazo (Cuotas)"
-                    control={control}
-                    options={plazosOptions}
-                    rules={{ required: "Seleccione el plazo" }}
-                />
-
-                {/* Cuota inicial */}
-                <FormInput
-                    name="cuotaInicial"
-                    label="Cuota inicial"
-                    type="number"
-                    control={control}
-                    placeholder="0"
-                    rules={{
-                        required: "Requerido",
-                        validate: (v) => {
-                            const n = Number(v);
-                            if (isNaN(n) || n < 0) return "Debe ser un número mayor o igual a 0";
-                            if (valorMoto && n > valorMoto) return "No puede ser mayor al valor de la moto";
-                            return true;
-                        },
-                    }}
-                />
-            </div>
-
-            {/* Comentario (usa FormInput como textarea simple) */}
-            <div>
-                <FormInput
-                    name="comentario"
-                    label="Comentario"
-                    control={control}
-                    placeholder="Ingrese el comentario de crédito"
-                    className="min-h-28"
-                />
-            </div>
-
-            <div className="flex justify-end gap-2">
-                <button type="reset" className="btn btn-ghost">Limpiar</button>
-                <button type="submit" className="btn btn-primary">Guardar</button>
-            </div>
-        </form>
+    actualizarCredito.mutate(
+      { codigo_credito, payload },
+      {
+        onSuccess: () => {
+          // reflejar los confirmados sin marcar dirty
+          setValue("plazoCuotas", payload.plazo_meses ?? 0, { shouldDirty: false });
+          setValue("cuotaInicial", payload.cuota_inicial ?? 0, { shouldDirty: false });
+          setValue("comentario", payload.comentario ?? "", { shouldDirty: false });
+        },
+      }
     );
+  };
+
+  const grid = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-3";
+
+  if (!codigo_credito) {
+    return <div className="alert alert-error">No se encontró el código del crédito en la URL.</div>;
+  }
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <div className="badge text-xl badge-success text-white mb-3">
+        Solicitud de crédito - Información del producto
+      </div>
+
+      {/* Estados simples */}
+      {isLoading && <div className="text-sm opacity-70">Cargando crédito…</div>}
+      {isError && <div className="text-sm text-error">No se pudo cargar el crédito.</div>}
+      
+
+      <div className={grid}>
+        {/* Solo lectura en un solo campo */}
+        <FormInput name="producto" label="Producto" control={control} disabled placeholder="—" />
+        <FormInput name="valorMoto" label="Valor de la moto" type="number" control={control} disabled placeholder="0" />
+
+        {/* Editables */}
+        <FormSelect
+          name="plazoCuotas"
+          label="Plazo (Cuotas)"
+          control={control}
+          options={plazosOptions}
+          rules={{
+            required: "Seleccione el plazo",
+            setValueAs: (v: unknown) => String(v),
+          }}
+        />
+        <FormInput
+          name="cuotaInicial"
+          label="Cuota inicial"
+          type="number"
+          control={control}
+          placeholder="0"
+          rules={{
+            required: "Requerido",
+            setValueAs: (v: unknown) => toNumber(v),
+          }}
+        />
+      </div>
+
+      {/* Comentario */}
+      <div>
+        <FormInput
+          name="comentario"
+          label="Comentario"
+          control={control}
+          placeholder="Ingrese el comentario de crédito"
+          className="min-h-28"
+        />
+      </div>
+
+      <div className="flex justify-end gap-2">
+        <button type="reset" className="btn btn-ghost" disabled={actualizarCredito.isPending}>
+          Limpiar
+        </button>
+        <button
+          type="submit"
+          className="btn btn-primary"
+          disabled={actualizarCredito.isPending || !formState.isDirty}
+        >
+          {actualizarCredito.isPending ? "Guardando..." : "Guardar"}
+        </button>
+      </div>
+    </form>
+  );
 };
 
 export default InfoProductoFormulario;

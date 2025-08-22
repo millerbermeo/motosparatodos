@@ -372,3 +372,117 @@ export const useCreditos = () => {
     },
   });
 };
+
+
+
+export interface CreditoLine {
+id: number;
+asesor: string;
+codigo_credito: string;
+nombre_cliente: string;
+producto: string;
+valor_producto: number;
+plazo_meses: number | null;
+estado: string; // ej.: "Incompleto"
+proaprobado: "Sí" | "No" | string; // permitir valores desconocidos
+analista: string; // ej.: "Sin analista"
+revisado: "Sí" | "No" | string;
+entrega_autorizada: string; // ej.: "No hay factura"
+entregado: string; // ej.: "No hay factura"
+cambio_ci: "Sí" | "No" | string;
+fecha_creacion: string; // ISO-like datetime string
+actualizado: string; // ISO-like datetime string
+deudor_id: number | null;
+codeudor_id: number | null;
+cotizacion_id: number | null;
+comentario: string | null;
+cuota_inicial: number;
+}
+
+
+export interface ApiResponseCreditos {
+success: boolean;
+creditos: CreditoLine[];
+}
+
+
+export type CreditoUpdatePayload = {
+cuota_inicial?: number;
+plazo_meses?: number;
+comentario?: string | null;
+};
+
+
+export interface UpdateCreditoResponseRaw {
+success?: boolean;
+message?: string;
+data?: Partial<CreditoLine> & { id?: number };
+}
+
+
+export type ActualizarCreditoInput = {
+codigo_credito: string | number; // ej. "3Q0LKp6"
+payload: CreditoUpdatePayload;
+};
+
+
+export const useActualizarCredito = () => {
+const qc = useQueryClient();
+
+
+return useMutation<UpdateCreditoResponseRaw, AxiosError<ServerError>, ActualizarCreditoInput>({
+mutationFn: async ({ codigo_credito, payload }) => {
+const { data } = await api.put<UpdateCreditoResponseRaw>(
+"/actualizar_credito.php",
+payload,
+{
+params: { codigo_credito },
+headers: { "Content-Type": "application/json" },
+}
+);
+return data;
+},
+onSuccess: async (resp, variables) => {
+// Invalida la lista general y, si manejas un detalle, también por código
+await Promise.all([
+qc.invalidateQueries({ queryKey: ["creditos"] }),
+qc.invalidateQueries({ queryKey: ["credito", variables.codigo_credito] }),
+]);
+
+
+Swal.fire({
+icon: "success",
+title: resp?.message || "Crédito actualizado",
+timer: 1600,
+showConfirmButton: false,
+});
+},
+onError: (error) => {
+const raw = (error as AxiosError<ServerError>)?.response?.data?.message ??
+"Error al actualizar crédito";
+const arr = Array.isArray(raw) ? raw : [raw];
+Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
+},
+});
+};
+
+
+type Params =
+  | { codigo_credito: string | number; id?: never }
+  | { id: string | number; codigo_credito?: never };
+
+export const useCredito = (params: Params, enabled = true) => {
+  return useQuery<ApiResponseCreditos, AxiosError>({
+    queryKey: ["credito", params],
+    enabled,
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponseCreditos>(
+        "/list_creditos.php",
+        { params } // { codigo_credito } o { id }
+      );
+      return data;
+    },
+    // Si tu backend cambia poco, guarda el resultado un rato
+    staleTime: 60 * 1000,
+  });
+};
