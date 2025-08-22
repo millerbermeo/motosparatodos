@@ -1,6 +1,6 @@
 // src/components/creditos/TablaCreditos.tsx
 import React from "react";
-import { Pen } from "lucide-react";
+import { Eye, Pen } from "lucide-react";
 import { useCreditos } from "../../services/creditosServices";
 import { Link } from "react-router-dom";
 import { useAuthStore } from "../../store/auth.store";
@@ -277,9 +277,9 @@ const TablaCreditos: React.FC = () => {
                                 <td>{badgeSiNo(c.cambio_ci)}</td>
                                 <td className="whitespace-nowrap">{timeAgo(c.actualizado)}</td>
                                 <td className="text-right">
-                                    {/* <button className="btn btn-sm bg-white btn-circle" title="Ver">
+                                    <button className="btn btn-sm bg-white btn-circle" title="Ver">
                                         <Eye size="18px" />
-                                    </button> */}
+                                    </button>
                                     <Link
                                         to={`/creditos/registrar/${c.codigo_credito}`}
                                     >

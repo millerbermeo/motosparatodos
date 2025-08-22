@@ -32,6 +32,8 @@ const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  
+
   // auth
   const user = useAuthStore((s) => s.user);
   const token = useAuthStore((s) => s.token);
@@ -69,12 +71,14 @@ const Sidebar: React.FC = () => {
   }, [user, token, userModules, userRole]);
 
   // 2) Activa item y abre el grupo si la ruta actual cae dentro de un hijo
-  useEffect(() => {
-    const currentPath = location.pathname;
+useEffect(() => {
+  const currentPath = location.pathname;
+  const firstSegment = currentPath.split("/")[1]; // <-- solo "cotizaciones"
 
-    const leaf = menus.find((m) => !isParent(m) && (m as any).ruta === currentPath) as
-      | (MenuItem & { ruta: string })
-      | undefined;
+  const leaf = menus.find(
+    (m) => !isParent(m) && (m as any).ruta?.split("/")[1] === firstSegment
+  ) as (MenuItem & { ruta: string }) | undefined;
+
 
     if (leaf) {
       setActiveKey(leaf.nombre);

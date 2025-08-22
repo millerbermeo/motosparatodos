@@ -5,6 +5,8 @@ import { FormSelect, type SelectOption } from "../../../shared/components/FormSe
 import { FormInput } from "../../../shared/components/FormInput";
 import { useDeudor, useRegistrarDeudor, useActualizarDeudor } from "../../../services/creditosServices";
 import { useParams } from "react-router-dom";
+import { useWizardStore } from "../../../store/wizardStore"; // ⬅️ nuevo
+
 
 // ============================ Tipos ============================
 
@@ -117,13 +119,6 @@ const tipoReferenciaOptions: SelectOption[] = [
     { value: "Laboral", label: "Laboral" },
 ];
 
-const ciudadesEjemplo: SelectOption[] = [
-    { value: "Pitalito", label: "Pitalito" },
-    { value: "Neiva", label: "Neiva" },
-    { value: "Bogotá", label: "Bogotá" },
-    { value: "Cali", label: "Cali" },
-    { value: "Medellín", label: "Medellín" },
-];
 
 // ============================ Helpers ============================
 
@@ -159,6 +154,12 @@ const mapFincaRaiz = (v: any): "Si" | "No" | "Otro" => {
 // ============================ Componente ============================
 
 const InfoPersonalFormulario: React.FC = () => {
+
+    const next = useWizardStore(s => s.next);
+    const prev = useWizardStore(s => s.prev);
+    const navDirRef = React.useRef<'next' | 'prev'>('next');
+
+    const isFirst = useWizardStore(s => s.isFirst);
 
     const { id } = useParams<{ id: string }>();
     console.log("ID recibido:", id); // "21wcrbB"
@@ -298,95 +299,105 @@ const InfoPersonalFormulario: React.FC = () => {
     }, [tipoVivienda, setValue]);
 
     // Submit
- // traduce valor UI → backend (ej. "Si" -> "Casa")
-const mapFincaRaizToBackend = (v: string | undefined) => {
-  if (!v || v === "No") return "";            // o null, según espere tu API
-  if (v === "Si") return "Casa";              // adapta si puede ser "Apartamento", etc.
-  if (v === "Otro") return "Otro";
-  return String(v);
-};
-
-const onSubmit = (values: InfoPersonalFormValues) => {
-  const referenciasLimpias = (values.referencias ?? [])
-    .slice(0, 3)
-    .map(normalizaRef)
-    .filter(r =>
-      /^[A-Za-zÁÉÍÓÚÑáéíóúñ\s'.-]{3,}$/.test(r.nombre_completo) &&
-      /^[0-9]{7,10}$/.test(r.telefono)
-    );
-
-  const informacion_personal = {
-    codigo_credito: values.codigo_credito ?? String(id),
-    numero_documento: values.numero_documento.trim(),
-    tipo_documento: values.tipo_documento.trim(),
-    fecha_expedicion: values.fecha_expedicion,
-    lugar_expedicion: values.lugar_expedicion,
-    primer_nombre: values.primer_nombre.trim(),
-    segundo_nombre: (values.segundo_nombre ?? "").trim(),
-    primer_apellido: values.primer_apellido.trim(),
-    segundo_apellido: (values.segundo_apellido ?? "").trim(),
-    fecha_nacimiento: values.fecha_nacimiento,
-    nivel_estudios: values.nivel_estudios,
-    ciudad_residencia: values.ciudad_residencia,
-    barrio_residencia: (values.barrio_residencia ?? "").trim(),
-    direccion_residencia: values.direccion_residencia.trim(),
-    telefono_fijo: (values.telefono_fijo ?? "").trim(),
-    celular: values.celular.trim(),
-    email: values.email.trim(),
-    estado_civil: values.estado_civil,
-    personas_a_cargo: toNumber(values.personas_a_cargo),
-    tipo_vivienda: values.tipo_vivienda,
-    costo_arriendo: values.tipo_vivienda === "Arriendo" ? toNumber(values.costo_arriendo) : 0,
-    finca_raiz: mapFincaRaizToBackend(values.finca_raiz as string),
-  };
-
-  const informacion_laboral = {
-    empresa: values.informacion_laboral?.empresa?.trim() || "",
-    direccion_empleador: values.informacion_laboral?.direccion_empleador?.trim() || "",
-    telefono_empleador: values.informacion_laboral?.telefono_empleador?.trim() || "",
-    cargo: values.informacion_laboral?.cargo?.trim() || "",
-    tipo_contrato: values.informacion_laboral?.tipo_contrato?.trim() || "Indefinido",
-    salario: toNumber(values.informacion_laboral?.salario),
-    tiempo_servicio: values.informacion_laboral?.tiempo_servicio?.trim() || "",
-  };
-
-  const vehiculo = {
-    placa: values.vehiculo?.placa?.trim() || "",
-    marca: values.vehiculo?.marca?.trim() || "",
-    modelo: values.vehiculo?.modelo?.trim() || "",
-    tipo: values.vehiculo?.tipo?.trim() || "",
-    numero_motor: values.vehiculo?.numero_motor?.trim() || "",
-  };
-
-  const existingId =
-    (data as any)?.informacion_personal?.codigo_credito ??
-    (data as any)?.data?.informacion_personal?.codigo_credito ??
-    null;
-
-  if (existingId) {
-    // 🔹 UPDATE → payload con secciones
-    const payload = {
-      informacion_personal,
-      informacion_laboral,
-      vehiculo,
-      referencias: referenciasLimpias,
+    // traduce valor UI → backend (ej. "Si" -> "Casa")
+    const mapFincaRaizToBackend = (v: string | undefined) => {
+        if (!v || v === "No") return "";            // o null, según espere tu API
+        if (v === "Si") return "Casa";              // adapta si puede ser "Apartamento", etc.
+        if (v === "Otro") return "Otro";
+        return String(v);
     };
-    console.log("update", payload);
-    actualizarDeudor.mutate({ id: existingId, payload });
-  } else {
-    // 🔹 REGISTER → informacion_personal desestructurado al raíz
-    const payload = {
-      ...informacion_personal, // 👈 directamente las claves
-      informacion_laboral,
-      vehiculo,
-      referencias: referenciasLimpias,
+
+    const onSubmit = (values: InfoPersonalFormValues) => {
+        const referenciasLimpias = (values.referencias ?? [])
+            .slice(0, 3)
+            .map(normalizaRef)
+            .filter(r =>
+                /^[A-Za-zÁÉÍÓÚÑáéíóúñ\s'.-]{3,}$/.test(r.nombre_completo) &&
+                /^[0-9]{7,10}$/.test(r.telefono)
+            );
+
+        const informacion_personal = {
+            codigo_credito: values.codigo_credito ?? String(id),
+            numero_documento: values.numero_documento.trim(),
+            tipo_documento: values.tipo_documento.trim(),
+            fecha_expedicion: values.fecha_expedicion,
+            lugar_expedicion: values.lugar_expedicion,
+            primer_nombre: values.primer_nombre.trim(),
+            segundo_nombre: (values.segundo_nombre ?? "").trim(),
+            primer_apellido: values.primer_apellido.trim(),
+            segundo_apellido: (values.segundo_apellido ?? "").trim(),
+            fecha_nacimiento: values.fecha_nacimiento,
+            nivel_estudios: values.nivel_estudios,
+            ciudad_residencia: values.ciudad_residencia,
+            barrio_residencia: (values.barrio_residencia ?? "").trim(),
+            direccion_residencia: values.direccion_residencia.trim(),
+            telefono_fijo: (values.telefono_fijo ?? "").trim(),
+            celular: values.celular.trim(),
+            email: values.email.trim(),
+            estado_civil: values.estado_civil,
+            personas_a_cargo: toNumber(values.personas_a_cargo),
+            tipo_vivienda: values.tipo_vivienda,
+            costo_arriendo: values.tipo_vivienda === "Arriendo" ? toNumber(values.costo_arriendo) : 0,
+            finca_raiz: mapFincaRaizToBackend(values.finca_raiz as string),
+        };
+
+        const informacion_laboral = {
+            empresa: values.informacion_laboral?.empresa?.trim() || "",
+            direccion_empleador: values.informacion_laboral?.direccion_empleador?.trim() || "",
+            telefono_empleador: values.informacion_laboral?.telefono_empleador?.trim() || "",
+            cargo: values.informacion_laboral?.cargo?.trim() || "",
+            tipo_contrato: values.informacion_laboral?.tipo_contrato?.trim() || "Indefinido",
+            salario: toNumber(values.informacion_laboral?.salario),
+            tiempo_servicio: values.informacion_laboral?.tiempo_servicio?.trim() || "",
+        };
+
+        const vehiculo = {
+            placa: values.vehiculo?.placa?.trim() || "",
+            marca: values.vehiculo?.marca?.trim() || "",
+            modelo: values.vehiculo?.modelo?.trim() || "",
+            tipo: values.vehiculo?.tipo?.trim() || "",
+            numero_motor: values.vehiculo?.numero_motor?.trim() || "",
+        };
+
+
+        const onOk = () => {
+            // Solo avanzar si el guardado/actualización fue exitoso
+            next();
+        };
+        const onFail = (err: any) => {
+            console.error('Error guardando información personal:', err);
+            // Aquí puedes disparar un toast/notificación si usas alguna lib de UI
+        };
+
+        const existingId =
+            (data as any)?.informacion_personal?.codigo_credito ??
+            (data as any)?.data?.informacion_personal?.codigo_credito ??
+            null;
+
+        if (existingId) {
+            const payload = { informacion_personal, informacion_laboral, vehiculo, referencias: referenciasLimpias };
+            actualizarDeudor.mutate(
+                { id: existingId, payload },
+                { onSuccess: onOk, onError: onFail }
+            );
+        } else {
+            const payload = { ...informacion_personal, informacion_laboral, vehiculo, referencias: referenciasLimpias };
+            registrarDeudor.mutate(
+                payload as any,
+                { onSuccess: onOk, onError: onFail }
+            );
+        }
     };
-    console.log("register", payload);
-    registrarDeudor.mutate(payload as any);
-  }
-};
 
     const grid = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3";
+
+    const setDirFromEvent = (
+        e: React.MouseEvent<HTMLButtonElement> | React.KeyboardEvent<HTMLButtonElement>
+    ) => {
+        navDirRef.current = e.shiftKey ? 'prev' : 'next';
+    };
+
+
 
     // // UI
     // if (isLoading) return <p>Cargando datos del deudor…</p>;
@@ -429,13 +440,21 @@ const onSubmit = (values: InfoPersonalFormValues) => {
                         rules={{ required: "Requerido" }}
                     />
 
-                    <FormSelect
+                    <FormInput
                         name="lugar_expedicion"
                         label="Lugar de expedición*"
                         control={control}
-                        options={ciudadesEjemplo}
-                        rules={{ required: "Requerido" }}
+                        placeholder="Ej. Pitalito (Huila)"
+                        rules={{
+                            required: "Requerido",
+                            minLength: { value: 2, message: "Mínimo 2 caracteres" },
+                            pattern: {
+                                value: /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s.'-]{2,}$/,
+                                message: "Solo letras y espacios",
+                            },
+                        }}
                     />
+
                     <FormInput
                         name="primer_nombre"
                         label="Primer nombre*"
@@ -466,13 +485,21 @@ const onSubmit = (values: InfoPersonalFormValues) => {
                         options={nivelEstudiosOptions}
                         rules={{ required: "Requerido" }}
                     />
-                    <FormSelect
+                    <FormInput
                         name="ciudad_residencia"
                         label="Ciudad de residencia*"
                         control={control}
-                        options={ciudadesEjemplo}
-                        rules={{ required: "Requerido" }}
+                        placeholder="Ej. Pitalito"
+                        rules={{
+                            required: "Requerido",
+                            minLength: { value: 2, message: "Mínimo 2 caracteres" },
+                            pattern: {
+                                value: /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s.'-]{2,}$/,
+                                message: "Solo letras y espacios",
+                            },
+                        }}
                     />
+
                     <FormInput name="barrio_residencia" label="Barrio de residencia" control={control} />
 
                     <FormInput
@@ -700,6 +727,16 @@ const onSubmit = (values: InfoPersonalFormValues) => {
             </section>
 
             <div className="flex justify-between gap-2">
+
+                <button
+                    className="btn btn-ghost"
+                    type="button"
+                    onClick={prev}
+                    disabled={isFirst}
+                    title={isFirst ? "Ya estás en el primer paso" : "Ir al paso anterior"}
+                >
+                    ← Anterior
+                </button>
                 <button
                     className="btn btn-ghost"
                     type="button"
@@ -754,7 +791,13 @@ const onSubmit = (values: InfoPersonalFormValues) => {
                     Limpiar
                 </button>
 
-                <button className="btn btn-warning" type="submit">
+                <button
+                    className="btn btn-warning"
+                    type="submit"
+                    onMouseDown={setDirFromEvent}
+                    onKeyDown={(e) => { if (e.key === 'Enter') setDirFromEvent(e); }}
+                    title="Click para Guardar y Avanzar. Shift+Click para Guardar y Retroceder."
+                >
                     {(data as any)?.informacion_personal?.codigo_credito ||
                         (data as any)?.data?.informacion_personal?.codigo_credito
                         ? "Actualizar"

@@ -11,6 +11,7 @@ import {
 
 // + añade:
 import { useParams } from "react-router-dom";
+import { useWizardStore } from "../../../store/wizardStore";
 
 
 /* ========================= Tipos del form ========================= */
@@ -119,13 +120,6 @@ const tipoReferenciaOptions: SelectOption[] = [
   { value: "Laboral", label: "Laboral" },
 ];
 
-const ciudadesEjemplo: SelectOption[] = [
-  { value: "Pitalito", label: "Pitalito" },
-  { value: "Neiva", label: "Neiva" },
-  { value: "Bogotá", label: "Bogotá" },
-  { value: "Cali", label: "Cali" },
-  { value: "Medellín", label: "Medellín" },
-];
 
 /* ========================= Utils ========================= */
 const grid = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3";
@@ -345,6 +339,9 @@ const fromBackendToForm = (data: any): Coodeudor => {
 const CoodeudoresFormulario: React.FC = () => {
 
 
+  const next = useWizardStore(s => s.next);
+  const prev = useWizardStore(s => s.prev);
+  const isFirst = useWizardStore(s => s.isFirst);
 
   const { id: codigoCredito } = useParams<{ id: string }>();
   if (!codigoCredito) return <div>Error: no se encontró el parámetro en la URL</div>;
@@ -423,25 +420,27 @@ const CoodeudoresFormulario: React.FC = () => {
     }
   };
 
-  // submit: por cada bloque, si hay id → actualizar; si no → registrar
+  // ⬇️ flag de guardado en curso para deshabilitar botones
+  const isSaving = registrar.isPending || actualizar.isPending;
+
   const onSubmit = (values: FormValues) => {
     const payloads = values.codeudores
       .map((c) => prune(toBackendPayload(c, codigoCredito))) // <- usa codigoCredito
       .filter(Boolean);
 
+    // Guardamos en paralelo y solo avanzamos si todas las mutaciones son exitosas
+
     payloads.forEach((payload) => {
       const codeudorId = editingIds[0]; // <- NO lo llames "id" para no confundir
       if (codeudorId) {
-        actualizar.mutate({ id: payload.codigo_credito, payload }, { onSuccess: () => refetch() });
+        actualizar.mutate({ id: payload.codigo_credito, payload }, { onSuccess: () => { refetch(), next() } });
       } else {
-        registrar.mutate(payload as any, { onSuccess: () => refetch() });
+        registrar.mutate(payload as any, { onSuccess: () => { refetch(), next() } });
       }
     });
   };
 
-
-
-  // cancelar: vuelve al estado inicial (lo que haya en servidor o vacío)
+  // cancelar → recarga o limpia
   const onCancel = () => {
     if (codeudoresList.length === 0) {
       reset({ codeudores: [emptyCoodeudor] });
@@ -452,6 +451,7 @@ const CoodeudoresFormulario: React.FC = () => {
       setEditingIds(codeudoresList.slice(0, 2).map(extractRowId));
     }
   };
+
 
   return (
     <div className="space-y-10">
@@ -475,7 +475,19 @@ const CoodeudoresFormulario: React.FC = () => {
               <FormSelect control={control} name={`codeudores.${idx}.tipoDocumento`} label="Tipo de documento" options={tipoDocumentoOptions} />
               <FormInput control={control} name={`codeudores.${idx}.fechaExpedicion`} label="Fecha de expedición" type="date" />
 
-              <FormSelect control={control} name={`codeudores.${idx}.lugarExpedicion`} label="Lugar de expedición" options={ciudadesEjemplo} />
+              <FormInput
+                control={control}
+                name={`codeudores.${idx}.lugarExpedicion`}
+                label="Lugar de expedición"
+                placeholder="Ej. Neiva"
+                rules={{
+                  minLength: { value: 2, message: "Mínimo 2 caracteres" },
+                  pattern: {
+                    value: /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s.'-]{2,}$/,
+                    message: "Solo letras y espacios",
+                  },
+                }}
+              />
               <FormInput control={control} name={`codeudores.${idx}.primerNombre`} label="Primer nombre" />
               <FormInput control={control} name={`codeudores.${idx}.segundoNombre`} label="Segundo nombre" />
 
@@ -484,7 +496,21 @@ const CoodeudoresFormulario: React.FC = () => {
               <FormInput control={control} name={`codeudores.${idx}.fechaNacimiento`} label="Fecha de nacimiento" type="date" />
 
               <FormSelect control={control} name={`codeudores.${idx}.nivelEstudios`} label="Nivel de estudios" options={nivelEstudiosOptions} />
-              <FormSelect control={control} name={`codeudores.${idx}.ciudadResidencia`} label="Ciudad de residencia" options={ciudadesEjemplo} />
+              <FormInput
+                control={control}
+                name={`codeudores.${idx}.ciudadResidencia`}
+                label="Ciudad de residencia"
+                placeholder="Ej. Pitalito"
+                rules={{
+                  minLength: { value: 2, message: "Mínimo 2 caracteres" },
+                  pattern: {
+                    value: /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s.'-]{2,}$/,
+                    message: "Solo letras y espacios",
+                  },
+                  // Si debe ser obligatorio, descomenta:
+                  // required: "Requerido",
+                }}
+              />
               <FormInput control={control} name={`codeudores.${idx}.barrioResidencia`} label="Barrio de residencia" />
 
               <FormInput control={control} name={`codeudores.${idx}.direccionResidencia`} label="Dirección de residencia" />
@@ -507,8 +533,8 @@ const CoodeudoresFormulario: React.FC = () => {
                 name={`codeudores.${idx}.costoArriendo`}
                 label="Costo del arriendo (COP)"
                 type="number"
-                // disabled={watch(`codeudores.${idx}.tipoVivienda`) !== "Arriendo"}
-                rules={{ validate: (v) => (v === "" || Number(v) > 0 || "Indique un valor > 0") }}
+              // disabled={watch(`codeudores.${idx}.tipoVivienda`) !== "Arriendo"}
+              // rules={{ validate: (v) => (v === "" || Number(v) > 0 || "Indique un valor > 0") }}
               />
               <FormSelect control={control} name={`codeudores.${idx}.fincaRaiz`} label="Finca raíz" options={fincaRaizOptions} />
             </div>
@@ -598,37 +624,46 @@ const CoodeudoresFormulario: React.FC = () => {
               <FormInput control={control} name={`codeudores.${idx}.ref3Telefono`} label="Número telefónico" rules={{ pattern: { value: /^[0-9]*$/, message: "Solo dígitos" } }} />
             </div>
 
-            {/* acciones por codeudor */}
-            {idx === 1 && (
-              <div className="flex justify-end">
-                <button type="button" className="btn btn-outline btn-error" onClick={removeSecond}>
-                  Quitar codeudor 2
-                </button>
-              </div>
-            )}
+
           </div>
         ))}
 
-        {/* acciones generales */}
+        {/* ========== Controles (cambiados) ========== */}
         <div className="flex items-center justify-between">
+          {/* ← Anterior (solo si hay paso previo) */}
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={prev}
+            disabled={isFirst || isSaving}
+            title={isFirst ? "Ya estás en el primer paso" : "Ir al paso anterior"}
+          >
+            ← Anterior
+          </button>
+
           <div className="flex gap-2">
             {fields.length < 2 && (
-              <button type="button" className="btn btn-outline" onClick={addSecond}>
+              <button type="button" className="btn btn-outline" onClick={addSecond} disabled={isSaving}>
                 + Agregar codeudor 2
               </button>
             )}
             {fields.length === 2 && (
-              <button type="button" className="btn btn-outline btn-error" onClick={removeSecond}>
+              <button type="button" className="btn btn-outline btn-error" onClick={removeSecond} disabled={isSaving}>
                 Quitar codeudor 2
               </button>
             )}
-          </div>
-          <div className="flex gap-2">
-            <button type="button" className="btn btn-ghost" onClick={onCancel} disabled={listLoading}>
+
+            <button type="button" className="btn btn-ghost" onClick={onCancel} disabled={listLoading || isSaving}>
               Cancelar
             </button>
-            <button type="submit" className="btn btn-warning" disabled={registrar.isPending || actualizar.isPending}>
-              {editingIds.some(Boolean) ? "Actualizar" : "Guardar"}
+
+            {/* Guardar/Actualizar: avanza SOLO si todas las mutaciones fueron OK */}
+            <button type="submit" className="btn btn-warning" disabled={isSaving}>
+              {isSaving
+                ? "Guardando…"
+                : editingIds.some(Boolean)
+                  ? "Actualizar"
+                  : "Guardar"}
             </button>
           </div>
         </div>

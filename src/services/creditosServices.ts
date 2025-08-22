@@ -447,6 +447,10 @@ onSuccess: async (resp, variables) => {
 await Promise.all([
 qc.invalidateQueries({ queryKey: ["creditos"] }),
 qc.invalidateQueries({ queryKey: ["credito", variables.codigo_credito] }),
+qc.invalidateQueries({ queryKey: ["codeudor", variables.codigo_credito] }),
+
+qc.invalidateQueries({ queryKey: ["deudor", variables.codigo_credito] }),
+
 ]);
 
 
@@ -482,7 +486,5 @@ export const useCredito = (params: Params, enabled = true) => {
       );
       return data;
     },
-    // Si tu backend cambia poco, guarda el resultado un rato
-    staleTime: 60 * 1000,
   });
 };

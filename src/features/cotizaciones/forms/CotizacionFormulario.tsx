@@ -715,11 +715,20 @@ const CotizacionFormulario: React.FC = () => {
 
                                             {/* CAMBIO DE NOMBRE */}
                                             <FormInput<FormValues>
-                                                name="precioDocumentos1" label="Precio documentos / matrícula y SOAT" control={control} type="number"
+                                                name="precioDocumentos1"
+                                                label="Precio documentos / matrícula y SOAT"
+                                                control={control}
+                                                type="number"
                                                 disabled={!showMotos || !incluirMoto1}
-                                                rules={reqIf(showMotos && incluirMoto1, "El precio es obligatoria")}
-
+                                                rules={{
+                                                    ...reqIf(showMotos && incluirMoto1, "El precio es obligatorio"),
+                                                    min: {
+                                                        value: 1,
+                                                        message: "El precio debe ser mayor a 0"
+                                                    }
+                                                }}
                                             />
+
                                             <FormInput<FormValues> name="descuento1" label="Descuentos" control={control} className="hidden" type="number" disabled={!showMotos || !incluirMoto1} />
 
                                             {/* RESUMEN */}
@@ -852,8 +861,22 @@ const CotizacionFormulario: React.FC = () => {
                                                 name="cuotaInicial2" label="Cuota inicial" control={control} type="number" placeholder="0"
                                                 rules={reqIf(showMotos && incluirMoto2, "Ingresa la cuota inicial")} disabled={!showMotos || !incluirMoto2} />
                                             {/* CAMBIO DE NOMBRE */}
-                                            <FormInput<FormValues> rules={reqIf(showMotos && incluirMoto1, "El precio es obligatoria")}
-                                                name="precioDocumentos2" label="Precio documentos / matrícula y SOAT" control={control} type="number" disabled={!showMotos || !incluirMoto2} />
+                                            <FormInput<FormValues>
+                                                name="precioDocumentos2"
+                                                label="Precio documentos / matrícula y SOAT"
+                                                control={control}
+                                                type="number"
+                                                disabled={!showMotos || !incluirMoto2}
+                                                rules={{
+                                                    ...reqIf(showMotos && incluirMoto2, "El precio es obligatorio"),
+                                                    min: {
+                                                        value: 1,
+                                                        message: "El precio debe ser mayor a 0"
+                                                    }
+                                                }}
+                                            />
+
+
                                             <FormInput<FormValues> name="descuento2" label="Descuentos" control={control} type="number" className="hidden" disabled={!showMotos || !incluirMoto2} />
 
                                             <div className="bg-base-100 shadow-lg rounded-xl p-6 border border-base-300">

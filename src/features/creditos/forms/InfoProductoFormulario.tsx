@@ -6,6 +6,8 @@ import { FormSelect, type SelectOption } from "../../../shared/components/FormSe
 import { useActualizarCredito } from "../../../services/creditosServices";
 import { useParams } from "react-router-dom";
 import { useCredito } from "../../../services/creditosServices"; // si tu hook está aquí
+import { useWizardStore } from "../../../store/wizardStore";
+
 
 type ProductoValues = {
   /** Solo lectura, viene del backend como string "Marca - Línea - Modelo" o similar */
@@ -39,12 +41,18 @@ const buildProducto = (c: any): string => {
 };
 
 const InfoProductoFormulario: React.FC = () => {
+
+      // Wizard (Zustand)
+  const next = useWizardStore((s) => s.next);
+  const prev = useWizardStore((s) => s.prev);
+  const isFirst = useWizardStore((s) => s.isFirst);
+
   // 1) Tomar el código desde la URL
   const { id: codigoFromUrl } = useParams<{ id: string }>();
   const codigo_credito = String(codigoFromUrl ?? "");
 
   // 2) RHF
-  const { control, handleSubmit, setValue, formState } = useForm<ProductoValues>({
+  const { control, handleSubmit, setValue, reset } = useForm<ProductoValues>({
     mode: "onBlur",
     defaultValues: {
       producto: "",
@@ -56,6 +64,7 @@ const InfoProductoFormulario: React.FC = () => {
   });
 
   const actualizarCredito = useActualizarCredito();
+  const isSaving = actualizarCredito.isPending;
 
   // 3) Traer el crédito
   const { data, isLoading, isError } = useCredito({ codigo_credito }, !!codigo_credito);
@@ -87,6 +96,7 @@ const InfoProductoFormulario: React.FC = () => {
           setValue("plazoCuotas", payload.plazo_meses ?? 0, { shouldDirty: false });
           setValue("cuotaInicial", payload.cuota_inicial ?? 0, { shouldDirty: false });
           setValue("comentario", payload.comentario ?? "", { shouldDirty: false });
+            next();
         },
       }
     );
@@ -149,17 +159,47 @@ const InfoProductoFormulario: React.FC = () => {
         />
       </div>
 
-      <div className="flex justify-end gap-2">
-        <button type="reset" className="btn btn-ghost" disabled={actualizarCredito.isPending}>
-          Limpiar
-        </button>
+{/* Controles del paso */}
+      <div className="flex items-center justify-between gap-2">
+        {/* ← Anterior: no sale del paso si es el primero o si está guardando */}
         <button
-          type="submit"
-          className="btn btn-primary"
-          disabled={actualizarCredito.isPending || !formState.isDirty}
+          type="button"
+          className="btn btn-ghost"
+          onClick={prev}
+          disabled={isFirst || isSaving}
+          title={isFirst ? "Ya estás en el primer paso" : "Ir al paso anterior"}
         >
-          {actualizarCredito.isPending ? "Guardando..." : "Guardar"}
+          ← Anterior
         </button>
+
+        <div className="flex gap-2">
+          <button
+            type="reset"
+            className="btn btn-ghost"
+            disabled={isSaving}
+            onClick={() =>
+              reset({
+                producto: data?.creditos?.[0] ? buildProducto(data.creditos[0]) : "",
+                valorMoto: data?.creditos?.[0]?.valor_producto ?? 0,
+                plazoCuotas: data?.creditos?.[0]?.plazo_meses ?? 6,
+                cuotaInicial: data?.creditos?.[0]?.cuota_inicial ?? 0,
+                comentario: data?.creditos?.[0]?.comentario ?? "",
+              })
+            }
+          >
+            Limpiar
+          </button>
+
+          {/* Guardar → avanza solo si éxito */}
+          <button
+            type="submit"
+            className="btn btn-warning"
+            disabled={isSaving}
+            title="Guardar cambios (avanza solo si se guarda correctamente)"
+          >
+            {isSaving ? "Guardando..." : "Guardar"}
+          </button>
+        </div>
       </div>
     </form>
   );

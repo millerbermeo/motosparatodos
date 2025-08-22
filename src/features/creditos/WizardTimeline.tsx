@@ -1,4 +1,5 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useEffect } from 'react';
+import { useWizardStore } from '../../store/wizardStore';
 
 export type Step = {
   id: string;
@@ -20,25 +21,21 @@ const WizardTimeline: React.FC<WizardProps> = ({
   onChangeStep,
   className = '',
 }) => {
-  const firstId = steps[0]?.id;
-  const [activeId, setActiveId] = useState<string>(initialStepId ?? firstId);
+  const {  setSteps, idx, next, prev, goTo } = useWizardStore();
+  const activeId = useWizardStore(s => s.activeId);
 
-  const idx = Math.max(0, steps.findIndex((s) => s.id === activeId));
-  const isFirst = idx <= 0;
-  const isLast = idx >= steps.length - 1;
+  // montar/actualizar steps en el store
+  useEffect(() => {
+    setSteps(steps.map(s => s.id), initialStepId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(steps.map(s => s.id)), initialStepId]);
 
-  const goTo = useCallback(
-    (i: number) => {
-      if (i < 0 || i >= steps.length) return;
-      const nextId = steps[i].id;
-      setActiveId(nextId);
-      onChangeStep?.(nextId);
-    },
-    [steps, onChangeStep]
-  );
+  // notificar cambios al padre (opcional)
+  useEffect(() => {
+    if (onChangeStep && activeId) onChangeStep(activeId);
+  }, [activeId, onChangeStep]);
 
-  const prev = () => goTo(idx - 1);
-  const next = () => goTo(idx + 1);
+  const ActiveContent = steps[idx]?.Content ?? (() => null);
 
   const progress = useMemo(() => {
     if (steps.length <= 1) return 0;
@@ -52,9 +49,6 @@ const WizardTimeline: React.FC<WizardProps> = ({
     if (e.key === 'End')        { e.preventDefault(); goTo(steps.length - 1); }
   };
 
-  const ActiveContent = steps[idx]?.Content ?? (() => null);
-  const progressPct = progress; // 0–100
-
   return (
     <section className={`w-full ${className}`} aria-label="Asistente" onKeyDown={onKeyDown}>
       {/* Encabezado */}
@@ -67,22 +61,16 @@ const WizardTimeline: React.FC<WizardProps> = ({
         </div>
       </div>
 
-      {/* Timeline continua */}
+      {/* Timeline */}
       <div className="max-w-full mx-auto">
         <div className="relative px-2 pt-8 pb-4">
-          {/* Línea base continua */}
           <div className="absolute inset-x-0 top-[55px] h-[3px] bg-base-300 rounded-full" />
-          {/* Progreso (continua desde el inicio hasta el paso actual) */}
-          <div
-            className="absolute left-0 top-[55px] h-[3px] bg-success rounded-full transition-all duration-300"
-            style={{ width: `${progressPct}%` }}
-          />
-          {/* Nodos */}
+          <div className="absolute left-0 top-[55px] h-[3px] bg-success rounded-full transition-all duration-300"
+               style={{ width: `${progress}%` }} />
           <ol className="relative z-10 flex items-center justify-between gap-2">
             {steps.map((s, i) => {
               const isDone = i < idx;
               const isCurrent = i === idx;
-
               const dotClasses = [
                 'w-12 h-12 rounded-full flex items-center justify-center cursor-pointer select-none',
                 'ring-2 transition-all hover:shadow-md',
@@ -106,15 +94,11 @@ const WizardTimeline: React.FC<WizardProps> = ({
                     onClick={() => goTo(i)}
                     onKeyDown={(e) => e.key === 'Enter' && goTo(i)}
                   >
-                    {/* icono del paso */}
                     <s.icon className={isCurrent ? 'w-6 h-6 text-success' : 'w-6 h-6'} />
                   </button>
-                  <span
-                    className={[
-                      'mt-2 text-center text-xs md:text-sm',
-                      isCurrent ? 'font-semibold text-success' : isDone ? 'text-base-content/80' : 'text-base-content/50',
-                    ].join(' ')}
-                  >
+                  <span className={['mt-2 text-center text-xs md:text-sm',
+                    isCurrent ? 'font-semibold text-success' : isDone ? 'text-base-content/80' : 'text-base-content/50',
+                  ].join(' ')}>
                     {s.title}
                   </span>
                 </li>
@@ -124,26 +108,14 @@ const WizardTimeline: React.FC<WizardProps> = ({
         </div>
       </div>
 
-      {/* Panel de contenido */}
+      {/* Panel */}
       <div className="mt-6 max-full mx-auto card bg-base-100 border border-base-300/60 shadow-sm">
         <div className="card-body">
           <ActiveContent />
         </div>
       </div>
 
-      {/* Controles */}
-      <div className="mt-4 max-full mx-auto flex items-center justify-between">
-        <button className="btn btn-ghost" onClick={prev} disabled={isFirst}>
-          ← Anterior
-        </button>
-        {!isLast ? (
-          <button className="btn btn-primary" onClick={next}>
-            Siguiente →
-          </button>
-        ) : (
-          <button className="btn btn-success">Finalizar</button>
-        )}
-      </div>
+      {/* ⛔️ Sin controles globales: la navegación la dispara el formulario */}
     </section>
   );
 };
