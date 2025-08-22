@@ -16,7 +16,7 @@ const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
   const { id: codigoFromUrl } = useParams<{ id: string }>();
   const codigo_credito = String(codigoFromUrl ?? "");
   const navigate = useNavigate();
-  const redirectTo = `/creditos/${codigo_credito}/resumen`; // ← ajusta a tu ruta final
+  const redirectTo = `/creditos`; // ← ajusta a tu ruta final
 
   // Wizard controls
   const prev = useWizardStore(s => s.prev);

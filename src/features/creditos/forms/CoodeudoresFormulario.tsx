@@ -36,7 +36,7 @@ type Coodeudor = {
   estadoCivil?: string;
   personasACargo?: number | string;
   tipoVivienda?: string;
-  costoArriendo?: number | string;
+  costoArriendo?: string; // ← string
   fincaRaiz?: "No" | "Casa" | "Apartamento" | "Lote" | "Otro";
 
   // laboral
@@ -144,7 +144,7 @@ const emptyCoodeudor: Coodeudor = {
   estadoCivil: "Soltero/a",
   personasACargo: "",
   tipoVivienda: "Propia",
-  costoArriendo: "",
+  costoArriendo: "0",    // ← empieza en "0" (no arriendo)
   fincaRaiz: "No",
   empresaLabora: "",
   direccionEmpleador: "",
@@ -198,8 +198,13 @@ const prune = (obj: any): any => {
 // antes: const toBackendPayload = (c: Coodeudor, deudorId?: number) => {
 const toBackendPayload = (c: Coodeudor, credito?: string,) => {
 
+  const costo_arriendo_num =
+    c.tipoVivienda === "Arriendo"
+      ? Number((c.costoArriendo ?? "").toString().replace(/\D/g, "")) || 0
+      : 0;
+
   const personas_a_cargo = c.personasACargo === "" ? undefined : Number(c.personasACargo);
-  const costo_arriendo_in = c.costoArriendo === "" ? undefined : Number(c.costoArriendo);
+  // const costo_arriendo_in = c.costoArriendo === "" ? undefined : Number(c.costoArriendo);
   const salario = c.salario === "" ? undefined : Number(c.salario);
 
   const referencias = [
@@ -236,7 +241,7 @@ const toBackendPayload = (c: Coodeudor, credito?: string,) => {
       estado_civil: c.estadoCivil,
       personas_a_cargo,
       tipo_vivienda: c.tipoVivienda,
-      costo_arriendo: c.tipoVivienda === "Arriendo" ? (costo_arriendo_in ?? 0) : 0,
+      costo_arriendo: costo_arriendo_num, // ← consistente para backend
       finca_raiz: c.fincaRaiz,
     },
     informacion_laboral: {
@@ -348,8 +353,9 @@ const CoodeudoresFormulario: React.FC = () => {
 
 
 
-  const { control, handleSubmit, watch, setValue, reset } = useForm<FormValues>({
+  const { control, handleSubmit, watch, setValue, reset, getValues } = useForm<FormValues>({
     mode: "onBlur",
+    shouldUnregister: false,
     defaultValues: { codeudores: [emptyCoodeudor] },
   });
   const { fields, append, remove } = useFieldArray({ control, name: "codeudores" });
@@ -395,16 +401,33 @@ const CoodeudoresFormulario: React.FC = () => {
     setEditingIds(codeudoresList.slice(0, 2).map(extractRowId));
   }, [codeudoresList, reset]);
 
-  // watchers para arriendo (0 y 1)
-  const tipoVivienda0 = watch(`codeudores.0.tipoVivienda`);
+  // WATCHERS
+  const tv0 = watch(`codeudores.0.tipoVivienda`);
   React.useEffect(() => {
-    if (tipoVivienda0 && tipoVivienda0 !== "Arriendo") setValue(`codeudores.0.costoArriendo`, "");
-  }, [tipoVivienda0, setValue]);
+    if (tv0 == null) return;
+    const curr = getValues(`codeudores.0.costoArriendo`);
+    if (tv0 !== "Arriendo") {
+      if (curr == null || curr === "") {
+        setValue(`codeudores.0.costoArriendo`, "0", { shouldDirty: false });
+      }
+    } else {
+      if (curr === "0") setValue(`codeudores.0.costoArriendo`, "", { shouldDirty: false });
+    }
+  }, [tv0, setValue, getValues]);
 
-  const tipoVivienda1 = watch(`codeudores.1.tipoVivienda`);
+  const tv1 = watch(`codeudores.1.tipoVivienda`);
   React.useEffect(() => {
-    if (tipoVivienda1 && tipoVivienda1 !== "Arriendo") setValue(`codeudores.1.costoArriendo`, "");
-  }, [tipoVivienda1, setValue]);
+    if (tv1 == null) return;
+    const curr = getValues(`codeudores.1.costoArriendo`);
+    if (tv1 !== "Arriendo") {
+      if (curr == null || curr === "") {
+        setValue(`codeudores.1.costoArriendo`, "0", { shouldDirty: false });
+      }
+    } else {
+      if (curr === "0") setValue(`codeudores.1.costoArriendo`, "", { shouldDirty: false });
+    }
+  }, [tv1, setValue, getValues]);
+
 
   // agregar/quitar segundo codeudor
   const addSecond = () => {
@@ -423,37 +446,37 @@ const CoodeudoresFormulario: React.FC = () => {
   // ⬇️ flag de guardado en curso para deshabilitar botones
   const isSaving = registrar.isPending || actualizar.isPending;
 
-const onSubmit = async (values: FormValues) => {
-  // Genera payload por cada codeudor conservando el índice
-  const entries = values.codeudores.map((c, idx) => ({
-    idx,
-    payload: prune(toBackendPayload(c, codigoCredito)), // ya incluye codigo_credito
-  })).filter((e) => e.payload);
+  const onSubmit = async (values: FormValues) => {
+    // Genera payload por cada codeudor conservando el índice
+    const entries = values.codeudores.map((c, idx) => ({
+      idx,
+      payload: prune(toBackendPayload(c, codigoCredito)), // ya incluye codigo_credito
+    })).filter((e) => e.payload);
 
-  try {
-    // Usa mutateAsync para poder esperar todas las llamadas
-    const ops = entries.map(({ idx, payload }) => {
-      const codeudorId = editingIds[idx]; // id de ESA fila
-      if (codeudorId) {
-        // ⬅️ AQUÍ VA EL CAMBIO IMPORTANTE:
-        return actualizar.mutateAsync({
-          codigo_credito: String(codigoCredito),
-          id: codeudorId,
-          payload, // no metas el id dentro del body; va fuera
-          
-        } as any);
-      }
-      return registrar.mutateAsync(payload as any);
-    });
+    try {
+      // Usa mutateAsync para poder esperar todas las llamadas
+      const ops = entries.map(({ idx, payload }) => {
+        const codeudorId = editingIds[idx]; // id de ESA fila
+        if (codeudorId) {
+          // ⬅️ AQUÍ VA EL CAMBIO IMPORTANTE:
+          return actualizar.mutateAsync({
+            codigo_credito: String(codigoCredito),
+            id: codeudorId,
+            payload, // no metas el id dentro del body; va fuera
 
-    await Promise.all(ops);
-    await refetch();
-    next();
-  } catch (err) {
-    // opcional: muestra toast o setea error de formulario
-    console.error(err);
-  }
-};
+          } as any);
+        }
+        return registrar.mutateAsync(payload as any);
+      });
+
+      await Promise.all(ops);
+      await refetch();
+      next();
+    } catch (err) {
+      // opcional: muestra toast o setea error de formulario
+      console.error(err);
+    }
+  };
 
 
   // cancelar → recarga o limpia
@@ -487,7 +510,27 @@ const onSubmit = async (values: FormValues) => {
 
             {/* ======== PERSONALES ======== */}
             <div className={grid}>
-              <FormInput control={control} name={`codeudores.${idx}.numDocumento`} label="Número de documento" placeholder="Ingrese número de documento" />
+              <FormInput
+                control={control}
+                name={`codeudores.${idx}.numDocumento`}
+                label="Número de documento*"
+                placeholder="Ingrese número de documento"
+                rules={{
+                  required: "Requerido",
+                  pattern: {
+                    value: /^[0-9]+$/, // solo números
+                    message: "Solo se permiten números",
+                  },
+                  minLength: {
+                    value: 5,
+                    message: "Mínimo 5 dígitos",
+                  },
+                  maxLength: {
+                    value: 15,
+                    message: "Máximo 15 dígitos",
+                  },
+                }}
+              />
               <FormSelect control={control} name={`codeudores.${idx}.tipoDocumento`} label="Tipo de documento" options={tipoDocumentoOptions} />
               <FormInput control={control} name={`codeudores.${idx}.fechaExpedicion`} label="Fecha de expedición" type="date" />
 

@@ -38,7 +38,7 @@ type InfoPersonalFormValues = {
     estado_civil: string;
     personas_a_cargo: number;
     tipo_vivienda: string;
-    costo_arriendo: number | string;
+    costo_arriendo?: string;
     finca_raiz?: string;
 
     informacion_laboral: {
@@ -137,15 +137,15 @@ const normalizaRef = (r: Referencia): Referencia => ({
 
 // convierte strings numéricos a número; conserva 0 cuando no hay valor
 const toNumber = (v: unknown): number => {
-  if (v == null) return 0; // null o undefined
-  if (typeof v === "number") return v;
-  if (typeof v === "string") {
-    // Quita espacios y separadores de miles
-    const cleaned = v.trim().replace(/,/g, "");
-    const n = Number(cleaned);
-    return Number.isFinite(n) ? n : 0;
-  }
-  return 0;
+    if (v == null) return 0; // null o undefined
+    if (typeof v === "number") return v;
+    if (typeof v === "string") {
+        // Quita espacios y separadores de miles
+        const cleaned = v.trim().replace(/,/g, "");
+        const n = Number(cleaned);
+        return Number.isFinite(n) ? n : 0;
+    }
+    return 0;
 };
 
 
@@ -185,7 +185,9 @@ const InfoPersonalFormulario: React.FC = () => {
 
 
 
-    const { control, handleSubmit, watch, setValue, reset } = useForm<InfoPersonalFormValues>({
+    const { control, handleSubmit, watch, setValue, reset, getValues } = useForm<InfoPersonalFormValues>({
+        mode: "onBlur",
+        shouldUnregister: false,      // ← importante al cambiar de pasos
         defaultValues: {
             codigo_credito: String(id),
             numero_documento: "",
@@ -274,7 +276,7 @@ const InfoPersonalFormulario: React.FC = () => {
             estado_civil: p.estado_civil ?? "",
             personas_a_cargo: toNumber(p.personas_a_cargo ?? 0),
             tipo_vivienda: p.tipo_vivienda ?? "",
-            costo_arriendo: toNumber(p.costo_arriendo ?? 0),
+            costo_arriendo: String(p.costo_arriendo ?? ""), // ← siempre string
             finca_raiz: mapFincaRaiz(p.finca_raiz),
 
             informacion_laboral: {
@@ -304,8 +306,14 @@ const InfoPersonalFormulario: React.FC = () => {
     // Si NO es arriendo → costo_arriendo = 0
     const tipoVivienda = watch("tipo_vivienda");
     React.useEffect(() => {
-        if (tipoVivienda !== "Arriendo") setValue("costo_arriendo", 0);
-    }, [tipoVivienda, setValue]);
+        if (tipoVivienda == null) return;                      // evita el primer render
+        if (tipoVivienda !== "Arriendo") {
+            const curr = getValues("costo_arriendo");
+            if (curr == null || curr === "") {
+                setValue("costo_arriendo", "0", { shouldDirty: false });
+            }
+        }
+    }, [tipoVivienda, setValue, getValues]);
 
     // Submit
     // traduce valor UI → backend (ej. "Si" -> "Casa")
@@ -431,9 +439,24 @@ const InfoPersonalFormulario: React.FC = () => {
                         name="numero_documento"
                         label="Número de documento*"
                         control={control}
-                        rules={{ required: "Requerido" }}
                         placeholder="1144102233"
+                        rules={{
+                            required: "Requerido",
+                            pattern: {
+                                value: /^[0-9]+$/, // solo números
+                                message: "Solo se permiten números",
+                            },
+                            minLength: {
+                                value: 5,
+                                message: "Mínimo 5 dígitos",
+                            },
+                            maxLength: {
+                                value: 15,
+                                message: "Máximo 15 dígitos",
+                            },
+                        }}
                     />
+
                     <FormSelect
                         name="tipo_documento"
                         label="Tipo de documento*"
@@ -575,10 +598,15 @@ const InfoPersonalFormulario: React.FC = () => {
                         control={control}
                         placeholder="0"
                         rules={{
-                            validate: (v) =>
-                                watch("tipo_vivienda") !== "Arriendo" || Number(v) > 0 || "Indique un valor mayor a 0",
+                            validate: (v) => {
+                                if (watch("tipo_vivienda") !== "Arriendo") return true;
+                                const digits = (v ?? "").toString().replace(/[^\d]/g, ""); // solo dígitos
+                                if (digits === "") return "Indique un valor";
+                                return Number(digits) > 0 || "Indique un valor mayor a 0";
+                            },
                         }}
                     />
+
                     <FormSelect
                         name="finca_raiz"
                         label="Finca raíz*"
@@ -771,7 +799,7 @@ const InfoPersonalFormulario: React.FC = () => {
                             estado_civil: "",
                             personas_a_cargo: 0,
                             tipo_vivienda: "",
-                            costo_arriendo: 0,
+                            costo_arriendo: "",
                             finca_raiz: "No",
                             informacion_laboral: {
                                 empresa: "",
