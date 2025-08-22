@@ -111,7 +111,6 @@ export const useDeudor = (id: string) => {
       );
       return data;
     },
-    enabled: !!id, // solo consulta si hay id y token
   });
 };
 
@@ -145,6 +144,9 @@ export const useActualizarDeudor = () => {
         qc.invalidateQueries({ queryKey: ["deudor", variables.id] }),
         qc.invalidateQueries({ queryKey: ["creditos"] }),
       ]);
+
+      await qc.refetchQueries({ queryKey: ["deudor", variables.id] });
+
 
       Swal.fire({
         icon: "success",
@@ -223,23 +225,26 @@ export const useCodeudoresByDeudor = (id: string) => {
    PUT /codeudor_actualizar.php?id={id}
    body: any (mismo shape que registrar)
 -------------------------------------------- */
+// types sugeridos
 type ActualizarCodeudorInput = {
-  id: number;     // id del codeudor a actualizar
-  payload: any;   // mismo payload que en registrar
+  id: number | string;            // id del codeudor (query param)
+  codigo_credito: string;         // código del crédito (query param)
+  payload: any;                   // body con la data
 };
-
 
 export const useActualizarCodeudor = () => {
   const qc = useQueryClient();
 
   return useMutation<ServerOk, AxiosError<ServerError>, ActualizarCodeudorInput>({
-    mutationFn: async ({ id, payload }) => {
-
-      console.log(id, payload)
-      const { data } = await api.put<ServerOk>("/codeudor_actualizar.php", payload, {
-        params: { codigo_credito: id },
-        headers: { "Content-Type": "application/json" },
-      });
+    mutationFn: async ({ id, codigo_credito, payload }) => {
+      const { data } = await api.put<ServerOk>(
+        "/codeudor_actualizar.php",
+        payload,                                // body JSON
+        {
+          params: { codigo_credito, id },       // ⬅️ enviar ambos params
+          headers: { "Content-Type": "application/json" },
+        }
+      );
       return data;
     },
     onSuccess: async (resp, variables) => {
@@ -248,13 +253,7 @@ export const useActualizarCodeudor = () => {
         qc.invalidateQueries({ queryKey: ["codeudores"] }),
         qc.invalidateQueries({ queryKey: ["creditos"] }),
       ]);
-
-      Swal.fire({
-        icon: "success",
-        title: resp?.message || "Codeudor actualizado",
-        timer: 1600,
-        showConfirmButton: false,
-      });
+      Swal.fire({ icon: "success", title: resp?.message || "Codeudor actualizado", timer: 1600, showConfirmButton: false });
     },
     onError: (error) => {
       const raw = (error as AxiosError<ServerError>)?.response?.data?.message ?? "Error al actualizar codeudor";
@@ -263,6 +262,7 @@ export const useActualizarCodeudor = () => {
     },
   });
 };
+
 
 
 

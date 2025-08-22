@@ -120,6 +120,7 @@ const tipoReferenciaOptions: SelectOption[] = [
 ];
 
 
+
 // ============================ Helpers ============================
 
 // const hasText = (v?: string) => typeof v === "string" && v.trim() !== "";
@@ -135,10 +136,18 @@ const normalizaRef = (r: Referencia): Referencia => ({
 // const esReferenciaValida = (r: Referencia) => hasText(r.nombre_completo) && hasText(r.telefono);
 
 // convierte strings numéricos a número; conserva 0 cuando no hay valor
-const toNumber = (v: any) => {
-    const n = typeof v === "number" ? v : parseFloat(String(v).replace(/,/g, "."));
+const toNumber = (v: unknown): number => {
+  if (v == null) return 0; // null o undefined
+  if (typeof v === "number") return v;
+  if (typeof v === "string") {
+    // Quita espacios y separadores de miles
+    const cleaned = v.trim().replace(/,/g, "");
+    const n = Number(cleaned);
     return Number.isFinite(n) ? n : 0;
+  }
+  return 0;
 };
+
 
 // el backend te manda "Casa" en finca_raiz; lo tratamos como "Si"
 const mapFincaRaiz = (v: any): "Si" | "No" | "Otro" => {
@@ -337,7 +346,7 @@ const InfoPersonalFormulario: React.FC = () => {
             estado_civil: values.estado_civil,
             personas_a_cargo: toNumber(values.personas_a_cargo),
             tipo_vivienda: values.tipo_vivienda,
-            costo_arriendo: values.tipo_vivienda === "Arriendo" ? toNumber(values.costo_arriendo) : 0,
+            costo_arriendo: values.costo_arriendo,
             finca_raiz: mapFincaRaizToBackend(values.finca_raiz as string),
         };
 
@@ -562,7 +571,7 @@ const InfoPersonalFormulario: React.FC = () => {
                     <FormInput
                         name="costo_arriendo"
                         label="Costo del arriendo (COP)"
-                        type="number"
+                        type="text"
                         control={control}
                         placeholder="0"
                         rules={{

@@ -423,22 +423,38 @@ const CoodeudoresFormulario: React.FC = () => {
   // ⬇️ flag de guardado en curso para deshabilitar botones
   const isSaving = registrar.isPending || actualizar.isPending;
 
-  const onSubmit = (values: FormValues) => {
-    const payloads = values.codeudores
-      .map((c) => prune(toBackendPayload(c, codigoCredito))) // <- usa codigoCredito
-      .filter(Boolean);
+const onSubmit = async (values: FormValues) => {
+  // Genera payload por cada codeudor conservando el índice
+  const entries = values.codeudores.map((c, idx) => ({
+    idx,
+    payload: prune(toBackendPayload(c, codigoCredito)), // ya incluye codigo_credito
+  })).filter((e) => e.payload);
 
-    // Guardamos en paralelo y solo avanzamos si todas las mutaciones son exitosas
-
-    payloads.forEach((payload) => {
-      const codeudorId = editingIds[0]; // <- NO lo llames "id" para no confundir
+  try {
+    // Usa mutateAsync para poder esperar todas las llamadas
+    const ops = entries.map(({ idx, payload }) => {
+      const codeudorId = editingIds[idx]; // id de ESA fila
       if (codeudorId) {
-        actualizar.mutate({ id: payload.codigo_credito, payload }, { onSuccess: () => { refetch(), next() } });
-      } else {
-        registrar.mutate(payload as any, { onSuccess: () => { refetch(), next() } });
+        // ⬅️ AQUÍ VA EL CAMBIO IMPORTANTE:
+        return actualizar.mutateAsync({
+          codigo_credito: String(codigoCredito),
+          id: codeudorId,
+          payload, // no metas el id dentro del body; va fuera
+          
+        } as any);
       }
+      return registrar.mutateAsync(payload as any);
     });
-  };
+
+    await Promise.all(ops);
+    await refetch();
+    next();
+  } catch (err) {
+    // opcional: muestra toast o setea error de formulario
+    console.error(err);
+  }
+};
+
 
   // cancelar → recarga o limpia
   const onCancel = () => {
