@@ -277,9 +277,11 @@ const TablaCreditos: React.FC = () => {
                                 <td>{badgeSiNo(c.cambio_ci)}</td>
                                 <td className="whitespace-nowrap">{timeAgo(c.actualizado)}</td>
                                 <td className="text-right flex gap-3">
-                                    <button className="btn btn-sm bg-white hidden btn-circle" title="Ver">
+                                    <Link to={`/creditos/detalle/${c.codigo_credito}`}>
+                                    <button className="btn btn-sm bg-white  btn-circle" title="Ver">
                                         <Eye size="18px" />
                                     </button>
+                                    </Link>
                                     <Link
                                         to={`/creditos/registrar/${c.codigo_credito}`}
                                     >

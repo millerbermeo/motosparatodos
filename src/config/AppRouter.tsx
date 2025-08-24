@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import PrivateRoute from "./PrivateRoute";
 import RequireModule from "./RequireModule"; // 👈
+import CreditoDetalle from "../features/creditos/CreditoDetalle";
 
 const Home = lazy(() => import("../pages/Home"));
 const Login = lazy(() => import("../pages/Login"));
@@ -73,6 +74,7 @@ const AppRouter: React.FC = () => {
               <Route element={<RequireModule name="Créditos" />}>
                 <Route path="/creditos" element={<Creditos />} />
                 <Route path="/creditos/registrar/:id" element={<CreditosForm />} />
+                    <Route path="/creditos/detalle/:id" element={<CreditoDetalle />} />
               </Route>
 
 

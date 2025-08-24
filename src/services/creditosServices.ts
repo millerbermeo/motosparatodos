@@ -80,7 +80,7 @@ export const useRegistrarDeudor = () => {
         qc.invalidateQueries({ queryKey: ["deudor", variables.codigo_credito] }),
         qc.invalidateQueries({ queryKey: ["creditos"] }),
       ]);
-   
+
       Swal.fire({
         icon: "success",
         title: "Registro enviado",
@@ -106,7 +106,7 @@ export const useDeudor = (id: string) => {
         "/deudores_id.php", // endpoint correcto
         {
           params: { codigo_credito: id }, // pasa el id en query string
-    
+
         }
       );
       return data;
@@ -288,7 +288,8 @@ export interface CreditoRaw {
   actualizado?: string;               // "YYYY-MM-DD HH:mm:ss"
   deudor_id?: string | number;        // "6"
   cotizacion_id: string | number;        // "6"
-  codeudor_id: string | number; 
+  codeudor_id: string | number;
+
 }
 
 export interface Credito {
@@ -308,8 +309,8 @@ export interface Credito {
   fecha_creacion: string;             // sin tocar (ISO-like del backend)
   actualizado: string;                // sin tocar
   deudor_id: number;
-    cotizacion_id: string | number;        // "6"
-  codeudor_id: string | number; 
+  cotizacion_id: string | number;        // "6"
+  codeudor_id: string | number;
 
 }
 
@@ -345,8 +346,8 @@ const mapCredito = (r: CreditoRaw): Credito => ({
   actualizado: r.actualizado ?? "",
   deudor_id: toNumberSafe(r.deudor_id),
   cotizacion_id: toNumberSafe(r.cotizacion_id),
-    codeudor_id: toNumberSafe(r.codeudor_id),
-  
+  codeudor_id: toNumberSafe(r.codeudor_id),
+
 });
 
 /**
@@ -362,12 +363,11 @@ export const useCreditos = () => {
     queryKey: ["creditos"],
     queryFn: async () => {
       const { data } = await api.get<ListCreditosResponseRaw>("/list_creditos.php");
-      // el backend puede devolver { creditos: [...] } o { data: [...] }
       const arr = Array.isArray(data?.creditos)
         ? data!.creditos!
         : Array.isArray(data?.data)
-        ? data!.data!
-        : [];
+          ? data!.data!
+          : [];
       return arr.map(mapCredito);
     },
   });
@@ -376,98 +376,106 @@ export const useCreditos = () => {
 
 
 export interface CreditoLine {
-id: number;
-asesor: string;
-codigo_credito: string;
-nombre_cliente: string;
-producto: string;
-valor_producto: number;
-plazo_meses: number | null;
-estado: string; // ej.: "Incompleto"
-proaprobado: "Sí" | "No" | string; // permitir valores desconocidos
-analista: string; // ej.: "Sin analista"
-revisado: "Sí" | "No" | string;
-entrega_autorizada: string; // ej.: "No hay factura"
-entregado: string; // ej.: "No hay factura"
-cambio_ci: "Sí" | "No" | string;
-fecha_creacion: string; // ISO-like datetime string
-actualizado: string; // ISO-like datetime string
-deudor_id: number | null;
-codeudor_id: number | null;
-cotizacion_id: number | null;
-comentario: string | null;
-cuota_inicial: number;
+  id: number;
+  asesor: string;
+  codigo_credito: string;
+  nombre_cliente: string;
+  producto: string;
+  valor_producto: number;
+  plazo_meses: number | null;
+  estado: string; // ej.: "Incompleto"
+  proaprobado: "Sí" | "No" | string; // permitir valores desconocidos
+  analista: string; // ej.: "Sin analista"
+  revisado: "Sí" | "No" | string;
+  entrega_autorizada: string; // ej.: "No hay factura"
+  entregado: string; // ej.: "No hay factura"
+  cambio_ci: "Sí" | "No" | string;
+  fecha_creacion: string; // ISO-like datetime string
+  actualizado: string; // ISO-like datetime string
+  deudor_id: number | null;
+  codeudor_id: number | null;
+  cotizacion_id: number | null;
+  comentario: string | null;
+  cuota_inicial: number;
+  numero_chasis?: string | null;
+  numero_motor?: string | null;
+  fecha_entrega?: any;
+  placa?: string | null;
+
+
+  firmas?: any;
+  soportes?: any;
 }
 
 
 export interface ApiResponseCreditos {
-success: boolean;
-creditos: CreditoLine[];
+  success: boolean;
+  creditos: CreditoLine[];
 }
 
 
 export type CreditoUpdatePayload = {
-cuota_inicial?: number;
-plazo_meses?: number;
-comentario?: string | null;
+  cuota_inicial?: number;
+  plazo_meses?: number;
+  comentario?: string | null;
 };
 
 
 export interface UpdateCreditoResponseRaw {
-success?: boolean;
-message?: string;
-data?: Partial<CreditoLine> & { id?: number };
+  success?: boolean;
+  message?: string;
+  data?: Partial<CreditoLine> & { id?: number };
 }
 
 
 export type ActualizarCreditoInput = {
-codigo_credito: string | number; // ej. "3Q0LKp6"
-payload: CreditoUpdatePayload;
+  codigo_credito: string | number; // ej. "3Q0LKp6"
+  payload: CreditoUpdatePayload;
 };
 
 
 export const useActualizarCredito = () => {
-const qc = useQueryClient();
+  const qc = useQueryClient();
 
 
-return useMutation<UpdateCreditoResponseRaw, AxiosError<ServerError>, ActualizarCreditoInput>({
-mutationFn: async ({ codigo_credito, payload }) => {
-const { data } = await api.put<UpdateCreditoResponseRaw>(
-"/actualizar_credito.php",
-payload,
-{
-params: { codigo_credito },
-headers: { "Content-Type": "application/json" },
-}
-);
-return data;
-},
-onSuccess: async (resp, variables) => {
-// Invalida la lista general y, si manejas un detalle, también por código
-await Promise.all([
-qc.invalidateQueries({ queryKey: ["creditos"] }),
-qc.invalidateQueries({ queryKey: ["credito", variables.codigo_credito] }),
-qc.invalidateQueries({ queryKey: ["codeudor", variables.codigo_credito] }),
+  return useMutation<UpdateCreditoResponseRaw, AxiosError<ServerError>, ActualizarCreditoInput>({
+    mutationFn: async ({ codigo_credito, payload }) => {
+      const { data } = await api.put<UpdateCreditoResponseRaw>(
+        "/actualizar_credito.php",
+        payload,
+        {
+          params: { codigo_credito },
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+      return data;
+    },
+    onSuccess: async (resp, variables) => {
+      // Invalida la lista general y, si manejas un detalle, también por código
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["creditos"] }),
+        qc.invalidateQueries({ queryKey: ["credito", variables.codigo_credito] }),
+        qc.invalidateQueries({ queryKey: ["codeudor", variables.codigo_credito] }),
 
-qc.invalidateQueries({ queryKey: ["deudor", variables.codigo_credito] }),
+        qc.invalidateQueries({ queryKey: ["deudor", variables.codigo_credito] }),
 
-]);
+      ]);
 
 
-Swal.fire({
-icon: "success",
-title: resp?.message || "Crédito actualizado",
-timer: 1600,
-showConfirmButton: false,
-});
-},
-onError: (error) => {
-const raw = (error as AxiosError<ServerError>)?.response?.data?.message ??
-"Error al actualizar crédito";
-const arr = Array.isArray(raw) ? raw : [raw];
-Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
-},
-});
+      Swal.fire({
+        icon: "success",
+        title: resp?.message || "Crédito actualizado",
+        timer: 1600,
+        showConfirmButton: false,
+      });
+    },
+    onError: (error) => {
+      const raw = (error as AxiosError<ServerError>)?.response?.data?.message ??
+        "Error al actualizar crédito";
+      const arr = Array.isArray(raw) ? raw : [raw];
+      Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
+    },
+  });
 };
 
 
