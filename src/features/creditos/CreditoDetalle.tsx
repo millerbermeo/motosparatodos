@@ -13,6 +13,8 @@ import ChipButton from '../../shared/components/ChipButton';
 import ChatThread from './ChatThread';
 import { useModalStore } from '../../store/modalStore';
 import ComentarioFormulario from './ComentarioFormulario';
+import CerrarCreditoFormulario from './forms/CerrarCreditoFormulario';
+import CambiarEstadoCredito from './forms/CambiarEstadoCredito';
 
 
 const fmtCOP = (v: number) =>
@@ -116,13 +118,13 @@ const CreditoDetalle: React.FC = () => {
 
 
 
-      const handleEliminar = () => {
-    console.log("👉 Eliminando garantía extendida...");
-  };
+    const handleEliminar = () => {
+        console.log("👉 Eliminando garantía extendida...");
+    };
 
-  const handleIncompleto = () => {
-    console.log("👉 Pasando a incompleto...");
-  };
+    const handleIncompleto = () => {
+        console.log("👉 Pasando a incompleto...");
+    };
 
     return (
         <main className="min-h-screen w-full bg-gradient-to-b from-white to-slate-50">
@@ -265,6 +267,20 @@ const CreditoDetalle: React.FC = () => {
                     </div>
                 </section>
 
+
+                      {/* CAMBIAR ESTADO ACCESOR */}
+
+                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
+                    <CambiarEstadoCredito codigo_credito={codigo_credito} />
+                </section>
+
+
+                {/* CERRAR CREDITO */}
+
+                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
+                    <CerrarCreditoFormulario codigo_credito={codigo_credito} />
+                </section>
+
                 {/* Información personal */}
                 <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <div className="p-4 sm:p-6">
@@ -369,8 +385,16 @@ const CreditoDetalle: React.FC = () => {
                 <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <div className='px-6 pt-6'>
                         <h2 className="text-base sm:text-lg font-semibold  flex items-center gap-2 text-slate-800">
-                            <MessageCircle className="w-5 h-5" /> Comentarios Relizados
+                            <MessageCircle className="w-5 h-5" /> Comentarios Realizados
                         </h2>
+                    </div>
+                    <div className="sticky mb-5 top-0 z-10 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 ">
+                        <div className="px-6 mt-2">
+                            <div className="grid grid-cols-2 text-center text-xs sm:text-sm font-medium text-neutral-600">
+                                <div className="py-1 rounded-lg bg-neutral-100">Asesor</div>
+                                <div className="py-1 rounded-lg bg-neutral-100">Administrador</div>
+                            </div>
+                        </div>
                     </div>
                     <ChatThread />
                 </section>

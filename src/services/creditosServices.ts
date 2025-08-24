@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./axiosInstance";
 import type { AxiosError } from "axios";
 import Swal from "sweetalert2";
+import { useAuthStore } from "../store/auth.store";
 
 /* ===== TIPOS ===== */
 export interface InformacionLaboral {
@@ -493,6 +494,131 @@ export const useCredito = (params: Params, enabled = true) => {
         { params } // { codigo_credito } o { id }
       );
       return data;
+    },
+  });
+};
+
+
+
+
+
+/* ---------- Tipos para Cerrar Crédito ---------- */
+export type CerrarCreditoPayload = {
+  numero_chasis?: string | null;
+  numero_motor?: string | null;
+  placa?: string | null;
+  color?: string | null;
+  capacidad?: string | null;
+};
+
+export type CerrarCreditoInput = {
+  codigo_credito: string | number;
+  payload: CerrarCreditoPayload;
+};
+
+export interface CerrarCreditoResponseRaw {
+  success?: boolean;
+  updated?: boolean;
+  message?: string;
+  data?: {
+    id?: number;
+    codigo_credito?: string;
+    numero_chasis?: string | null;
+    numero_motor?: string | null;
+    placa?: string | null;
+    color?: string | null;
+    capacidad?: string | null;
+    actualizado?: string;
+  };
+}
+
+export interface ServerError {
+  messages?: string | string[];
+}
+
+/* ---------- HOOK: Cerrar crédito (actualiza solo 5 campos) ---------- */
+export const useCerrarCredito = () => {
+  const qc = useQueryClient();
+
+  return useMutation<CerrarCreditoResponseRaw, AxiosError<ServerError>, CerrarCreditoInput>({
+    mutationFn: async ({ codigo_credito, payload }) => {
+      const { data } = await api.put<CerrarCreditoResponseRaw>(
+        "/cerrar_credito.php",
+        payload,
+        {
+          params: { codigo_credito },
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+      return data;
+    },
+    onSuccess: async (resp) => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["creditos"] }),
+        qc.invalidateQueries({ queryKey: ["credito"] }), // detalle por id o codigo
+      ]);
+
+      Swal.fire({
+        icon: "success",
+        title: resp?.message || "Campos de cierre actualizados",
+        timer: 1600,
+        showConfirmButton: false,
+      });
+    },
+    onError: (error) => {
+      const raw = error.response?.data?.message ?? "Error al cerrar crédito";
+      const arr = Array.isArray(raw) ? raw : [raw];
+      Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
+    },
+  });
+};
+
+
+
+
+export type CambiarEstadoPayload = {
+  estado: "Pendiente" | "Aprobado" | "No viable" | string;
+  comentario: string;
+  nombre_usuario?: string;
+  rol_usuario?: string;
+};
+export type CambiarEstadoInput = {
+  codigo_credito: string | number;
+  payload: CambiarEstadoPayload;
+};
+type CambiarEstadoResponse = { success?: boolean; message?: string; data?: any };
+
+export const useCambiarEstadoCredito = () => {
+  const qc = useQueryClient();
+
+  return useMutation<CambiarEstadoResponse, AxiosError<any>, CambiarEstadoInput>({
+    mutationFn: async ({ codigo_credito, payload }) => {
+      // Fallback de auth por si el componente no lo manda
+      const { user } = useAuthStore.getState();
+      const enriched = {
+        ...payload,
+        nombre_usuario: payload.nombre_usuario ?? user?.name ?? "Usuario",
+        rol_usuario: payload.rol_usuario ?? user?.rol ?? "Usuario",
+      };
+
+      const { data } = await api.put<CambiarEstadoResponse>("/cambiar_estado_credito.php", enriched, {
+        params: { codigo_credito },
+        headers: { "Content-Type": "application/json" },
+      });
+      return data;
+    },
+    onSuccess: async (resp, vars) => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["creditos"] }),
+        qc.invalidateQueries({ queryKey: ["credito", vars.codigo_credito] }),
+        qc.invalidateQueries({ queryKey: ["comentarios", vars.codigo_credito] }),
+      ]);
+      Swal.fire({ icon: "success", title: resp?.message || "Estado actualizado", timer: 1500, showConfirmButton: false });
+    },
+    onError: (error) => {
+      const raw = (error as AxiosError<any>)?.response?.data?.message ?? "Error al cambiar estado";
+      const arr = Array.isArray(raw) ? raw : [raw];
+      Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
     },
   });
 };
