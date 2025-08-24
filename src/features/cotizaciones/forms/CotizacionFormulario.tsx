@@ -681,33 +681,39 @@ const CotizacionFormulario: React.FC = () => {
                                                     setValueAs: (v) => (v === "" ? "" : Number(v)),
                                                 }}
                                             />
+                                        </>
+                                    )}
 
-                                            {/* SEGUROS MULTI */}
-                                            <div className="p-3 rounded-md bg-[#3498DB] ">
-                                                <p className="font-semibold mb-2 text-white">Selecciona uno o varios seguros</p>
-                                                <div className="flex flex-col gap-2 text-white">
-                                                    {loadingSeguros && <span>Cargando seguros...</span>}
-                                                    {!loadingSeguros && seguros.map((s: any) => (
-                                                        <label key={`m1-${s.id}`} className="flex items-center gap-2">
-                                                            <input
-                                                                type="checkbox"
-                                                                value={String(s.id)}
-                                                                className="checkbox checkbox-sm"
-                                                                {...register("segurosIds1")}
-                                                                disabled={!showMotos || !incluirMoto1}
-                                                            />
-                                                            <span>{s.nombre} – {Number(s.valor).toLocaleString("es-CO")} COP</span>
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                                <div className="mt-2">
-                                                    <FormInput<FormValues>
-                                                        name="otroSeguro1" label="Otros seguros (monto adicional)" control={control}
-                                                        placeholder="0" type="number" disabled={!showMotos || !incluirMoto1}
-                                                        rules={{ setValueAs: (v) => (v === "" ? "" : Number(v)) }}
+                                    {/* SEGUROS MULTI */}
+                                    <div className="p-3 rounded-md bg-[#3498DB] ">
+                                        <p className="font-semibold mb-2 text-white">Selecciona uno o varios seguros</p>
+                                        <div className="flex flex-col gap-2 text-white">
+                                            {loadingSeguros && <span>Cargando seguros...</span>}
+                                            {!loadingSeguros && seguros.map((s: any) => (
+                                                <label key={`m1-${s.id}`} className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        value={String(s.id)}
+                                                        className="checkbox checkbox-sm"
+                                                        {...register("segurosIds1")}
+                                                        disabled={!showMotos || !incluirMoto1}
                                                     />
-                                                </div>
-                                            </div>
+                                                    <span>{s.nombre} – {Number(s.valor).toLocaleString("es-CO")} COP</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                        <div className="mt-2">
+                                            <FormInput<FormValues>
+                                                name="otroSeguro1" label="Otros seguros (monto adicional)" control={control}
+                                                placeholder="0" type="number" disabled={!showMotos || !incluirMoto1}
+                                                rules={{ setValueAs: (v) => (v === "" ? "" : Number(v)) }}
+                                            />
+                                        </div>
+                                    </div>
+
+
+                                    {moto1Seleccionada && (
+                                        <>
 
                                             <FormInput<FormValues>
                                                 name="cuotaInicial1" label="Cuota inicial" control={control} type="number"
@@ -830,32 +836,39 @@ const CotizacionFormulario: React.FC = () => {
                                                 }}
                                             />
 
-                                            {/* SEGUROS MULTI */}
-                                            <div className="p-3 rounded-md bg-[#3498DB]">
-                                                <p className="font-semibold mb-2 text-white">Selecciona uno o varios seguros</p>
-                                                <div className="flex flex-col gap-2 text-white">
-                                                    {loadingSeguros && <span>Cargando seguros...</span>}
-                                                    {!loadingSeguros && seguros.map((s: any) => (
-                                                        <label key={`m2-${s.id}`} className="flex items-center gap-2">
-                                                            <input
-                                                                type="checkbox"
-                                                                value={String(s.id)}
-                                                                className="checkbox checkbox-sm"
-                                                                {...register("segurosIds2")}
-                                                                disabled={!showMotos || !incluirMoto2}
-                                                            />
-                                                            <span>{s.nombre} – {Number(s.valor).toLocaleString("es-CO")} COP</span>
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                                <div className="mt-2">
-                                                    <FormInput<FormValues>
-                                                        name="otroSeguro2" label="Otros seguros (monto adicional)" control={control}
-                                                        placeholder="0" type="number" disabled={!showMotos || !incluirMoto2}
-                                                        rules={{ setValueAs: (v) => (v === "" ? "" : Number(v)) }}
+                                        </>
+                                    )}
+
+                                    {/* SEGUROS MULTI ------------------------------------------ */}
+                                    <div className="p-3 rounded-md bg-[#3498DB]">
+                                        <p className="font-semibold mb-2 text-white">Selecciona uno o varios seguros</p>
+                                        <div className="flex flex-col gap-2 text-white">
+                                            {loadingSeguros && <span>Cargando seguros...</span>}
+                                            {!loadingSeguros && seguros.map((s: any) => (
+                                                <label key={`m2-${s.id}`} className="flex items-center gap-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        value={String(s.id)}
+                                                        className="checkbox checkbox-sm"
+                                                        {...register("segurosIds2")}
+                                                        disabled={!showMotos || !incluirMoto2}
                                                     />
-                                                </div>
-                                            </div>
+                                                    <span>{s.nombre} – {Number(s.valor).toLocaleString("es-CO")} COP</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                        <div className="mt-2">
+                                            <FormInput<FormValues>
+                                                name="otroSeguro2" label="Otros seguros (monto adicional)" control={control}
+                                                placeholder="0" type="number" disabled={!showMotos || !incluirMoto2}
+                                                rules={{ setValueAs: (v) => (v === "" ? "" : Number(v)) }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {moto2Seleccionada && (
+                                        <>                                            {/* SEGUROS MULTI ------------------------------------------ */}
+
 
                                             <FormInput<FormValues>
                                                 name="cuotaInicial2" label="Cuota inicial" control={control} type="number" placeholder="0"

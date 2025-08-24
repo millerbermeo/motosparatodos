@@ -1,6 +1,6 @@
 // src/components/creditos/CambiarEstadoCredito.tsx
 import React from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { FormInput } from "../../../shared/components/FormInput";
 import { FormSelect, type SelectOption } from "../../../shared/components/FormSelect";
 import Swal from "sweetalert2";
@@ -12,31 +12,38 @@ type Props = { codigo_credito: string | number };
 type CambiarEstadoValues = {
   estado: "Pendiente" | "Aprobado" | "No viable" | "";
   comentario: string;
+  // archivos locales del form
+  formato_referenciacion?: File | null;
+  datacredito_deudor1?: File | null;
 };
 
 const optionsEstado: SelectOption[] = [
   { value: "Pendiente", label: "Pendiente" },
   { value: "Aprobado", label: "Aprobado" },
-  { value: "No viable", label: "No viable" }, // ← valor consistente
+  { value: "No viable", label: "No viable" },
 ];
 
 const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito }) => {
   const cambiar = useCambiarEstadoCredito();
-  const { user } = useAuthStore(); // ← trae name y rol
+  const { user } = useAuthStore();
 
   const {
     control,
     handleSubmit,
     formState: { isSubmitting },
+    watch,
   } = useForm<CambiarEstadoValues>({
     defaultValues: { estado: "" as any, comentario: "" },
     mode: "onBlur",
   });
 
+  const isAprobado = watch("estado") === "Aprobado";
+
   const onSubmit = async (values: CambiarEstadoValues) => {
     const nombre_usuario = user?.name ?? "Usuario";
     const rol_usuario = user?.rol ?? "Usuario";
 
+    // Confirmación
     const res = await Swal.fire({
       title: "¿Confirmar cambio de estado?",
       html: `
@@ -52,7 +59,6 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito }) => {
       confirmButtonText: "Sí, cambiar",
       cancelButtonText: "Cancelar",
     });
-
     if (!res.isConfirmed) return;
 
     await cambiar.mutateAsync({
@@ -62,6 +68,9 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito }) => {
         comentario: values.comentario.trim(),
         nombre_usuario,
         rol_usuario,
+        // 👉 pasar archivos al hook (si no es Aprobado irán como null/undefined y no se adjuntan)
+        formato_referenciacion: values.formato_referenciacion ?? null,
+        datacredito_deudor1: values.datacredito_deudor1 ?? null,
       },
     });
   };
@@ -90,16 +99,82 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito }) => {
           label="Comentario *"
           control={control}
           placeholder="Describa el motivo del cambio"
-          rules={{ required: "El comentario es obligatorio", minLength: { value: 3, message: "Mínimo 3 caracteres" } }}
+          rules={{
+            required: "El comentario es obligatorio",
+            minLength: { value: 3, message: "Mínimo 3 caracteres" },
+          }}
           className="md:col-span-1"
         />
       </div>
+
+      {/* Campos EXTRAS solo para Aprobado */}
+      {isAprobado && (
+        <div className="grid grid-cols-1 gap-3">
+          <Controller
+            name="formato_referenciacion"
+            control={control}
+            rules={{ required: "El formato de referenciación es obligatorio" }}
+            render={({ field, fieldState }) => (
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Formato de referenciación *</span>
+                </label>
+                <input
+                  type="file"
+                  className="file-input file-input-bordered w-full"
+                  onChange={(e) => field.onChange(e.target.files?.[0] ?? null)}
+                />
+                {fieldState.error && (
+                  <span className="text-error text-xs mt-1">{fieldState.error.message}</span>
+                )}
+              </div>
+            )}
+          />
+
+          <Controller
+            name="datacredito_deudor1"
+            control={control}
+            rules={{ required: "El Datacrédito del deudor 1 es obligatorio" }}
+            render={({ field, fieldState }) => (
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Datacrédito deudor 1 *</span>
+                </label>
+                <input
+                  type="file"
+                  className="file-input file-input-bordered w-full"
+                  onChange={(e) => field.onChange(e.target.files?.[0] ?? null)}
+                />
+                {fieldState.error && (
+                  <span className="text-error text-xs mt-1">{fieldState.error.message}</span>
+                )}
+              </div>
+            )}
+          />
+
+          <div>
+            <button
+              type="button"
+              className="btn btn-accent w-full"
+              onClick={() => {
+                // tu lógica para descargar la tabla de amortización
+              }}
+            >
+              Descargar tabla de amortización
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-end gap-2 pt-2">
         <button className="btn btn-ghost" type="button" onClick={() => window.history.back()}>
           Cancelar
         </button>
-        <button className="btn btn-primary" type="submit" disabled={isSubmitting || cambiar.isPending}>
+        <button
+          className="btn btn-primary"
+          type="submit"
+          disabled={isSubmitting || cambiar.isPending}
+        >
           Guardar
         </button>
       </div>

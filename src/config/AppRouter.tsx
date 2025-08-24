@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import PrivateRoute from "./PrivateRoute";
 import RequireModule from "./RequireModule"; // 👈
-import CreditoDetalle from "../features/creditos/CreditoDetalle";
+
 
 const Home = lazy(() => import("../pages/Home"));
 const Login = lazy(() => import("../pages/Login"));
@@ -31,6 +31,9 @@ const CrearCotizaciones = lazy(() => import("../pages/CrearCotizaciones")); // �
 
 const CreditosForm = lazy(() => import("../pages/CreditosForm")); // 👈 crea esta página simple
 const DetalleEstado = lazy(() => import("../pages/DetalleEstado")); // 👈 crea esta página simple
+const CreditoDetalle = lazy(() => import("../features/creditos/CreditoDetalle")); // 👈 crea esta página simple
+const CreditoDetalleAdmin = lazy(() => import("../features/creditos/CreditoDetalleAdmin")); // 👈 crea esta página simple
+const CreditoDetalleAsesor = lazy(() => import("../features/creditos/CreditoDetalleAsesor")); // 👈 crea esta página simple
 
 
 
@@ -74,7 +77,11 @@ const AppRouter: React.FC = () => {
               <Route element={<RequireModule name="Créditos" />}>
                 <Route path="/creditos" element={<Creditos />} />
                 <Route path="/creditos/registrar/:id" element={<CreditosForm />} />
-                    <Route path="/creditos/detalle/:id" element={<CreditoDetalle />} />
+                <Route path="/creditos/detalle/:id" element={<CreditoDetalle />} />
+                <Route path="/creditos/detalle/cambiar-estado/:id" element={<CreditoDetalleAdmin />} />
+                <Route path="/creditos/detalle/cerrar-credito/:id" element={<CreditoDetalleAsesor />} />
+
+
               </Route>
 
 

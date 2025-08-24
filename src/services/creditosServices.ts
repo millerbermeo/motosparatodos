@@ -627,11 +627,16 @@ export type CambiarEstadoPayload = {
   comentario: string;
   nombre_usuario?: string;
   rol_usuario?: string;
+  // 👉 archivos opcionales (solo se enviarán si existen)
+  formato_referenciacion?: File | null;
+  datacredito_deudor1?: File | null;
 };
+
 export type CambiarEstadoInput = {
   codigo_credito: string | number;
   payload: CambiarEstadoPayload;
 };
+
 type CambiarEstadoResponse = { success?: boolean; message?: string; data?: any };
 
 export const useCambiarEstadoCredito = () => {
@@ -639,28 +644,51 @@ export const useCambiarEstadoCredito = () => {
 
   return useMutation<CambiarEstadoResponse, AxiosError<any>, CambiarEstadoInput>({
     mutationFn: async ({ codigo_credito, payload }) => {
-      // Fallback de auth por si el componente no lo manda
       const { user } = useAuthStore.getState();
-      const enriched = {
-        ...payload,
-        nombre_usuario: payload.nombre_usuario ?? user?.name ?? "Usuario",
-        rol_usuario: payload.rol_usuario ?? user?.rol ?? "Usuario",
-      };
 
-      const { data } = await api.put<CambiarEstadoResponse>("/cambiar_estado_credito.php", enriched, {
-        params: { codigo_credito },
-        headers: { "Content-Type": "application/json" },
-      });
+      const nombre_usuario = payload.nombre_usuario ?? user?.name ?? "Usuario";
+      const rol_usuario = payload.rol_usuario ?? user?.rol ?? "Usuario";
+
+      // 👉 multipart/form-data
+      const fd = new FormData();
+      fd.append("codigo_credito", String(codigo_credito));
+      fd.append("estado", payload.estado);
+      fd.append("comentario", payload.comentario);
+      fd.append("nombre_usuario", nombre_usuario);
+      fd.append("rol_usuario", rol_usuario);
+
+      // Adjuntar archivos solo si existen
+      if (payload.formato_referenciacion) {
+        fd.append("formato_referenciacion", payload.formato_referenciacion);
+      }
+      if (payload.datacredito_deudor1) {
+        fd.append("datacredito_deudor1", payload.datacredito_deudor1);
+      }
+
+      // Si tu back exige PUT, puedes usar api.put con fd (Axios lo permite);
+      // aquí uso POST, ajusta según tu endpoint.
+      const { data } = await api.post<CambiarEstadoResponse>(
+        "/cambiar_estado_credito.php",
+        fd,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
       return data;
     },
+
     onSuccess: async (resp, vars) => {
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["creditos"] }),
         qc.invalidateQueries({ queryKey: ["credito", vars.codigo_credito] }),
         qc.invalidateQueries({ queryKey: ["comentarios", vars.codigo_credito] }),
       ]);
-      Swal.fire({ icon: "success", title: resp?.message || "Estado actualizado", timer: 1500, showConfirmButton: false });
+      Swal.fire({
+        icon: "success",
+        title: resp?.message || "Estado actualizado",
+        timer: 1500,
+        showConfirmButton: false,
+      });
     },
+
     onError: (error) => {
       const raw = (error as AxiosError<any>)?.response?.data?.message ?? "Error al cambiar estado";
       const arr = Array.isArray(raw) ? raw : [raw];
@@ -668,7 +696,6 @@ export const useCambiarEstadoCredito = () => {
     },
   });
 };
-
 
 
 

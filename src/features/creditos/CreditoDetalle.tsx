@@ -1,20 +1,19 @@
 import React from 'react';
 import {
     BadgeCheck, Building2, CalendarDays, CheckCircle2, CheckSquare, ClipboardCheck, Download,
-    FileDown, FileSignature, Fingerprint, History, Info, LibraryBig, Mail,
+    FileDown, FileMinusIcon, FileSignature, Fingerprint, History, Info, LibraryBig, Mail,
     MessageCircle,
     MessageSquarePlus,
     ShieldCheck, User2, Wrench,
     X,
 } from 'lucide-react';
 import { useCredito, useDeudor } from '../../services/creditosServices';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import ChipButton from '../../shared/components/ChipButton';
 import ChatThread from './ChatThread';
 import { useModalStore } from '../../store/modalStore';
 import ComentarioFormulario from './ComentarioFormulario';
-import CerrarCreditoFormulario from './forms/CerrarCreditoFormulario';
-import CambiarEstadoCredito from './forms/CambiarEstadoCredito';
+import { useAuthStore } from '../../store/auth.store';
 
 
 const fmtCOP = (v: number) =>
@@ -126,6 +125,11 @@ const CreditoDetalle: React.FC = () => {
         console.log("👉 Pasando a incompleto...");
     };
 
+
+    const tieneDatosMoto = Boolean(
+        moto?.numeroMotor || moto?.numeroChasis || moto?.placa
+    );
+
     return (
         <main className="min-h-screen w-full bg-gradient-to-b from-white to-slate-50">
             {/* Header */}
@@ -199,32 +203,34 @@ const CreditoDetalle: React.FC = () => {
                                 <Row label="Placa" value={moto?.placa} />
 
 
-                                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    <ChipButton
-                                        label="Descargar solicitud"
-                                        icon={<ClipboardCheck className="w-4 h-4" />}
-                                        onClick={fakeDownload('Solicitud de crédito')}
-                                        color="bg-blue-500 hover:bg-blue-600"
-                                    />
-                                    <ChipButton
-                                        label="Descargar formato"
-                                        icon={<FileSignature className="w-4 h-4" />}
-                                        onClick={fakeDownload('Formato de referenciación')}
-                                        color="bg-green-500 hover:bg-green-600"
-                                    />
-                                    <ChipButton
-                                        label="Descargar carta"
-                                        icon={<Mail className="w-4 h-4" />}
-                                        onClick={fakeDownload('Carta de aprobación')}
-                                        color="bg-purple-500 hover:bg-purple-600"
-                                    />
-                                    <ChipButton
-                                        label="Descargar RUNT"
-                                        icon={<Fingerprint className="w-4 h-4" />}
-                                        onClick={fakeDownload('RUNT')}
-                                        color="bg-orange-500 hover:bg-orange-600"
-                                    />
-                                </div>
+                                {estado === 'Aprobado' && (
+                                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <ChipButton
+                                            label="Descargar solicitud"
+                                            icon={<ClipboardCheck className="w-4 h-4" />}
+                                            onClick={fakeDownload('Solicitud de crédito')}
+                                            color="bg-blue-500 hover:bg-blue-600"
+                                        />
+                                        <ChipButton
+                                            label="Descargar formato"
+                                            icon={<FileSignature className="w-4 h-4" />}
+                                            onClick={fakeDownload('Formato de referenciación')}
+                                            color="bg-green-500 hover:bg-green-600"
+                                        />
+                                        <ChipButton
+                                            label="Descargar carta"
+                                            icon={<Mail className="w-4 h-4" />}
+                                            onClick={fakeDownload('Carta de aprobación')}
+                                            color="bg-purple-500 hover:bg-purple-600"
+                                        />
+                                        <ChipButton
+                                            label="Descargar RUNT"
+                                            icon={<Fingerprint className="w-4 h-4" />}
+                                            onClick={fakeDownload('RUNT')}
+                                            color="bg-orange-500 hover:bg-orange-600"
+                                        />
+                                    </div>
+                                )}
                             </div>
 
 
@@ -236,50 +242,41 @@ const CreditoDetalle: React.FC = () => {
                                 <Row label="Fecha de entrega" value={moto?.fechaEntrega} />
 
 
-                                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    <ChipButton
-                                        label="Descargar firmas de solicitud"
-                                        icon={<FileDown className="w-4 h-4" />}
-                                        onClick={!firmasHref ? fakeDownload('Firmas de solicitud') : undefined}
-                                        color="bg-pink-500 hover:bg-pink-600"
-                                    />
-                                    <ChipButton
-                                        label="Descargar tabla"
-                                        icon={<History className="w-4 h-4" />}
-                                        onClick={fakeDownload('Tabla de amortización')}
-                                        color="bg-indigo-500 hover:bg-indigo-600"
-                                    />
-                                    <ChipButton
-                                        label="Descargar paquete"
-                                        icon={<ShieldCheck className="w-4 h-4" />}
-                                        onClick={fakeDownload('Paquete de crédito')}
-                                        color="bg-teal-500 hover:bg-teal-600"
-                                    />
-                                    <ChipButton
-                                        label="Descargar Garantía"
-                                        icon={<BadgeCheck className="w-4 h-4" />}
-                                        onClick={fakeDownload('Garantía extendida')}
-                                        color="bg-red-500 hover:bg-red-600"
-                                    />
-                                </div>
+                                {estado === 'Aprobado' && (
+                                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <ChipButton
+                                            label="Descargar firmas de solicitud"
+                                            icon={<FileDown className="w-4 h-4" />}
+                                            onClick={!firmasHref ? fakeDownload('Firmas de solicitud') : undefined}
+                                            color="bg-pink-500 hover:bg-pink-600"
+                                        />
+                                        <ChipButton
+                                            label="Descargar tabla"
+                                            icon={<History className="w-4 h-4" />}
+                                            onClick={fakeDownload('Tabla de amortización')}
+                                            color="bg-indigo-500 hover:bg-indigo-600"
+                                        />
+                                        <ChipButton
+                                            label="Descargar paquete"
+                                            icon={<ShieldCheck className="w-4 h-4" />}
+                                            onClick={fakeDownload('Paquete de crédito')}
+                                            color="bg-teal-500 hover:bg-teal-600"
+                                        />
+                                        <ChipButton
+                                            label="Descargar Garantía"
+                                            icon={<BadgeCheck className="w-4 h-4" />}
+                                            onClick={fakeDownload('Garantía extendida')}
+                                            color="bg-red-500 hover:bg-red-600"
+                                        />
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
                 </section>
 
 
-                      {/* CAMBIAR ESTADO ACCESOR */}
 
-                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
-                    <CambiarEstadoCredito codigo_credito={codigo_credito} />
-                </section>
-
-
-                {/* CERRAR CREDITO */}
-
-                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
-                    <CerrarCreditoFormulario codigo_credito={codigo_credito} />
-                </section>
 
                 {/* Información personal */}
                 <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -368,36 +365,54 @@ const CreditoDetalle: React.FC = () => {
                     </div>
                 </section>
 
+
                 {/* Soportes */}
-                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                    <div className="p-4 sm:p-6">
-                        <h2 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2 text-slate-800">
-                            <FileSignature className="w-5 h-5" /> Soportes
-                        </h2>
-                        <div className="bg-slate-50 p-4 rounded-xl ring-1 ring-slate-200">
-                            <Row label="Soporte PDF" value={<a href="#" className="text-blue-600 underline">solicitud.pdf</a>} />
-                        </div>
-                    </div>
-                </section>
+                <section >
+                    <details className="collapse bg-base-100 border-base-300 border">
+                        <summary className="collapse-title font-semibold">
+                            <h2 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2 text-slate-800">
+                                <FileSignature className="w-5 h-5" /> Soportes
+                            </h2>
+                        </summary>
+                        <div className="collapse-content text-sm">
 
-
-
-                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                    <div className='px-6 pt-6'>
-                        <h2 className="text-base sm:text-lg font-semibold  flex items-center gap-2 text-slate-800">
-                            <MessageCircle className="w-5 h-5" /> Comentarios Realizados
-                        </h2>
-                    </div>
-                    <div className="sticky mb-5 top-0 z-10 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 ">
-                        <div className="px-6 mt-2">
-                            <div className="grid grid-cols-2 text-center text-xs sm:text-sm font-medium text-neutral-600">
-                                <div className="py-1 rounded-lg bg-neutral-100">Asesor</div>
-                                <div className="py-1 rounded-lg bg-neutral-100">Administrador</div>
+                            <div className="bg-slate-50 p-4 rounded-xl ring-1 ring-slate-200">
+                                <Row label="Soporte PDF" value={<a href="#" className="text-blue-600 underline">solicitud.pdf</a>} />
                             </div>
+
                         </div>
-                    </div>
-                    <ChatThread />
+                    </details>
+
                 </section>
+
+
+
+                <section >
+                    <details className="collapse bg-base-100 border-base-300 border">
+                        <summary className="collapse-title font-semibold">
+                            <h2 className="text-base sm:text-lg font-semibold  flex items-center gap-2 text-slate-800">
+                                <MessageCircle className="w-5 h-5" /> Comentarios Realizados
+                            </h2>
+                        </summary>
+                        <div className="collapse-content text-sm">
+
+                            <div className="sticky mb-5 top-0 z-10 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 ">
+                                <div className="px-6 mt-2">
+                                    <div className="grid grid-cols-2 text-center text-xs sm:text-sm font-medium text-neutral-600">
+                                        <div className="py-1 rounded-lg bg-neutral-100">Asesor</div>
+                                        <div className="py-1 rounded-lg bg-neutral-100">Administrador</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <ChatThread />
+                        </div>
+                    </details>
+
+                </section>
+
+
+
+
 
                 <section className="rounded-2xl flex gap-5 p-6 border border-slate-200 bg-white shadow-sm">
                     <button
@@ -408,21 +423,43 @@ const CreditoDetalle: React.FC = () => {
                         <MessageSquarePlus className="w-4 h-4" />
                         Agregar comentario
                     </button>
-                    <button
-                        className="btn flex items-center gap-2"
-                        onClick={handleEliminar}
-                    >
-                        <X className="w-4 h-4" />
-                        Eliminar garantía extendida
-                    </button>
+                    
+                    {useAuthStore.getState().user?.rol === "Asesor" && estado === 'Aprobado' && !tieneDatosMoto && (
+                        <>
+                            <Link to={`/creditos/detalle/cerrar-credito/${codigo_credito}`}>
+                                <button className="btn flex btn-warning items-center gap-2">
+                                    <FileMinusIcon className="w-4 h-4" />
+                                    Cerrar Crédito
+                                </button>
+                            </Link>
+                        </>
+                    )}
 
-                    <button
-                        className="btn bg-sky-400 hover:bg-sky-500 text-white flex items-center gap-2"
-                        onClick={handleIncompleto}
-                    >
-                        <CheckSquare className="w-4 h-4" />
-                        Pasar a incompleto
-                    </button>
+
+
+                    {useAuthStore.getState().user?.rol === "Administrador" && (
+
+                        <>
+                            <button
+                                className="btn flex items-center gap-2"
+                                onClick={handleEliminar}
+                            >
+                                <X className="w-4 h-4" />
+                                Eliminar garantía extendida
+                            </button>
+
+
+                            <button
+                                className="btn bg-sky-400 hover:bg-sky-500 text-white flex items-center gap-2"
+                                onClick={handleIncompleto}
+                            >
+                                <CheckSquare className="w-4 h-4" />
+                                Pasar a incompleto
+                            </button>
+                        </>
+                    )}
+
+
                 </section>
 
             </div>

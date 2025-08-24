@@ -29,7 +29,7 @@ const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito }) => {
     formState: { isSubmitting },
   } = useForm<CerrarCreditoValues>({
     defaultValues: {
-      cerrar_credito: false,
+      cerrar_credito: true,
       color: "",
       capacidad: "",
       numero_motor: "",
@@ -93,6 +93,7 @@ const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito }) => {
       <div className="flex items-center justify-between border-b border-success pb-2">
         <label className="label cursor-pointer gap-2">
           <input
+          disabled
             type="checkbox"
             className="checkbox checkbox-success"
             checked={enabled}
@@ -108,106 +109,112 @@ const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <FormInput<CerrarCreditoValues>
-          name="color"
-          label="Color*"
-          control={control}
-          placeholder="Color de la motocicleta"
-          disabled={!enabled}
-          rules={
-            enabled
-              ? { required: "El color es obligatorio", minLength: { value: 3, message: "Mínimo 3 caracteres" } }
-              : undefined
-          }
-        />
-
-        <FormInput<CerrarCreditoValues>
-          name="capacidad"
-          label="Capacidad*"
-          control={control}
-          placeholder="Capacidad (125 c.c., 99 c.c....)"
-          disabled={!enabled}
-          rules={
-            enabled
-              ? {
-                  required: "La capacidad es obligatoria",
-                  pattern: { value: /^\d{2,4}(\s*c\.?c\.?)?$/i, message: "Usa números y opcional 'c.c.' (ej: 125 c.c.)" },
-                }
-              : undefined
-          }
-        />
-
-        <FormInput<CerrarCreditoValues>
-          name="numero_motor"
-          label="Número de motor*"
-          control={control}
-          placeholder="Número de motor"
-          disabled={!enabled}
-          rules={
-            enabled
-              ? {
-                  required: "El número de motor es obligatorio",
-                  pattern: { value: /^[A-Z0-9-]{5,}$/i, message: "Solo letras, números o guiones (mín. 5)" },
-                }
-              : undefined
-          }
-        />
-
-        <FormInput<CerrarCreditoValues>
-          name="numero_chasis"
-          label="Número de chasis*"
-          control={control}
-          placeholder="Número de chasis"
-          disabled={!enabled}
-          rules={
-            enabled
-              ? {
-                  required: "El número de chasis es obligatorio",
-                  pattern: { value: /^[A-Z0-9-]{5,}$/i, message: "Solo letras, números o guiones (mín. 5)" },
-                }
-              : undefined
-          }
-        />
-
-        <div className="md:col-span-2">
+      <div className={`overflow-hidden ${enabled ? 'h-auto' : 'h-0'}`}>
+        <div className={`grid grid-cols-1 md:grid-cols-2 overflow-hidden gap-3 p-1`}>
           <FormInput<CerrarCreditoValues>
-            name="placa"
-            label="Placa"
+            name="color"
+            label="Color*"
             control={control}
-            placeholder="Placa"
+            placeholder="Color de la motocicleta"
+            disabled={!enabled}
+            rules={
+              enabled
+                ? { required: "El color es obligatorio", minLength: { value: 3, message: "Mínimo 3 caracteres" } }
+                : undefined
+            }
+          />
+
+          <FormInput<CerrarCreditoValues>
+            name="capacidad"
+            label="Capacidad*"
+            control={control}
+            placeholder="Capacidad (125 c.c., 99 c.c....)"
             disabled={!enabled}
             rules={
               enabled
                 ? {
+                  required: "La capacidad es obligatoria",
+                  pattern: { value: /^\d{2,4}(\s*c\.?c\.?)?$/i, message: "Usa números y opcional 'c.c.' (ej: 125 c.c.)" },
+                }
+                : undefined
+            }
+          />
+
+          <FormInput<CerrarCreditoValues>
+            name="numero_motor"
+            label="Número de motor*"
+            control={control}
+            placeholder="Número de motor"
+            disabled={!enabled}
+            rules={
+              enabled
+                ? {
+                  required: "El número de motor es obligatorio",
+                  pattern: { value: /^[A-Z0-9-]{5,}$/i, message: "Solo letras, números o guiones (mín. 5)" },
+                }
+                : undefined
+            }
+          />
+
+          <FormInput<CerrarCreditoValues>
+            name="numero_chasis"
+            label="Número de chasis*"
+            control={control}
+            placeholder="Número de chasis"
+            disabled={!enabled}
+            rules={
+              enabled
+                ? {
+                  required: "El número de chasis es obligatorio",
+                  pattern: { value: /^[A-Z0-9-]{5,}$/i, message: "Solo letras, números o guiones (mín. 5)" },
+                }
+                : undefined
+            }
+          />
+
+          <div className="md:col-span-2">
+            <FormInput<CerrarCreditoValues>
+              name="placa"
+              label="Placa"
+              control={control}
+              placeholder="Placa"
+              disabled={!enabled}
+              rules={
+                enabled
+                  ? {
                     validate: (value: string | boolean) => {
                       const v = typeof value === "string" ? value.trim() : "";
                       if (!v) return true;
                       return /^[A-Z0-9-]{5,8}$/i.test(v) || "Formato de placa inválido";
                     },
                   }
-                : undefined
-            }
-          />
+                  : undefined
+              }
+            />
+          </div>
+
+
+        </div>
+
+        <div className="flex justify-end w-full gap-2 pt-2">
+          <button
+            className="btn btn-ghost"
+            type="button"
+            // onClick={() => window.history.back()}
+          >
+            Cancelar
+          </button>
+          <button
+            className="btn btn-primary"
+            type="submit"
+            disabled={!enabled || isSubmitting || cerrar.isPending}
+          >
+            Guardar cierre
+          </button>
         </div>
       </div>
 
-      <div className="flex justify-end gap-2 pt-2">
-        <button
-          className="btn btn-ghost"
-          type="button"
-          onClick={() => window.history.back()}
-        >
-          Cancelar
-        </button>
-        <button
-          className="btn btn-primary"
-          type="submit"
-          disabled={!enabled || isSubmitting || cerrar.isPending}
-        >
-          Guardar cierre
-        </button>
-      </div>
+
     </form>
   );
 };
