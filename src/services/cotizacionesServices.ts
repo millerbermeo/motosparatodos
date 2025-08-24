@@ -66,12 +66,21 @@ export interface ApiListResponse {
  * - queryKey incluye la página para cachear/invalidate por página
  * - keepPreviousData evita flicker entre páginas
  */
-export const useCotizaciones = (page: number = 1, perPage: number = 10) => {
+// src/services/cotizacionesServices.ts
+export const useCotizaciones = (
+  page: number = 1,
+  perPage: number = 10,
+  estado?: string   // 👈 nuevo param opcional
+) => {
   return useQuery<ApiListResponse>({
-    queryKey: ['cotizaciones', { page, perPage }],
+    queryKey: ['cotizaciones', { page, perPage, estado }],
     queryFn: async () => {
       const { data } = await api.get<ApiListResponse>('/list_cotizaciones.php', {
-        params: { page, per_page: perPage },
+        params: { 
+          page, 
+          per_page: perPage,
+          ...(estado ? { estado } : {}), // 👈 solo lo manda si tiene valor
+        },
       });
       return data;
     },
@@ -102,5 +111,38 @@ export const useUpdateCotizacion = () => {
       const arr = Array.isArray(raw) ? raw : [raw];
       Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
     },
+  });
+};
+
+
+
+// types.ts (o en tu services)
+export interface Persona {
+  id: number;         // el backend devuelve id; usamos number
+  name?: string;    // segundo nombre / nombre corto
+  cedula?: string;
+  [k: string]: any;
+}
+
+type PersonasResponse =
+  | Persona[]
+  | { success: boolean; data: Persona[] }; // por si devuelves objeto
+
+export const useBuscarPersonas = (qInput: string) => {
+  const q = (qInput ?? "").trim();
+
+  return useQuery<Persona[]>({
+    queryKey: ["personas-search", q],
+    enabled: q.length >= 2,
+    queryFn: async () => {
+      const { data } = await api.get<PersonasResponse>("/select_cotizacion.php", {
+        params: { q }, // <-- backend espera 'q'
+      });
+
+      const list = Array.isArray(data) ? data : (data && data.data) ? data.data : [];
+      // Normaliza a número por si el backend envía string
+      return list.map(p => ({ ...p, id: Number(p.id) }));
+    },
+    staleTime: 60_000, // 1 min
   });
 };

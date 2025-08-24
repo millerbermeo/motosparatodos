@@ -315,10 +315,17 @@ export interface Credito {
 
 }
 
+export interface PaginationMeta {
+  total: number;
+  per_page: number;
+  current_page: number;
+  last_page: number;
+}
 export interface ListCreditosResponseRaw {
   success?: boolean;
-  creditos?: CreditoRaw[];            // según la captura
-  data?: CreditoRaw[];                // por si el backend envía {data:[]}
+  creditos?: CreditoRaw[]; // lo que ya tenías
+  data?: CreditoRaw[];     // por si backend manda {data:[]}
+  pagination?: PaginationMeta;
   message?: string;
 }
 
@@ -359,18 +366,57 @@ const mapCredito = (r: CreditoRaw): Credito => ({
  *   const { data, isLoading, error } = useCreditos();
  *   // data: Credito[]
  */
-export const useCreditos = () => {
-  return useQuery<Credito[]>({
-    queryKey: ["creditos"],
+// export const useCreditos = () => {
+//   return useQuery<Credito[]>({
+//     queryKey: ["creditos"],
+//     queryFn: async () => {
+//       const { data } = await api.get<ListCreditosResponseRaw>("/list_creditos.php");
+//       const arr = Array.isArray(data?.creditos)
+//         ? data!.creditos!
+//         : Array.isArray(data?.data)
+//           ? data!.data!
+//           : [];
+//       return arr.map(mapCredito);
+//     },
+//   });
+// };
+
+
+export const useCreditos = (
+  page: number,
+  perPage: number = 10
+) => {
+  return useQuery<{
+    items: Credito[];
+    pagination: PaginationMeta;
+  }>({
+    queryKey: ["creditos", { page, perPage }],
     queryFn: async () => {
-      const { data } = await api.get<ListCreditosResponseRaw>("/list_creditos.php");
-      const arr = Array.isArray(data?.creditos)
+      const { data } = await api.get<ListCreditosResponseRaw>("/list_creditos.php", {
+        params: { page, per_page: perPage },
+      });
+
+      // items: tolera {creditos: []} o {data: []}
+      const rawArr: CreditoRaw[] = Array.isArray(data?.creditos)
         ? data!.creditos!
         : Array.isArray(data?.data)
-          ? data!.data!
-          : [];
-      return arr.map(mapCredito);
+        ? data!.data!
+        : [];
+
+      const items = rawArr.map(mapCredito);
+
+      // meta: si no viene desde backend, lo calculamos básico
+      const pagination: PaginationMeta =
+        data?.pagination ?? {
+          total: items.length,
+          per_page: perPage,
+          current_page: page,
+          last_page: Math.max(1, Math.ceil((data?.pagination?.total ?? items.length) / perPage)),
+        };
+
+      return { items, pagination };
     },
+    staleTime: 60_000,
   });
 };
 
@@ -622,3 +668,59 @@ export const useCambiarEstadoCredito = () => {
     },
   });
 };
+
+
+
+
+
+type CreditosResponse =
+  | Credito[]
+  | { success: boolean; data: Credito[] };
+
+// ===== Hook =====
+export const useBuscarCreditos = (qInput: string) => {
+  const q = (qInput ?? "").trim();
+
+  return useQuery<Credito[]>({
+    queryKey: ["creditos-search", q],
+    enabled: q.length >= 2,
+    queryFn: async () => {
+      // endpoint de tu backend nuevo: buscar_creditos.php
+      const { data } = await api.get<CreditosResponse>("/select_credito.php", {
+        params: { q },
+      });
+
+      const list = Array.isArray(data)
+        ? data
+        : data && Array.isArray((data as any).data)
+          ? (data as any).data
+          : [];
+
+      // Normaliza id a number por si viene como string
+      return list.map((c: any) => ({ ...c, id: Number(c.id) }));
+    },
+    staleTime: 60_000,
+  });
+};
+
+
+export interface OneCreditoResponse {
+  success: boolean;
+  data: CreditoRaw | CreditoRaw[] | null;
+}
+
+
+// ya tienes useCreditos(); aquí solo agregamos el "por id"
+export const useCreditoById = (id: number | null) =>
+  useQuery<Credito | null>({
+    queryKey: ["credito-by-id", id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data } = await api.get<OneCreditoResponse>("/list_creditos.php", { params: { id } });
+      const raw = (data as any)?.data;
+      if (!raw) return null;
+      // puede venir como objeto o arreglo
+      const c = Array.isArray(raw) ? raw[0] : raw;
+      return c ? { ...c, id: Number(c.id) } : null;
+    },
+  });

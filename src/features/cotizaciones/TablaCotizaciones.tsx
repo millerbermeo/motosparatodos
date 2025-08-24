@@ -1,9 +1,12 @@
 // src/components/cotizaciones/TablaCotizaciones.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { Eye, ScanEye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCotizaciones } from '../../services/cotizacionesServices';
 import { useAuthStore } from '../../store/auth.store';
+import SelectCotizaciones from './SelectCotizaciones';
+import { useCotizacionById } from '../../services/cotizacionesServices';
+
 
 /* =======================
    Paginación (mismo estilo que motos)
@@ -47,7 +50,7 @@ function getPaginationItems(
 
 const btnBase = 'btn btn-xs rounded-xl min-w-8 h-8 px-3 font-medium shadow-none border-0';
 const btnGhost = `${btnBase} btn-ghost bg-base-200 text-base-content/70 hover:bg-base-300`;
-const btnActive = `${btnBase} btn-primary text-primary-content`;
+const btnActive = `${btnBase} bg-[#3498DB] text-primary-content`;
 const btnEllipsis = 'btn btn-xs rounded-xl min-w-8 h-8 px-3 bg-base-200 text-base-content/60 pointer-events-none';
 
 
@@ -134,16 +137,40 @@ const estadoBadgeClass = (estado?: string) => {
    ======================= */
 const TablaCotizaciones: React.FC = () => {
     // server-side pagination (como lo tienes actualmente)
-    const [page, setPage] = React.useState(1);
-    const [perPage, setPerPage] = React.useState(10);
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(10); // 👈 arranca en 20
+    const [cotizacionId, setCotizacionId] = useState<number | null>(null);
+    const [estadoFilter, setEstadoFilter] = useState<string>('');
 
-    const { data, isLoading, isError, isFetching } = useCotizaciones(page, perPage);
 
-    const rows = data?.data ?? [];
-    const total = Number(data?.pagination?.total ?? rows.length ?? 0) || 0;
-    const serverPerPage = Number(data?.pagination?.per_page ?? perPage) || perPage;
-    const currentPage = Number(data?.pagination?.current_page ?? page) || page;
-    const lastPage = Number(data?.pagination?.last_page ?? Math.max(1, Math.ceil(total / serverPerPage)));
+    const {
+        data,
+        isLoading,
+        isError,
+        isFetching
+    } = cotizacionId ? useCotizacionById(cotizacionId) : useCotizaciones(page, perPage, estadoFilter);
+
+    // ¿estamos en modo "detalle por id"?
+    const isDetail = Boolean(cotizacionId);
+
+    // Normaliza rows:
+    // - En lista: data?.data (como ya lo tenías)
+    // - En detalle: toma SOLO data.data (no el wrapper {success,...})
+    const rows = React.useMemo(() => {
+        if (isDetail) {
+            const one = Array.isArray(data?.data) ? data?.data?.[0] : data?.data;
+            return one ? [one] : [];
+        }
+        return data?.data ?? [];
+    }, [isDetail, data]);
+
+    // Contadores/paginación: en detalle todo es 1 (o 0) y ocultamos los controles
+    const total = isDetail ? rows.length : Number(data?.pagination?.total ?? rows.length ?? 0) || 0;
+    const serverPerPage = isDetail ? rows.length : Number(data?.pagination?.per_page ?? perPage) || perPage;
+    const currentPage = isDetail ? 1 : Number(data?.pagination?.current_page ?? page) || page;
+    const lastPage = isDetail ? 1 : Number(
+        data?.pagination?.last_page ?? Math.max(1, Math.ceil(total / serverPerPage))
+    );
 
     const items = React.useMemo(() => getPaginationItems(currentPage, lastPage), [currentPage, lastPage]);
 
@@ -154,10 +181,13 @@ const TablaCotizaciones: React.FC = () => {
     const user = useAuthStore((state) => state.user);
 
 
+    // En el componente principal
     if (isLoading) {
         return (
             <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4">
-                Cargando cotizaciones…
+                {cotizacionId
+                    ? "Cargando detalle de la cotización…"
+                    : "Cargando cotizaciones…"}
             </div>
         );
     }
@@ -173,28 +203,58 @@ const TablaCotizaciones: React.FC = () => {
     const start = total === 0 ? 0 : (currentPage - 1) * serverPerPage + 1;
     const end = Math.min(currentPage * serverPerPage, total);
 
+
+    const cleanFilters = () => {
+        setCotizacionId(null);   // salir del modo detalle
+        setPage(1);              // volver a la primera página
+        setPerPage(10);          // tamaño por defecto (ajústalo si quieres 20)
+        setEstadoFilter('')
+    };
+
     return (
         <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
-            <div className="px-4 pt-4 flex items-center w-full justify-between gap-3 flex-wrap my-3">
-                <h3 className="text-sm font-semibold tracking-wide text-base-content/70">Módulo de cotizaciones</h3>
 
 
-                {user?.rol === "Asesor" && (
-                    <>
-                        <Link to="/cotizaciones/crear-cotizaciones">
-                            <button className="btn bg-[#2BB352] text-white">Crear Cotización</button>
-                        </Link>
-                    </>
-                )}
+            <div className="px-4 pt-4 flex flex-wrap items-center justify-between gap-4 my-3">
 
+                {/* Filtros */}
+                <div className="flex flex-wrap gap-3 flex-1 min-w-[250px]">
+                    <SelectCotizaciones
+                        onSelect={(id: string | number | null) => {
+                            if (id === null || id === '') return setCotizacionId(null);
+                            const n = typeof id === 'string' ? Number(id) : id;
+                            setCotizacionId(Number.isNaN(n) ? null : n);
+                        }}
+                    />
 
-            </div>
+                    <select
+                        className="select select-bordered select-md min-w-[180px] max-w-[200px] flex-1"
+                        value={estadoFilter}
+                        onChange={(e) => setEstadoFilter(e.target.value)}
+                    >
+                        <option value="">Todos los estados</option>
+                        <option value="Sin estado">Sin estado</option>
+                        <option value="Sin interés">Sin interés</option>
+                        <option value="Continúa interesado">Continúa interesado</option>
+                        <option value="Alto interés">Alto interés</option>
+                        <option value="Solicitar crédito">Solicitud de crédito</option>
+                        <option value="En facturación">En facturación</option>
+                        <option value="Facturado">Facturado</option>
+                    </select>
 
-            <div className="px-4 pt-4 flex items-center justify-between gap-3 flex-wrap my-3">
-                <div className="flex items-center gap-2">
+                    <button
+                        onClick={cleanFilters}
+                        className="btn btn-accent min-w-[150px]"
+                    >
+                        Limpiar Filtros
+                    </button>
+                </div>
+
+                {/* Opciones de paginación y crear */}
+                <div className="flex flex-wrap items-center gap-3 min-w-[220px] justify-end">
                     <label className="text-xs opacity-70">Filas:</label>
                     <select
-                        className="select select-bordered select-xs"
+                        className="select select-accent select-sm select-bordered w-20"
                         value={serverPerPage}
                         onChange={(e) => {
                             const v = Number(e.target.value) || 10;
@@ -207,16 +267,26 @@ const TablaCotizaciones: React.FC = () => {
                                 {n}
                             </option>
                         ))}
-
                     </select>
                     {isFetching && <span className="loading loading-spinner loading-xs" />}
+
+                    {user?.rol === "Asesor" && (
+                        <Link to="/cotizaciones/crear-cotizaciones">
+                            <button className="btn bg-[#2BB352] text-white min-w-[160px]">
+                                Crear Cotización
+                            </button>
+                        </Link>
+                    )}
                 </div>
             </div>
+
 
             <div className="relative overflow-x-auto max-w-full px-4">
                 <table className="table table-zebra table-pin-rows min-w-[1000px]">
                     <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
                         <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
+                            <th>Item</th>
+                            <th>Acciones</th>
                             <th>Asesor</th>
                             <th>Nombre cliente</th>
                             <th>Teléfono</th>
@@ -224,30 +294,16 @@ const TablaCotizaciones: React.FC = () => {
                             <th>Estado</th>
                             <th>Prospecto</th>
                             <th>Actualizado</th>
-                            <th className="text-right pr-6">Acciones</th>
                         </tr>
                     </thead>
 
                     <tbody className="[&>tr:hover]:bg-base-200/40">
+
                         {rows.map((r: any) => (
                             <tr key={r.id} className="transition-colors">
-                                <td className="text-sm text-base-content/70">{r?.asesor || '—'}</td>
-                                <td className="font-medium">{fullName(r)}</td>
-                                <td className="text-sm text-base-content/70">{r.celular || ''}</td>
-                                <td>{r.tipo_pago}</td>
-                                <td>
-                                    <span className={`badge ${estadoBadgeClass(r?.estado)}`}>{r?.estado || 'Sin estado'}</span>
-                                </td>
-                                <td>
-                                    <span className={`badge ${prospectoFrom(r) === 'SI' ? 'badge-success' : 'badge-ghost'}`}>
-                                        {prospectoFrom(r)}
-                                    </span>
-                                </td>
+                                <td className="text-sm text-base-content/70">{r?.id || '—'}</td>
                                 <td className="text-sm text-base-content/70">
-                                    {humanizeDesde(r?.fecha_actualizacion)} · {formatFechaLarga(r?.fecha_actualizacion)}
-                                </td>
-                                <td className="text-right">
-                                    <div className="flex justify-end gap-2">
+                                    <div className="flex justify-start gap-2">
                                         <Link to={`/cotizaciones/${r.id}`} className="btn btn-sm bg-white btn-circle" title="Ver cotización">
                                             <div className='text-info'>
                                                 <Eye size="18px" />
@@ -273,12 +329,30 @@ const TablaCotizaciones: React.FC = () => {
 
                                     </div>
                                 </td>
+
+                                <td className="text-sm text-base-content/70">{r?.asesor || '—'}</td>
+                                <td className="font-medium">{fullName(r)}</td>
+                                <td className="text-sm text-base-content/70">{r.celular || ''}</td>
+                                <td>{r.tipo_pago}</td>
+                                <td>
+                                    <span className={`badge ${estadoBadgeClass(r?.estado)}`}>{r?.estado || 'Sin estado'}</span>
+                                </td>
+                                <td>
+                                    <span className={`badge ${prospectoFrom(r) === 'SI' ? 'badge-success' : 'badge-ghost'}`}>
+                                        {prospectoFrom(r)}
+                                    </span>
+                                </td>
+                                <td className="text-sm text-base-content/70">
+                                    {humanizeDesde(r?.fecha_actualizacion)} · {formatFechaLarga(r?.fecha_actualizacion)}
+                                </td>
+
                             </tr>
                         ))}
                     </tbody>
 
                     <tfoot className="bg-base-200/60">
                         <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-base-content/70">
+                            <th>Acciones</th>
                             <th>Asesor</th>
                             <th>Nombre cliente</th>
                             <th>Teléfono</th>
@@ -286,7 +360,6 @@ const TablaCotizaciones: React.FC = () => {
                             <th>Estado</th>
                             <th>Prospecto</th>
                             <th>Actualizado</th>
-                            <th className="text-right pr-6">Acciones</th>
                         </tr>
                     </tfoot>
                 </table>
@@ -297,29 +370,32 @@ const TablaCotizaciones: React.FC = () => {
                     Mostrando {start}–{end} de {total}
                 </span>
 
-                <div className="flex items-center gap-2">
-                    <button className={btnGhost} onClick={goPrev} disabled={currentPage === 1}>
-                        «
-                    </button>
-                    {items.map((it, i) =>
-                        it === '...' ? (
-                            <span key={`e-${i}`} className={btnEllipsis}>
-                                …
-                            </span>
-                        ) : (
-                            <button
-                                key={`p-${it}`}
-                                className={Number(it) === currentPage ? btnActive : btnGhost}
-                                onClick={() => goTo(Number(it))}
-                            >
-                                {it}
-                            </button>
-                        )
-                    )}
-                    <button className={btnGhost} onClick={goNext} disabled={currentPage === lastPage}>
-                        »
-                    </button>
-                </div>
+                {!cotizacionId && (
+                    <div className="flex items-center gap-2">
+                        <button className={btnGhost} onClick={goPrev} disabled={currentPage === 1}>
+                            «
+                        </button>
+                        {items.map((it, i) =>
+                            it === '...' ? (
+                                <span key={`e-${i}`} className={btnEllipsis}>
+                                    …
+                                </span>
+                            ) : (
+                                <button
+                                    key={`p-${it}`}
+                                    className={Number(it) === currentPage ? btnActive : btnGhost}
+                                    onClick={() => goTo(Number(it))}
+                                >
+                                    {it}
+                                </button>
+                            )
+                        )}
+                        <button className={btnGhost} onClick={goNext} disabled={currentPage === lastPage}>
+                            »
+                        </button>
+                    </div>
+                )}
+
             </div>
         </div>
     );
