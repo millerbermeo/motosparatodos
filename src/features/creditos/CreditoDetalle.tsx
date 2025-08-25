@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-    BadgeCheck, Building2, CalendarDays, CheckCircle2, CheckSquare, ClipboardCheck, Download,
+    BadgeCheck, Building2, CalendarDays, Check, CheckCircle2, CheckSquare, ClipboardCheck, Download,
     FileDown, FileMinusIcon, FileSignature, Fingerprint, History, Info, LibraryBig, Mail,
     MessageCircle,
     MessageSquarePlus,
@@ -129,6 +129,13 @@ const CreditoDetalle: React.FC = () => {
     const tieneDatosMoto = Boolean(
         moto?.numeroMotor || moto?.numeroChasis || moto?.placa
     );
+
+
+    const soportes: string[] = credito?.soportes
+        ? JSON.parse(credito.soportes) // de string → array
+        : [];
+
+    const BaseUrl = import.meta.env.VITE_API_URL ?? "http://tuclick.vozipcolombia.net.co/motos/back";
 
     return (
         <main className="min-h-screen w-full bg-gradient-to-b from-white to-slate-50">
@@ -285,7 +292,7 @@ const CreditoDetalle: React.FC = () => {
                             <User2 className="w-5 h-5" /> Información personal del deudor
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="bg-slate-50 p-4 rounded-xl ring-1 ring-slate-200">
+                            <div className="bg-[#F1FCF6] p-4 rounded-xl ring-1 ring-success">
                                 <Row label="Tipo de documento" value={informacion_personal?.tipo_documento} />
                                 <Row label="Número de documento" value={informacion_personal?.numero_documento} />
                                 <Row label="Fecha de expedición" value={informacion_personal?.fecha_expedicion} />
@@ -295,7 +302,7 @@ const CreditoDetalle: React.FC = () => {
                                 <Row label="Fecha de nacimiento" value={informacion_personal?.fecha_nacimiento} />
                                 <Row label="Nivel de estudios" value={informacion_personal?.nivel_estudios} />
                             </div>
-                            <div className="bg-slate-50 p-4 rounded-xl ring-1 ring-slate-200">
+                            <div className="bg-[#F1FCF6] p-4 rounded-xl ring-1 ring-success">
                                 <Row label="Ciudad de residencia" value={informacion_personal?.ciudad_residencia} />
                                 <Row label="Barrio de residencia" value={informacion_personal?.barrio_residencia || '—'} />
                                 <Row label="Dirección de residencia" value={informacion_personal?.direccion_residencia} />
@@ -353,7 +360,7 @@ const CreditoDetalle: React.FC = () => {
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 {referencias.map((ref: any, idx: number) => (
-                                    <div key={idx} className="bg-slate-50 p-4 rounded-xl ring-1 ring-slate-200">
+                                    <div key={idx} className="bg-[#F0FAFF] p-4 rounded-xl ring-1 ring-info">
                                         <Row label="Nombres y apellidos" value={ref.nombre_completo} />
                                         <Row label="Dirección" value={ref.direccion} />
                                         <Row label="Tipo de referencia" value={ref.tipo_referencia} />
@@ -366,24 +373,40 @@ const CreditoDetalle: React.FC = () => {
                 </section>
 
 
-                {/* Soportes */}
-                <section >
+                <section>
                     <details className="collapse bg-base-100 border-base-300 border">
                         <summary className="collapse-title font-semibold">
                             <h2 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2 text-slate-800">
                                 <FileSignature className="w-5 h-5" /> Soportes
                             </h2>
                         </summary>
-                        <div className="collapse-content text-sm">
-
-                            <div className="bg-slate-50 p-4 rounded-xl ring-1 ring-slate-200">
-                                <Row label="Soporte PDF" value={<a href="#" className="text-blue-600 underline">solicitud.pdf</a>} />
-                            </div>
-
+                        <div className="collapse-content text-sm space-y-3">
+                            {soportes.length === 0 ? (
+                                <p className="text-slate-500">No hay soportes disponibles.</p>
+                            ) : (
+                                soportes.map((s, idx) => (
+                                    <div key={idx} className="bg-slate-50 p-4 rounded-xl ring-1 ring-slate-200">
+                                        <Row
+                                            label={`Soporte ${idx + 1}`}
+                                            value={
+                                                <a
+                                                    href={`${BaseUrl}/${s}`} // construye la ruta completa
+                                                    download
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-blue-600 underline"
+                                                >
+                                                    {s.split("/").pop()} {/* muestra solo el nombre */}
+                                                </a>
+                                            }
+                                        />
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </details>
-
                 </section>
+
 
 
 
@@ -423,7 +446,7 @@ const CreditoDetalle: React.FC = () => {
                         <MessageSquarePlus className="w-4 h-4" />
                         Agregar comentario
                     </button>
-                    
+
                     {useAuthStore.getState().user?.rol === "Asesor" && estado === 'Aprobado' && !tieneDatosMoto && (
                         <>
                             <Link to={`/creditos/detalle/cerrar-credito/${codigo_credito}`}>
@@ -460,6 +483,23 @@ const CreditoDetalle: React.FC = () => {
                     )}
 
 
+                    {useAuthStore.getState().user?.rol === "Asesor" && estado === 'Aprobado' && tieneDatosMoto && (
+
+                        <>
+
+
+                            <Link to={`/creditos/detalle/facturar-credito/${codigo_credito}`}>
+
+                                <button
+                                    className="btn bg-sky-400 hover:bg-sky-500 text-white flex items-center gap-2"
+                                    onClick={handleIncompleto}
+                                >
+                                    <Check className="w-4 h-4" />
+                                    Facturar Credito
+                                </button>
+                            </Link>
+                        </>
+                    )}
                 </section>
 
             </div>

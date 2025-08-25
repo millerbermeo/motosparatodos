@@ -1,5 +1,5 @@
 import React from "react";
-import { Eye, Pen, Star } from "lucide-react";
+import { Eye, Pen, Pencil } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCreditoById } from "../../services/creditosServices";
 import { useCreditos } from "../../services/creditosServices"; // <— nuevo hook
@@ -250,20 +250,20 @@ const TablaCreditos: React.FC = () => {
 
                                     {useAuthStore.getState().user?.rol === "Administrador" && c.estado != 'Aprobado' && (
                                         <Link to={`/creditos/detalle/cambiar-estado/${c.codigo_credito}`}>
-                                            <button className="btn btn-sm bg-white btn-circle" title="Editar Estado">
-                                                <Star size="18px" />
+                                            <button className="btn btn-sm text-warning bg-white btn-circle" title="Editar Estado">
+                                                <Pencil size="18px" />
                                             </button>
                                         </Link>
                                     )}
 
                                     <Link to={`/creditos/detalle/${c.codigo_credito}`}>
-                                        <button className="btn btn-sm bg-white btn-circle" title="Ver">
+                                        <button className="btn btn-sm text-success bg-white btn-circle" title="Ver">
                                             <Eye size="18px" />
                                         </button>
                                     </Link>
                                     {useAuthStore.getState().user?.rol === "Asesor" && (
                                         <Link to={`/creditos/registrar/${c.codigo_credito}`}>
-                                            <button className="btn btn-sm bg-white btn-circle" title="Editar">
+                                            <button className="btn btn-sm text-warning bg-white btn-circle" title="Editar">
                                                 <Pen size="18px" />
                                             </button>
                                         </Link>

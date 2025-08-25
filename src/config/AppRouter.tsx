@@ -35,6 +35,7 @@ const CreditoDetalle = lazy(() => import("../features/creditos/CreditoDetalle"))
 const CreditoDetalleAdmin = lazy(() => import("../features/creditos/CreditoDetalleAdmin")); // 👈 crea esta página simple
 const CreditoDetalleAsesor = lazy(() => import("../features/creditos/CreditoDetalleAsesor")); // 👈 crea esta página simple
 
+const FacturarCredito = lazy(() => import("../features/creditos/forms/FacturarCredito")); // 👈 crea esta página simple
 
 
 const Fallback = () => <div style={{ padding: 16 }}>Cargando…</div>;
@@ -80,6 +81,7 @@ const AppRouter: React.FC = () => {
                 <Route path="/creditos/detalle/:id" element={<CreditoDetalle />} />
                 <Route path="/creditos/detalle/cambiar-estado/:id" element={<CreditoDetalleAdmin />} />
                 <Route path="/creditos/detalle/cerrar-credito/:id" element={<CreditoDetalleAsesor />} />
+                <Route path="/creditos/detalle/facturar-credito/:id" element={<FacturarCredito />} />
 
 
               </Route>

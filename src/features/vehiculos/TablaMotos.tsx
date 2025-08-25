@@ -77,17 +77,17 @@ const TablaMotos: React.FC = () => {
   };
 
   const openDescuentos = (m: any) => {
-  const initialValues = {
-    id: Number(m.id),
-    descuento_empresa: m.descuento_empresa ?? "",
-    descuento_ensambladora: m.descuento_ensambladora ?? "",
+    const initialValues = {
+      id: Number(m.id),
+      descuento_empresa: m.descuento_empresa ?? "",
+      descuento_ensambladora: m.descuento_ensambladora ?? "",
+    };
+    open(
+      <DescuentosMotosFormulario key={`desc-${m.id}`} initialValues={initialValues} />,
+      `Descuentos: ${m.marca ?? ""} ${m.linea ?? ""} ${m.modelo ?? ""}`,
+      { size: "md", position: "center" }
+    );
   };
-  open(
-    <DescuentosMotosFormulario key={`desc-${m.id}`} initialValues={initialValues} />,
-    `Descuentos: ${m.marca ?? ""} ${m.linea ?? ""} ${m.modelo ?? ""}`,
-    { size: "md", position: "center" }
-  );
-};
 
 
 
@@ -163,13 +163,13 @@ const TablaMotos: React.FC = () => {
                 </td>
                 <td className="text-right">
                   <div className="flex justify-end gap-2">
-                      <button
-    className="btn btn-sm bg-white btn-circle"
-    onClick={() => openDescuentos(m)}
-    title="Editar descuentos"
-  >
-    <Percent size="18px" />
-  </button>
+                    <button
+                      className="btn btn-sm bg-white btn-circle"
+                      onClick={() => openDescuentos(m)}
+                      title="Editar descuentos"
+                    >
+                      <Percent size="18px" />
+                    </button>
                     <button
                       className="btn btn-sm bg-white btn-circle"
                       onClick={() => openImpuestos(m)}
