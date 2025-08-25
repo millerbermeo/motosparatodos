@@ -127,6 +127,11 @@ const estadoBadgeClass = (estado?: string) => {
             return 'badge-info';
         case 'Sin interés':
             return 'badge-error';
+
+        case 'Solicitar crédito':
+            return 'badge-info';
+
+
         default:
             return 'badge-ghost';
     }
