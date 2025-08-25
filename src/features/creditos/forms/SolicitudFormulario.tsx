@@ -4,6 +4,7 @@ import { useSubirFirma } from "../../../services/documentosServices";
 import { useParams } from "react-router-dom";
 import { useWizardStore } from "../../../store/wizardStore";
 import Swal from "sweetalert2";
+import SolicitudCreditoPDF from "../pdf/SolicitudCreditoPDF";
 
 const SolicitudFormulario: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -65,32 +66,16 @@ const SolicitudFormulario: React.FC = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 w-full flex flex-col">
       {/* Sección 1: Descargar PDF */}
-      <div className="space-y-2">
-        <h2 className="text-lg font-semibold">1. Descargar solicitud</h2>
-        <button
-          className="btn btn-success"
-          onClick={() => {
-            const link = document.createElement("a");
-            link.href = "/solicitud.pdf"; // ajusta si tu endpoint es otro
-            link.download = "solicitud.pdf";
-            link.click();
-            Swal.fire({
-              icon: "info",
-              title: "Solicitud descargada",
-              text: "Revisa tu carpeta de descargas.",
-              timer: 2000,
-              showConfirmButton: false,
-            });
-          }}
-        >
-          📥 Descargar solicitud
-        </button>
-      </div>
+     <div className="space-y-2 w-full flex flex-col">
+<h2 className="text-lg font-semibold">1. Descargar solicitud</h2>
+{/* Usa el componente de PDF para generar y descargar la solicitud */}
+<SolicitudCreditoPDF />
+</div>
 
       {/* Sección 2: Adjuntar firmas (opcional) */}
-      <div className="space-y-2">
+      <div className="space-y-2 w-full">
         <h2 className="text-lg font-semibold">2. Adjuntar firmas (opcional)</h2>
 
         <input
@@ -106,7 +91,23 @@ const SolicitudFormulario: React.FC = () => {
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-2 mt-2">
+
+      </div>
+
+      {/* Controles de paso */}
+      <div className="mt-6 flex items-center w-full justify-between">
+        <div>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={prev}
+            disabled={isFirst || isUploading}
+          >
+            ← Anterior
+          </button>
+
+        </div>
+        <div className="flex gap-4">
           <button
             onClick={handleUpload}
             disabled={isUploading || !file}
@@ -120,13 +121,7 @@ const SolicitudFormulario: React.FC = () => {
             type="button"
             className="btn btn-warning"
             onClick={() => {
-              Swal.fire({
-                icon: "info",
-                title: "Continuar sin subir",
-                text: "Avanzarás al siguiente paso sin subir la firma.",
-                showConfirmButton: false,
-                timer: 1500,
-              });
+            
               next();
             }}
             disabled={isUploading}
@@ -134,18 +129,6 @@ const SolicitudFormulario: React.FC = () => {
             Continuar sin subir
           </button>
         </div>
-      </div>
-
-      {/* Controles de paso */}
-      <div className="mt-6 flex items-center justify-between">
-        <button
-          type="button"
-          className="btn btn-ghost"
-          onClick={prev}
-          disabled={isFirst || isUploading}
-        >
-          ← Anterior
-        </button>
         <div />
       </div>
     </div>

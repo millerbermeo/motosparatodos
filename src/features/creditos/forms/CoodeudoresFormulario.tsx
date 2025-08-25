@@ -66,7 +66,12 @@ type FormValues = { codeudores: Coodeudor[] };
 /* ========================= Selects ========================= */
 const tipoDocumentoOptions: SelectOption[] = [
   { value: "Cédula de ciudadanía", label: "Cédula de ciudadanía" },
+  { value: "Tarjeta de identidad", label: "Tarjeta de identidad" },
+  { value: "Cédula extranjería", label: "Cédula extranjería" },
+  { value: "Pasaporte", label: "Pasaporte" },
+  { value: "Otro", label: "Otro" },
 ];
+
 
 const nivelEstudiosOptions: SelectOption[] = [
   { value: "Primaria", label: "Primaria" },
@@ -89,7 +94,9 @@ const tipoViviendaOptions: SelectOption[] = [
   { value: "Propia", label: "Propia" },
   { value: "Arriendo", label: "Arriendo" },
   { value: "Familiar", label: "Familiar" },
+  { value: "Otro", label: "Otro" },
 ];
+
 
 const fincaRaizOptions: SelectOption[] = [
   { value: "No", label: "No" },
@@ -98,6 +105,7 @@ const fincaRaizOptions: SelectOption[] = [
   { value: "Lote", label: "Lote" },
   { value: "Otro", label: "Otro" },
 ];
+
 
 const tipoContratoOptions: SelectOption[] = [
   { value: "Fijo", label: "Fijo" },

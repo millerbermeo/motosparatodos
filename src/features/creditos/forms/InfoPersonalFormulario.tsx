@@ -66,15 +66,19 @@ type InfoPersonalFormValues = {
 
 const tipoDocumentoOptions: SelectOption[] = [
     { value: "Cédula de ciudadanía", label: "Cédula de ciudadanía" },
-    // { value: "NIT", label: "NIT" },
+    { value: "Tarjeta de identidad", label: "Tarjeta de identidad" },
+    { value: "Cédula extranjería", label: "Cédula extranjería" },
+    { value: "Pasaporte", label: "Pasaporte" },
+    { value: "Otro", label: "Otro" },
 ];
+
 
 const nivelEstudiosOptions: SelectOption[] = [
     { value: "Primaria", label: "Primaria" },
     { value: "Educación media", label: "Educación media" },
-    // { value: "Técnico / Tecnólogo", label: "Técnico / Tecnólogo" },
-    // { value: "Universitario", label: "Universitario" },
-    // { value: "Postgrado", label: "Postgrado" },
+    { value: "Técnico / Tecnólogo", label: "Técnico / Tecnólogo" },
+    { value: "Universitario", label: "Universitario" },
+    { value: "Postgrado", label: "Postgrado" },
     { value: "Educación superior", label: "Educación superior" }, // ← coincide con backend
 ];
 
@@ -90,21 +94,17 @@ const tipoViviendaOptions: SelectOption[] = [
     { value: "Propia", label: "Propia" },
     { value: "Arriendo", label: "Arriendo" },
     { value: "Familiar", label: "Familiar" },
-];
-
-const siNoOtroOptions: SelectOption[] = [
-    // { value: "No", label: "No" },
-    { value: "Si", label: "Sí" },
     { value: "Otro", label: "Otro" },
 ];
 
+
 const tipoContratoOptions: SelectOption[] = [
-    { value: "Fijo", label: "Fijo" },
     { value: "Indefinido", label: "Indefinido" },
-    { value: "Obra o labor", label: "Obra o labor" },
-    { value: "Temporal", label: "Temporal" },
+    { value: "Término fijo", label: "Término fijo" },
     { value: "Prestación de servicios", label: "Prestación de servicios" },
+    { value: "Otro", label: "Otro" },
 ];
+
 
 const vehiculoTipoOptions: SelectOption[] = [
     { value: "Motocicleta", label: "Motocicleta" },
@@ -117,7 +117,19 @@ const tipoReferenciaOptions: SelectOption[] = [
     { value: "Familiar", label: "Familiar" },
     { value: "Personal", label: "Personal" },
     { value: "Laboral", label: "Laboral" },
+    { value: "Otro", label: "Otro" },
 ];
+
+
+
+const fincaRaizOptions: SelectOption[] = [
+    { value: "No", label: "No" },
+    { value: "Casa", label: "Casa" },
+    { value: "Apartamento", label: "Apartamento" },
+    { value: "Lote", label: "Lote" },
+    { value: "Otro", label: "Otro" },
+];
+
 
 
 
@@ -611,7 +623,7 @@ const InfoPersonalFormulario: React.FC = () => {
                         name="finca_raiz"
                         label="Finca raíz*"
                         control={control}
-                        options={siNoOtroOptions}
+                        options={fincaRaizOptions}
                         rules={{ required: "Requerido" }}
                     />
                 </div>
@@ -774,59 +786,64 @@ const InfoPersonalFormulario: React.FC = () => {
                 >
                     ← Anterior
                 </button>
-                <button
-                    className="btn btn-ghost"
-                    type="button"
-                    onClick={() =>
-                        reset({
-                            codigo_credito: String(id),
-                            numero_documento: "",
-                            tipo_documento: "Cédula de ciudadanía",
-                            fecha_expedicion: "",
-                            lugar_expedicion: "",
-                            primer_nombre: "",
-                            segundo_nombre: "",
-                            primer_apellido: "",
-                            segundo_apellido: "",
-                            fecha_nacimiento: "",
-                            nivel_estudios: "",
-                            ciudad_residencia: "",
-                            barrio_residencia: "",
-                            direccion_residencia: "",
-                            telefono_fijo: "",
-                            celular: "",
-                            email: "",
-                            estado_civil: "",
-                            personas_a_cargo: 0,
-                            tipo_vivienda: "",
-                            costo_arriendo: "",
-                            finca_raiz: "No",
-                            informacion_laboral: {
-                                empresa: "",
-                                direccion_empleador: "",
-                                telefono_empleador: "",
-                                cargo: "",
-                                tipo_contrato: "",
-                                salario: 0,
-                                tiempo_servicio: "",
-                            },
-                            vehiculo: {
-                                placa: "",
-                                marca: "",
-                                modelo: "",
-                                tipo: "",
-                                numero_motor: "",
-                            },
-                            referencias: [
-                                { nombre_completo: "", tipo_referencia: "", direccion: "", telefono: "" },
-                                { nombre_completo: "", tipo_referencia: "", direccion: "", telefono: "" },
-                                { nombre_completo: "", tipo_referencia: "", direccion: "", telefono: "" },
-                            ],
-                        })
-                    }
-                >
-                    Limpiar
-                </button>
+                {/* Mostrar solo si NO hay registro aún */}
+                {!((data as any)?.informacion_personal?.codigo_credito ||
+                    (data as any)?.data?.informacion_personal?.codigo_credito) && (
+                        <button
+                            className="btn btn-ghost"
+                            type="button"
+                            onClick={() =>
+                                reset({
+                                    codigo_credito: String(id),
+                                    numero_documento: "",
+                                    tipo_documento: "Cédula de ciudadanía",
+                                    fecha_expedicion: "",
+                                    lugar_expedicion: "",
+                                    primer_nombre: "",
+                                    segundo_nombre: "",
+                                    primer_apellido: "",
+                                    segundo_apellido: "",
+                                    fecha_nacimiento: "",
+                                    nivel_estudios: "",
+                                    ciudad_residencia: "",
+                                    barrio_residencia: "",
+                                    direccion_residencia: "",
+                                    telefono_fijo: "",
+                                    celular: "",
+                                    email: "",
+                                    estado_civil: "",
+                                    personas_a_cargo: 0,
+                                    tipo_vivienda: "",
+                                    costo_arriendo: "",
+                                    finca_raiz: "No",
+                                    informacion_laboral: {
+                                        empresa: "",
+                                        direccion_empleador: "",
+                                        telefono_empleador: "",
+                                        cargo: "",
+                                        tipo_contrato: "",
+                                        salario: 0,
+                                        tiempo_servicio: "",
+                                    },
+                                    vehiculo: {
+                                        placa: "",
+                                        marca: "",
+                                        modelo: "",
+                                        tipo: "",
+                                        numero_motor: "",
+                                    },
+                                    referencias: [
+                                        { nombre_completo: "", tipo_referencia: "", direccion: "", telefono: "" },
+                                        { nombre_completo: "", tipo_referencia: "", direccion: "", telefono: "" },
+                                        { nombre_completo: "", tipo_referencia: "", direccion: "", telefono: "" },
+                                    ],
+                                })
+                            }
+                        >
+                            Limpiar
+                        </button>
+                    )}
+
 
                 <button
                     className="btn btn-warning"

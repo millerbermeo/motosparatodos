@@ -171,7 +171,7 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito }) => {
           Cancelar
         </button>
         <button
-          className="btn btn-primary"
+          className="btn btn-warning"
           type="submit"
           disabled={isSubmitting || cambiar.isPending}
         >

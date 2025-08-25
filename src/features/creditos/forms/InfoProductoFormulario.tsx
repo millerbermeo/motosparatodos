@@ -2,7 +2,6 @@
 import React from "react";
 import { useForm } from "react-hook-form";
 import { FormInput } from "../../../shared/components/FormInput";
-import { FormSelect, type SelectOption } from "../../../shared/components/FormSelect";
 import { useActualizarCredito } from "../../../services/creditosServices";
 import { useParams } from "react-router-dom";
 import { useCredito } from "../../../services/creditosServices"; // si tu hook está aquí
@@ -21,10 +20,6 @@ type ProductoValues = {
   comentario?: string;
 };
 
-const plazosOptions: SelectOption[] = [6, 12, 18, 24, 36, 48, 60].map((p) => ({
-  value: String(p),
-  label: String(p),
-}));
 
 const toNumber = (v: unknown) => {
   const n = typeof v === "number" ? v : parseFloat(String(v ?? "").replace(/,/g, "."));
@@ -42,7 +37,7 @@ const buildProducto = (c: any): string => {
 
 const InfoProductoFormulario: React.FC = () => {
 
-      // Wizard (Zustand)
+  // Wizard (Zustand)
   const next = useWizardStore((s) => s.next);
   const prev = useWizardStore((s) => s.prev);
   const isFirst = useWizardStore((s) => s.isFirst);
@@ -52,7 +47,7 @@ const InfoProductoFormulario: React.FC = () => {
   const codigo_credito = String(codigoFromUrl ?? "");
 
   // 2) RHF
-  const { control, handleSubmit, setValue, reset } = useForm<ProductoValues>({
+  const { control, handleSubmit, setValue } = useForm<ProductoValues>({
     mode: "onBlur",
     defaultValues: {
       producto: "",
@@ -96,7 +91,7 @@ const InfoProductoFormulario: React.FC = () => {
           setValue("plazoCuotas", payload.plazo_meses ?? 0, { shouldDirty: false });
           setValue("cuotaInicial", payload.cuota_inicial ?? 0, { shouldDirty: false });
           setValue("comentario", payload.comentario ?? "", { shouldDirty: false });
-            next();
+          next();
         },
       }
     );
@@ -117,7 +112,7 @@ const InfoProductoFormulario: React.FC = () => {
       {/* Estados simples */}
       {isLoading && <div className="text-sm opacity-70">Cargando crédito…</div>}
       {isError && <div className="text-sm text-error">No se pudo cargar el crédito.</div>}
-      
+
 
       <div className={grid}>
         {/* Solo lectura en un solo campo */}
@@ -125,14 +120,17 @@ const InfoProductoFormulario: React.FC = () => {
         <FormInput name="valorMoto" label="Valor de la moto" type="number" control={control} disabled placeholder="0" />
 
         {/* Editables */}
-        <FormSelect
+        <FormInput
           name="plazoCuotas"
           label="Plazo (Cuotas)"
+          type="number"
           control={control}
-          options={plazosOptions}
+          placeholder="Ej. 12"
           rules={{
-            required: "Seleccione el plazo",
-            setValueAs: (v: unknown) => String(v),
+            required: "La cantidad de cuotas es obligatoria",
+            min: { value: 1, message: "Debe ser al menos 1 cuota" },
+            max: { value: 120, message: "Máximo 120 cuotas" },
+            setValueAs: (v: unknown) => toNumber(v),
           }}
         />
         <FormInput
@@ -156,10 +154,14 @@ const InfoProductoFormulario: React.FC = () => {
           control={control}
           placeholder="Ingrese el comentario de crédito"
           className="min-h-28"
+          rules={{
+            required: "La descripción es obligatoria",
+            minLength: { value: 5, message: "Debe tener al menos 5 caracteres" },
+          }}
         />
       </div>
 
-{/* Controles del paso */}
+      {/* Controles del paso */}
       <div className="flex items-center justify-between gap-2">
         {/* ← Anterior: no sale del paso si es el primero o si está guardando */}
         <button
@@ -173,22 +175,6 @@ const InfoProductoFormulario: React.FC = () => {
         </button>
 
         <div className="flex gap-2">
-          <button
-            type="reset"
-            className="btn btn-ghost"
-            disabled={isSaving}
-            onClick={() =>
-              reset({
-                producto: data?.creditos?.[0] ? buildProducto(data.creditos[0]) : "",
-                valorMoto: data?.creditos?.[0]?.valor_producto ?? 0,
-                plazoCuotas: data?.creditos?.[0]?.plazo_meses ?? 6,
-                cuotaInicial: data?.creditos?.[0]?.cuota_inicial ?? 0,
-                comentario: data?.creditos?.[0]?.comentario ?? "",
-              })
-            }
-          >
-            Limpiar
-          </button>
 
           {/* Guardar → avanza solo si éxito */}
           <button

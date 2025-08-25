@@ -4,6 +4,7 @@ import {
     FileDown, FileMinusIcon, FileSignature, Fingerprint, History, Info, LibraryBig, Mail,
     MessageCircle,
     MessageSquarePlus,
+    Pencil,
     ShieldCheck, User2, Wrench,
     X,
 } from 'lucide-react';
@@ -479,6 +480,23 @@ const CreditoDetalle: React.FC = () => {
                                 <CheckSquare className="w-4 h-4" />
                                 Pasar a incompleto
                             </button>
+
+
+
+                            {useAuthStore.getState().user?.rol === "Administrador" && estado != 'Aprobado' && (
+                                <Link to={`/creditos/detalle/cambiar-estado/${codigo_credito}`}>
+                           
+
+                                    <button
+                                        className="btn btn-warning text-white flex items-center gap-2"
+                                        onClick={handleIncompleto}
+                                    >
+                                        <Pencil className="w-4 h-4" />
+
+                                        Cambiar Estado
+                                    </button>
+                                </Link>
+                            )}
                         </>
                     )}
 

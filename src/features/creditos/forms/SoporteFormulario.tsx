@@ -176,7 +176,7 @@ const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
       {errors.length > 0 && (
         <div className="bg-red-100 text-red-700 p-3 rounded-lg shadow-sm">
           {errors.map((e, i) => (
-            <div key={i}>⚠ {e}</div>
+            <div key={i}> {e}</div>
           ))}
         </div>
       )}
@@ -187,7 +187,7 @@ const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
           <div className="font-semibold mb-2">Archivos seleccionados (pendientes de subir):</div>
           <ul className="list-disc ml-5 text-sm">
             {selected.map((f, i) => (
-              <li key={i} className="truncate">{f.name}</li>
+              <li key={i} className="truncate">({i + 1}) {f.name}</li>
             ))}
           </ul>
         </div>

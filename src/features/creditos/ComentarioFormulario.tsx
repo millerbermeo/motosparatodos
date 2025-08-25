@@ -72,7 +72,7 @@ const ComentarioFormulario: React.FC<Props> = ({ codigo_credito }) => {
         )}
       </label>
 
-      <div className="flex items-center justify-end gap-2 pt-1">
+      <div className="flex items-center mt-2 justify-end gap-2 pt-1">
         <button
           type="button"
           className="btn btn-ghost"
@@ -83,7 +83,7 @@ const ComentarioFormulario: React.FC<Props> = ({ codigo_credito }) => {
         </button>
         <button
           type="submit"
-          className="btn btn-primary text-primary-content"
+          className="btn btn-success "
           disabled={registrar.isPending || isEmpty}
         >
           {registrar.isPending ? "Guardando…" : "Registrar"}
