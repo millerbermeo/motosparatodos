@@ -1,56 +1,73 @@
 // src/services/solicitudesService.ts
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./axiosInstance";
+import type { AxiosError } from "axios";
+import Swal from "sweetalert2";
 
 /* ===== Tipos que devuelve la API (raw) ===== */
 export interface SolicitudFacturacionApi {
-  id: string;                 // "4"
-  agencia: string;            // "NORTE"
-  codigo_solicitud: string;   // "4003"
-  nombre_cliente: string;     // "SOFIA CAMILA VARGAS"
-  tipo_solicitud: string;     // "Contado" | "Crédito directo" | ...
-  numero_recibo: string;      // "00456" | "N/A"
-  facturador: string;         // "Carlos Ramírez" | "Sin facturador"
-  autorizado: string;         // "Si" | "No"
-  facturado: string;          // "Si" | "No"
-  entrega_autorizada: string; // "Si" | "No"
-  fecha_creacion: string;     // "2025-08-19 05:10:50"
-  actualizado: string;        // "2025-08-19 05:10:50"
+  id: string;
+  agencia: string;
+  distribuidora?: string | null;
+  distribuidora_id?: string | null;
+  codigo_solicitud: string;
+  codigo_credito?: string | null;
+  nombre_cliente: string;
+  cedula?: string | null;           // ruta al archivo, puede ser null
+  tipo_solicitud: string;           // "Contado" | "Crédito directo"
+  numero_recibo: string;            // ej. "00456" o "N/A"
+  resibo_pago?: string | null;
+  manifiesto?: string | null;       // ruta al archivo, puede ser null
+  observaciones?: string | null;
+  facturador: string;               // ej. "Sin facturador"
+  autorizado: string;               // "Si" | "No"
+  facturado: string;                // "Si" | "No"
+  entrega_autorizada: string;       // "Si" | "No"
+  fecha_creacion: string;           // "YYYY-MM-DD HH:mm:ss"
+  actualizado: string;              // idem
 }
 
 /* ===== Tipos normalizados para tu app ===== */
 export interface SolicitudFacturacion {
   id: number;
   agencia: string;
-  codigo: string;
+  distribuidora?: string | null;
+  distribuidoraId?: string | null;
+  codigo: string;                   // corresponde a codigo_solicitud
+  codigoCredito?: string | null;
   cliente: string;
+  cedulaPath?: string | null;       // ruta de archivo
   tipo: string;
   numeroRecibo?: string | null;
+  resiboPago?: string | null;
+  manifiestoPath?: string | null;   // ruta de archivo
+  observaciones?: string | null;
   facturador?: string | null;
   autorizado: boolean;
   facturado: boolean;
   entregaAutorizada: boolean;
-  fechaCreacion: string; // o Date si prefieres parsear
-  actualizado: string;   // idem
+  fechaCreacion: string;
+  actualizado: string;
 }
 
-/* ===== Respuesta del endpoint ===== */
-interface ListSolicitudesResponse {
-  success: boolean;
-  solicitudes_facturacion: SolicitudFacturacionApi[];
-}
-
-/* ===== Utils ===== */
-const siNoToBool = (v?: string) =>
+/* ===== Normalizador ===== */
+const siNoToBool = (v?: string | null) =>
   typeof v === "string" ? v.trim().toLowerCase().startsWith("s") : false;
 
-const normalizeSolicitud = (r: SolicitudFacturacionApi): SolicitudFacturacion => ({
+export const normalizeSolicitud = (r: SolicitudFacturacionApi): SolicitudFacturacion => ({
   id: Number(r.id),
   agencia: r.agencia,
+  distribuidora: r.distribuidora ?? null,
+  distribuidoraId: r.distribuidora_id ?? null,
   codigo: r.codigo_solicitud,
+  codigoCredito: r.codigo_credito ?? null,
   cliente: r.nombre_cliente,
+  cedulaPath: r.cedula ?? null,
   tipo: r.tipo_solicitud,
   numeroRecibo: r.numero_recibo === "N/A" ? null : r.numero_recibo,
+  resiboPago: r.resibo_pago ?? null,
+  manifiestoPath: r.manifiesto ?? null,
+  observaciones: r.observaciones ?? null,
   facturador: r.facturador === "Sin facturador" ? null : r.facturador,
   autorizado: siNoToBool(r.autorizado),
   facturado: siNoToBool(r.facturado),
@@ -58,6 +75,12 @@ const normalizeSolicitud = (r: SolicitudFacturacionApi): SolicitudFacturacion =>
   fechaCreacion: r.fecha_creacion,
   actualizado: r.actualizado,
 });
+
+
+interface ListSolicitudesResponse {
+  success: boolean;
+  solicitudes_facturacion: SolicitudFacturacionApi[];
+}
 
 /* ===== Parámetros de búsqueda/filtrado (opcionales) ===== */
 export type SolicitudesFilters = {
@@ -97,6 +120,104 @@ export const useSolicitudesFacturacion = (
       );
 
       // Manejo básico de éxito/fracaso
+      const raw = data?.solicitudes_facturacion ?? [];
+      return raw.map(normalizeSolicitud);
+    },
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+
+
+/* ======================================================================================
+   NUEVO: Registrar Solicitud de Facturación
+   - Recibe directamente un FormData (tal como lo armas en la vista)
+   - Envía multipart/form-data
+   - Invalida listados y, si se puede, el crédito relacionado
+   - Muestra SweetAlert de éxito / error
+   ====================================================================================== */
+
+export interface RegistrarSolicitudResponse {
+  success: boolean;
+  id?: string | number;                 // id de la solicitud creada (si lo devuelve el backend)
+  codigo_solicitud?: string;            // opcional
+  message?: string | string[];          // mensaje de backend
+}
+
+export interface ServerError {
+  message: string | string[];
+}
+
+/** 
+ * Hook para registrar la solicitud de facturación.
+ * 
+ * Uso:
+ *   const { mutate: registrar, isPending } = useRegistrarSolicitudFacturacion();
+ *   registrar(formData);
+ */
+export const useRegistrarSolicitudFacturacion = (
+  opts?: {
+    /** Permitir sobreescribir el endpoint si lo necesitas */
+    endpoint?: string; // por defecto "/registrar_solicitud_facturacion.php"
+  }
+) => {
+  const qc = useQueryClient();
+
+  return useMutation<RegistrarSolicitudResponse, AxiosError<ServerError>, FormData>({
+    mutationFn: async (formData) => {
+      const { data } = await api.post<RegistrarSolicitudResponse>(
+        opts?.endpoint ?? "/create_solicitud.php",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+      return data;
+    },
+    onSuccess: async (resp, formData) => {
+      // Intentamos obtener el código de crédito desde el formdata para invalidar caches asociadas
+      const cc = formData.get("codigo_credito")?.toString();
+
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["solicitudes-facturacion"] }),
+        cc ? qc.invalidateQueries({ queryKey: ["credito", cc] }) : Promise.resolve(),
+        cc ? qc.invalidateQueries({ queryKey: ["credito_detalle", cc] }) : Promise.resolve(),
+      ]);
+
+      const texto =
+        Array.isArray(resp.message) ? resp.message.join("\n") :
+        resp.message ?? "Solicitud de facturación registrada correctamente";
+
+      Swal.fire({
+        icon: "success",
+        title: "Solicitud registrada",
+        text: texto,
+        timer: 1600,
+        showConfirmButton: false,
+      });
+    },
+    onError: (error) => {
+      const raw = error.response?.data?.message ?? "No se pudo registrar la solicitud";
+      const arr = Array.isArray(raw) ? raw : [raw];
+      Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
+    },
+  });
+};
+
+
+
+
+export const useSolicitudesPorCodigoCredito = (codigoCredito: string | number) => {
+  return useQuery<SolicitudFacturacion[], AxiosError>({
+    queryKey: ["solicitudes-facturacion", "por-credito", codigoCredito],
+    enabled: !!codigoCredito,
+    queryFn: async () => {
+      const { data } = await api.get<ListSolicitudesResponse>(
+        "/list_solicitudes.php",
+        { params: { id: codigoCredito } } // ← el back espera 'id' como codigo_credito
+      );
+
+      console.log(data)
+
       const raw = data?.solicitudes_facturacion ?? [];
       return raw.map(normalizeSolicitud);
     },

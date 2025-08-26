@@ -9,12 +9,13 @@ import {
     X,
 } from 'lucide-react';
 import { useCredito, useDeudor } from '../../services/creditosServices';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import ChipButton from '../../shared/components/ChipButton';
 import ChatThread from './ChatThread';
 import { useModalStore } from '../../store/modalStore';
 import ComentarioFormulario from './ComentarioFormulario';
 import { useAuthStore } from '../../store/auth.store';
+import Swal from 'sweetalert2';
 
 
 const fmtCOP = (v: number) =>
@@ -116,15 +117,55 @@ const CreditoDetalle: React.FC = () => {
         );
     };
 
+    const navigate = useNavigate();
 
 
-    const handleEliminar = () => {
-        console.log("👉 Eliminando garantía extendida...");
+    const handleEliminar = async () => {
+        const result = await Swal.fire({
+            title: "¿Eliminar garantía extendida?",
+            text: "Esta acción no se puede deshacer",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Sí, eliminar",
+            cancelButtonText: "Cancelar",
+            confirmButtonColor: "#d33",
+            cancelButtonColor: "#6b7280", // gris Tailwind
+        });
+
+        if (result.isConfirmed) {
+            await Swal.fire({
+                title: "Eliminada",
+                text: "La garantía extendida fue eliminada correctamente ✅",
+                icon: "success",
+                confirmButtonText: "OK",
+            });
+            navigate("/creditos");
+        }
     };
 
-    const handleIncompleto = () => {
-        console.log("👉 Pasando a incompleto...");
+    const handleIncompleto = async () => {
+        const result = await Swal.fire({
+            title: "¿Pasar a incompleto?",
+            text: "El crédito será marcado como incompleto",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Sí, continuar",
+            cancelButtonText: "Cancelar",
+            confirmButtonColor: "#0284c7", // azul Tailwind
+            cancelButtonColor: "#6b7280",
+        });
+
+        if (result.isConfirmed) {
+            await Swal.fire({
+                title: "Actualizado",
+                text: "El crédito se pasó a estado 'Incompleto' ✅",
+                icon: "success",
+                confirmButtonText: "OK",
+            });
+            navigate("/creditos");
+        }
     };
+
 
 
     const tieneDatosMoto = Boolean(
@@ -485,7 +526,7 @@ const CreditoDetalle: React.FC = () => {
 
                             {useAuthStore.getState().user?.rol === "Administrador" && estado != 'Aprobado' && (
                                 <Link to={`/creditos/detalle/cambiar-estado/${codigo_credito}`}>
-                           
+
 
                                     <button
                                         className="btn btn-warning text-white flex items-center gap-2"

@@ -1,6 +1,9 @@
 // src/components/solicitudes/TablaSolicitudes.tsx
 import React from "react";
 import { useSolicitudesFacturacion, type SolicitudFacturacion } from "../../services/solicitudServices";
+// import { useAuthStore } from "../../store/auth.store";
+import { Link } from "react-router-dom";
+import { Pencil } from "lucide-react";
 
 const PAGE_SIZE = 10;
 const SIBLING_COUNT = 1;
@@ -76,6 +79,7 @@ const TablaSolicitudes: React.FC = () => {
           <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
             <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
               <th className="w-12">#</th>
+              <th>Acciones</th>
               <th>Código</th>
               <th>Cliente</th>
               <th>Agencia</th>
@@ -94,6 +98,13 @@ const TablaSolicitudes: React.FC = () => {
             {visible.map((s: SolicitudFacturacion) => (
               <tr key={s.id} className="transition-colors">
                 <th className="text-base-content/50">{s.id}</th>
+                {/* {useAuthStore.getState().user?.rol === "Administrador" && c.estado != 'Aprobado' && ( */}
+                <Link to={`/creditos/detalle/facturar-credito/${s.codigoCredito}`}>
+                  <button className="btn btn-sm text-warning bg-white btn-circle" title="Editar Estado">
+                    <Pencil size="18px" />
+                  </button>
+                </Link>
+                {/* )} */}
                 <td className="font-medium whitespace-nowrap">{s.codigo}</td>
                 <td className="whitespace-nowrap">{s.cliente}</td>
                 <td className="whitespace-nowrap">{s.agencia}</td>
