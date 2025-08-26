@@ -506,6 +506,7 @@ const CreditoDetalle: React.FC = () => {
 
                         <>
                             <button
+                            type='button'
                                 className="btn flex items-center gap-2"
                                 onClick={handleEliminar}
                             >
@@ -515,6 +516,7 @@ const CreditoDetalle: React.FC = () => {
 
 
                             <button
+                            type='button'
                                 className="btn bg-sky-400 hover:bg-sky-500 text-white flex items-center gap-2"
                                 onClick={handleIncompleto}
                             >
@@ -530,7 +532,6 @@ const CreditoDetalle: React.FC = () => {
 
                                     <button
                                         className="btn btn-warning text-white flex items-center gap-2"
-                                        onClick={handleIncompleto}
                                     >
                                         <Pencil className="w-4 h-4" />
 
