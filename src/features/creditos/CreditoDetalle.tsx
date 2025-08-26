@@ -552,7 +552,6 @@ const CreditoDetalle: React.FC = () => {
 
                                 <button
                                     className="btn bg-sky-400 hover:bg-sky-500 text-white flex items-center gap-2"
-                                    onClick={handleIncompleto}
                                 >
                                     <Check className="w-4 h-4" />
                                     Facturar Credito
