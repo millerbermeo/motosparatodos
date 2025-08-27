@@ -147,7 +147,7 @@ useEffect(() => {
           />
           <div className="text-white">
             <p className="font-semibold leading-tight">{user?.name ?? "Usuario"}</p>
-            <p className="text-sm text-white/70">{user?.username ?? ""}</p>
+            <p className="text-sm text-white/70">{user?.rol ?? ""}</p>
           </div>
         </div>
 

@@ -9,7 +9,6 @@ import {
   Activity,
   CalendarPlus,
   Mail as MailIcon,
-  Download,
   FileDown,
   Fingerprint,
   Building2,
@@ -18,6 +17,9 @@ import {
   BadgeCheck,
 } from 'lucide-react';
 import ButtonLink from '../../shared/components/ButtonLink';
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import { CotizacionPDFDoc, type QuotePayload } from "./CotizacionPDFDoc";
+import { useAuthStore } from '../../store/auth.store';
 
 /* =======================
    Tipos
@@ -118,9 +120,6 @@ const sanitizePhone = (v: any): string | undefined => {
 };
 
 // URLs de descarga (ajusta VITE_API_URL a tu backend)
-const API_BASE = (import.meta as any)?.env?.VITE_API_URL || '';
-const urlCotizacionPDF = (id: string) => `${API_BASE}/cotizaciones/${id}/pdf`;
-const urlRuntPDF = (id: string) => `${API_BASE}/cotizaciones/${id}/runt`;
 
 const numOrUndef = (v: any) => {
   const n = Number(v);
@@ -248,6 +247,18 @@ const DetalleCotizacion: React.FC = () => {
     [payload]
   );
 
+
+  const pdfPayload: QuotePayload | undefined = React.useMemo(
+    () => (payload ? { success: true, data: payload } : undefined),
+    [payload]
+  );
+
+  const pdfName = React.useMemo(
+    () => `Cotizacion_${q?.id || id}.pdf`,
+    [q?.id, id]
+  );
+
+
   // Estado de tab (A/B)
   const [tab, setTab] = React.useState<'A' | 'B'>('A');
   React.useEffect(() => {
@@ -279,15 +290,17 @@ const DetalleCotizacion: React.FC = () => {
     window.location.href = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
-  const handleDescargarCotizacion = () => {
-    if (!q) return;
-    window.open(urlCotizacionPDF(q.id), '_blank');
-  };
+
 
   const handleDescargarRunt = () => {
-    if (!q) return;
-    window.open(urlRuntPDF(q.id), '_blank');
+    const link = document.createElement('a');
+    link.href = '/runt.pdf';   // ruta pública
+    link.download = 'runt.pdf'; // nombre con el que se descargará
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
+
 
   // Blocs de estados
   if (!id) {
@@ -336,20 +349,31 @@ const DetalleCotizacion: React.FC = () => {
       </div>
 
       <section className="w-full mb-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div>
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 rounded-2xl bg-gradient-to-r from-slate-50 to-slate-100  border border-info p-6">
 
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Información de la cotización</h1>
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
-              <span className={`badge ${badgeEstado(q.estado)}`}>{q.estado}</span>
-              <span className="opacity-70">Creada:</span>
-              <span className="font-medium">{q.creada || '—'}</span>
-              <span className="opacity-70">| ID:</span>
-              <span className="font-mono">{q.id}</span>
+          {/* Título y estado */}
+          <div className="flex flex-col md:flex-row md:items-center md:gap-6 w-full">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-800">
+                Información de la cotización
+              </h1>
+              <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-600">
+                <span className={`badge ${badgeEstado(q.estado)}`}>{q.estado}</span>
+                <div className="flex items-center gap-1">
+                  <span className="opacity-70">Creada:</span>
+                  <span className="font-medium">{q.creada || '—'}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="opacity-70">ID:</span>
+                  <span className="font-mono">{q.id}</span>
+                </div>
+              </div>
             </div>
           </div>
+
         </div>
       </section>
+
 
       <div className="flex flex-col gap-6">
         {/* Información del cliente */}
@@ -366,7 +390,14 @@ const DetalleCotizacion: React.FC = () => {
               <InfoRow label="Email" value={q.cliente.email || ''} />
               <InfoRow label="Teléfono" value={q.cliente.celular || ''} />
               <InfoRow label="Cédula" value={q.cliente.cedula || ''} />
-              <InfoRow label="Comentario" value={q.cliente.comentario || q.cliente.comentario2 || ''} full />
+              <InfoRow
+                label="Comentarios"
+                value={[
+                  q.cliente.comentario || '—',
+                  q.cliente.comentario2 || '—'
+                ].join(' | ')}
+                full
+              />
             </div>
 
             {/* Datos comerciales */}
@@ -447,7 +478,7 @@ const DetalleCotizacion: React.FC = () => {
         </section>
 
         {/* Cuotas (dependen de la moto seleccionada) */}
-        <section className="card bg-base-100 border border-base-300/60 shadow-sm rounded-2xl">
+        <section className="card bg-base-100 border border-base-300/60 hidden shadow-sm rounded-2xl">
           <div className="card-body">
             <div className="flex items-center gap-2 mb-2">
               <Calculator className="w-5 h-5" />
@@ -523,25 +554,49 @@ const DetalleCotizacion: React.FC = () => {
             Crear recordatorio
           </button>
 
-          <button
-            className="btn btn-success btn-sm"
-            onClick={handleEnviarCorreo}
-            disabled={!q.cliente.email}
-            title="Enviar por correo"
-          >
-            <MailIcon className="w-4 h-4" />
-            Enviar por correo
-          </button>
+          {useAuthStore.getState().user?.rol === "Administrador" && (<>
+            <button
+              className="btn btn-success btn-sm"
+              onClick={handleEnviarCorreo}
+              disabled={!q.cliente.email}
+              title="Enviar por correo"
+            >
+              <MailIcon className="w-4 h-4" />
+              Enviar por correo
+            </button>
 
-          <button className="btn btn-success btn-sm" onClick={handleDescargarCotizacion} title="Descargar cotización">
-            <Download className="w-4 h-4" />
-            Descargar cotización
-          </button>
+          </>)}
 
-          <button className="btn btn-success btn-sm" onClick={handleDescargarRunt} title="Descargar RUNT">
-            <FileDown className="w-4 h-4" />
-            Descargar RUNT
-          </button>
+
+
+          {pdfPayload && (
+            <PDFDownloadLink
+              document={
+                <CotizacionPDFDoc
+                  payload={pdfPayload}
+                  logoUrl="/moto3.png" // cámbialo si tienes otra ruta/CDN
+                  empresa={{ ciudad: "Cali", almacen: "Feria de la Movilidad" }}
+                />
+              }
+              fileName={pdfName}
+            >
+              {({ loading }) => (
+                <button className="btn btn-success btn-sm" type="button" disabled={loading}>
+                  <FileDown className="w-4 h-4" />
+                  {loading ? "Generando PDF…" : "Descargar Cotización"}
+                </button>
+              )}
+            </PDFDownloadLink>
+          )}
+
+          {useAuthStore.getState().user?.rol === "Administrador" && (<>
+
+
+            <button className="btn btn-success btn-sm" onClick={handleDescargarRunt} title="Descargar RUNT">
+              <FileDown className="w-4 h-4" />
+              Descargar RUNT
+            </button>
+          </>)}
         </div>
       </section>
     </main>
