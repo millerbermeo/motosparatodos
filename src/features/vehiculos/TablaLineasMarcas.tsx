@@ -4,6 +4,7 @@ import { useModalStore } from "../../store/modalStore";
 import { useLineas, useDeleteLinea } from "../../services/lineasMarcasServices";
 import Swal from "sweetalert2";
 import FormularioLineas from "./forms/FormularioLineas";
+import { useLoaderStore } from "../../store/loader.store";
 
 // Paginación
 const PAGE_SIZE = 10;
@@ -119,14 +120,16 @@ const TablaLineas: React.FC = () => {
     if (res.isConfirmed) deleteLinea.mutate(id);
   };
 
-  // Render estados
-  if (isPending) {
-    return (
-      <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4">
-        Cargando líneas…
-      </div>
-    );
-  }
+
+  const { show, hide } = useLoaderStore();
+
+  React.useEffect(() => {
+    if (isPending) {
+      show();   // 👈 muestra el overlay global
+    } else {
+      hide();   // 👈 lo quita
+    }
+  }, [isPending, show, hide]);
 
   if (isError) {
     return (

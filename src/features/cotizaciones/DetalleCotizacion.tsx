@@ -20,6 +20,7 @@ import ButtonLink from '../../shared/components/ButtonLink';
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { CotizacionPDFDoc, type QuotePayload } from "./CotizacionPDFDoc";
 import { useAuthStore } from '../../store/auth.store';
+import { useLoaderStore } from '../../store/loader.store';
 
 /* =======================
    Tipos
@@ -313,13 +314,16 @@ const DetalleCotizacion: React.FC = () => {
     );
   }
 
-  if (isLoading) {
-    return (
-      <main className="w-full min-h-screen flex items-center justify-center">
-        <span className="loading loading-spinner loading-lg" />
-      </main>
-    );
-  }
+  // dentro de tu componente
+  const { show, hide } = useLoaderStore();
+
+  React.useEffect(() => {
+    if (isLoading) {
+      show();   // 🔵 activa overlay global
+    } else {
+      hide();   // 🔵 lo apaga
+    }
+  }, [isLoading, show, hide]);
 
   if (error) {
     return (

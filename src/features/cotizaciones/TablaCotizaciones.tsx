@@ -6,6 +6,7 @@ import { useCotizaciones } from '../../services/cotizacionesServices';
 import { useAuthStore } from '../../store/auth.store';
 import SelectCotizaciones from './SelectCotizaciones';
 import { useCotizacionById } from '../../services/cotizacionesServices';
+import { useLoaderStore } from '../../store/loader.store';
 
 
 /* =======================
@@ -184,18 +185,17 @@ const TablaCotizaciones: React.FC = () => {
     const goTo = (p: number) => setPage(Math.min(Math.max(1, p), lastPage));
 
     const user = useAuthStore((state) => state.user);
+    const { show, hide } = useLoaderStore();
 
 
     // En el componente principal
-    if (isLoading) {
-        return (
-            <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4">
-                {cotizacionId
-                    ? "Cargando detalle de la cotización…"
-                    : "Cargando cotizaciones…"}
-            </div>
-        );
-    }
+    React.useEffect(() => {
+        if (isLoading) {
+            show(); // 👈 abre el Loader global
+        } else {
+            hide(); // 👈 cierra cuando termina
+        }
+    }, [isLoading, show, hide]);
 
     if (isError) {
         return (

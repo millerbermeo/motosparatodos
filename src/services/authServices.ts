@@ -14,7 +14,7 @@ export const loginRequest = async (credentials: LoginRequest): Promise<LoginResp
     const { data } = await api.post<LoginResponse>("/auth_token.php", credentials);
     return data;
   } catch (error: any) {
-    throw new Error(error?.response?.data?.message || "Error de conexión");
+    throw new Error(error?.response?.data?.message || "Credenciales Incorrectas");
   }
 };
 

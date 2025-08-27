@@ -4,6 +4,7 @@ import { useModalStore } from "../../store/modalStore";
 import { useMarcas, useDeleteMarca } from "../../services/marcasServices";
 import Swal from "sweetalert2";
 import FormularioMarcas from "./forms/FormularioMarcas";
+import { useLoaderStore } from "../../store/loader.store";
 
 // Paginación
 const PAGE_SIZE = 10;
@@ -126,14 +127,16 @@ const TablaMarcas: React.FC = () => {
     }
   };
 
-  // Render estados
-  if (isPending) {
-    return (
-      <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4">
-        Cargando marcas…
-      </div>
-    );
-  }
+  const { show, hide } = useLoaderStore();
+
+  React.useEffect(() => {
+    if (isPending) {
+      show();   // 👈 enciende el overlay global
+    } else {
+      hide();   // 👈 lo apaga
+    }
+  }, [isPending, show, hide]);
+
 
   if (isError) {
     return (

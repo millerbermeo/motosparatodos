@@ -16,6 +16,7 @@ import { useModalStore } from '../../store/modalStore';
 import ComentarioFormulario from './ComentarioFormulario';
 import { useAuthStore } from '../../store/auth.store';
 import Swal from 'sweetalert2';
+import { useLoaderStore } from '../../store/loader.store';
 
 
 const fmtCOP = (v: number) =>
@@ -179,6 +180,16 @@ const CreditoDetalle: React.FC = () => {
 
     const BaseUrl = import.meta.env.VITE_API_URL ?? "http://tuclick.vozipcolombia.net.co/motos/back";
 
+    const { show, hide } = useLoaderStore();
+
+    React.useEffect(() => {
+        if (isLoading) {
+            show();   // 🔵 activa overlay global
+        } else {
+            hide();   // 🔵 lo oculta
+        }
+    }, [isLoading, show, hide]);
+
     return (
         <main className="min-h-screen w-full bg-gradient-to-b from-white to-slate-50">
             {/* Header */}
@@ -198,9 +209,7 @@ const CreditoDetalle: React.FC = () => {
 
             <div className="mx-auto max-w-full px-4 py-6 space-y-6">
                 {/* Mensajes de estado */}
-                {isLoading && (
-                    <div className="rounded-xl border border-slate-200 bg-white p-4">Cargando información…</div>
-                )}
+
                 {error && (
                     <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
                         Ocurrió un error al cargar el crédito.
@@ -506,7 +515,7 @@ const CreditoDetalle: React.FC = () => {
 
                         <>
                             <button
-                            type='button'
+                                type='button'
                                 className="btn flex items-center gap-2"
                                 onClick={handleEliminar}
                             >
@@ -516,7 +525,7 @@ const CreditoDetalle: React.FC = () => {
 
 
                             <button
-                            type='button'
+                                type='button'
                                 className="btn bg-sky-400 hover:bg-sky-500 text-white flex items-center gap-2"
                                 onClick={handleIncompleto}
                             >

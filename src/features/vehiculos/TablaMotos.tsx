@@ -7,6 +7,7 @@ import Swal from "sweetalert2";
 import FormularioMotos from "./forms/FormularioMotos";
 import ImpuestosMotosFormulario from "./forms/ImpuestosMotosFormulario"; // 👈 importa el formulario
 import DescuentosMotosFormulario from "./forms/DescuentosMotosFormulario";
+import { useLoaderStore } from "../../store/loader.store";
 
 
 const PAGE_SIZE = 10;
@@ -104,7 +105,17 @@ const TablaMotos: React.FC = () => {
     if (res.isConfirmed) deleteMoto.mutate(id);
   };
 
-  if (isPending) return <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4">Cargando motos…</div>;
+  const { show, hide } = useLoaderStore();
+
+  React.useEffect(() => {
+    if (isPending) {
+      show();   // 👈 enciende overlay
+    } else {
+      hide();   // 👈 lo apaga
+    }
+  }, [isPending, show, hide]);
+
+
   if (isError) return <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4 text-error">Error al cargar motos</div>;
 
   const BaseUrl = import.meta.env.VITE_API_URL ?? "http://tuclick.vozipcolombia.net.co/motos/back";

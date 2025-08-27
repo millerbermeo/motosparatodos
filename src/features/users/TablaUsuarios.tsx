@@ -4,6 +4,7 @@ import { useModalStore } from "../../store/modalStore";
 import { useUsuarios } from "../../services/usersServices";
 import UsuarioEstadoAlert from "./UsuarioEstadoAlert";
 import { Pen } from "lucide-react";
+import { useLoaderStore } from "../../store/loader.store";
 
 // Paginación
 const PAGE_SIZE = 10;
@@ -128,14 +129,17 @@ const TablaUsuarios: React.FC = () => {
   };
 
   // Render condicional DESPUÉS de haber corrido todos los hooks
-  if (isPending) {
-    return (
-      <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4">
-        Cargando usuarios…
-      </div>
-    );
-  }
+  const { show, hide } = useLoaderStore();
 
+  React.useEffect(() => {
+    if (isPending) {
+      show();   // 🔵 muestra overlay global
+    } else {
+      hide();   // 🔵 lo oculta
+    }
+  }, [isPending, show, hide]);
+
+  
   if (isError) {
     return (
       <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4 text-error">

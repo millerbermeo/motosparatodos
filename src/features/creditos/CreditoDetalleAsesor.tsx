@@ -13,6 +13,7 @@ import { useCredito, useDeudor } from '../../services/creditosServices';
 import { useParams } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth.store';
 import CerrarCreditoFormulario from './forms/CerrarCreditoFormulario';
+import { useLoaderStore } from '../../store/loader.store';
 
 
 const fmtCOP = (v: number) =>
@@ -95,7 +96,15 @@ const CreditoDetalleAsesor: React.FC = () => {
 
 
 
+ const { show, hide } = useLoaderStore();
 
+  React.useEffect(() => {
+    if (isLoading) {
+      show();   // 🔵 activa overlay global
+    } else {
+      hide();   // 🔵 lo oculta
+    }
+  }, [isLoading, show, hide]);
 
 
     return (
@@ -117,9 +126,7 @@ const CreditoDetalleAsesor: React.FC = () => {
 
             <div className="mx-auto max-w-full px-4 py-6 space-y-6">
                 {/* Mensajes de estado */}
-                {isLoading && (
-                    <div className="rounded-xl border border-slate-200 bg-white p-4">Cargando información…</div>
-                )}
+             
                 {error && (
                     <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
                         Ocurrió un error al cargar el crédito.

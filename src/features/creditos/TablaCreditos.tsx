@@ -5,6 +5,7 @@ import { useCreditoById } from "../../services/creditosServices";
 import { useCreditos } from "../../services/creditosServices"; // <— nuevo hook
 import { useAuthStore } from "../../store/auth.store";
 import SelectCreditos from "./SelectCreditos";
+import { useLoaderStore } from "../../store/loader.store";
 
 const DEFAULT_PAGE_SIZE = 10;
 const SIBLING_COUNT = 1;
@@ -142,11 +143,18 @@ const TablaCreditos: React.FC = () => {
         setQ("");
     };
 
-    if (isLoading) {
-        return <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4">
-            {isDetail ? "Cargando crédito…" : "Cargando créditos…"}
-        </div>;
-    }
+    const { show, hide } = useLoaderStore();
+
+
+    React.useEffect(() => {
+        if (isLoading) {
+            show();   // 👈 muestra overlay
+        } else {
+            hide();   // 👈 lo oculta
+        }
+    }, [isLoading, show, hide]);
+
+
     if (isError) {
         return <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4 text-error">
             Error al cargar créditos

@@ -5,6 +5,7 @@ import { useModalStore } from "../../store/modalStore";
 import { usePuntos, useDeletePunto } from "../../services/puntosServices";
 import { useEmpresas } from "../../services/empresasServices";
 import FormularioPuntos from "./FormularioPuntos";
+import { useLoaderStore } from "../../store/loader.store";
 
 const PAGE_SIZE = 10;
 const SIBLING_COUNT = 1;
@@ -79,8 +80,16 @@ const TablaPuntos: React.FC = () => {
         if (res.isConfirmed) del.mutate(id);
     };
 
-    if (isPending)
-        return <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4">Cargando puntos…</div>;
+    const { show, hide } = useLoaderStore();
+
+    React.useEffect(() => {
+        if (isPending) {
+            show();   // 🔵 activa overlay
+        } else {
+            hide();   // 🔵 lo oculta
+        }
+    }, [isPending, show, hide]);
+
     if (isError)
         return <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4 text-error">Error al cargar puntos</div>;
 

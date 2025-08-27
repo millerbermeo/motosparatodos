@@ -13,6 +13,7 @@ import {
     Bike,
 } from 'lucide-react';
 import ButtonLink from '../../shared/components/ButtonLink';
+import { useLoaderStore } from '../../store/loader.store';
 
 /* =======================
    Estados (mismo mapping de la tabla)
@@ -225,13 +226,15 @@ const DetalleCambiarEstado: React.FC = () => {
         );
     }
 
-    if (isLoading) {
-        return (
-            <main className="w-full min-h-screen flex items-center justify-center">
-                <span className="loading loading-spinner loading-lg" />
-            </main>
-        );
-    }
+  const { show, hide } = useLoaderStore();
+
+React.useEffect(() => {
+  if (isLoading) {
+    show();   // 🔵 muestra el overlay global
+  } else {
+    hide();   // 🔵 lo oculta
+  }
+}, [isLoading, show, hide]);
 
     if (error) {
         return (

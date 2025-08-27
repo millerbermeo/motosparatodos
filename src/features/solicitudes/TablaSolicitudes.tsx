@@ -4,6 +4,7 @@ import { useSolicitudesFacturacion, type SolicitudFacturacion } from "../../serv
 // import { useAuthStore } from "../../store/auth.store";
 import { Link } from "react-router-dom";
 import { Pencil } from "lucide-react";
+import { useLoaderStore } from "../../store/loader.store";
 
 const PAGE_SIZE = 10;
 const SIBLING_COUNT = 1;
@@ -58,7 +59,17 @@ const TablaSolicitudes: React.FC = () => {
   const goNext = () => setPage((p) => Math.min(totalPages, p + 1));
   const goTo = (p: number) => setPage(Math.min(Math.max(1, p), totalPages));
 
-  if (isLoading) return <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4">Cargando solicitudes…</div>;
+  const { show, hide } = useLoaderStore();
+
+  React.useEffect(() => {
+    if (isLoading) {
+      show();   // 👈 activa el overlay global
+    } else {
+      hide();   // 👈 lo oculta
+    }
+  }, [isLoading, show, hide]);
+
+
   if (isError) return (
     <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4 text-error">
       Error al cargar solicitudes. <button className="btn btn-xs ml-2" onClick={() => refetch()}>Reintentar</button>
@@ -99,11 +110,16 @@ const TablaSolicitudes: React.FC = () => {
               <tr key={s.id} className="transition-colors">
                 <th className="text-base-content/50">{s.id}</th>
                 {/* {useAuthStore.getState().user?.rol === "Administrador" && c.estado != 'Aprobado' && ( */}
-                <Link to={`/creditos/detalle/facturar-credito/${s.codigoCredito}`}>
-                  <button className="btn btn-sm text-warning bg-white btn-circle" title="Editar Estado">
-                    <Pencil size="18px" />
-                  </button>
-                </Link>
+                <td>
+                  <Link to={`/creditos/detalle/facturar-credito/${s.codigoCredito}`}>
+                    <button
+                      className="btn btn-sm text-warning bg-white btn-circle"
+                      title="Editar Estado"
+                    >
+                      <Pencil size="18px" />
+                    </button>
+                  </Link>
+                </td>
                 {/* )} */}
                 <td className="font-medium whitespace-nowrap">{s.codigo}</td>
                 <td className="whitespace-nowrap">{s.cliente}</td>

@@ -4,6 +4,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import PrivateRoute from "./PrivateRoute";
 import RequireModule from "./RequireModule"; // 👈
+import { useLoaderStore } from "../store/loader.store";
+import Loader from "../utils/Loader";
 
 
 const Home = lazy(() => import("../pages/Home"));
@@ -38,7 +40,17 @@ const CreditoDetalleAsesor = lazy(() => import("../features/creditos/CreditoDeta
 const FacturarCredito = lazy(() => import("../features/creditos/forms/FacturarCredito")); // 👈 crea esta página simple
 
 
-const Fallback = () => <div style={{ padding: 16 }}>Cargando…</div>;
+
+const Fallback: React.FC = () => {
+  const { show, hide } = useLoaderStore();
+
+  React.useEffect(() => {
+    show(); // se monta -> mostrar loader
+    return () => hide(); // se desmonta -> ocultar loader
+  }, [show, hide]);
+
+  return <Loader />; // 👈 se renderiza el overlay
+};
 
 const AppRouter: React.FC = () => {
   return (

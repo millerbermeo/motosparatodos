@@ -4,13 +4,14 @@ import Swal from "sweetalert2";
 import { useModalStore } from "../../store/modalStore";
 import { useEmpresas, useDeleteEmpresa } from "../../services/empresasServices";
 import FormularioEmpresas from "./FormularioEmpresas";
+import { useLoaderStore } from "../../store/loader.store";
 
 const PAGE_SIZE = 10;
 const SIBLING_COUNT = 1;
 const BOUNDARY_COUNT = 1;
 
 // Ideal: mueve a un config global o .env
-  const BASE_URL = import.meta.env.VITE_API_URL ?? "http://tuclick.vozipcolombia.net.co/motos/back";
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://tuclick.vozipcolombia.net.co/motos/back";
 
 /* ========= helpers de paginación (mismos que motos) ========= */
 const range = (start: number, end: number) =>
@@ -99,8 +100,16 @@ const TablaEmpresas: React.FC = () => {
         if (res.isConfirmed) del.mutate(id);
     };
 
-    if (isPending)
-        return <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4">Cargando empresas…</div>;
+    const { show, hide } = useLoaderStore();
+
+    React.useEffect(() => {
+        if (isPending) {
+            show();   // 🔵 muestra overlay
+        } else {
+            hide();   // 🔵 lo oculta
+        }
+    }, [isPending, show, hide]);
+
     if (isError)
         return <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4 text-error">Error al cargar empresas</div>;
 
@@ -112,9 +121,9 @@ const TablaEmpresas: React.FC = () => {
             </div>
 
             <div className="relative overflow-x-auto max-w-full px-4">
-                 <table className="table table-zebra table-pin-rows  min-w-[900px]">
-          <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
-            <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
+                <table className="table table-zebra table-pin-rows  min-w-[900px]">
+                    <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
+                        <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
                             <th className="w-12">#</th>
                             <th>Logo</th>
                             <th>Empresa</th>
