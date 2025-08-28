@@ -201,9 +201,9 @@ const FacturarCredito: React.FC = () => {
 
         <div className="max-w-full mx-auto px-6 py-4 flex items-center justify-start gap-5">
            <div className='pt-4 mb-3'>
-                    <ButtonLink to="/creditos" label="Volver a creditos" direction="back" />
+                    <ButtonLink to="/solicitudes" label="Volver a facturación" direction="back" />
                 </div>
-          <h1 className="text-xl font-semibold tracking-tight badge badge-soft badge-success">Solicitar facturación</h1>
+          <h1 className="text-xl font-semibold tracking-tight badge badge-soft badge-success">Solicitudes de facturación</h1>
         </div>
       </div>
 
