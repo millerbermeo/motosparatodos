@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useCredito, useDeudor } from '../../../services/creditosServices';
 import { CalendarDays, User2 } from 'lucide-react';
 import { useRegistrarSolicitudFacturacion, useSolicitudesPorCodigoCredito } from '../../../services/solicitudServices';
+import FacturaFinalDownload from '../pdf/FacturaFinal';
 
 type MaybeNum = number | undefined | null;
 
@@ -567,6 +568,16 @@ const FacturarCredito: React.FC = () => {
                         {badgeNeutro('No adjunto').texto}
                       </span>
                     )}
+                  </li>
+
+
+                  <li className="flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <span className="font-medium block">Factura</span>
+                      <span className="text-xs text-slate-500">Factura electrónica (demo)</span>
+                    </div>
+                    <FacturaFinalDownload />
+
                   </li>
                 </ul>
               </div>

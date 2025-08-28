@@ -17,6 +17,8 @@ import ComentarioFormulario from './ComentarioFormulario';
 import { useAuthStore } from '../../store/auth.store';
 import Swal from 'sweetalert2';
 import { useLoaderStore } from '../../store/loader.store';
+import { Image, FileText } from 'lucide-react';
+import ButtonLink from '../../shared/components/ButtonLink';
 
 
 const fmtCOP = (v: number) =>
@@ -174,9 +176,12 @@ const CreditoDetalle: React.FC = () => {
     );
 
 
-    const soportes: string[] = credito?.soportes
-        ? JSON.parse(credito.soportes) // de string → array
-        : [];
+    const soportes: string[] = [
+        ...(credito?.soportes ? JSON.parse(credito.soportes) : []),
+        ...(credito?.firmas ? [credito.firmas] : []),
+        ...(credito?.formato_referencia ? [`docs_creditos/${credito.formato_referencia}`] : []),
+        ...(credito?.formato_datacredito ? [`docs_creditos/${credito.formato_datacredito}`] : []),
+    ];
 
     const BaseUrl = import.meta.env.VITE_API_URL ?? "http://tuclick.vozipcolombia.net.co/motos/back";
 
@@ -190,10 +195,17 @@ const CreditoDetalle: React.FC = () => {
         }
     }, [isLoading, show, hide]);
 
+
+
     return (
         <main className="min-h-screen w-full bg-gradient-to-b from-white to-slate-50">
             {/* Header */}
-            <header className="sticky top-0 z-10 backdrop-blur bg-slate-100 border border-white">
+            <header className="sticky top-0 z-10 backdrop-blur px-3 bg-slate-100 border border-white">
+
+                <div className='pt-4 mb-3'>
+                    <ButtonLink to="/creditos" label="Volver a creditos" direction="back" />
+                </div>
+
                 <div className="mx-auto max-w-6xl px-4 py-2.5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <LibraryBig className="w-6 h-6 text-success" />
@@ -431,32 +443,96 @@ const CreditoDetalle: React.FC = () => {
                                 <FileSignature className="w-5 h-5" /> Soportes
                             </h2>
                         </summary>
-                        <div className="collapse-content text-sm space-y-3">
+
+                        <div className="collapse-content text-sm">
                             {soportes.length === 0 ? (
                                 <p className="text-slate-500">No hay soportes disponibles.</p>
                             ) : (
-                                soportes.map((s, idx) => (
-                                    <div key={idx} className="bg-slate-50 p-4 rounded-xl ring-1 ring-slate-200">
-                                        <Row
-                                            label={`Soporte ${idx + 1}`}
-                                            value={
-                                                <a
-                                                    href={`${BaseUrl}/${s}`} // construye la ruta completa
-                                                    download
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-blue-600 underline"
-                                                >
-                                                    {s.split("/").pop()} {/* muestra solo el nombre */}
-                                                </a>
-                                            }
-                                        />
-                                    </div>
-                                ))
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {soportes.map((s, idx) => {
+                                        const href = `${BaseUrl}/${s}`;
+                                        const fileName = s.split('/').pop() ?? `Soporte ${idx + 1}`;
+                                        const isImg = /\.(png|jpe?g|gif|webp)$/i.test(s);
+                                        const isPdf = /\.pdf$/i.test(s);
+                                        const isDoc = /\.(docx?|odt)$/i.test(s);
+
+                                        return (
+                                            <article
+                                                key={idx}
+                                                className="group rounded-xl ring-1 ring-slate-200 bg-white shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                                            >
+                                                <div className="aspect-video bg-slate-50 flex items-center justify-center">
+                                                    {isImg ? (
+                                                        <img
+                                                            src={href}
+                                                            alt={fileName}
+                                                            className="h-full w-full object-cover"
+                                                            loading="lazy"
+                                                        />
+                                                    ) : isPdf ? (
+                                                        <embed
+                                                            src={href}
+                                                            type="application/pdf"
+                                                            className="h-full w-full"
+                                                        />
+                                                    ) : (
+                                                        <div className="flex flex-col items-center justify-center text-slate-400">
+                                                            <FileDown className="w-10 h-10" />
+                                                            <span className="text-xs mt-1">Vista no disponible</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="p-4 space-y-2">
+                                                    <div className="flex items-start gap-2">
+                                                        {isImg ? (
+                                                            <Image className="w-4 h-4 text-slate-500 shrink-0" />
+                                                        ) : isPdf ? (
+                                                            <FileText className="w-4 h-4 text-slate-500 shrink-0" />
+                                                        ) : isDoc ? (
+                                                            <FileSignature className="w-4 h-4 text-slate-500 shrink-0" />
+                                                        ) : (
+                                                            <FileDown className="w-4 h-4 text-slate-500 shrink-0" />
+                                                        )}
+                                                        <div className="min-w-0">
+                                                            <p
+                                                                className="text-sm font-medium text-slate-800 truncate"
+                                                                title={fileName}
+                                                            >
+                                                                {fileName}
+                                                            </p>
+                                                            <p className="text-xs text-slate-500 break-words">{s}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center justify-between pt-1">
+                                                        <a
+                                                            href={href}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-xs text-blue-600 hover:underline"
+                                                        >
+                                                            Abrir
+                                                        </a>
+                                                        <a
+                                                            href={href}
+                                                            download
+                                                            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700"
+                                                        >
+                                                            <Download className="w-3.5 h-3.5" />
+                                                            Descargar
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </article>
+                                        );
+                                    })}
+                                </div>
                             )}
                         </div>
                     </details>
                 </section>
+
 
 
 

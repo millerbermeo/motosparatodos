@@ -12,6 +12,7 @@ import { useParams } from 'react-router-dom';
 import CambiarEstadoCredito from './forms/CambiarEstadoCredito';
 import { useAuthStore } from '../../store/auth.store';
 import { useLoaderStore } from '../../store/loader.store';
+import ButtonLink from '../../shared/components/ButtonLink';
 
 
 const fmtCOP = (v: number) =>
@@ -109,6 +110,11 @@ const CreditoDetalleAdmin: React.FC = () => {
         <main className="min-h-screen w-full bg-gradient-to-b from-white to-slate-50">
             {/* Header */}
             <header className="sticky top-0 z-10 backdrop-blur bg-slate-100 border border-white">
+                      <div className='pt-4 mb-3'>
+                    <ButtonLink to="/creditos" label="Volver a creditos" direction="back" />
+                </div>
+
+
                 <div className="mx-auto max-w-6xl px-4 py-2.5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <LibraryBig className="w-6 h-6 text-success" />

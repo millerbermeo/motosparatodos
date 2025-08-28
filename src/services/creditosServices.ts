@@ -452,6 +452,9 @@ export interface CreditoLine {
 
   firmas?: any;
   soportes?: any;
+  formato_referencia? : any
+  formato_datacredito: any
+
 }
 
 

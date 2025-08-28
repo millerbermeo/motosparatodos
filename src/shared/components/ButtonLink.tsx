@@ -1,15 +1,16 @@
 // src/components/ui/ButtonLink.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, ChevronLeft } from 'lucide-react';
 
 type ButtonLinkProps = {
-  to: string;                // ruta
-  label: string;             // texto del botón
-  icon?: React.ReactNode;    // ícono opcional al inicio
+  to: string;                
+  label: string;             
+  icon?: React.ReactNode;    
   variant?: 'green' | 'blue' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  direction?: 'forward' | 'back'; // 👈 nuevo prop para elegir dirección
 };
 
 const ButtonLink: React.FC<ButtonLinkProps> = ({
@@ -19,6 +20,7 @@ const ButtonLink: React.FC<ButtonLinkProps> = ({
   variant = 'green',
   size = 'md',
   className = '',
+  direction = 'forward',
 }) => {
   const sizeClasses =
     size === 'sm'
@@ -34,7 +36,14 @@ const ButtonLink: React.FC<ButtonLinkProps> = ({
       ? 'bg-transparent border border-base-300 text-base-content hover:bg-base-200 focus:ring-base-300'
       : variant === 'ghost'
       ? 'bg-base-100 text-base-content hover:bg-base-200 focus:ring-base-300'
-      : 'bg-[#2BB352] hover:bg-[#23a048] text-white focus:ring-[#2BB352]'; // green (default)
+      : 'btn  btn-success'; 
+
+  const arrowIcon =
+    direction === 'back' ? (
+      <ChevronLeft className="w-4 h-4 opacity-70 transition-transform group-hover:-translate-x-0.5" />
+    ) : (
+      <ChevronRight className="w-4 h-4 opacity-70 transition-transform group-hover:translate-x-0.5" />
+    );
 
   return (
     <Link
@@ -48,9 +57,10 @@ const ButtonLink: React.FC<ButtonLinkProps> = ({
         className,
       ].join(' ')}
     >
-      {icon && <span className="transition-transform group-hover:-translate-x-0.5">{icon}</span>}
+      {direction === 'back' && arrowIcon}
+      {icon && <span className="transition-transform">{icon}</span>}
       <span className="font-semibold">{label}</span>
-      <ChevronRight className="w-4 h-4 opacity-70 transition-transform group-hover:translate-x-0.5" />
+      {direction === 'forward' && arrowIcon}
     </Link>
   );
 };

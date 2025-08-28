@@ -349,7 +349,7 @@ const DetalleCotizacion: React.FC = () => {
     <main className="w-full min-h-screen px-4 md:px-6 pb-6">
       {/* Header */}
       <div className='pt-4 mb-3'>
-        <ButtonLink to="/cotizaciones" label="Volver a cotizaciones" />
+        <ButtonLink to="/cotizaciones" label="Volver a cotizaciones"  direction="back"/>
       </div>
 
       <section className="w-full mb-6">

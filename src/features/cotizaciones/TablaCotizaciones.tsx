@@ -339,14 +339,18 @@ const TablaCotizaciones: React.FC = () => {
                                 <td className="font-medium">{fullName(r)}</td>
                                 <td className="text-sm text-base-content/70">{r.celular || ''}</td>
                                 <td>{r.tipo_pago}</td>
-                                <td>
-                                    <span className={`badge ${estadoBadgeClass(r?.estado)}`}>{r?.estado || 'Sin estado'}</span>
+                                <td className="whitespace-nowrap">
+                                    <span className={`badge whitespace-nowrap ${estadoBadgeClass(r?.estado)}`}>
+                                        {r?.estado || 'Sin estado'}
+                                    </span>
                                 </td>
-                                <td>
-                                    <span className={`badge ${prospectoFrom(r) === 'SI' ? 'badge-success' : 'badge-ghost'}`}>
+
+                                <td className="whitespace-nowrap">
+                                    <span className={`badge whitespace-nowrap ${prospectoFrom(r) === 'SI' ? 'badge-success' : 'badge-ghost'}`}>
                                         {prospectoFrom(r)}
                                     </span>
                                 </td>
+
                                 <td className="text-sm text-base-content/70">
                                     {humanizeDesde(r?.fecha_actualizacion)} · {formatFechaLarga(r?.fecha_actualizacion)}
                                 </td>

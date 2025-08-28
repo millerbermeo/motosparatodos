@@ -14,6 +14,7 @@ import { useParams } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth.store';
 import CerrarCreditoFormulario from './forms/CerrarCreditoFormulario';
 import { useLoaderStore } from '../../store/loader.store';
+import ButtonLink from '../../shared/components/ButtonLink';
 
 
 const fmtCOP = (v: number) =>
@@ -96,21 +97,26 @@ const CreditoDetalleAsesor: React.FC = () => {
 
 
 
- const { show, hide } = useLoaderStore();
+    const { show, hide } = useLoaderStore();
 
-  React.useEffect(() => {
-    if (isLoading) {
-      show();   // 🔵 activa overlay global
-    } else {
-      hide();   // 🔵 lo oculta
-    }
-  }, [isLoading, show, hide]);
+    React.useEffect(() => {
+        if (isLoading) {
+            show();   // 🔵 activa overlay global
+        } else {
+            hide();   // 🔵 lo oculta
+        }
+    }, [isLoading, show, hide]);
 
 
     return (
         <main className="min-h-screen w-full bg-gradient-to-b from-white to-slate-50">
             {/* Header */}
             <header className="sticky top-0 z-10 backdrop-blur bg-slate-100 border border-white">
+                <div className='pt-4 mb-3'>
+                    <ButtonLink to="/creditos" label="Volver a creditos" direction="back" />
+                </div>
+
+
                 <div className="mx-auto max-w-6xl px-4 py-2.5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <LibraryBig className="w-6 h-6 text-success" />
@@ -126,7 +132,7 @@ const CreditoDetalleAsesor: React.FC = () => {
 
             <div className="mx-auto max-w-full px-4 py-6 space-y-6">
                 {/* Mensajes de estado */}
-             
+
                 {error && (
                     <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
                         Ocurrió un error al cargar el crédito.
@@ -187,7 +193,7 @@ const CreditoDetalleAsesor: React.FC = () => {
                                 <Row label="Número de motor" value={moto?.numeroMotor} />
                                 <Row label="Fecha de entrega" value={moto?.fechaEntrega} />
                             </div>
-                       
+
                         </div>
                     </div>
                 </section>
@@ -233,7 +239,7 @@ const CreditoDetalleAsesor: React.FC = () => {
                 </section>
 
 
-            
+
 
                 {useAuthStore.getState().user?.rol === "Asesor" && estado === 'Aprobado' && (
 
