@@ -4,6 +4,7 @@ import { useCredito, useDeudor } from '../../../services/creditosServices';
 import { CalendarDays, User2 } from 'lucide-react';
 import { useRegistrarSolicitudFacturacion, useSolicitudesPorCodigoCredito } from '../../../services/solicitudServices';
 import FacturaFinalDownload from '../pdf/FacturaFinal';
+import ButtonLink from '../../../shared/components/ButtonLink';
 
 type MaybeNum = number | undefined | null;
 
@@ -196,7 +197,12 @@ const FacturarCredito: React.FC = () => {
     <main className="min-h-screen w-full bg-slate-50">
       {/* Header / Migas */}
       <div className="border-b border-slate-200 bg-white/70 backdrop-blur">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+            
+
+        <div className="max-w-full mx-auto px-6 py-4 flex items-center justify-start gap-5">
+           <div className='pt-4 mb-3'>
+                    <ButtonLink to="/creditos" label="Volver a creditos" direction="back" />
+                </div>
           <h1 className="text-xl font-semibold tracking-tight badge badge-soft badge-success">Solicitar facturación</h1>
         </div>
       </div>

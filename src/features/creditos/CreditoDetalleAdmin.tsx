@@ -110,7 +110,7 @@ const CreditoDetalleAdmin: React.FC = () => {
         <main className="min-h-screen w-full bg-gradient-to-b from-white to-slate-50">
             {/* Header */}
             <header className="sticky top-0 z-10 backdrop-blur bg-slate-100 border border-white">
-                      <div className='pt-4 mb-3'>
+                <div className='pt-4 mb-3'>
                     <ButtonLink to="/creditos" label="Volver a creditos" direction="back" />
                 </div>
 
