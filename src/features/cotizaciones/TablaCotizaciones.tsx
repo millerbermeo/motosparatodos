@@ -316,20 +316,25 @@ const TablaCotizaciones: React.FC = () => {
                                         </Link>
 
 
-                                        {user?.rol === "Asesor" && r?.estado === "Sin estado" && (
-                                            <>
+                                        {user?.rol === "Asesor" && (
+                                            r?.estado === "Sin estado" ||
+                                            r?.estado === "Alto interés" ||
+                                            r?.estado === "Continúa interesado" ||
+                                            r?.estado === "Sin interés"
+                                        ) && (
+                                                <>
 
-                                                <Link
-                                                    to={`/cotizaciones/estado/${r.id}`}
-                                                    className="btn btn-sm bg-white btn-circle"
-                                                    title="Cambiar estado"
-                                                >
-                                                    <div className='text-warning'>
-                                                        <ScanEye size="18px" />
-                                                    </div>
-                                                </Link>
-                                            </>
-                                        )}
+                                                    <Link
+                                                        to={`/cotizaciones/estado/${r.id}`}
+                                                        className="btn btn-sm bg-white btn-circle"
+                                                        title="Cambiar estado"
+                                                    >
+                                                        <div className='text-warning'>
+                                                            <ScanEye size="18px" />
+                                                        </div>
+                                                    </Link>
+                                                </>
+                                            )}
 
 
                                     </div>

@@ -1,6 +1,6 @@
 // src/pages/DetalleCotizacion.tsx
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useCotizacionById } from '../../services/cotizacionesServices';
 import {
   UserRound,
@@ -15,6 +15,7 @@ import {
   UserCircle2,
   MessageSquareQuote,
   BadgeCheck,
+  Edit,
 } from 'lucide-react';
 import ButtonLink from '../../shared/components/ButtonLink';
 import { PDFDownloadLink } from "@react-pdf/renderer";
@@ -57,7 +58,7 @@ type Evento = {
 
 type Cotizacion = {
   id: string;
-  estado: 'abierta' | 'aprobada' | 'rechazada' | 'borrador';
+  estado: any;
   creada: string;
   cliente: {
     nombres: string;
@@ -87,14 +88,21 @@ type Cotizacion = {
 const fmtCOP = (v: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
 
-const badgeEstado = (estado: Cotizacion['estado']) => {
-  const map: Record<Cotizacion['estado'], string> = {
-    abierta: 'badge-info',
-    aprobada: 'badge-success',
-    rechazada: 'badge-error',
-    borrador: 'badge-ghost',
-  };
-  return map[estado];
+const estadoBadgeClass = (estado?: string) => {
+  switch (estado) {
+    case 'Continúa interesado':
+    case 'Alto interés':
+      return 'badge-warning';
+    case 'Solicitar facturación':
+    case 'Solicitar crédito':
+      return 'badge-success';
+    case 'Solicitar crédito express':
+      return 'badge-info';
+    case 'Sin interés':
+      return 'badge-error';
+    default:
+      return 'badge-ghost';
+  }
 };
 
 // "2025-08-19 05:53:12" -> "19 de agosto de 2025, 5:53 a. m."
@@ -210,11 +218,10 @@ const mapApiToCotizacion = (data: any): Cotizacion => {
   const motoB = buildMoto(data, 'B');
 
   // Estado
-  const rawEstado = String(data?.estado || '').toLowerCase();
-  const estado: Cotizacion['estado'] =
-    rawEstado.includes('aprob') ? 'aprobada' :
-      rawEstado.includes('rechaz') ? 'rechazada' :
-        rawEstado.includes('borr') ? 'borrador' : 'abierta';
+  const estadoNombre =
+    typeof data?.estado === 'string' && data.estado.trim()
+      ? String(data.estado).trim()
+      : 'Sin estado';
 
   const creada = fmtFecha(data?.fecha_creacion);
 
@@ -225,7 +232,7 @@ const mapApiToCotizacion = (data: any): Cotizacion => {
 
   return {
     id: String(data?.id ?? ''),
-    estado,
+    estado: estadoNombre, // <<< nombre de negocio
     creada,
     cliente: { nombres, apellidos, email, celular, comentario, comentario2, cedula },
     comercial,
@@ -349,7 +356,7 @@ const DetalleCotizacion: React.FC = () => {
     <main className="w-full min-h-screen px-4 md:px-6 pb-6">
       {/* Header */}
       <div className='pt-4 mb-3'>
-        <ButtonLink to="/cotizaciones" label="Volver a cotizaciones"  direction="back"/>
+        <ButtonLink to="/cotizaciones" label="Volver a cotizaciones" direction="back" />
       </div>
 
       <section className="w-full mb-6">
@@ -362,7 +369,7 @@ const DetalleCotizacion: React.FC = () => {
                 Información de la cotización
               </h1>
               <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-600">
-                <span className={`badge ${badgeEstado(q.estado)}`}>{q.estado}</span>
+                <span className={`badge ${estadoBadgeClass(q.estado)}`}>{q.estado}</span>
                 <div className="flex items-center gap-1">
                   <span className="opacity-70">Creada:</span>
                   <span className="font-medium">{q.creada || '—'}</span>
@@ -553,6 +560,24 @@ const DetalleCotizacion: React.FC = () => {
       {/* Barra de acciones (inferior) */}
       <section className="sticky bottom-0 mt-4 bg-base-100/90 backdrop-blur border-t border-base-300 px-4 py-3">
         <div className="max-w-full mx-auto flex flex-wrap items-center justify-end gap-2">
+
+
+          {useAuthStore.getState().user?.rol === "Asesor" && q.estado != 'Sin interés' && (
+
+
+            <Link
+              to={`/cotizaciones/estado/${id}`}
+    
+            >
+
+              <button className="btn btn-warning btn-sm" title="Crear recordatorio">
+                <Edit className="w-4 h-4" />
+                Cambiar estado
+              </button>
+            </Link>
+
+          )}
+
           <button className="btn btn-success btn-sm" onClick={handleCrearRecordatorio} title="Crear recordatorio">
             <CalendarPlus className="w-4 h-4" />
             Crear recordatorio

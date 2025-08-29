@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import ButtonLink from '../../shared/components/ButtonLink';
 import { useLoaderStore } from '../../store/loader.store';
+import { useAuthStore } from '../../store/auth.store';
 
 /* =======================
    Estados (mismo mapping de la tabla)
@@ -84,33 +85,33 @@ const estadoBadgeClass = (estado?: string) => {
 // ✅ Agrega esto
 // ✅ Reemplaza los helpers de tipo de pago (quita el numérico)
 const tipoPagoLabel = (row: any) =>
-  (safeText(row?.tipo_pago) || '')
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .trim()
-    .toLowerCase();
+    (safeText(row?.tipo_pago) || '')
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '')
+        .trim()
+        .toLowerCase();
 
 const esCreditoDirecto = (row: any) =>
-  tipoPagoLabel(row) === 'credito directo';
+    tipoPagoLabel(row) === 'credito directo';
 
 
 // ✅ Actualiza las opciones de estados
 const opcionesEstados = (row: any): any[] => {
-  const soloCreditoEnDirecto = esCreditoDirecto(row); // true solo si "Crédito directo"
+    const soloCreditoEnDirecto = esCreditoDirecto(row); // true solo si "Crédito directo"
 
-  return [
-    { value: '', label: 'Seleccione...' },
-    { value: '3', label: 'Continúa interesado' },
-    { value: '4', label: 'Alto interés' },
+    return [
+        { value: '', label: 'Seleccione...' },
+        { value: '3', label: 'Continúa interesado' },
+        { value: '4', label: 'Alto interés' },
 
-    // Solo "Solicitar crédito" cuando es "Crédito directo", en los otros dos "Solicitar facturación"
-    soloCreditoEnDirecto
-      ? { value: '5', label: 'Solicitar crédito' }
-      : { value: '6', label: 'Solicitar facturación' },
+        // Solo "Solicitar crédito" cuando es "Crédito directo", en los otros dos "Solicitar facturación"
+        soloCreditoEnDirecto
+            ? { value: '5', label: 'Solicitar crédito' }
+            : { value: '6', label: 'Solicitar facturación' },
 
-    { value: '7', label: 'Solicitar crédito express' }, // lo dejo como estaba (visible siempre)
-    { value: '2', label: 'Sin interés' },
-  ];
+        { value: '7', label: 'Solicitar crédito express' }, // lo dejo como estaba (visible siempre)
+        { value: '2', label: 'Sin interés' },
+    ];
 };
 
 
@@ -203,10 +204,20 @@ const DetalleCambiarEstado: React.FC = () => {
             if (esSolicitarCredito(estadoNombre) && codigoCredito) {
                 // Solo si es "Solicitar crédito" y hay código → /credito/{codigo}
                 navigate(`/creditos/registrar/${encodeURIComponent(codigoCredito)}`);
+            } else if (
+                estadoNombre
+                    .normalize('NFD')
+                    .replace(/\p{Diacritic}/gu, '')
+                    .trim()
+                    .toLowerCase() === 'solicitar facturacion'
+            ) {
+                // Si es "Solicitar facturación" → /solicitud/{id}
+                navigate(`/solicitudes/${id}`);
             } else {
-                // Para cualquier otro estado (o si no vino código) → /credito
-                navigate('/creditos');
+                // Para cualquier otro estado (o si no vino código) → /cotizaciones
+                navigate('/cotizaciones');
             }
+
         } catch (err: any) {
             const msg = err?.response?.data?.message || 'No se pudo actualizar el estado.';
             Swal.fire({ icon: 'error', title: 'Error', text: String(msg) });
@@ -226,15 +237,15 @@ const DetalleCambiarEstado: React.FC = () => {
         );
     }
 
-  const { show, hide } = useLoaderStore();
+    const { show, hide } = useLoaderStore();
 
-React.useEffect(() => {
-  if (isLoading) {
-    show();   // 🔵 muestra el overlay global
-  } else {
-    hide();   // 🔵 lo oculta
-  }
-}, [isLoading, show, hide]);
+    React.useEffect(() => {
+        if (isLoading) {
+            show();   // 🔵 muestra el overlay global
+        } else {
+            hide();   // 🔵 lo oculta
+        }
+    }, [isLoading, show, hide]);
 
     if (error) {
         return (
@@ -275,7 +286,7 @@ React.useEffect(() => {
                 <div className='pt-4 mb-3'>
                     <ButtonLink to="/cotizaciones" label="Volver a cotizaciones" />
                 </div>
-{/* 
+                {/* 
                 {row} */}
 
             </section>
@@ -386,65 +397,69 @@ React.useEffect(() => {
             </section>
 
             {/* Formulario cambiar estado */}
-            <section className="card bg-base-100 border border-base-300/60 shadow-sm rounded-2xl">
-                <div className="card-body">
-                    <h2 className="card-title text-lg mb-2">Actualizar estado</h2>
+            {useAuthStore.getState().user?.rol === "Asesor" && estadoActual != 'Sin interés' && (
+                <>
+                    <section className="card bg-base-100 border border-base-300/60 shadow-sm rounded-2xl">
+                        <div className="card-body">
+                            <h2 className="card-title text-lg mb-2">Actualizar estado</h2>
 
-                    <form className="space-y-4" onSubmit={handleSubmit}>
-                        <div className="form-control">
-                            <label className="label w-28">
-                                <span className="label-text">
-                                    Estado <span className="text-error">*</span>
-                                </span>
-                            </label>
-                            <select
-                                className="select select-bordered"
-                                value={estadoNombre}
-                                onChange={(e) => setEstadoNombre(e.target.value)}
-                                required
-                            >
-                                {opts.map(({ value, label }) => (
-                                    <option key={value || 'empty'} value={label} disabled={value === ''}>
-                                        {label}
-                                    </option>
-                                ))}
-                            </select>
+                            <form className="space-y-4" onSubmit={handleSubmit}>
+                                <div className="form-control">
+                                    <label className="label w-28">
+                                        <span className="label-text">
+                                            Estado <span className="text-error">*</span>
+                                        </span>
+                                    </label>
+                                    <select
+                                        className="select select-bordered"
+                                        value={estadoNombre}
+                                        onChange={(e) => setEstadoNombre(e.target.value)}
+                                        required
+                                    >
+                                        {opts.map(({ value, label }) => (
+                                            <option key={value || 'empty'} value={label} disabled={value === ''}>
+                                                {label}
+                                            </option>
+                                        ))}
+                                    </select>
 
+                                </div>
+
+                                <div className="form-control">
+                                    <label className="label w-28">
+                                        <span className="label-text">
+                                            Comentario <span className="text-error">*</span>
+                                        </span>
+                                    </label>
+                                    <textarea
+                                        className="textarea textarea-bordered min-h-28"
+                                        placeholder="Escribe un comentario"
+                                        value={comentario2}
+                                        onChange={(e) => setComentario2(e.target.value)}
+                                        maxLength={500}
+                                        required
+                                    />
+                                    <div className="text-xs opacity-60 text-right mt-1">{comentario2.length} / 500</div>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-2">
+                                    <button
+                                        type="button"
+                                        className="btn btn-error btn-sm"
+                                        onClick={() => navigate(-1)}
+                                    >
+                                        ← Volver
+                                    </button>
+
+                                    <button type="submit" className="btn btn-success btn-sm">
+                                        ✓ Aceptar
+                                    </button>
+                                </div>
+                            </form>
                         </div>
+                    </section>
+                </>)}
 
-                        <div className="form-control">
-                            <label className="label w-28">
-                                <span className="label-text">
-                                    Comentario <span className="text-error">*</span>
-                                </span>
-                            </label>
-                            <textarea
-                                className="textarea textarea-bordered min-h-28"
-                                placeholder="Escribe un comentario"
-                                value={comentario2}
-                                onChange={(e) => setComentario2(e.target.value)}
-                                maxLength={500}
-                                required
-                            />
-                            <div className="text-xs opacity-60 text-right mt-1">{comentario2.length} / 500</div>
-                        </div>
-
-                        <div className="flex items-center justify-between pt-2">
-                            <button
-                                type="button"
-                                className="btn btn-error btn-sm"
-                                onClick={() => navigate(-1)}
-                            >
-                                ← Volver
-                            </button>
-
-                            <button type="submit" className="btn btn-success btn-sm">
-                                ✓ Aceptar
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </section>
         </main>
     );
 };

@@ -504,6 +504,59 @@ const CotizacionFormulario: React.FC = () => {
         });
     };
 
+    const esCreditoDirecto = metodo === "credibike" || metodo === "terceros";
+
+
+    React.useEffect(() => {
+        if (!esCreditoDirecto) {
+            setValue("cuotaInicial1", "0");
+            setValue("cuotaInicial2", "0");
+        }
+    }, [esCreditoDirecto, setValue]);
+
+
+ // Para moto1
+React.useEffect(() => {
+  const sel = watch("moto1");
+  const m = (motos1?.motos ?? []).find((x) => x.linea === sel);
+  if (m) {
+    setValue("modelo_a", m.modelo?.trim() || "");
+
+    // Descuento automático
+    const descuento = Number(m.descuento_empresa) + Number(m.descuento_ensambladora);
+    setValue("descuento1", descuento.toString());
+
+    // 👉 Precio documentos automático = matrícula + impuestos + soat
+    const documentos =
+      (metodo === "contado" ? Number(m.matricula_contado) : Number(m.matricula_credito)) +
+      Number(m.impuestos) +
+      Number(m.soat);
+
+    setValue("precioDocumentos1", documentos.toString());
+  }
+}, [watch("moto1"), motos1, metodo, setValue]);
+
+
+// Para moto2
+React.useEffect(() => {
+  const sel = watch("moto2");
+  const m = (motos2?.motos ?? []).find((x) => x.linea === sel);
+  if (m) {
+    setValue("modelo_b", m.modelo?.trim() || "");
+
+    const descuento = Number(m.descuento_empresa) + Number(m.descuento_ensambladora);
+    setValue("descuento2", descuento.toString());
+
+    const documentos =
+      (metodo === "contado" ? Number(m.matricula_contado) : Number(m.matricula_credito)) +
+      Number(m.impuestos) +
+      Number(m.soat);
+
+    setValue("precioDocumentos2", documentos.toString());
+  }
+}, [watch("moto2"), motos2, metodo, setValue]);
+
+
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className='pt-4 mb-3'>
@@ -714,25 +767,22 @@ const CotizacionFormulario: React.FC = () => {
 
                                     {moto1Seleccionada && (
                                         <>
+                                            {esCreditoDirecto && (
+                                                <FormInput<FormValues>
+                                                    name="cuotaInicial1" label="Cuota inicial" control={control} type="number"
+                                                    rules={reqIf(showMotos && incluirMoto1, "Ingresa la cuota inicial")} disabled={!showMotos || !incluirMoto1} />
+                                            )}
 
-                                            <FormInput<FormValues>
-                                                name="cuotaInicial1" label="Cuota inicial" control={control} type="number"
-                                                rules={reqIf(showMotos && incluirMoto1, "Ingresa la cuota inicial")} disabled={!showMotos || !incluirMoto1} />
 
                                             {/* CAMBIO DE NOMBRE */}
                                             <FormInput<FormValues>
                                                 name="precioDocumentos1"
-                                                label="Precio documentos / matrícula y SOAT"
+                                                label=""
                                                 control={control}
-                                                type="number"
+                                                type="hidden"
                                                 disabled={!showMotos || !incluirMoto1}
-                                                rules={{
-                                                    ...reqIf(showMotos && incluirMoto1, "El precio es obligatorio"),
-                                                    min: {
-                                                        value: 1,
-                                                        message: "El precio debe ser mayor a 0"
-                                                    }
-                                                }}
+                                       
+                                                
                                             />
 
                                             <FormInput<FormValues> name="descuento1" label="Descuentos" control={control} className="hidden" type="number" disabled={!showMotos || !incluirMoto1} />
@@ -754,10 +804,13 @@ const CotizacionFormulario: React.FC = () => {
                                                         <span className="font-medium text-gray-500">Accesorios (entero):</span>
                                                         <span>{N(watch("accesorios1"))}</span>
                                                     </div>
+                                                    {esCreditoDirecto && (
+
                                                     <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
                                                         <span className="font-medium text-gray-500">Inicial:</span>
                                                         <span>{fmt(inicial1)}</span>
                                                     </div>
+                                                    )}
                                                 </div>
 
                                                 <div className="space-y-2">
@@ -869,24 +922,22 @@ const CotizacionFormulario: React.FC = () => {
                                     {moto2Seleccionada && (
                                         <>                                            {/* SEGUROS MULTI ------------------------------------------ */}
 
+                                            {esCreditoDirecto && (
 
-                                            <FormInput<FormValues>
-                                                name="cuotaInicial2" label="Cuota inicial" control={control} type="number" placeholder="0"
-                                                rules={reqIf(showMotos && incluirMoto2, "Ingresa la cuota inicial")} disabled={!showMotos || !incluirMoto2} />
+                                                <FormInput<FormValues>
+                                                    name="cuotaInicial2" label="Cuota inicial" control={control} type="number" placeholder="0"
+                                                    rules={reqIf(showMotos && incluirMoto2, "Ingresa la cuota inicial")} disabled={!showMotos || !incluirMoto2} />
+
+                                            )}
+
                                             {/* CAMBIO DE NOMBRE */}
                                             <FormInput<FormValues>
                                                 name="precioDocumentos2"
-                                                label="Precio documentos / matrícula y SOAT"
+                                                label=""
                                                 control={control}
-                                                type="number"
+                                                type="hidden"
                                                 disabled={!showMotos || !incluirMoto2}
-                                                rules={{
-                                                    ...reqIf(showMotos && incluirMoto2, "El precio es obligatorio"),
-                                                    min: {
-                                                        value: 1,
-                                                        message: "El precio debe ser mayor a 0"
-                                                    }
-                                                }}
+                                    
                                             />
 
 
@@ -908,10 +959,13 @@ const CotizacionFormulario: React.FC = () => {
                                                         <span className="font-medium text-gray-500">Accesorios (entero):</span>
                                                         <span>{N(watch("accesorios2"))}</span>
                                                     </div>
+                                                    {esCreditoDirecto && (
+
                                                     <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
                                                         <span className="font-medium text-gray-500">Inicial:</span>
                                                         <span>{fmt(inicial2)}</span>
                                                     </div>
+                                                    )}
                                                 </div>
 
                                                 <div className="space-y-2">
