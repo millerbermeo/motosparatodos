@@ -158,6 +158,7 @@ const DetalleCambiarEstado: React.FC = () => {
         setEstadoNombre(preEstado && labelsValidos.has(preEstado) ? preEstado : '');
         setComentario2(safeText(row?.comentario2) || '');
     }, [row]);
+    const user = useAuthStore((s) => s.user);
 
 
     const esSolicitarCredito = (s?: string) =>
@@ -186,6 +187,8 @@ const DetalleCambiarEstado: React.FC = () => {
                 id: Number(id),
                 estado: estadoNombre, // el backend recibe el NOMBRE
                 comentario2: comentario2.trim(),
+                nombre_usuario: user?.name || 'Desconocido',
+                rol_usuario: user?.rol || 'Usuario',
             });
 
             // El backend puede devolver codigo_credito en la raíz o dentro de data

@@ -76,6 +76,8 @@ type FormValues = {
     producto2CuotaInicial: string;
     modelo_a: string;
     modelo_b: string;
+    nombre_usuario: string;
+    rol_usuario: string;
 };
 
 const CotizacionFormulario: React.FC = () => {
@@ -322,6 +324,10 @@ const CotizacionFormulario: React.FC = () => {
     //     setValue("cuotaInicial2", "0");
     // }, [setValue]);
 
+    const nombre = useAuthStore((s) => s.user?.name);
+    const rol = useAuthStore((s) => s.user?.rol);
+
+
 
     React.useEffect(() => {
         if (metodo === "terceros") {
@@ -486,7 +492,10 @@ const CotizacionFormulario: React.FC = () => {
 
             comentario: data.comentario?.trim(),
 
-            asesor: name
+            asesor: name,
+
+            nombre_usuario: nombre ?? "Usuario",
+            rol_usuario: rol ?? "Usuario",
         };
 
         console.log("SUBMIT (payload EXACTO BD):", payload);
@@ -515,46 +524,46 @@ const CotizacionFormulario: React.FC = () => {
     }, [esCreditoDirecto, setValue]);
 
 
- // Para moto1
-React.useEffect(() => {
-  const sel = watch("moto1");
-  const m = (motos1?.motos ?? []).find((x) => x.linea === sel);
-  if (m) {
-    setValue("modelo_a", m.modelo?.trim() || "");
+    // Para moto1
+    React.useEffect(() => {
+        const sel = watch("moto1");
+        const m = (motos1?.motos ?? []).find((x) => x.linea === sel);
+        if (m) {
+            setValue("modelo_a", m.modelo?.trim() || "");
 
-    // Descuento automático
-    const descuento = Number(m.descuento_empresa) + Number(m.descuento_ensambladora);
-    setValue("descuento1", descuento.toString());
+            // Descuento automático
+            const descuento = Number(m.descuento_empresa) + Number(m.descuento_ensambladora);
+            setValue("descuento1", descuento.toString());
 
-    // 👉 Precio documentos automático = matrícula + impuestos + soat
-    const documentos =
-      (metodo === "contado" ? Number(m.matricula_contado) : Number(m.matricula_credito)) +
-      Number(m.impuestos) +
-      Number(m.soat);
+            // 👉 Precio documentos automático = matrícula + impuestos + soat
+            const documentos =
+                (metodo === "contado" ? Number(m.matricula_contado) : Number(m.matricula_credito)) +
+                Number(m.impuestos) +
+                Number(m.soat);
 
-    setValue("precioDocumentos1", documentos.toString());
-  }
-}, [watch("moto1"), motos1, metodo, setValue]);
+            setValue("precioDocumentos1", documentos.toString());
+        }
+    }, [watch("moto1"), motos1, metodo, setValue]);
 
 
-// Para moto2
-React.useEffect(() => {
-  const sel = watch("moto2");
-  const m = (motos2?.motos ?? []).find((x) => x.linea === sel);
-  if (m) {
-    setValue("modelo_b", m.modelo?.trim() || "");
+    // Para moto2
+    React.useEffect(() => {
+        const sel = watch("moto2");
+        const m = (motos2?.motos ?? []).find((x) => x.linea === sel);
+        if (m) {
+            setValue("modelo_b", m.modelo?.trim() || "");
 
-    const descuento = Number(m.descuento_empresa) + Number(m.descuento_ensambladora);
-    setValue("descuento2", descuento.toString());
+            const descuento = Number(m.descuento_empresa) + Number(m.descuento_ensambladora);
+            setValue("descuento2", descuento.toString());
 
-    const documentos =
-      (metodo === "contado" ? Number(m.matricula_contado) : Number(m.matricula_credito)) +
-      Number(m.impuestos) +
-      Number(m.soat);
+            const documentos =
+                (metodo === "contado" ? Number(m.matricula_contado) : Number(m.matricula_credito)) +
+                Number(m.impuestos) +
+                Number(m.soat);
 
-    setValue("precioDocumentos2", documentos.toString());
-  }
-}, [watch("moto2"), motos2, metodo, setValue]);
+            setValue("precioDocumentos2", documentos.toString());
+        }
+    }, [watch("moto2"), motos2, metodo, setValue]);
 
 
     return (
@@ -781,8 +790,8 @@ React.useEffect(() => {
                                                 control={control}
                                                 type="hidden"
                                                 disabled={!showMotos || !incluirMoto1}
-                                       
-                                                
+
+
                                             />
 
                                             <FormInput<FormValues> name="descuento1" label="Descuentos" control={control} className="hidden" type="number" disabled={!showMotos || !incluirMoto1} />
@@ -806,10 +815,10 @@ React.useEffect(() => {
                                                     </div>
                                                     {esCreditoDirecto && (
 
-                                                    <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                        <span className="font-medium text-gray-500">Inicial:</span>
-                                                        <span>{fmt(inicial1)}</span>
-                                                    </div>
+                                                        <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
+                                                            <span className="font-medium text-gray-500">Inicial:</span>
+                                                            <span>{fmt(inicial1)}</span>
+                                                        </div>
                                                     )}
                                                 </div>
 
@@ -937,7 +946,7 @@ React.useEffect(() => {
                                                 control={control}
                                                 type="hidden"
                                                 disabled={!showMotos || !incluirMoto2}
-                                    
+
                                             />
 
 
@@ -961,10 +970,10 @@ React.useEffect(() => {
                                                     </div>
                                                     {esCreditoDirecto && (
 
-                                                    <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                        <span className="font-medium text-gray-500">Inicial:</span>
-                                                        <span>{fmt(inicial2)}</span>
-                                                    </div>
+                                                        <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
+                                                            <span className="font-medium text-gray-500">Inicial:</span>
+                                                            <span>{fmt(inicial2)}</span>
+                                                        </div>
                                                     )}
                                                 </div>
 

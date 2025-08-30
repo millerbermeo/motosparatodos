@@ -1,7 +1,7 @@
 // src/pages/DetalleCotizacion.tsx
 import React from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useCotizacionById } from '../../services/cotizacionesServices';
+import { useCotizacionActividades, useCotizacionById } from '../../services/cotizacionesServices';
 import {
   UserRound,
   Bike,
@@ -255,6 +255,22 @@ const DetalleCotizacion: React.FC = () => {
     [payload]
   );
 
+
+  const { data: actividades = [], isLoading: loadingAct } = useCotizacionActividades(id);
+
+
+  type ActividadItem = { fecha: string; titulo: string; etiqueta?: string; color?: string };
+
+  const mapActividad = (rows: any[] = []): ActividadItem[] =>
+    rows.map((r) => ({
+      fecha: fmtFecha(r?.fecha_creacion),
+      titulo: r?.comentario || '—',
+      etiqueta: r?.rol_usuario ? `${r.nombre_usuario} · ${r.rol_usuario}` : r?.nombre_usuario,
+      color: 'info',
+    }));
+
+
+  const actividadItems = React.useMemo(() => mapActividad(actividades), [actividades]);
 
   const pdfPayload: QuotePayload | undefined = React.useMemo(
     () => (payload ? { success: true, data: payload } : undefined),
@@ -542,17 +558,30 @@ const DetalleCotizacion: React.FC = () => {
             </div>
 
             <ol className="relative border-s border-base-300">
-              {q.actividad.map((ev, i) => (
+              {loadingAct && (
+                <li className="ms-6 my-4 text-sm opacity-70">Cargando actividad…</li>
+              )}
+
+              {!loadingAct && actividadItems.length === 0 && (
+                <li className="ms-6 my-4 text-sm opacity-70">Sin actividad registrada.</li>
+              )}
+
+              {!loadingAct && actividadItems.map((ev, i) => (
                 <li key={i} className="ms-6 mb-5">
                   <span className="absolute -start-2 mt-1 w-3 h-3 rounded-full bg-base-300" />
                   <div className="flex flex-wrap items-center gap-2 text-sm opacity-70">
                     <span>{ev.fecha}</span>
-                    {ev.etiqueta && <span className={`badge badge-${ev.color || 'ghost'} badge-sm`}>{ev.etiqueta}</span>}
+                    {ev.etiqueta && (
+                      <span className={`badge badge-${ev.color || 'ghost'} badge-sm`}>
+                        {ev.etiqueta}
+                      </span>
+                    )}
                   </div>
                   <div className="font-medium mt-1">{ev.titulo}</div>
                 </li>
               ))}
             </ol>
+
           </div>
         </section>
       </div>
@@ -567,7 +596,7 @@ const DetalleCotizacion: React.FC = () => {
 
             <Link
               to={`/cotizaciones/estado/${id}`}
-    
+
             >
 
               <button className="btn btn-warning btn-sm" title="Crear recordatorio">

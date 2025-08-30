@@ -146,3 +146,48 @@ export const useBuscarPersonas = (qInput: string) => {
     staleTime: 60_000, // 1 min
   });
 };
+
+
+
+
+export interface CotizacionActividad {
+  id: number;
+  id_cotizacion: number;
+  nombre_usuario: string;
+  rol_usuario: string;
+  comentario: string;
+  fecha_creacion: string;      // "YYYY-MM-DD HH:mm:ss"
+  fecha_actualizacion: string; // "YYYY-MM-DD HH:mm:ss"
+}
+
+/**
+ * Lista actividades (comentarios) de una cotización.
+ * - Llama a /cotizacion_actividades_listar.php?id_cotizacion=...&limit=&offset=
+ * - El backend devuelve un array simple.
+ */
+export const useCotizacionActividades = (
+  idCotizacion: Id | undefined,
+  opts?: { limit?: number; offset?: number; enabled?: boolean }
+) => {
+  const parsedId =
+    typeof idCotizacion === "string" ? idCotizacion.trim() : idCotizacion;
+  const limit = opts?.limit ?? 100;
+  const offset = opts?.offset ?? 0;
+
+  return useQuery<CotizacionActividad[]>({
+    queryKey: ["cotizacion-actividades", parsedId, limit, offset],
+    enabled:
+      parsedId !== undefined &&
+      parsedId !== null &&
+      `${parsedId}` !== "" &&
+      (opts?.enabled ?? true),
+    queryFn: async () => {
+      const { data } = await api.get<CotizacionActividad[]>(
+        "/actividades.php",
+        { params: { id_cotizacion: parsedId, limit, offset } }
+      );
+      return Array.isArray(data) ? data : [];
+    },
+    staleTime: 30_000, // opcional
+  });
+};
