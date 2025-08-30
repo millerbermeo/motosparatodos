@@ -39,12 +39,6 @@ const Navbar: React.FC = () => {
     if (res.isConfirmed) {
       logout();
       navigate("/login", { replace: true });
-      Swal.fire({
-        title: "Sesión cerrada",
-        icon: "success",
-        timer: 1500,
-        showConfirmButton: false,
-      });
     }
   };
 

@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { Eye, EyeOff, Loader2, Mail, Lock } from "lucide-react";
 import useLogin from "../services/authServices";
 import { useNavigate } from "react-router-dom";
+import { useLoaderStore } from "../store/loader.store"; // o "../store/loader.store"
+
 
 interface LoginRequest {
   username: string;
@@ -23,6 +25,14 @@ const Login: React.FC = () => {
 
   const [showPassword, setShowPassword] = useState(false);
   const { mutate, isPending, isError, error } = useLogin();
+
+  // ⬇️ toma solo hide (y show si lo quieres usar luego)
+  const { hide } = useLoaderStore();
+
+  // ⬇️ al montar el Login: cierra cualquier loader que haya quedado abierto
+  useEffect(() => {
+    hide();
+  }, [hide]);
 
   const onSubmit: SubmitHandler<LoginRequest> = (data) => {
     mutate(data, {
@@ -59,11 +69,11 @@ const Login: React.FC = () => {
             aria-describedby="form-status"
             noValidate
           >
-          <div className="avatar absolute -top-10 z-50 left-1/2 -translate-x-1/2">
-          <div className="ring-gray-700 ring-offset-base-100 w-18 rounded-full ring-2 ring-offset-2">
-            <img src="/moto3.png" />
-          </div>
-        </div>
+            <div className="avatar absolute -top-10 z-50 left-1/2 -translate-x-1/2">
+              <div className="ring-gray-700 ring-offset-base-100 w-18 rounded-full ring-2 ring-offset-2">
+                <img src="/moto3.png" />
+              </div>
+            </div>
 
 
             <header className="mb-6 text-center pt-5">
