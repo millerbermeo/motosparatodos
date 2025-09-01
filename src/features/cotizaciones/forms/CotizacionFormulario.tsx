@@ -80,6 +80,7 @@ type FormValues = {
     rol_usuario: string;
 };
 
+
 const CotizacionFormulario: React.FC = () => {
     const {
         register,
@@ -307,6 +308,37 @@ const CotizacionFormulario: React.FC = () => {
         return s ? Number(s.valor) : 0;
     };
 
+
+        // ====== NUEVO: helpers para enviar los seguros como arreglo JSON (incluye "Otros seguros") ======
+    const findSeguroObj = (id: string | number) => {
+        const s = seguros.find((x: any) => String(x.id) === String(id));
+        if (!s) return null;
+        return {
+            id: Number(s.id),
+            nombre: s.nombre,
+            tipo: s.tipo  ?? null,
+            valor: Number(s.valor),
+        };
+    };
+
+    const mapSeguros = (ids: Array<string | number>, otrosMonto: any) => {
+        const base = (ids ?? [])
+            .map((sid) => findSeguroObj(sid))
+            .filter(Boolean) as Array<{ id: number; nombre: string; tipo: string | null; valor: number }>;
+
+        const otros = N(otrosMonto);
+        if (otros > 0) {
+            base.push({
+                id: -1, // puedes usar "otros" si tu backend lo permite como string
+                nombre: "Otros seguros",
+                tipo: null,
+                valor: otros,
+            });
+        }
+        return base;
+    };
+    // ====== FIN NUEVO ======
+
     // const clearMotos = React.useCallback(() => {
     //     setValue("incluirMoto1", true);
     //     setValue("incluirMoto2", false);
@@ -430,6 +462,11 @@ const CotizacionFormulario: React.FC = () => {
             ? [data.moto2?.trim(), data.modelo_b?.trim()].filter(Boolean).join(" – ")
             : null;
 
+               // ====== NUEVO: arrays JSON de seguros (incluyendo "Otros seguros" si aplica) ======
+        const segurosA = incluirMoto1 ? mapSeguros(data.segurosIds1 as string[], data.otroSeguro1) : [];
+        const segurosB = incluirMoto2 ? mapSeguros(data.segurosIds2 as string[], data.otroSeguro2) : [];
+        // ====== FIN NUEVO ======
+
 
         const payload: Record<string, any> = {
             name: data.primer_nombre?.trim(),
@@ -496,6 +533,15 @@ const CotizacionFormulario: React.FC = () => {
 
             nombre_usuario: nombre ?? "Usuario",
             rol_usuario: rol ?? "Usuario",
+
+
+                        // ====== NUEVO: Arreglos JSON de seguros (seleccionados + otros) ======
+            seguros_a: incluirMoto1 ? segurosA : [],
+            seguros_b: incluirMoto2 ? segurosB : [],
+
+            // ====== NUEVO: Totales SIN seguros ======
+            total_sin_seguros_a: incluirMoto1 ? totalSinSeg1 : 0,
+            total_sin_seguros_b: incluirMoto2 ? totalSinSeg2 : 0,
         };
 
         console.log("SUBMIT (payload EXACTO BD):", payload);

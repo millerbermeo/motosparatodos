@@ -63,9 +63,12 @@ const SolicitudForm: React.FC = () => {
     const fd = new FormData();
 
     // Campos EXACTOS (snake_case) + codigo_credito (id)
-    if (id) fd.append("codigo_credito", String(id));
+    if (id) {
+      fd.append("id_cotizacion", String(id));  // <-- mismo id para id_cotizacion
+    }
+
     fd.append("agencia", "Motos");
-    fd.append("codigo_solicitud", "Motos");
+    // fd.append("codigo_solicitud", "Motos");
     // 1) Construir el nombre completo sin espacios extra
     const nombreCliente = [
       values.primerNombre,
@@ -93,13 +96,13 @@ const SolicitudForm: React.FC = () => {
     fd.append("placa", (values.placa ?? "").toUpperCase().trim());
     fd.append("color", (values.color ?? "").trim());
     fd.append("tipo_solicitud", "Contado");
-    
+
 
     registrar(fd, {
-    onSuccess: () => {
-      reset(); // limpia cuando la API responde OK
-    },
-  });
+      onSuccess: () => {
+        reset(); // limpia cuando la API responde OK
+      },
+    });
   };
 
   const grid = "grid grid-cols-1 md:grid-cols-2 gap-4";

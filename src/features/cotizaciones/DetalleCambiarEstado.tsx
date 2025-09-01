@@ -275,7 +275,7 @@ const DetalleCambiarEstado: React.FC = () => {
     const apellidos =
         [safeText(row?.last_name), safeText(row?.s_last_name)].filter(Boolean).join(' ') || '—';
     const email = safeText(row?.email) || '—';
-    const telefono = safeText((row as any)?.telefono) || '—'; // si luego llega
+    const telefono = safeText((row as any)?.celular) || '—'; // si luego llega
     const estadoActual = safeText(row?.estado) || 'Sin estado';
     const creada = fmtFecha(row?.fecha_creacion);
 

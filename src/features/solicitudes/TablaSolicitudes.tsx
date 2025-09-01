@@ -76,6 +76,26 @@ const TablaSolicitudes: React.FC = () => {
     </div>
   );
 
+
+  const buildDetallePath = (s: SolicitudFacturacion) => {
+    // Soportar ambas convenciones de nombre por si aún no actualizaste tipos:
+    const codigoCredito = (s as any).codigoCredito ?? (s as any).codigo_credito;
+    const idCotizacion = (s as any).idCotizacion ?? (s as any).id_cotizacion;
+
+    const hasCodigo = codigoCredito !== null && codigoCredito !== undefined && String(codigoCredito).trim() !== "";
+    const hasCoti = idCotizacion !== null && idCotizacion !== undefined && String(idCotizacion).trim() !== "";
+
+    if (hasCodigo) {
+      return `/creditos/detalle/facturar-credito/${encodeURIComponent(String(codigoCredito))}`;
+    }
+    if (hasCoti) {
+      return `/creditos/detalle/facturar-solicitud/${encodeURIComponent(String(idCotizacion))}`;
+    }
+    return null; // sin identificadores válidos
+  };
+
+
+
   return (
     <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
       <div className="px-4 pt-4 flex items-center justify-between gap-3 flex-wrap my-3">
@@ -111,15 +131,29 @@ const TablaSolicitudes: React.FC = () => {
                 <th className="text-base-content/50">{s.id}</th>
                 {/* {useAuthStore.getState().user?.rol === "Administrador" && c.estado != 'Aprobado' && ( */}
                 <td>
-                  <Link to={`/creditos/detalle/facturar-credito/${s.codigoCredito}`}>
-                    <button
-                      className="btn btn-sm text-warning bg-white btn-circle"
-                      title="Editar Estado"
-                    >
-                      <Pencil size="18px" />
-                    </button>
-                  </Link>
+                  {(() => {
+                    const to = buildDetallePath(s);
+                    return to ? (
+                      <Link to={to}>
+                        <button
+                          className="btn btn-sm text-warning bg-white btn-circle"
+                          title="Editar Estado"
+                        >
+                          <Pencil size="18px" />
+                        </button>
+                      </Link>
+                    ) : (
+                      <button
+                        className="btn btn-sm btn-disabled bg-white btn-circle"
+                        title="Sin identificador"
+                        disabled
+                      >
+                        <Pencil size="18px" />
+                      </button>
+                    );
+                  })()}
                 </td>
+
                 {/* )} */}
                 <td className="font-medium whitespace-nowrap">{s.codigo}</td>
                 <td className="whitespace-nowrap">{s.cliente}</td>

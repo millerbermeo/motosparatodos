@@ -15,9 +15,14 @@ export const useCreateCotizaciones = () => {
       const { data } = await api.post("/create_cotizacion.php", payload);
       return data;
     },
-    onSuccess: async () => {
+    onSuccess: async (data) => {
+      const newId = data?.id;
+
       await qc.invalidateQueries({ queryKey: ["motos"] });
-      Swal.fire({ icon: "success", title: "Cotiazacion creada", timer: 1800, showConfirmButton: false });
+
+      if (newId) {
+        await qc.invalidateQueries({ queryKey: ["cotizacion-id", newId] });
+      } Swal.fire({ icon: "success", title: "Cotiazacion creada", timer: 1800, showConfirmButton: false });
     },
     onError: (error: AxiosError<ServerError>) => {
       const raw = error.response?.data?.message ?? "Error al crear la cotizacion";
@@ -76,8 +81,8 @@ export const useCotizaciones = (
     queryKey: ['cotizaciones', { page, perPage, estado }],
     queryFn: async () => {
       const { data } = await api.get<ApiListResponse>('/list_cotizaciones.php', {
-        params: { 
-          page, 
+        params: {
+          page,
           per_page: perPage,
           ...(estado ? { estado } : {}), // 👈 solo lo manda si tiene valor
         },

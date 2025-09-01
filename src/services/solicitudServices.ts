@@ -25,6 +25,7 @@ export interface SolicitudFacturacionApi {
   entrega_autorizada: string;       // "Si" | "No"
   fecha_creacion: string;           // "YYYY-MM-DD HH:mm:ss"
   actualizado: string;              // idem
+  id_cotizacion?: number
 }
 
 /* ===== Tipos normalizados para tu app ===== */
@@ -48,6 +49,7 @@ export interface SolicitudFacturacion {
   entregaAutorizada: boolean;
   fechaCreacion: string;
   actualizado: string;
+  id_cotizacion?: number
 }
 
 /* ===== Normalizador ===== */
@@ -74,6 +76,7 @@ export const normalizeSolicitud = (r: SolicitudFacturacionApi): SolicitudFactura
   entregaAutorizada: siNoToBool(r.entrega_autorizada),
   fechaCreacion: r.fecha_creacion,
   actualizado: r.actualizado,
+    id_cotizacion: r.id_cotizacion,
 });
 
 
@@ -223,5 +226,72 @@ export const useSolicitudesPorCodigoCredito = (codigoCredito: string | number) =
     },
     staleTime: 60_000,
     refetchOnWindowFocus: false,
+  });
+};
+
+
+
+export interface UltimaSolicitudYCotizacionApiResponse {
+  success: boolean;
+  solicitud_facturacion?: SolicitudFacturacionApi;
+  cotizacion?: Record<string, any>; // tabla cotizaciones (todas las columnas)
+  error?: string;
+}
+
+/** Resultado normalizado del hook */
+export interface UltimaSolicitudYCotizacion {
+  solicitud: SolicitudFacturacion | null;
+  cotizacion: Record<string, any> | null;
+}
+
+export const useUltimaSolicitudYCotizacion = (
+  idCotizacion?: string | number,
+  opts?: {
+    /** Endpoint combinado del back */
+    endpoint?: string; // por defecto "/get_ultima_solicitud_y_cotizacion.php"
+    /** Inyectar token manual si no usas interceptor */
+    token?: string;
+    /** Habilitar/deshabilitar manualmente */
+    enabled?: boolean;
+  }
+) => {
+  return useQuery<UltimaSolicitudYCotizacion, AxiosError>({
+    queryKey: ["solicitud-facturacion", "ultima+cotizacion", idCotizacion],
+    enabled: (opts?.enabled ?? true) && !!idCotizacion,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
+      try {
+        const { data } = await api.get<UltimaSolicitudYCotizacionApiResponse>(
+          opts?.endpoint ?? "/list_solicitud_id.php",
+          {
+            params: { id_cotizacion: idCotizacion },
+            headers: opts?.token
+              ? { Authorization: `Bearer ${opts.token}` }
+              : undefined,
+          }
+        );
+
+        if (!data?.success) {
+          // Sin datos o error de negocio
+          return { solicitud: null, cotizacion: null };
+        }
+
+        const solicitud = data.solicitud_facturacion
+          ? normalizeSolicitud(data.solicitud_facturacion)
+          : null;
+
+        const cotizacion = data.cotizacion ?? null;
+
+        return { solicitud, cotizacion };
+      } catch (err) {
+        const e = err as AxiosError;
+        // 404 => sin registros para esa cotización
+        if (e.response?.status === 404) {
+          return { solicitud: null, cotizacion: null };
+        }
+        throw e;
+      }
+    },
   });
 };
