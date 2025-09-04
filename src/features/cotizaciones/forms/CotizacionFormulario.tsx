@@ -626,7 +626,7 @@ const CotizacionFormulario: React.FC = () => {
                     </label>
                     <label className="label cursor-pointer gap-2 w-full">
                         <input type="radio" value="credibike" className="radio radio-success" {...register("metodoPago", { required: true })} />
-                        <span className="label-text">Credibike de Colombia</span>
+                        <span className="label-text">Crédito Interno</span>
                     </label>
                     <label className="label cursor-pointer gap-2 w-full">
                         <input type="radio" value="terceros" className="radio radio-success" {...register("metodoPago", { required: true })} />

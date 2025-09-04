@@ -22,7 +22,7 @@ export const useCreateCotizaciones = () => {
 
       if (newId) {
         await qc.invalidateQueries({ queryKey: ["cotizacion-id", newId] });
-      } Swal.fire({ icon: "success", title: "Cotiazacion creada", timer: 1800, showConfirmButton: false });
+      } Swal.fire({ icon: "success", title: "cotización creada", timer: 1800, showConfirmButton: false });
     },
     onError: (error: AxiosError<ServerError>) => {
       const raw = error.response?.data?.message ?? "Error al crear la cotizacion";
