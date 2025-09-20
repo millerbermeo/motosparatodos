@@ -77,6 +77,9 @@ type FormValues = {
     modelo_b: string;
     nombre_usuario: string;
     rol_usuario: string;
+
+    marcacion1: string;
+    marcacion2: string;
 };
 
 const CotizacionFormulario: React.FC = () => {
@@ -149,12 +152,14 @@ const CotizacionFormulario: React.FC = () => {
 
             modelo_a: "",
             modelo_b: "",
+            marcacion1: "0",
+            marcacion2: "0",
         },
         mode: "onBlur",
         shouldUnregister: false,
     });
 
-    const { mutate: cotizacion } = useCreateCotizaciones();
+    const { mutate: cotizacion, isPending } = useCreateCotizaciones();
 
     const metodo = watch("metodoPago");
     const incluirMoto1 = watch("incluirMoto1");
@@ -328,12 +333,15 @@ const CotizacionFormulario: React.FC = () => {
     const descuento1Val = N(watch("descuento1"));
     const inicial1 = N(watch("cuotaInicial1"));
 
+    const marcacion1Val = N(watch("marcacion1"));
+
+
     const totalSeguros1 = (showMotos && incluirMoto1)
         ? (segurosIds1 as string[]).reduce((acc, id) => acc + findSeguroValor(id), 0) + otros1
         : 0;
 
     const totalSinSeguros1 = (showMotos && incluirMoto1)
-        ? (precioBase1 + accesorios1Val + precioDocumentos1Val - descuento1Val)
+        ? (precioBase1 + accesorios1Val + precioDocumentos1Val + marcacion1Val - descuento1Val)
         : 0;
 
     const totalConSeguros1 = totalSinSeguros1 + totalSeguros1;
@@ -346,12 +354,15 @@ const CotizacionFormulario: React.FC = () => {
     const descuento2Val = N(watch("descuento2"));
     const inicial2 = N(watch("cuotaInicial2"));
 
+    const marcacion2Val = N(watch("marcacion2"));
+
+    // === TOTALES MOTO 2 ===
     const totalSeguros2 = (showMotos && incluirMoto2)
         ? (segurosIds2 as string[]).reduce((acc, id) => acc + findSeguroValor(id), 0) + otros2
         : 0;
 
     const totalSinSeguros2 = (showMotos && incluirMoto2)
-        ? (precioBase2 + accesorios2Val + precioDocumentos2Val - descuento2Val)
+        ? (precioBase2 + accesorios2Val + precioDocumentos2Val + marcacion2Val - descuento2Val)
         : 0;
 
     const totalConSeguros2 = totalSinSeguros2 + totalSeguros2;
@@ -386,6 +397,9 @@ const CotizacionFormulario: React.FC = () => {
         const descuento2 = toNumberSafe(data.descuento2);
         const cuotaInicial1Num = toNumberSafe(data.cuotaInicial1);
         const cuotaInicial2Num = toNumberSafe(data.cuotaInicial2);
+        const marcacion1 = toNumberSafe(data.marcacion1);
+        const marcacion2 = toNumberSafe(data.marcacion2);
+
 
         const cuota_6_a = toNumberOrNullMoney(data.cuota_6_a);
         const cuota_12_a = toNumberOrNullMoney(data.cuota_12_a);
@@ -409,8 +423,14 @@ const CotizacionFormulario: React.FC = () => {
         const seg1 = (data.segurosIds1 ?? []).reduce((acc, id) => acc + findSeguroValor(String(id)), 0);
         const seg2 = (data.segurosIds2 ?? []).reduce((acc, id) => acc + findSeguroValor(String(id)), 0);
 
-        const totalSinSeg1 = incluirMoto1 ? (precioBase1 + accesorios1 + precioDocumentos1 - descuento1) : 0;
-        const totalSinSeg2 = incluirMoto2 ? (precioBase2 + accesorios2 + precioDocumentos2 - descuento2) : 0;
+        const totalSinSeg1 = incluirMoto1
+            ? (precioBase1 + accesorios1 + precioDocumentos1 + marcacion1 - descuento1)
+            : 0;
+
+        const totalSinSeg2 = incluirMoto2
+            ? (precioBase2 + accesorios2 + precioDocumentos2 + marcacion2 - descuento2)
+            : 0;
+
 
         const precioTotalA = incluirMoto1 ? (totalSinSeg1 + seg1 + otroSeguro1) : 0;
         const precioTotalB = incluirMoto2 ? (totalSinSeg2 + seg2 + otroSeguro2) : 0;
@@ -492,6 +512,9 @@ const CotizacionFormulario: React.FC = () => {
             producto1CuotaInicial: producto1CuotaInicial,
             producto2Precio: producto2Precio,
             producto2CuotaInicial: producto2CuotaInicial,
+            marcacion_a: incluirMoto1 ? marcacion1 : 0,
+            marcacion_b: incluirMoto2 ? marcacion2 : null,
+
         };
 
         console.log("SUBMIT (payload EXACTO BD):", payload);
@@ -861,6 +884,17 @@ const CotizacionFormulario: React.FC = () => {
                                                 Máximo permitido: {fmt(precioBase1 + accesorios1Val + precioDocumentos1Val)}
                                             </p>
 
+                                            <FormInput<FormValues>
+                                                name="marcacion1"
+                                                label="Marcación y personalización"
+                                                type="number"
+                                                formatThousands
+                                                control={control}
+                                                placeholder="0"
+                                                disabled={!showMotos || !incluirMoto1}
+                                            />
+
+
                                             {/* RESUMEN MOTO 1 */}
                                             <div className="bg-base-100 shadow-lg rounded-xl p-6 border border-base-300">
                                                 <h3 className="text-lg font-bold mb-4 text-success">Resumen de costos</h3>
@@ -881,6 +915,12 @@ const CotizacionFormulario: React.FC = () => {
                                                     <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
                                                         <span className="font-medium text-gray-500">Cascos y Accesorios</span>
                                                         <span>{fmt(accesorios1Val)}</span>
+                                                    </div>
+
+                                                    {/* 👇 AQUI INSERTA MARCACIÓN MOTO 1 */}
+                                                    <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
+                                                        <span className="font-medium text-gray-500">Marcación y personalización:</span>
+                                                        <span>{fmt(marcacion1Val)}</span>
                                                     </div>
 
                                                     {esCreditoDirecto && (
@@ -1057,6 +1097,17 @@ const CotizacionFormulario: React.FC = () => {
                                                 Máximo permitido: {fmt(precioBase2 + accesorios2Val + precioDocumentos2Val)}
                                             </p>
 
+                                            <FormInput<FormValues>
+                                                name="marcacion2"
+                                                label="Marcación y personalización"
+                                                type="number"
+                                                formatThousands
+                                                control={control}
+                                                placeholder="0"
+                                                disabled={!showMotos || !incluirMoto2}
+                                            />
+
+
                                             {/* RESUMEN MOTO 2 */}
                                             <div className="bg-base-100 shadow-lg rounded-xl p-6 border border-base-300">
                                                 <h3 className="text-lg font-bold mb-4 text-success">Resumen de costos</h3>
@@ -1078,6 +1129,13 @@ const CotizacionFormulario: React.FC = () => {
                                                         <span className="font-medium text-gray-500">Cascos y Accesorios</span>
                                                         <span>{fmt(accesorios2Val)}</span>
                                                     </div>
+
+                                                    {/* 👇 AQUI INSERTA MARCACIÓN MOTO 2 */}
+                                                    <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
+                                                        <span className="font-medium text-gray-500">Marcación y personalización:</span>
+                                                        <span>{fmt(marcacion2Val)}</span>
+                                                    </div>
+
 
                                                     {esCreditoDirecto && (
                                                         <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
@@ -1190,8 +1248,13 @@ const CotizacionFormulario: React.FC = () => {
             </div>
 
             <div className="flex justify-end">
-                <button type="submit" className="btn btn-warning px-10">Registrar</button>
-            </div>
+                <button
+                    type="submit"
+                    className="btn btn-warning px-10"
+                    disabled={isPending} // ⬅️ aquí usas isPending
+                >
+                    {isPending ? "Cargando..." : "Registrar"}
+                </button>            </div>
 
         </form>
     );
