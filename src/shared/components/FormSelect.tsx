@@ -41,32 +41,32 @@ export function FormSelect<T extends FieldValues>({
           : undefined;
 
         return (
-          <div className="w-full">
+          <div className={["w-full", className].join(" ")}>
+            {/* Label en flujo normal: nunca se solapa y hace wrap */}
+            <label
+              htmlFor={id}
+              className="block mb-1 text-sm font-medium text-base-content/80"
+            >
+              {label}
+              {rules?.required ? <span className="text-error"> *</span> : null}
+            </label>
+
             <div
               className={[
-                "relative bg-base-200 rounded-lg shadow-sm",
+                "relative rounded-lg shadow-sm bg-base-200",
                 "focus-within:ring-2 focus-within:ring-primary/40",
                 "transition-[box-shadow,ring] duration-150",
                 disabled ? "opacity-60" : "",
-                className,
+                errorMsg ? "ring-1 ring-error" : "",
               ].join(" ")}
             >
-              <label
-                htmlFor={id}
-                className="absolute left-3 top-2 text-xs text-base-content/60 pointer-events-none select-none"
-              >
-                {label}
-                {rules?.required ? <span className="text-error"> *</span> : null}
-              </label>
-
               <select
                 id={id}
                 disabled={disabled || loading}
                 className={[
                   "w-full bg-transparent outline-none border-none",
-                  "px-3 pt-6 pb-2 text-base",
-                  "rounded-lg appearance-none",
-                  errorMsg ? "ring-1 ring-error" : "",
+                  "px-3 py-2 text-base rounded-lg appearance-none",
+                  "pr-10", // espacio para el ícono del caret
                 ].join(" ")}
                 aria-invalid={!!errorMsg}
                 aria-describedby={errorMsg ? `${id}-error` : undefined}
@@ -82,6 +82,22 @@ export function FormSelect<T extends FieldValues>({
                   </option>
                 ))}
               </select>
+
+              {/* Caret del select */}
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  className="h-5 w-5 text-base-content/60"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </span>
             </div>
 
             {errorMsg ? (
