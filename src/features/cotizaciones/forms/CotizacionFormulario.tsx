@@ -309,14 +309,14 @@ const CotizacionFormulario: React.FC = () => {
     };
 
 
-        // ====== NUEVO: helpers para enviar los seguros como arreglo JSON (incluye "Otros seguros") ======
+    // ====== NUEVO: helpers para enviar los seguros como arreglo JSON (incluye "Otros seguros") ======
     const findSeguroObj = (id: string | number) => {
         const s = seguros.find((x: any) => String(x.id) === String(id));
         if (!s) return null;
         return {
             id: Number(s.id),
             nombre: s.nombre,
-            tipo: s.tipo  ?? null,
+            tipo: s.tipo ?? null,
             valor: Number(s.valor),
         };
     };
@@ -413,47 +413,80 @@ const CotizacionFormulario: React.FC = () => {
     const totalSinSeguros2 = showMotos && incluirMoto2 ? (precioBase2 + accesorios2Val + precioDocumentos2Val - descuento2Val) : 0;
     const totalConSeguros2 = totalSinSeguros2 + totalSeguros2;
 
-    // toNumberOrNull: convierte "" -> null, otro -> Number
-    const toNumberOrNull = (v: any) => {
-        if (v === undefined || v === null) return null;
-        const n = Number(v);
-        return isNaN(n) || String(v).trim() === "" ? null : n;
-    };
 
 
     const moto1Seleccionada = Boolean(watch("moto1"));
     const moto2Seleccionada = Boolean(watch("moto2"));
 
     const onSubmit = (data: FormValues) => {
+        // === Helpers locales para desformatear ===
+        const unformatNumber = (v: string | number | null | undefined): string => {
+            if (v === null || v === undefined) return "";
+            return String(v).replace(/\D+/g, ""); // "12.345" -> "12345"
+        };
+        const toNumberSafe = (v: string | number | null | undefined): number => {
+            const raw = unformatNumber(v);
+            return raw ? Number(raw) : 0;
+        };
+        const toNumberOrNullMoney = (v: string | number | null | undefined): number | null => {
+            const raw = unformatNumber(v);
+            return raw ? Number(raw) : null; // "" -> null
+        };
 
-
-        if (!data.segundo_nombre || !data.segundo_nombre.trim()) {
-            alert("El segundo nombre es obligatorio (BD: s_name).");
-            return;
-        }
+        // Validación mínima
         if (!data.comentario || !data.comentario.trim()) {
             alert("El comentario es obligatorio.");
             return;
         }
 
-        // Recalcular totales dentro del submit para asegurar últimos valores:
+        // === Desformateo de TODOS los campos monetarios ===
+        // Motos
+        const accesorios1 = toNumberSafe(data.accesorios1);
+        const accesorios2 = toNumberSafe(data.accesorios2);
+        const otroSeguro1 = toNumberSafe(data.otroSeguro1);
+        const otroSeguro2 = toNumberSafe(data.otroSeguro2);
+        const precioDocumentos1 = toNumberSafe(data.precioDocumentos1);
+        const precioDocumentos2 = toNumberSafe(data.precioDocumentos2);
+        const descuento1 = toNumberSafe(data.descuento1);
+        const descuento2 = toNumberSafe(data.descuento2);
+        const cuotaInicial1Num = toNumberSafe(data.cuotaInicial1);
+        const cuotaInicial2Num = toNumberSafe(data.cuotaInicial2);
+
+        // Cuotas manuales (opcionales)
+        const cuota_6_a = toNumberOrNullMoney(data.cuota_6_a);
+        const cuota_12_a = toNumberOrNullMoney(data.cuota_12_a);
+        const cuota_18_a = toNumberOrNullMoney(data.cuota_18_a);
+        const cuota_24_a = toNumberOrNullMoney(data.cuota_24_a);
+        const cuota_30_a = toNumberOrNullMoney(data.cuota_30_a);
+        const cuota_36_a = toNumberOrNullMoney(data.cuota_36_a);
+
+        const cuota_6_b = toNumberOrNullMoney(data.cuota_6_b);
+        const cuota_12_b = toNumberOrNullMoney(data.cuota_12_b);
+        const cuota_18_b = toNumberOrNullMoney(data.cuota_18_b);
+        const cuota_24_b = toNumberOrNullMoney(data.cuota_24_b);
+        const cuota_30_b = toNumberOrNullMoney(data.cuota_30_b);
+        const cuota_36_b = toNumberOrNullMoney(data.cuota_36_b);
+
+        // Otros productos
+        const producto1Precio = toNumberSafe(data.producto1Precio);
+        const producto1CuotaInicial = toNumberSafe(data.producto1CuotaInicial);
+        const producto2Precio = toNumberSafe(data.producto2Precio);
+        const producto2CuotaInicial = toNumberSafe(data.producto2CuotaInicial);
+
+        // === Seguros (suman valores de catálogo) ===
         const seg1 = (data.segurosIds1 ?? []).reduce((acc, id) => acc + findSeguroValor(String(id)), 0);
         const seg2 = (data.segurosIds2 ?? []).reduce((acc, id) => acc + findSeguroValor(String(id)), 0);
 
-        const totalSinSeg1 = incluirMoto1 ? (precioBase1 + N(data.accesorios1) + N(data.precioDocumentos1) - N(data.descuento1)) : 0;
-        const totalSinSeg2 = incluirMoto2 ? (precioBase2 + N(data.accesorios2) + N(data.precioDocumentos2) - N(data.descuento2)) : 0;
+        // === Totales SIN y CON seguros con números limpios ===
+        const totalSinSeg1 = incluirMoto1 ? (precioBase1 + accesorios1 + precioDocumentos1 - descuento1) : 0;
+        const totalSinSeg2 = incluirMoto2 ? (precioBase2 + accesorios2 + precioDocumentos2 - descuento2) : 0;
 
-        const precioTotalA = incluirMoto1 ? (totalSinSeg1 + seg1 + N(data.otroSeguro1)) : 0;
-        const precioTotalB = incluirMoto2 ? (totalSinSeg2 + seg2 + N(data.otroSeguro2)) : 0;
-
-
-
-
-
+        const precioTotalA = incluirMoto1 ? (totalSinSeg1 + seg1 + otroSeguro1) : 0;
+        const precioTotalB = incluirMoto2 ? (totalSinSeg2 + seg2 + otroSeguro2) : 0;
 
         const esFinanciado = data.metodoPago !== "contado";
 
-        // justo antes de construir payload:
+        // Líneas finales
         const lineaA_final = incluirMoto1
             ? [data.moto1?.trim(), data.modelo_a?.trim()].filter(Boolean).join(" – ")
             : "";
@@ -462,102 +495,95 @@ const CotizacionFormulario: React.FC = () => {
             ? [data.moto2?.trim(), data.modelo_b?.trim()].filter(Boolean).join(" – ")
             : null;
 
-               // ====== NUEVO: arrays JSON de seguros (incluyendo "Otros seguros" si aplica) ======
-        const segurosA = incluirMoto1 ? mapSeguros(data.segurosIds1 as string[], data.otroSeguro1) : [];
-        const segurosB = incluirMoto2 ? mapSeguros(data.segurosIds2 as string[], data.otroSeguro2) : [];
-        // ====== FIN NUEVO ======
+        // Map de seguros (pasamos el "otros" ya como número limpio)
+        const segurosA = incluirMoto1 ? mapSeguros(data.segurosIds1 as string[], otroSeguro1) : [];
+        const segurosB = incluirMoto2 ? mapSeguros(data.segurosIds2 as string[], otroSeguro2) : [];
 
-
+        // === Payload (solo números limpios al backend) ===
         const payload: Record<string, any> = {
             name: data.primer_nombre?.trim(),
             s_name: data.segundo_nombre?.trim(),
             last_name: data.primer_apellido?.trim(),
             s_last_name: data.segundo_apellido?.trim() || null,
             cedula: data.cedula?.trim(),
-            email: data.email?.trim(),
+            email: data.email?.trim().toLowerCase(),
             canal_contacto: data.canal,
             pregunta: data.pregunta,
 
-            celular: data.celular?.replace(/\D/g, "").trim(), // solo dígitos por si acaso
+            celular: data.celular?.replace(/\D/g, "").trim(),
             fecha_nacimiento: data.fecha_nac,
+
             // Vehículo A
             marca_a: incluirMoto1 ? data.marca1 : "",
             linea_a: lineaA_final,
             garantia_a: incluirMoto1 ? (data.garantia1 || "") : "",
-            accesorios_a: incluirMoto1 ? N(data.accesorios1) : 0,
-            seguro_vida_a: incluirMoto1 ? (segurosIds1 as string[]).reduce((acc, id) => acc + findSeguroValor(id), 0) : 0,
+            accesorios_a: incluirMoto1 ? accesorios1 : 0,
+            seguro_vida_a: incluirMoto1 ? seg1 : 0,
             seguro_mascota_s_a: 0,
             seguro_mascota_a_a: 0,
-            otro_seguro_a: incluirMoto1 ? N(data.otroSeguro1) : 0,
+            otro_seguro_a: incluirMoto1 ? otroSeguro1 : 0,
             precio_base_a: incluirMoto1 ? precioBase1 : 0,
-            precio_documentos_a: incluirMoto1 ? N(data.precioDocumentos1) : 0,
+            precio_documentos_a: incluirMoto1 ? precioDocumentos1 : 0,
             precio_total_a: precioTotalA,
-
             modelo_a: incluirMoto1 ? (data.modelo_a?.trim() || "") : "",
 
             // Vehículo B
             marca_b: incluirMoto2 ? data.marca2 : null,
             linea_b: lineaB_final,
             garantia_b: incluirMoto2 ? (data.garantia2 || "") : null,
-            accesorios_b: incluirMoto2 ? N(data.accesorios2) : null,
-            seguro_vida_b: incluirMoto2 ? (segurosIds2 as string[]).reduce((acc, id) => acc + findSeguroValor(id), 0) : null,
+            accesorios_b: incluirMoto2 ? accesorios2 : null,
+            seguro_vida_b: incluirMoto2 ? seg2 : null,
             seguro_mascota_s_b: incluirMoto2 ? 0 : null,
             seguro_mascota_a_b: incluirMoto2 ? 0 : null,
-            otro_seguro_b: incluirMoto2 ? N(data.otroSeguro2) : null,
+            otro_seguro_b: incluirMoto2 ? otroSeguro2 : null,
             precio_base_b: incluirMoto2 ? precioBase2 : null,
-            precio_documentos_b: incluirMoto2 ? N(data.precioDocumentos2) : null,
-            precio_total_b: incluirMoto2 ? precioTotalB : null,  // <-- AJUSTE
+            precio_documentos_b: incluirMoto2 ? precioDocumentos2 : null,
+            precio_total_b: incluirMoto2 ? precioTotalB : null,
             modelo_b: incluirMoto2 ? (data.modelo_b?.trim() || "") : null,
 
             // Pago / financiación
-            // Pago / financiación
-            tipo_pago: METODO_PAGO_LABEL[data.metodoPago], // 👈 ahora manda el string correcto
+            metodo_pago: METODO_PAGO_LABEL[data.metodoPago], // (si no necesitas ambos, elimina uno)
+            tipo_pago: METODO_PAGO_LABEL[data.metodoPago],
 
-            cuota_inicial_a: incluirMoto1 ? inicial1 : null,
-            cuota_inicial_b: incluirMoto2 ? inicial2 : null,
+            cuota_inicial_a: incluirMoto1 ? cuotaInicial1Num : null,
+            cuota_inicial_b: incluirMoto2 ? cuotaInicial2Num : null,
             financiera: esFinanciado ? (data.financiera || null) : null,
             cant_cuotas: esFinanciado ? (data.cuotas ? Number(data.cuotas) : null) : null,
 
             // Cuotas manuales (opcionales)
-            cuota_6_a: toNumberOrNull(data.cuota_6_a), cuota_6_b: toNumberOrNull(data.cuota_6_b),
-            cuota_12_a: toNumberOrNull(data.cuota_12_a), cuota_12_b: toNumberOrNull(data.cuota_12_b),
-            cuota_18_a: toNumberOrNull(data.cuota_18_a), cuota_18_b: toNumberOrNull(data.cuota_18_b),
-            cuota_24_a: toNumberOrNull(data.cuota_24_a), cuota_24_b: toNumberOrNull(data.cuota_24_b),
-            cuota_30_a: toNumberOrNull(data.cuota_30_a), cuota_30_b: toNumberOrNull(data.cuota_30_b),
-            cuota_36_a: toNumberOrNull(data.cuota_36_a), cuota_36_b: toNumberOrNull(data.cuota_36_b),
-            metodo_pago: METODO_PAGO_LABEL[data.metodoPago], // 👈 ahora manda el string correcto
+            cuota_6_a, cuota_6_b,
+            cuota_12_a, cuota_12_b,
+            cuota_18_a, cuota_18_b,
+            cuota_24_a, cuota_24_b,
+            cuota_30_a, cuota_30_b,
+            cuota_36_a, cuota_36_b,
 
             comentario: data.comentario?.trim(),
 
             asesor: name,
-
             nombre_usuario: nombre ?? "Usuario",
             rol_usuario: rol ?? "Usuario",
 
-
-                        // ====== NUEVO: Arreglos JSON de seguros (seleccionados + otros) ======
+            // Seguros (objetos) y totales sin seguros
             seguros_a: incluirMoto1 ? segurosA : [],
             seguros_b: incluirMoto2 ? segurosB : [],
-
-            // ====== NUEVO: Totales SIN seguros ======
             total_sin_seguros_a: incluirMoto1 ? totalSinSeg1 : 0,
             total_sin_seguros_b: incluirMoto2 ? totalSinSeg2 : 0,
+
+            // Otros productos (números)
+            producto1Precio: producto1Precio,
+            producto1CuotaInicial: producto1CuotaInicial,
+            producto2Precio: producto2Precio,
+            producto2CuotaInicial: producto2CuotaInicial,
         };
 
         console.log("SUBMIT (payload EXACTO BD):", payload);
         cotizacion(payload, {
-            onSuccess: () => {
-                // vuelve TODO al estado inicial
-                reset(); // o simplemente reset(); para regresar a defaultValues
-                // si quieres mantener los defaultValues actuales internamente:
-                // reset(DEFAULTS, { keepDefaultValues: true });
-            },
-            onError: (err) => {
-                console.error(err);
-                // opcional: mostrar toast/error
-            },
+            onSuccess: () => { reset(); },
+            onError: (err) => { console.error(err); },
         });
     };
+
 
     const esCreditoDirecto = metodo === "credibike" || metodo === "terceros";
 
@@ -626,7 +652,7 @@ const CotizacionFormulario: React.FC = () => {
                     </label>
                     <label className="label cursor-pointer gap-2 w-full">
                         <input type="radio" value="credibike" className="radio radio-success" {...register("metodoPago", { required: true })} />
-                        <span className="label-text">Crédito Interno</span>
+                        <span className="label-text">Crédito propio</span>
                     </label>
                     <label className="label cursor-pointer gap-2 w-full">
                         <input type="radio" value="terceros" className="radio radio-success" {...register("metodoPago", { required: true })} />
@@ -710,7 +736,7 @@ const CotizacionFormulario: React.FC = () => {
                     <FormInput<FormValues> name="primer_nombre" label="Primer nombre" control={control}
                         rules={{ required: "El primer nombre es obligatorio." }} />
                     <FormInput<FormValues> name="segundo_nombre" label="Segundo nombre" control={control}
-                        rules={{ required: "El segundo nombre es obligatorio (BD)." }} />
+                    />
                     <FormInput<FormValues> name="primer_apellido" label="Primer apellido" control={control}
                         rules={{ required: "El primer apellido es obligatorio." }} />
                     <FormInput<FormValues> name="segundo_apellido" label="Segundo apellido" control={control} />
@@ -776,19 +802,7 @@ const CotizacionFormulario: React.FC = () => {
                                             />
 
 
-                                            <FormInput<FormValues>
-                                                name="accesorios1"
-                                                label="Accesorios (entero)"
-                                                control={control}
-                                                placeholder="0"
-                                                type="number"
-                                                disabled={!showMotos || !incluirMoto1}
-                                                rules={{
-                                                    ...reqIf(showMotos && incluirMoto1, "Ingresa accesorios"),
-                                                    validate: (v) => (!showMotos || !incluirMoto1 ? true : Number.isInteger(Number(v)) && Number(v) >= 0 || "Ingrese un entero ≥ 0"),
-                                                    setValueAs: (v) => (v === "" ? "" : Number(v)),
-                                                }}
-                                            />
+
                                         </>
                                     )}
 
@@ -815,6 +829,7 @@ const CotizacionFormulario: React.FC = () => {
                                                 name="otroSeguro1" label="Otros seguros (monto adicional)" control={control}
                                                 placeholder="0" type="number" disabled={!showMotos || !incluirMoto1}
                                                 rules={{ setValueAs: (v) => (v === "" ? "" : Number(v)) }}
+                                                formatThousands
                                             />
                                         </div>
                                     </div>
@@ -822,9 +837,30 @@ const CotizacionFormulario: React.FC = () => {
 
                                     {moto1Seleccionada && (
                                         <>
+
+                                            <FormInput<FormValues>
+                                                name="accesorios1"
+                                                label="Cascos y Accesorios"
+                                                formatThousands
+                                                control={control}
+                                                placeholder="0"
+                                                type="number"
+                                                disabled={!showMotos || !incluirMoto1}
+                                                rules={{
+                                                    ...reqIf(showMotos && incluirMoto2, "Ingresa accesorios"),
+                                                    validate: (v: unknown) => {
+                                                        if (!showMotos || !incluirMoto2) return true;
+
+                                                        const s = typeof v === "string" ? v : String(v ?? ""); // siempre string
+                                                        return /^[0-9]+(\.[0-9]{3})*$/.test(s) || "Formato inválido (ej: 1.000.000)";
+                                                    },
+                                                }}
+
+                                            />
+
                                             {esCreditoDirecto && (
                                                 <FormInput<FormValues>
-                                                    name="cuotaInicial1" label="Cuota inicial" control={control} type="number"
+                                                    name="cuotaInicial1" formatThousands label="Cuota inicial" control={control} type="number"
                                                     rules={reqIf(showMotos && incluirMoto1, "Ingresa la cuota inicial")} disabled={!showMotos || !incluirMoto1} />
                                             )}
 
@@ -856,7 +892,7 @@ const CotizacionFormulario: React.FC = () => {
                                                         <span className="text-error font-semibold">-{fmt(descuento1Val)}</span>
                                                     </div>
                                                     <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                        <span className="font-medium text-gray-500">Accesorios (entero):</span>
+                                                        <span className="font-medium text-gray-500">Cascos y Accesorios</span>
                                                         <span>{N(watch("accesorios1"))}</span>
                                                     </div>
                                                     {esCreditoDirecto && (
@@ -930,19 +966,7 @@ const CotizacionFormulario: React.FC = () => {
                                             />
 
 
-                                            <FormInput<FormValues>
-                                                name="accesorios2"
-                                                label="Accesorios (entero)"
-                                                control={control}
-                                                placeholder="0"
-                                                type="number"
-                                                disabled={!showMotos || !incluirMoto2}
-                                                rules={{
-                                                    ...reqIf(showMotos && incluirMoto2, "Ingresa accesorios"),
-                                                    validate: (v) => (!showMotos || !incluirMoto2 ? true : Number.isInteger(Number(v)) && Number(v) >= 0 || "Ingrese un entero ≥ 0"),
-                                                    setValueAs: (v) => (v === "" ? "" : Number(v)),
-                                                }}
-                                            />
+
 
                                         </>
                                     )}
@@ -967,7 +991,7 @@ const CotizacionFormulario: React.FC = () => {
                                         </div>
                                         <div className="mt-2">
                                             <FormInput<FormValues>
-                                                name="otroSeguro2" label="Otros seguros (monto adicional)" control={control}
+                                                name="otroSeguro2" formatThousands label="Otros seguros (monto adicional)" control={control}
                                                 placeholder="0" type="number" disabled={!showMotos || !incluirMoto2}
                                                 rules={{ setValueAs: (v) => (v === "" ? "" : Number(v)) }}
                                             />
@@ -975,12 +999,35 @@ const CotizacionFormulario: React.FC = () => {
                                     </div>
 
                                     {moto2Seleccionada && (
-                                        <>                                            {/* SEGUROS MULTI ------------------------------------------ */}
+                                        <>
+
+                                            {/* SEGUROS MULTI ------------------------------------------ */}
+
+                                            <FormInput<FormValues>
+                                                name="accesorios2"
+                                                formatThousands
+                                                label="Cascos y Accesorios"
+                                                control={control}
+                                                placeholder="0"
+                                                type="number"
+                                                disabled={!showMotos || !incluirMoto2}
+                                                rules={{
+                                                    ...reqIf(showMotos && incluirMoto2, "Ingresa accesorios"),
+                                                    validate: (v: unknown) => {
+                                                        if (!showMotos || !incluirMoto2) return true;
+
+                                                        const s = typeof v === "string" ? v : String(v ?? "");
+                                                        return /^[0-9]+(\.[0-9]{3})*$/.test(s) || "Formato inválido (ej: 1.000.000)";
+                                                    },
+                                                    setValueAs: (v) => (v == null ? "" : String(v)), // asegura que siempre sea string
+                                                }}
+
+                                            />
 
                                             {esCreditoDirecto && (
 
                                                 <FormInput<FormValues>
-                                                    name="cuotaInicial2" label="Cuota inicial" control={control} type="number" placeholder="0"
+                                                    name="cuotaInicial2" formatThousands label="Cuota inicial" control={control} type="number" placeholder="0"
                                                     rules={reqIf(showMotos && incluirMoto2, "Ingresa la cuota inicial")} disabled={!showMotos || !incluirMoto2} />
 
                                             )}
@@ -1011,7 +1058,7 @@ const CotizacionFormulario: React.FC = () => {
                                                         <span className="text-error font-semibold">-{fmt(descuento2Val)}</span>
                                                     </div>
                                                     <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                        <span className="font-medium text-gray-500">Accesorios (entero):</span>
+                                                        <span className="font-medium text-gray-500">Cascos y Accesorios</span>
                                                         <span>{N(watch("accesorios2"))}</span>
                                                     </div>
                                                     {esCreditoDirecto && (
@@ -1054,12 +1101,12 @@ const CotizacionFormulario: React.FC = () => {
                     <div className="flex gap-6 flex-col w-full bg-white p-3 rounded-xl">
                         <div className="badge text-lg badge-success text-white">Cuotas Moto 1 (A)</div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormInput<FormValues> name="cuota_6_a" label="Cuota 6 meses A" type="number" control={control} placeholder="Opcional" />
-                            <FormInput<FormValues> name="cuota_12_a" label="Cuota 12 meses A" type="number" control={control} placeholder="Opcional" />
-                            <FormInput<FormValues> name="cuota_18_a" label="Cuota 18 meses A" type="number" control={control} placeholder="Opcional" />
-                            <FormInput<FormValues> name="cuota_24_a" label="Cuota 24 meses A" type="number" control={control} placeholder="Opcional" />
-                            <FormInput<FormValues> name="cuota_30_a" label="Cuota 30 meses A" type="number" control={control} placeholder="Opcional" />
-                            <FormInput<FormValues> name="cuota_36_a" label="Cuota 36 meses A" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> formatThousands name="cuota_6_a" label="Cuota 6 meses A" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> formatThousands name="cuota_12_a" label="Cuota 12 meses A" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> formatThousands name="cuota_18_a" label="Cuota 18 meses A" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> formatThousands name="cuota_24_a" label="Cuota 24 meses A" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> formatThousands name="cuota_30_a" label="Cuota 30 meses A" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> formatThousands name="cuota_36_a" label="Cuota 36 meses A" type="number" control={control} placeholder="Opcional" />
                         </div>
                     </div>
                 )}
@@ -1069,12 +1116,12 @@ const CotizacionFormulario: React.FC = () => {
                     <div className="flex gap-6 flex-col w-full bg-white p-3 rounded-xl">
                         <div className="badge text-lg badge-success text-white">Cuotas Moto 2 (B)</div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormInput<FormValues> name="cuota_6_b" label="Cuota 6 meses B" type="number" control={control} placeholder="Opcional" />
-                            <FormInput<FormValues> name="cuota_12_b" label="Cuota 12 meses B" type="number" control={control} placeholder="Opcional" />
-                            <FormInput<FormValues> name="cuota_18_b" label="Cuota 18 meses B" type="number" control={control} placeholder="Opcional" />
-                            <FormInput<FormValues> name="cuota_24_b" label="Cuota 24 meses B" type="number" control={control} placeholder="Opcional" />
-                            <FormInput<FormValues> name="cuota_30_b" label="Cuota 30 meses B" type="number" control={control} placeholder="Opcional" />
-                            <FormInput<FormValues> name="cuota_36_b" label="Cuota 36 meses B" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> formatThousands name="cuota_6_b" label="Cuota 6 meses B" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> formatThousands name="cuota_12_b" label="Cuota 12 meses B" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> formatThousands name="cuota_18_b" label="Cuota 18 meses B" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> formatThousands name="cuota_24_b" label="Cuota 24 meses B" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> formatThousands name="cuota_30_b" label="Cuota 30 meses B" type="number" control={control} placeholder="Opcional" />
+                            <FormInput<FormValues> formatThousands name="cuota_36_b" label="Cuota 36 meses B" type="number" control={control} placeholder="Opcional" />
                         </div>
                     </div>
                 )}
@@ -1104,9 +1151,9 @@ const CotizacionFormulario: React.FC = () => {
                                     />
                                     {errors.producto1Descripcion && <p className="text-sm text-error">{String(errors.producto1Descripcion.message)}</p>}
                                 </div>
-                                <FormInput<FormValues> name="producto1Precio" label="Precio *" type="number" control={control} placeholder="0 COP"
+                                <FormInput<FormValues> formatThousands name="producto1Precio" label="Precio *" type="number" control={control} placeholder="0 COP"
                                 />
-                                <FormInput<FormValues> name="producto1CuotaInicial" label="Cuota inicial" type="number" control={control} placeholder="0 COP" />
+                                <FormInput<FormValues> formatThousands name="producto1CuotaInicial" label="Cuota inicial" type="number" control={control} placeholder="0 COP" />
                             </div>
 
                             <div className="grid grid-cols-1 gap-4">
@@ -1123,9 +1170,9 @@ const CotizacionFormulario: React.FC = () => {
                                     />
                                     {errors.producto2Descripcion && <p className="text-sm text-error">{String(errors.producto2Descripcion.message)}</p>}
                                 </div>
-                                <FormInput<FormValues> name="producto2Precio" label="Precio *" type="number" control={control} placeholder="0 COP"
+                                <FormInput<FormValues> formatThousands name="producto2Precio" label="Precio *" type="number" control={control} placeholder="0 COP"
                                 />
-                                <FormInput<FormValues> name="producto2CuotaInicial" label="Cuota inicial" type="number" control={control} placeholder="0 COP" />
+                                <FormInput<FormValues> formatThousands name="producto2CuotaInicial" label="Cuota inicial" type="number" control={control} placeholder="0 COP" />
                             </div>
                         </div>
                     </div>
