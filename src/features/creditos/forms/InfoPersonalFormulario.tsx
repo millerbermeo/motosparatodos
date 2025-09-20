@@ -449,6 +449,7 @@ const InfoPersonalFormulario: React.FC = () => {
                 <div className={grid}>
                     <FormInput
                         name="numero_documento"
+                        className="mt-6"
                         label="Número de documento*"
                         control={control}
                         placeholder="1144102233"
@@ -478,6 +479,7 @@ const InfoPersonalFormulario: React.FC = () => {
                     />
                     <FormInput
                         name="fecha_expedicion"
+                        className="mt-6"
                         label="Fecha de expedición*"
                         type="date"
                         control={control}
@@ -531,6 +533,7 @@ const InfoPersonalFormulario: React.FC = () => {
                     />
                     <FormInput
                         name="ciudad_residencia"
+                        className="mt-6"
                         label="Ciudad de residencia*"
                         control={control}
                         placeholder="Ej. Pitalito"
@@ -544,7 +547,7 @@ const InfoPersonalFormulario: React.FC = () => {
                         }}
                     />
 
-                    <FormInput name="barrio_residencia" label="Barrio de residencia" control={control} />
+                    <FormInput name="barrio_residencia" className="mt-6" label="Barrio de residencia" control={control} />
 
                     <FormInput
                         name="direccion_residencia"
@@ -571,6 +574,7 @@ const InfoPersonalFormulario: React.FC = () => {
 
                     <FormInput
                         name="email"
+                        className="mt-6"
                         label="Email*"
                         control={control}
                         rules={{
@@ -587,6 +591,7 @@ const InfoPersonalFormulario: React.FC = () => {
                     />
                     <FormInput
                         name="personas_a_cargo"
+                        className="mt-6"
                         label="Personas a cargo*"
                         type="number"
                         control={control}
@@ -605,6 +610,7 @@ const InfoPersonalFormulario: React.FC = () => {
                     />
                     <FormInput
                         name="costo_arriendo"
+                        className="mt-6"
                         label="Costo del arriendo (COP)"
                         type="text"
                         control={control}
@@ -650,7 +656,7 @@ const InfoPersonalFormulario: React.FC = () => {
                         rules={{ pattern: { value: /^[0-9]*$/, message: "Solo dígitos" } }}
                     />
 
-                    <FormInput name="informacion_laboral.cargo" label="Cargo" control={control} />
+                    <FormInput name="informacion_laboral.cargo" className="mt-6" label="Cargo" control={control} />
                     <FormSelect
                         name="informacion_laboral.tipo_contrato"
                         label="Tipo de contrato"
@@ -659,6 +665,7 @@ const InfoPersonalFormulario: React.FC = () => {
                     />
                     <FormInput
                         name="informacion_laboral.salario"
+                        className="mt-6"
                         label="Salario (COP)"
                         type="number"
                         control={control}
@@ -689,7 +696,8 @@ const InfoPersonalFormulario: React.FC = () => {
                     <FormInput name="vehiculo.marca" label="Marca" control={control} />
                     <FormInput name="vehiculo.modelo" label="Modelo" control={control} />
                     <FormSelect name="vehiculo.tipo" label="Tipo" control={control} options={vehiculoTipoOptions} />
-                    <FormInput name="vehiculo.numero_motor" label="Número de motor" control={control} />
+                    <FormInput name="vehiculo.numero_motor" className="mt-6"
+ label="Número de motor" control={control} />
                 </div>
             </section>
 
@@ -703,14 +711,16 @@ const InfoPersonalFormulario: React.FC = () => {
                 </div>
 
                 <div className={grid}>
-                    <FormInput name="referencias.0.nombre_completo" label="Nombre completo" control={control} />
+                    <FormInput name="referencias.0.nombre_completo" className="mt-6"
+                        label="Nombre completo" control={control} />
                     <FormSelect
                         name="referencias.0.tipo_referencia"
                         label="Tipo de referencia"
                         control={control}
                         options={tipoReferenciaOptions}
                     />
-                    <FormInput name="referencias.0.direccion" label="Dirección" control={control} />
+                    <FormInput name="referencias.0.direccion" className="mt-6"
+                        label="Dirección" control={control} />
                     <FormInput
                         name="referencias.0.telefono"
                         label="Número telefónico"
@@ -730,14 +740,14 @@ const InfoPersonalFormulario: React.FC = () => {
                 </div>
 
                 <div className={grid}>
-                    <FormInput name="referencias.1.nombre_completo" label="Nombre completo" control={control} />
+                    <FormInput name="referencias.1.nombre_completo" className="mt-6" label="Nombre completo" control={control} />
                     <FormSelect
                         name="referencias.1.tipo_referencia"
                         label="Tipo de referencia"
                         control={control}
                         options={tipoReferenciaOptions}
                     />
-                    <FormInput name="referencias.1.direccion" label="Dirección" control={control} />
+                    <FormInput className="mt-6" name="referencias.1.direccion" label="Dirección" control={control} />
                     <FormInput
                         name="referencias.1.telefono"
                         label="Número telefónico"
@@ -758,14 +768,14 @@ const InfoPersonalFormulario: React.FC = () => {
 
 
                 <div className={grid}>
-                    <FormInput name="referencias.2.nombre_completo" label="Nombre completo" control={control} />
+                    <FormInput name="referencias.2.nombre_completo" className="mt-6" label="Nombre completo" control={control} />
                     <FormSelect
                         name="referencias.2.tipo_referencia"
                         label="Tipo de referencia"
                         control={control}
                         options={tipoReferenciaOptions}
                     />
-                    <FormInput name="referencias.2.direccion" label="Dirección" control={control} />
+                    <FormInput name="referencias.2.direccion" className="mt-6" label="Dirección" control={control} />
                     <FormInput
                         name="referencias.2.telefono"
                         label="Número telefónico"

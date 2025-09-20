@@ -519,6 +519,7 @@ const CoodeudoresFormulario: React.FC = () => {
             {/* ======== PERSONALES ======== */}
             <div className={grid}>
               <FormInput
+              className="mt-6"
                 control={control}
                 name={`codeudores.${idx}.numDocumento`}
                 label="Número de documento*"
@@ -540,7 +541,7 @@ const CoodeudoresFormulario: React.FC = () => {
                 }}
               />
               <FormSelect control={control} name={`codeudores.${idx}.tipoDocumento`} label="Tipo de documento" options={tipoDocumentoOptions} />
-              <FormInput control={control} name={`codeudores.${idx}.fechaExpedicion`} label="Fecha de expedición" type="date" />
+              <FormInput control={control} name={`codeudores.${idx}.fechaExpedicion`}        className="mt-6" label="Fecha de expedición" type="date" />
 
               <FormInput
                 control={control}
@@ -564,6 +565,7 @@ const CoodeudoresFormulario: React.FC = () => {
 
               <FormSelect control={control} name={`codeudores.${idx}.nivelEstudios`} label="Nivel de estudios" options={nivelEstudiosOptions} />
               <FormInput
+                     className="mt-6"
                 control={control}
                 name={`codeudores.${idx}.ciudadResidencia`}
                 label="Ciudad de residencia"
@@ -578,7 +580,7 @@ const CoodeudoresFormulario: React.FC = () => {
                   // required: "Requerido",
                 }}
               />
-              <FormInput control={control} name={`codeudores.${idx}.barrioResidencia`} label="Barrio de residencia" />
+              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.barrioResidencia`} label="Barrio de residencia" />
 
               <FormInput control={control} name={`codeudores.${idx}.direccionResidencia`} label="Dirección de residencia" />
               <FormInput
@@ -590,12 +592,13 @@ const CoodeudoresFormulario: React.FC = () => {
               />
               <FormInput control={control} name={`codeudores.${idx}.telFijo`} label="Número tel. fijo" rules={{ pattern: { value: /^[0-9]*$/, message: "Solo dígitos" } }} />
 
-              <FormInput control={control} name={`codeudores.${idx}.email`} label="Email" rules={{ pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Email inválido" } }} />
+              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.email`} label="Email" rules={{ pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Email inválido" } }} />
               <FormSelect control={control} name={`codeudores.${idx}.estadoCivil`} label="Estado civil" options={estadoCivilOptions} />
-              <FormInput control={control} name={`codeudores.${idx}.personasACargo`} label="Personas a cargo" type="number" rules={{ validate: (v) => (v === "" || Number(v) >= 0) || "Debe ser >= 0" }} />
+              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.personasACargo`} label="Personas a cargo" type="number" rules={{ validate: (v) => (v === "" || Number(v) >= 0) || "Debe ser >= 0" }} />
 
               <FormSelect control={control} name={`codeudores.${idx}.tipoVivienda`} label="Tipo de vivienda" options={tipoViviendaOptions} />
               <FormInput
+                     className="mt-6"
                 control={control}
                 name={`codeudores.${idx}.costoArriendo`}
                 label="Costo del arriendo (COP)"
@@ -620,9 +623,9 @@ const CoodeudoresFormulario: React.FC = () => {
               <FormInput control={control} name={`codeudores.${idx}.direccionEmpleador`} label="Dirección empleador" />
               <FormInput control={control} name={`codeudores.${idx}.telEmpleador`} label="Teléfono del empleador" rules={{ pattern: { value: /^[0-9]*$/, message: "Solo dígitos" } }} />
 
-              <FormInput control={control} name={`codeudores.${idx}.cargo`} label="Cargo" />
+              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.cargo`} label="Cargo" />
               <FormSelect control={control} name={`codeudores.${idx}.tipoContrato`} label="Tipo de contrato" options={tipoContratoOptions} />
-              <FormInput control={control} name={`codeudores.${idx}.salario`} label="Salario (COP)" type="number" rules={{ validate: (v) => (v === "" || Number(v) >= 0) || "Debe ser >= 0" }} />
+              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.salario`} label="Salario (COP)" type="number" rules={{ validate: (v) => (v === "" || Number(v) >= 0) || "Debe ser >= 0" }} />
 
               <FormInput control={control} name={`codeudores.${idx}.tiempoServicio`} label="Tiempo de servicio" placeholder="Ej. 24 meses" />
             </div>
@@ -641,7 +644,7 @@ const CoodeudoresFormulario: React.FC = () => {
               <FormInput control={control} name={`codeudores.${idx}.vehMarca`} label="Marca" />
               <FormInput control={control} name={`codeudores.${idx}.vehModelo`} label="Modelo" />
               <FormSelect control={control} name={`codeudores.${idx}.vehTipo`} label="Tipo" options={vehiculoTipoOptions} />
-              <FormInput control={control} name={`codeudores.${idx}.vehNumMotor`} label="Número de motor" />
+              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.vehNumMotor`} label="Número de motor" />
             </div>
 
             {/* ======== REFERENCIAS ======== */}
@@ -654,9 +657,9 @@ const CoodeudoresFormulario: React.FC = () => {
             </div>
 
             <div className={grid}>
-              <FormInput control={control} name={`codeudores.${idx}.ref1Nombre`} label="Nombre completo" />
+              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.ref1Nombre`} label="Nombre completo" />
               <FormSelect control={control} name={`codeudores.${idx}.ref1Tipo`} label="Tipo de referencia" options={tipoReferenciaOptions} />
-              <FormInput control={control} name={`codeudores.${idx}.ref1Direccion`} label="Dirección" />
+              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.ref1Direccion`} label="Dirección" />
               <FormInput control={control} name={`codeudores.${idx}.ref1Telefono`} label="Número telefónico" rules={{ pattern: { value: /^[0-9]*$/, message: "Solo dígitos" } }} />
             </div>
 
@@ -670,9 +673,9 @@ const CoodeudoresFormulario: React.FC = () => {
 
 
             <div className={grid}>
-              <FormInput control={control} name={`codeudores.${idx}.ref2Nombre`} label="Nombre completo" />
+              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.ref2Nombre`} label="Nombre completo" />
               <FormSelect control={control} name={`codeudores.${idx}.ref2Tipo`} label="Tipo de referencia" options={tipoReferenciaOptions} />
-              <FormInput control={control} name={`codeudores.${idx}.ref2Direccion`} label="Dirección" />
+              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.ref2Direccion`} label="Dirección" />
               <FormInput control={control} name={`codeudores.${idx}.ref2Telefono`} label="Número telefónico" rules={{ pattern: { value: /^[0-9]*$/, message: "Solo dígitos" } }} />
             </div>
 
@@ -685,9 +688,9 @@ const CoodeudoresFormulario: React.FC = () => {
 
 
             <div className={grid}>
-              <FormInput control={control} name={`codeudores.${idx}.ref3Nombre`} label="Nombre completo" />
+              <FormInput className="mt-6"  control={control} name={`codeudores.${idx}.ref3Nombre`} label="Nombre completo" />
               <FormSelect control={control} name={`codeudores.${idx}.ref3Tipo`} label="Tipo de referencia" options={tipoReferenciaOptions} />
-              <FormInput control={control} name={`codeudores.${idx}.ref3Direccion`} label="Dirección" />
+              <FormInput className="mt-6"  control={control} name={`codeudores.${idx}.ref3Direccion`} label="Dirección" />
               <FormInput control={control} name={`codeudores.${idx}.ref3Telefono`} label="Número telefónico" rules={{ pattern: { value: /^[0-9]*$/, message: "Solo dígitos" } }} />
             </div>
 

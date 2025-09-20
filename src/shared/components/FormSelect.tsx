@@ -53,7 +53,7 @@ export function FormSelect<T extends FieldValues>({
 
             <div
               className={[
-                "relative rounded-lg shadow-sm bg-base-200",
+                "relative rounded-lg py-2 shadow-sm bg-base-200",
                 "focus-within:ring-2 focus-within:ring-primary/40",
                 "transition-[box-shadow,ring] duration-150",
                 disabled ? "opacity-60" : "",
