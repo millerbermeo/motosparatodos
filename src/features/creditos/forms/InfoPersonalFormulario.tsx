@@ -6,7 +6,33 @@ import { FormInput } from "../../../shared/components/FormInput";
 import { useDeudor, useRegistrarDeudor, useActualizarDeudor } from "../../../services/creditosServices";
 import { useParams } from "react-router-dom";
 import { useWizardStore } from "../../../store/wizardStore"; // ⬅️ nuevo
+import { unformatNumber } from "../../../shared/components/moneyUtils";
 
+
+
+/** Convierte string con puntos/comas/etc. a número en pesos */
+const toNumberPesos = (v: unknown): number => {
+  if (v == null) return 0;
+  const raw = String(v);
+  const digits = unformatNumber(raw); // "1.200.000" -> "1200000"
+  const n = Number(digits);
+  return Number.isFinite(n) ? n : 0;
+};
+
+/** Centavos (DB) -> string de pesos sin formato (para que FormInput lo enmascare) */
+const centsToPesosStr = (cents: unknown): string => {
+  const n = Number(cents);
+  if (!Number.isFinite(n)) return "0";
+  // 123456 (centavos) -> 1234 (pesos). Redondea hacia abajo por seguridad.
+  const pesos = Math.trunc(n / 100);
+  return String(pesos);
+};
+
+/** String de pesos formateado -> número en centavos (DB) */
+const pesosStrToCentsNumber = (value: unknown): number => {
+  const pesos = toNumberPesos(value); // "1.234.567" -> 1234567
+  return pesos * 100;                 // 123456700 centavos
+};
 
 // ============================ Tipos ============================
 
@@ -149,15 +175,11 @@ const normalizaRef = (r: Referencia): Referencia => ({
 
 // convierte strings numéricos a número; conserva 0 cuando no hay valor
 const toNumber = (v: unknown): number => {
-    if (v == null) return 0; // null o undefined
-    if (typeof v === "number") return v;
-    if (typeof v === "string") {
-        // Quita espacios y separadores de miles
-        const cleaned = v.trim().replace(/,/g, "");
-        const n = Number(cleaned);
-        return Number.isFinite(n) ? n : 0;
-    }
-    return 0;
+    if (v == null) return 0;
+    const raw = String(v);
+    const digits = unformatNumber(raw); // quita puntos, comas, espacios, COP, etc.
+    const n = Number(digits);
+    return Number.isFinite(n) ? n : 0;
 };
 
 
@@ -221,7 +243,7 @@ const InfoPersonalFormulario: React.FC = () => {
             estado_civil: "",
             personas_a_cargo: 0,
             tipo_vivienda: "",
-            costo_arriendo: "",
+            costo_arriendo: "0",
             finca_raiz: "",
             informacion_laboral: {
                 empresa: "",
@@ -229,7 +251,7 @@ const InfoPersonalFormulario: React.FC = () => {
                 telefono_empleador: "",
                 cargo: "",
                 tipo_contrato: "",
-                salario: 0,
+                salario: "0",
                 tiempo_servicio: "",
             },
             vehiculo: {
@@ -288,7 +310,7 @@ const InfoPersonalFormulario: React.FC = () => {
             estado_civil: p.estado_civil ?? "",
             personas_a_cargo: toNumber(p.personas_a_cargo ?? 0),
             tipo_vivienda: p.tipo_vivienda ?? "",
-            costo_arriendo: String(p.costo_arriendo ?? ""), // ← siempre string
+     costo_arriendo: centsToPesosStr(p.costo_arriendo ?? 0),
             finca_raiz: mapFincaRaiz(p.finca_raiz),
 
             informacion_laboral: {
@@ -297,7 +319,7 @@ const InfoPersonalFormulario: React.FC = () => {
                 telefono_empleador: l.telefono_empleador ?? "",
                 cargo: l.cargo ?? "",
                 tipo_contrato: l.tipo_contrato,
-                salario: toNumber(l.salario ?? 0),
+               salario: centsToPesosStr(l.salario ?? 0),
                 tiempo_servicio: l.tiempo_servicio ?? "",
             },
 
@@ -318,11 +340,11 @@ const InfoPersonalFormulario: React.FC = () => {
     // Si NO es arriendo → costo_arriendo = 0
     const tipoVivienda = watch("tipo_vivienda");
     React.useEffect(() => {
-        if (tipoVivienda == null) return;                      // evita el primer render
+        if (tipoVivienda == null) return;
         if (tipoVivienda !== "Arriendo") {
             const curr = getValues("costo_arriendo");
             if (curr == null || curr === "") {
-                setValue("costo_arriendo", "0", { shouldDirty: false });
+                setValue("costo_arriendo", "0", { shouldDirty: false }); // 👈 string
             }
         }
     }, [tipoVivienda, setValue, getValues]);
@@ -366,7 +388,7 @@ const InfoPersonalFormulario: React.FC = () => {
             estado_civil: values.estado_civil,
             personas_a_cargo: toNumber(values.personas_a_cargo),
             tipo_vivienda: values.tipo_vivienda,
-            costo_arriendo: values.costo_arriendo,
+           costo_arriendo: pesosStrToCentsNumber(values.costo_arriendo),
             finca_raiz: mapFincaRaizToBackend(values.finca_raiz as string),
         };
 
@@ -376,7 +398,7 @@ const InfoPersonalFormulario: React.FC = () => {
             telefono_empleador: values.informacion_laboral?.telefono_empleador?.trim() || "",
             cargo: values.informacion_laboral?.cargo?.trim() || "",
             tipo_contrato: values.informacion_laboral?.tipo_contrato?.trim() || "",
-            salario: toNumber(values.informacion_laboral?.salario),
+           salario: pesosStrToCentsNumber(values.informacion_laboral?.salario),
             tiempo_servicio: values.informacion_laboral?.tiempo_servicio?.trim() || "",
         };
 
@@ -612,15 +634,16 @@ const InfoPersonalFormulario: React.FC = () => {
                         name="costo_arriendo"
                         className="mt-6"
                         label="Costo del arriendo (COP)"
-                        type="text"
+                        type="number"
                         control={control}
                         placeholder="0"
+                        formatThousands
                         rules={{
                             validate: (v) => {
                                 if (watch("tipo_vivienda") !== "Arriendo") return true;
-                                const digits = (v ?? "").toString().replace(/[^\d]/g, ""); // solo dígitos
-                                if (digits === "") return "Indique un valor";
-                                return Number(digits) > 0 || "Indique un valor mayor a 0";
+                                const n = toNumber(v);
+                                if (!n) return "Indique un valor";
+                                return n > 0 || "Indique un valor mayor a 0";
                             },
                         }}
                     />
@@ -669,8 +692,10 @@ const InfoPersonalFormulario: React.FC = () => {
                         label="Salario (COP)"
                         type="number"
                         control={control}
-                        rules={{ validate: (v) => Number(v) >= 0 || "Debe ser >= 0" }}
+                        formatThousands
+                        rules={{ validate: (v) => toNumber(v) >= 0 || "Debe ser >= 0" }}
                     />
+
 
                     <FormInput
                         name="informacion_laboral.tiempo_servicio"
@@ -697,7 +722,7 @@ const InfoPersonalFormulario: React.FC = () => {
                     <FormInput name="vehiculo.modelo" label="Modelo" control={control} />
                     <FormSelect name="vehiculo.tipo" label="Tipo" control={control} options={vehiculoTipoOptions} />
                     <FormInput name="vehiculo.numero_motor" className="mt-6"
- label="Número de motor" control={control} />
+                        label="Número de motor" control={control} />
                 </div>
             </section>
 

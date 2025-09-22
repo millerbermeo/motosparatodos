@@ -7,11 +7,34 @@ import { useParams } from "react-router-dom";
 import { useCredito } from "../../../services/creditosServices"; // si tu hook está aquí
 import { useWizardStore } from "../../../store/wizardStore";
 
+// === Helpers dinero: UI en pesos ↔ DB en centavos ===
+import { unformatNumber } from "../../../shared/components/moneyUtils";
+
+/** String con puntos/comas/etc. → número en PESOS (entero) */
+const toNumberPesos = (v: unknown): number => {
+  if (v == null) return 0;
+  const digits = unformatNumber(String(v)); // "1.200.000" -> "1200000"
+  const n = Number(digits);
+  return Number.isFinite(n) ? n : 0;
+};
+
+/** Centavos (DB, escala 2) → string de pesos (sin formato) para el form */
+const centsToPesosStr = (cents: unknown): string => {
+  const n = Number(cents);
+  if (!Number.isFinite(n)) return "0";
+  return String(Math.trunc(n / 100)); // 123456 -> "1234"
+};
+
+/** String de pesos (con máscara) → número en centavos para DB */
+const pesosStrToCentsNumber = (value: unknown): number => {
+  const pesos = toNumberPesos(value); // "1.234.567" -> 1234567
+  return pesos * 100;
+};
 
 type ProductoValues = {
   /** Solo lectura, viene del backend como string "Marca - Línea - Modelo" o similar */
   producto: string;
-  /** Solo lectura */
+  /** Solo lectura (en PESOS, tal como viene del backend) */
   valorMoto: number | string;
 
   /** Editables */
@@ -19,7 +42,6 @@ type ProductoValues = {
   cuotaInicial: number | string;
   comentario?: string;
 };
-
 
 const toNumber = (v: unknown) => {
   const n = typeof v === "number" ? v : parseFloat(String(v ?? "").replace(/,/g, "."));
@@ -36,7 +58,6 @@ const buildProducto = (c: any): string => {
 };
 
 const InfoProductoFormulario: React.FC = () => {
-
   // Wizard (Zustand)
   const next = useWizardStore((s) => s.next);
   const prev = useWizardStore((s) => s.prev);
@@ -51,9 +72,9 @@ const InfoProductoFormulario: React.FC = () => {
     mode: "onBlur",
     defaultValues: {
       producto: "",
-      valorMoto: 0,
+      valorMoto: "0",     // string para que la máscara aplique
       plazoCuotas: 6,
-      cuotaInicial: 0,
+      cuotaInicial: "0",  // string para máscara
       comentario: "",
     },
   });
@@ -70,9 +91,17 @@ const InfoProductoFormulario: React.FC = () => {
     const c = data.creditos[0];
 
     setValue("producto", buildProducto(c), { shouldDirty: false });
-    setValue("valorMoto", c?.valor_producto ?? 0, { shouldDirty: false });
+
+    // ⚠️ Valor de producto YA VIENE EN PESOS. NO dividir, NO quitar ceros.
+    // Solo conviértelo a string para que FormInput lo formatee con puntos.
+    setValue("valorMoto", String(c?.valor_producto ?? "0"), { shouldDirty: false });
+
     setValue("plazoCuotas", c?.plazo_meses ?? 6, { shouldDirty: false });
-    setValue("cuotaInicial", c?.cuota_inicial ?? 0, { shouldDirty: false });
+
+    // cuota_inicial: seguimos manejando escala 2 (centavos) si tu backend lo requiere.
+    // Si también viene en pesos, cambia esta línea por: String(c?.cuota_inicial ?? "0")
+    setValue("cuotaInicial", centsToPesosStr(c?.cuota_inicial ?? 0), { shouldDirty: false });
+
     setValue("comentario", c?.comentario ?? "", { shouldDirty: false });
   }, [data, setValue]);
 
@@ -80,7 +109,8 @@ const InfoProductoFormulario: React.FC = () => {
   const onSubmit = (v: ProductoValues) => {
     const payload = {
       plazo_meses: toNumber(v.plazoCuotas) || undefined,
-      cuota_inicial: toNumber(v.cuotaInicial) || 0,
+      // UI (pesos con máscara) -> DB (centavos). Si tu backend quiere pesos, usa toNumberPesos(v.cuotaInicial)
+      cuota_inicial: pesosStrToCentsNumber(v.cuotaInicial) || 0,
       comentario: (v.comentario?.trim() ?? "") || null,
     };
     actualizarCredito.mutate(
@@ -89,7 +119,8 @@ const InfoProductoFormulario: React.FC = () => {
         onSuccess: () => {
           // reflejar los confirmados sin marcar dirty
           setValue("plazoCuotas", payload.plazo_meses ?? 0, { shouldDirty: false });
-          setValue("cuotaInicial", payload.cuota_inicial ?? 0, { shouldDirty: false });
+          // Volvemos a mostrar en pesos (string) para la UI
+          setValue("cuotaInicial", centsToPesosStr(payload.cuota_inicial ?? 0), { shouldDirty: false });
           setValue("comentario", payload.comentario ?? "", { shouldDirty: false });
           next();
         },
@@ -113,11 +144,20 @@ const InfoProductoFormulario: React.FC = () => {
       {isLoading && <div className="text-sm opacity-70">Cargando crédito…</div>}
       {isError && <div className="text-sm text-error">No se pudo cargar el crédito.</div>}
 
-
       <div className={grid}>
         {/* Solo lectura en un solo campo */}
         <FormInput name="producto" label="Producto" control={control} disabled placeholder="—" />
-        <FormInput name="valorMoto" label="Valor de la moto" type="number" control={control} disabled placeholder="0" />
+
+        {/* Valor de la moto: en PESOS tal cual, solo agregar puntos */}
+        <FormInput
+          name="valorMoto"
+          label="Valor de la moto"
+          type="number"
+          control={control}
+          disabled
+          placeholder="0"
+          formatThousands
+        />
 
         {/* Editables */}
         <FormInput
@@ -133,15 +173,18 @@ const InfoProductoFormulario: React.FC = () => {
             setValueAs: (v: unknown) => toNumber(v),
           }}
         />
+
+        {/* Cuota Inicial con máscara y validación */}
         <FormInput
           name="cuotaInicial"
           label="Cuota inicial"
           type="number"
           control={control}
           placeholder="0"
+          formatThousands
           rules={{
             required: "Requerido",
-            setValueAs: (v: unknown) => toNumber(v),
+            validate: (v) => toNumberPesos(v) >= 0 || "Debe ser >= 0",
           }}
         />
       </div>
@@ -175,7 +218,6 @@ const InfoProductoFormulario: React.FC = () => {
         </button>
 
         <div className="flex gap-2">
-
           {/* Guardar → avanza solo si éxito */}
           <button
             type="submit"

@@ -12,7 +12,28 @@ import {
 // + añade:
 import { useParams } from "react-router-dom";
 import { useWizardStore } from "../../../store/wizardStore";
+import { unformatNumber } from "../../../shared/components/moneyUtils";
 
+/** String con puntos/comas/etc. → número en PESOS (entero) */
+const toNumberPesos = (v: unknown): number => {
+  if (v == null) return 0;
+  const digits = unformatNumber(String(v)); // "1.200.000" -> "1200000"
+  const n = Number(digits);
+  return Number.isFinite(n) ? n : 0;
+};
+
+/** Centavos (DB, escala 2) → string de pesos (sin formato) para el form */
+const centsToPesosStr = (cents: unknown): string => {
+  const n = Number(cents);
+  if (!Number.isFinite(n)) return "0";
+  return String(Math.trunc(n / 100)); // 123456 -> "1234"
+};
+
+/** String de pesos (con máscara) → número en centavos para DB */
+const pesosStrToCentsNumber = (value: unknown): number => {
+  const pesos = toNumberPesos(value);
+  return pesos * 100;
+};
 
 /* ========================= Tipos del form ========================= */
 type Coodeudor = {
@@ -159,7 +180,7 @@ const emptyCoodeudor: Coodeudor = {
   telEmpleador: "",
   cargo: "",
   tipoContrato: "Indefinido",
-  salario: "",
+  salario: "0",
   tiempoServicio: "",
   vehPlaca: "",
   vehMarca: "",
@@ -206,14 +227,18 @@ const prune = (obj: any): any => {
 // antes: const toBackendPayload = (c: Coodeudor, deudorId?: number) => {
 const toBackendPayload = (c: Coodeudor, credito?: string,) => {
 
+
+  const personas_a_cargo =
+    c.personasACargo === "" ? undefined : Number(c.personasACargo);
+
+  // Dinero → DB en centavos (solo si aplica)
   const costo_arriendo_num =
     c.tipoVivienda === "Arriendo"
-      ? Number((c.costoArriendo ?? "").toString().replace(/\D/g, "")) || 0
+      ? pesosStrToCentsNumber(c.costoArriendo)
       : 0;
 
-  const personas_a_cargo = c.personasACargo === "" ? undefined : Number(c.personasACargo);
-  // const costo_arriendo_in = c.costoArriendo === "" ? undefined : Number(c.costoArriendo);
-  const salario = c.salario === "" ? undefined : Number(c.salario);
+  const salario =
+    c.salario === "" ? undefined : pesosStrToCentsNumber(c.salario);
 
   const referencias = [
     c.ref1Nombre || c.ref1Tipo || c.ref1Direccion || c.ref1Telefono
@@ -312,7 +337,7 @@ const fromBackendToForm = (data: any): Coodeudor => {
     estadoCivil: normalizeEstadoCivil(p.estado_civil),
     personasACargo: p.personas_a_cargo ?? "",
     tipoVivienda: normalizeTipoVivienda(p.tipo_vivienda),
-    costoArriendo: p.costo_arriendo ?? "",
+    costoArriendo: centsToPesosStr(p.costo_arriendo ?? 0),
     fincaRaiz: (p.finca_raiz as Coodeudor["fincaRaiz"]) ?? "No",
 
     empresaLabora: l.empresa ?? "",
@@ -320,7 +345,7 @@ const fromBackendToForm = (data: any): Coodeudor => {
     telEmpleador: l.telefono_empleador ?? "",
     cargo: l.cargo ?? "",
     tipoContrato: l.tipo_contrato ?? "Indefinido",
-    salario: l.salario ?? "",
+    salario: centsToPesosStr(l.salario ?? 0),
     tiempoServicio: l.tiempo_servicio ?? "",
 
     vehPlaca: v?.placa ?? "",
@@ -415,12 +440,14 @@ const CoodeudoresFormulario: React.FC = () => {
     if (tv0 == null) return;
     const curr = getValues(`codeudores.0.costoArriendo`);
     if (tv0 !== "Arriendo") {
+      const curr = getValues(`codeudores.0.costoArriendo`);
       if (curr == null || curr === "") {
         setValue(`codeudores.0.costoArriendo`, "0", { shouldDirty: false });
       }
     } else {
       if (curr === "0") setValue(`codeudores.0.costoArriendo`, "", { shouldDirty: false });
     }
+
   }, [tv0, setValue, getValues]);
 
   const tv1 = watch(`codeudores.1.tipoVivienda`);
@@ -519,7 +546,7 @@ const CoodeudoresFormulario: React.FC = () => {
             {/* ======== PERSONALES ======== */}
             <div className={grid}>
               <FormInput
-              className="mt-6"
+                className="mt-6"
                 control={control}
                 name={`codeudores.${idx}.numDocumento`}
                 label="Número de documento*"
@@ -541,7 +568,7 @@ const CoodeudoresFormulario: React.FC = () => {
                 }}
               />
               <FormSelect control={control} name={`codeudores.${idx}.tipoDocumento`} label="Tipo de documento" options={tipoDocumentoOptions} />
-              <FormInput control={control} name={`codeudores.${idx}.fechaExpedicion`}        className="mt-6" label="Fecha de expedición" type="date" />
+              <FormInput control={control} name={`codeudores.${idx}.fechaExpedicion`} className="mt-6" label="Fecha de expedición" type="date" />
 
               <FormInput
                 control={control}
@@ -565,7 +592,7 @@ const CoodeudoresFormulario: React.FC = () => {
 
               <FormSelect control={control} name={`codeudores.${idx}.nivelEstudios`} label="Nivel de estudios" options={nivelEstudiosOptions} />
               <FormInput
-                     className="mt-6"
+                className="mt-6"
                 control={control}
                 name={`codeudores.${idx}.ciudadResidencia`}
                 label="Ciudad de residencia"
@@ -598,11 +625,20 @@ const CoodeudoresFormulario: React.FC = () => {
 
               <FormSelect control={control} name={`codeudores.${idx}.tipoVivienda`} label="Tipo de vivienda" options={tipoViviendaOptions} />
               <FormInput
-                     className="mt-6"
+                className="mt-6"
                 control={control}
                 name={`codeudores.${idx}.costoArriendo`}
                 label="Costo del arriendo (COP)"
                 type="number"
+                formatThousands
+                rules={{
+                  validate: (v) => {
+                    if (watch(`codeudores.${idx}.tipoVivienda`) !== "Arriendo") return true;
+                    const n = toNumberPesos(v);
+                    if (!n) return "Indique un valor";
+                    return n > 0 || "Indique un valor > 0";
+                  },
+                }}
               // disabled={watch(`codeudores.${idx}.tipoVivienda`) !== "Arriendo"}
               // rules={{ validate: (v) => (v === "" || Number(v) > 0 || "Indique un valor > 0") }}
               />
@@ -625,7 +661,15 @@ const CoodeudoresFormulario: React.FC = () => {
 
               <FormInput className="mt-6" control={control} name={`codeudores.${idx}.cargo`} label="Cargo" />
               <FormSelect control={control} name={`codeudores.${idx}.tipoContrato`} label="Tipo de contrato" options={tipoContratoOptions} />
-              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.salario`} label="Salario (COP)" type="number" rules={{ validate: (v) => (v === "" || Number(v) >= 0) || "Debe ser >= 0" }} />
+              <FormInput
+                className="mt-6"
+                control={control}
+                name={`codeudores.${idx}.salario`}
+                label="Salario (COP)"
+                type="number"
+                formatThousands
+                rules={{ validate: (v) => toNumberPesos(v) >= 0 || "Debe ser >= 0" }}
+              />
 
               <FormInput control={control} name={`codeudores.${idx}.tiempoServicio`} label="Tiempo de servicio" placeholder="Ej. 24 meses" />
             </div>
@@ -688,9 +732,9 @@ const CoodeudoresFormulario: React.FC = () => {
 
 
             <div className={grid}>
-              <FormInput className="mt-6"  control={control} name={`codeudores.${idx}.ref3Nombre`} label="Nombre completo" />
+              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.ref3Nombre`} label="Nombre completo" />
               <FormSelect control={control} name={`codeudores.${idx}.ref3Tipo`} label="Tipo de referencia" options={tipoReferenciaOptions} />
-              <FormInput className="mt-6"  control={control} name={`codeudores.${idx}.ref3Direccion`} label="Dirección" />
+              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.ref3Direccion`} label="Dirección" />
               <FormInput control={control} name={`codeudores.${idx}.ref3Telefono`} label="Número telefónico" rules={{ pattern: { value: /^[0-9]*$/, message: "Solo dígitos" } }} />
             </div>
 
