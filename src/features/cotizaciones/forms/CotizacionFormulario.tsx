@@ -7,6 +7,7 @@ import { useMarcas, useMotosPorMarca } from "../../../services/marcasServices";
 import { useCreateCotizaciones } from "../../../services/cotizacionesServices";
 import { useAuthStore } from "../../../store/auth.store";
 import ButtonLink from "../../../shared/components/ButtonLink";
+import { useNavigate } from "react-router-dom";
 
 type MetodoPago = "contado" | "credibike" | "terceros";
 
@@ -158,6 +159,9 @@ const CotizacionFormulario: React.FC = () => {
         mode: "onBlur",
         shouldUnregister: false,
     });
+
+    const navigate = useNavigate();
+
 
     const { mutate: cotizacion, isPending } = useCreateCotizaciones();
 
@@ -518,9 +522,16 @@ const CotizacionFormulario: React.FC = () => {
         };
 
         console.log("SUBMIT (payload EXACTO BD):", payload);
+
         cotizacion(payload, {
-            onSuccess: () => { reset(); },
-            onError: (err) => { console.error(err); },
+            onSuccess: () => {
+                reset(); // tu lógica de reseteo
+                // 👇 navegar a la ruta deseada
+                navigate(`/cotizaciones`);
+            },
+            onError: (err) => {
+                console.error(err);
+            },
         });
     };
 

@@ -1,5 +1,5 @@
 // src/pages/DetalleCambiarEstado.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCotizacionById } from '../../services/cotizacionesServices';
 import { api } from '../../services/axiosInstance';
@@ -149,6 +149,9 @@ const DetalleCambiarEstado: React.FC = () => {
     const [estadoNombre, setEstadoNombre] = React.useState<string>('');
     const [comentario2, setComentario2] = React.useState<string>('');
 
+    const [loading, setLoading] = useState(false);
+
+
     React.useEffect(() => {
         if (!row) return;
 
@@ -168,7 +171,10 @@ const DetalleCambiarEstado: React.FC = () => {
             .trim()
             .toLowerCase() === 'solicitar credito';
 
-    const handleSubmit = async (e: React.FormEvent) => {
+
+
+    // 2) Tu handleSubmit con loading + finally (no cambia tu lógica)
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!id) return;
 
@@ -182,6 +188,8 @@ const DetalleCambiarEstado: React.FC = () => {
         }
 
         try {
+            setLoading(true); // empieza el spinner y deshabilita el botón
+
             // Hacemos el update y capturamos la respuesta
             const resp = await api.put('/actualizar_cotizacion.php', {
                 id: Number(id),
@@ -220,10 +228,11 @@ const DetalleCambiarEstado: React.FC = () => {
                 // Para cualquier otro estado (o si no vino código) → /cotizaciones
                 navigate('/cotizaciones');
             }
-
         } catch (err: any) {
             const msg = err?.response?.data?.message || 'No se pudo actualizar el estado.';
             Swal.fire({ icon: 'error', title: 'Error', text: String(msg) });
+        } finally {
+            setLoading(false); // detiene el spinner aunque haya error
         }
     };
 
@@ -454,8 +463,27 @@ const DetalleCambiarEstado: React.FC = () => {
                                         ← Volver
                                     </button>
 
-                                    <button type="submit" className="btn btn-success btn-sm">
-                                        ✓ Aceptar
+
+                                    <button
+                                        type="submit"
+                                        className="btn btn-success btn-sm"
+                                        disabled={loading}
+                                        aria-busy={loading}
+                                    >
+                                        {loading ? (
+                                            <>
+                                                <span
+                                                    className="spinner-border spinner-border-sm me-2"
+                                                    role="status"
+                                                    aria-hidden="true"
+                                                ></span>
+                                                Procesando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                ✓ Aceptar
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             </form>
