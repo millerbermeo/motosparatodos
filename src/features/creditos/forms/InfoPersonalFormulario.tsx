@@ -149,7 +149,6 @@ const tipoReferenciaOptions: SelectOption[] = [
 
 
 const fincaRaizOptions: SelectOption[] = [
-    { value: "No", label: "No" },
     { value: "Casa", label: "Casa" },
     { value: "Apartamento", label: "Apartamento" },
     { value: "Lote", label: "Lote" },
