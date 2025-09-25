@@ -30,6 +30,7 @@ const Clientes = lazy(() => import("../pages/Clientes")); // 👈 crea esta pág
 const Creditos = lazy(() => import("../pages/Creditos")); // 👈 crea esta página simple
 const Detalles = lazy(() => import("../pages/Detalles")); // 👈 crea esta página simple
 const CrearCotizaciones = lazy(() => import("../pages/CrearCotizaciones")); // 👈 crea esta página simple
+const CrearCotizaciones2 = lazy(() => import("../pages/CrearCotizaciones2")); // 👈 crea esta página simple
 
 const CreditosForm = lazy(() => import("../pages/CreditosForm")); // 👈 crea esta página simple
 const DetalleEstado = lazy(() => import("../pages/DetalleEstado")); // 👈 crea esta página simple
@@ -82,6 +83,7 @@ const AppRouter: React.FC = () => {
 
               <Route element={<RequireModule name="Cotizaciones" />}>
                 <Route path="/cotizaciones/crear-cotizaciones" element={<CrearCotizaciones />} />
+                <Route path="/creditos/crear-cotizaciones-credito" element={<CrearCotizaciones2 />} />
 
                 <Route path="/cotizaciones" element={<Cotizaciones />} />
                 <Route path="/cotizaciones/:id" element={<Detalles />} /> {/* 👈 aquí */}
@@ -90,6 +92,7 @@ const AppRouter: React.FC = () => {
               </Route>
 
               <Route element={<RequireModule name="Créditos" />}>
+              
                 <Route path="/creditos" element={<Creditos />} />
                 <Route path="/creditos/registrar/:id" element={<CreditosForm />} />
                 <Route path="/creditos/detalle/:id" element={<CreditoDetalle />} />

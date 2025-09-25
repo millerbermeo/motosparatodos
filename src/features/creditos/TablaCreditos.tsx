@@ -215,7 +215,7 @@ const TablaCreditos: React.FC = () => {
                     )}
 
                     {useAuthStore.getState().user?.rol === "Asesor" && (
-                        <Link to="/cotizaciones/crear-cotizaciones">
+                        <Link to="/creditos/crear-cotizaciones-credito">
                             <button className="btn bg-[#2BB352] text-white">Crear Crédito</button>
                         </Link>
                     )}

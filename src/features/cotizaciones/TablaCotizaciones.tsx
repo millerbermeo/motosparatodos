@@ -363,19 +363,6 @@ const TablaCotizaciones: React.FC = () => {
                             </tr>
                         ))}
                     </tbody>
-
-                    <tfoot className="bg-base-200/60">
-                        <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-base-content/70">
-                            <th>Acciones</th>
-                            <th>Asesor</th>
-                            <th>Nombre cliente</th>
-                            <th>Teléfono</th>
-                            <th>Tipo</th>
-                            <th>Estado</th>
-                            <th>Prospecto</th>
-                            <th>Actualizado</th>
-                        </tr>
-                    </tfoot>
                 </table>
             </div>
 

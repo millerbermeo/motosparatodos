@@ -83,7 +83,7 @@ type FormValues = {
     marcacion2: string;
 };
 
-const CotizacionFormulario: React.FC = () => {
+const CotizacionFormulario2: React.FC = () => {
 
     const {
         register,
@@ -95,7 +95,7 @@ const CotizacionFormulario: React.FC = () => {
         reset,
     } = useForm<FormValues>({
         defaultValues: {
-            metodoPago: "contado",
+            metodoPago: "credibike",
             canal: "",
             pregunta: "",
             categoria: "motos",
@@ -1279,4 +1279,4 @@ const CotizacionFormulario: React.FC = () => {
     );
 };
 
-export default CotizacionFormulario;
+export default CotizacionFormulario2;
