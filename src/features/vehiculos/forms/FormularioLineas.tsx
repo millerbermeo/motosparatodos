@@ -70,6 +70,7 @@ const FormularioLineas: React.FC<Props> = ({ initialValues, mode = "create" }) =
         <FormInput<LineaFormValues>
           name="linea"
           label="Línea"
+            className="mt-6"
           control={control}
           placeholder="Ej. CBR 500R"
           rules={{

@@ -142,6 +142,7 @@ export interface Moto {
   modelo?: string
   descuento_empresa?: string
   descuento_ensambladora?: string
+  foto: string | null
 }
 
 export interface FiltroMarcaResponseRaw {
@@ -150,6 +151,7 @@ export interface FiltroMarcaResponseRaw {
   count: number | string;
   motos: Array<{
     linea: string;
+    foto?: string;
     precio_base: string | number;
     soat: string | number;
     matricula_contado: string | number;
@@ -166,6 +168,7 @@ export interface FiltroMarcaResponse {
   marca: string;
   count: number;
   motos: Moto[];
+  foto?: string;
 }
 
 /**
@@ -192,14 +195,15 @@ export const useMotosPorMarca = (marca: string | undefined) => {
         count: normalizeNumber(data.count),
         motos: (data.motos ?? []).map((m) => ({
           linea: m.linea,
+          foto: m.foto ?? null,
           precio_base: normalizeNumber(m.precio_base),
           soat: normalizeNumber(m.soat),
           matricula_contado: normalizeNumber(m.matricula_contado),
           matricula_credito: normalizeNumber(m.matricula_credito),
           impuestos: normalizeNumber(m.impuestos),
           modelo: m.modelo,
-            descuento_empresa: m.descuento_empresa,
-              descuento_ensambladora: m.descuento_ensambladora,
+          descuento_empresa: m.descuento_empresa,
+          descuento_ensambladora: m.descuento_ensambladora,
 
         })),
       };

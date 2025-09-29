@@ -207,19 +207,6 @@ const TablaUsuarios: React.FC = () => {
               </tr>
             ))}
           </tbody>
-
-          <tfoot className="bg-base-200/60">
-            <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-base-content/70">
-              <th></th>
-              <th>Nombre</th>
-              <th>Usuario</th>
-              <th>Rol</th>
-              <th>Estado</th>
-              <th>Cédula</th>
-              <th>Fecha exp.</th>
-              <th className="text-right pr-6">Acciones</th>
-            </tr>
-          </tfoot>
         </table>
       </div>
       {/* Footer paginación */}

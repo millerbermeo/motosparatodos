@@ -197,11 +197,6 @@ const TablaEmpresas: React.FC = () => {
                             </tr>
                         ))}
                     </tbody>
-                    <tfoot className="bg-base-200/60">
-                        <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-base-content/70">
-                            <th></th><th>Logo</th><th>Empresa</th><th>NIT</th><th>Garantías</th><th>Siniestros</th><th>Dirección Siniestros</th><th>Sitio</th><th className="text-right pr-6">Acciones</th>
-                        </tr>
-                    </tfoot>
                 </table>
             </div>
 

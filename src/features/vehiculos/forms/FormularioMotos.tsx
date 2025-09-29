@@ -183,6 +183,7 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
         <FormInput<MotoFormValues>
           name="modelo"
           label="Modelo"
+          className="mt-6"
           control={control}
           placeholder="Ej. 500R3234"
           rules={{
@@ -208,6 +209,7 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
           name="precio_base"
           label="Precio base"
           control={control}
+            className="mt-6"
           type="number"
           placeholder="15000"
           rules={{

@@ -200,16 +200,6 @@ const TablaMotos: React.FC = () => {
             ))}
           </tbody>
 
-          <tfoot className="bg-base-200/60">
-            <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-base-content/70">
-              <th></th><th>Imagen</th><th>Marca</th><th>Línea</th><th>Modelo</th>
-              <th className="hidden md:table-cell">Empresa</th>
-              <th className="hidden lg:table-cell">Subdistribucion</th>
-              <th className="hidden sm:table-cell">Estado</th>
-              <th className="text-right pr-6">Precio</th>
-              <th className="text-right pr-6">Acciones</th>
-            </tr>
-          </tfoot>
         </table>
       </div>
 

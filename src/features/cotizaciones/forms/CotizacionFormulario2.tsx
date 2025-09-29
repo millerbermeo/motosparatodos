@@ -81,6 +81,9 @@ type FormValues = {
 
     marcacion1: string;
     marcacion2: string;
+
+    foto_a?: string | null;
+    foto_b?: string | null;
 };
 
 const CotizacionFormulario2: React.FC = () => {
@@ -249,7 +252,9 @@ const CotizacionFormulario2: React.FC = () => {
     React.useEffect(() => {
         if (!incluirMoto1) {
             setValue("marca1", ""); setValue("moto1", ""); setValue("garantia1", "");
+            setValue("foto_a", null)
             setValue("accesorios1", "0"); setValue("segurosIds1", []); setValue("otroSeguro1", "0");
+            setValue("foto_b", null)
             setValue("precioDocumentos1", "0"); setValue("descuento1", "0"); setValue("cuotaInicial1", "0");
         }
     }, [incluirMoto1, setValue]);
@@ -519,6 +524,9 @@ const CotizacionFormulario2: React.FC = () => {
             marcacion_a: incluirMoto1 ? marcacion1 : 0,
             marcacion_b: incluirMoto2 ? marcacion2 : null,
 
+            foto_a: incluirMoto1 ? (data.foto_a ?? null) : null,
+            foto_b: incluirMoto2 ? (data.foto_b ?? null) : null,
+
         };
 
         console.log("SUBMIT (payload EXACTO BD):", payload);
@@ -558,6 +566,7 @@ const CotizacionFormulario2: React.FC = () => {
     }, [esCreditoDirecto, incluirMoto2, setValue]);
 
 
+    // MOTO 1
     React.useEffect(() => {
         const sel = watch("moto1");
         const m = (motos1?.motos ?? []).find((x) => x.linea === sel);
@@ -567,12 +576,15 @@ const CotizacionFormulario2: React.FC = () => {
             setValue("descuento1", descuento.toString());
             const documentos =
                 (metodo === "contado" ? Number(m.matricula_contado) : Number(m.matricula_credito)) +
-                Number(m.impuestos) +
-                Number(m.soat);
+                Number(m.impuestos) + Number(m.soat);
             setValue("precioDocumentos1", documentos.toString());
+
+            // 👇 NUEVO: guarda la url de la foto
+            setValue("foto_a", m.foto ?? null);
         }
     }, [watch("moto1"), motos1, metodo, setValue]);
 
+    // MOTO 2
     React.useEffect(() => {
         const sel = watch("moto2");
         const m = (motos2?.motos ?? []).find((x) => x.linea === sel);
@@ -582,11 +594,14 @@ const CotizacionFormulario2: React.FC = () => {
             setValue("descuento2", descuento.toString());
             const documentos =
                 (metodo === "contado" ? Number(m.matricula_contado) : Number(m.matricula_credito)) +
-                Number(m.impuestos) +
-                Number(m.soat);
+                Number(m.impuestos) + Number(m.soat);
             setValue("precioDocumentos2", documentos.toString());
+
+            // 👇 NUEVO: guarda la url de la foto
+            setValue("foto_b", m.foto ?? null);
         }
     }, [watch("moto2"), motos2, metodo, setValue]);
+
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

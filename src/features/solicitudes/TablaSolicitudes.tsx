@@ -170,18 +170,6 @@ const TablaSolicitudes: React.FC = () => {
             ))}
           </tbody>
 
-          <tfoot className="bg-base-200/60">
-            <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-base-content/70">
-              <th>#</th><th>Código</th><th>Cliente</th><th>Agencia</th><th>Tipo</th>
-              <th className="hidden lg:table-cell">Recibo</th>
-              <th className="hidden lg:table-cell">Facturador</th>
-              <th>Autorizado</th>
-              <th className="hidden sm:table-cell">Facturado</th>
-              <th className="hidden sm:table-cell">Entrega</th>
-              <th className="hidden md:table-cell">Creación</th>
-              <th className="hidden md:table-cell">Actualizado</th>
-            </tr>
-          </tfoot>
         </table>
       </div>
 

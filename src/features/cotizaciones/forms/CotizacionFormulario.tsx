@@ -81,6 +81,10 @@ type FormValues = {
 
     marcacion1: string;
     marcacion2: string;
+
+
+    foto_a?: string | null;
+    foto_b?: string | null;
 };
 
 const CotizacionFormulario: React.FC = () => {
@@ -204,6 +208,7 @@ const CotizacionFormulario: React.FC = () => {
         label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP Modelo ${m.modelo ?? ""}`,
     }));
 
+    // MOTO 1
     React.useEffect(() => {
         const sel = watch("moto1");
         const m = (motos1?.motos ?? []).find((x) => x.linea === sel);
@@ -211,18 +216,34 @@ const CotizacionFormulario: React.FC = () => {
             setValue("modelo_a", m.modelo?.trim() || "");
             const descuento = Number(m.descuento_empresa) + Number(m.descuento_ensambladora);
             setValue("descuento1", descuento.toString());
-        }
-    }, [watch("moto1"), motos1, setValue]);
+            const documentos =
+                (metodo === "contado" ? Number(m.matricula_contado) : Number(m.matricula_credito)) +
+                Number(m.impuestos) + Number(m.soat);
+            setValue("precioDocumentos1", documentos.toString());
 
+            // 👇 NUEVO: guarda la url de la foto
+            setValue("foto_a", m.foto ?? null);
+        }
+    }, [watch("moto1"), motos1, metodo, setValue]);
+
+    // MOTO 2
     React.useEffect(() => {
         const sel = watch("moto2");
         const m = (motos2?.motos ?? []).find((x) => x.linea === sel);
         if (m) {
             setValue("modelo_b", m.modelo?.trim() || "");
-            const descuento = Number(m.descuento_empresa ?? 0) + Number(m.descuento_ensambladora ?? 0);
+            const descuento = Number(m.descuento_empresa) + Number(m.descuento_ensambladora);
             setValue("descuento2", descuento.toString());
+            const documentos =
+                (metodo === "contado" ? Number(m.matricula_contado) : Number(m.matricula_credito)) +
+                Number(m.impuestos) + Number(m.soat);
+            setValue("precioDocumentos2", documentos.toString());
+
+            // 👇 NUEVO: guarda la url de la foto
+            setValue("foto_b", m.foto ?? null);
         }
-    }, [watch("moto2"), motos2, setValue]);
+    }, [watch("moto2"), motos2, metodo, setValue]);
+
 
     const garantiaOptions: SelectOption[] = [
         { value: "si", label: "Sí" },
@@ -249,6 +270,7 @@ const CotizacionFormulario: React.FC = () => {
     React.useEffect(() => {
         if (!incluirMoto1) {
             setValue("marca1", ""); setValue("moto1", ""); setValue("garantia1", "");
+            setValue("foto_a", null);
             setValue("accesorios1", "0"); setValue("segurosIds1", []); setValue("otroSeguro1", "0");
             setValue("precioDocumentos1", "0"); setValue("descuento1", "0"); setValue("cuotaInicial1", "0");
         }
@@ -257,6 +279,7 @@ const CotizacionFormulario: React.FC = () => {
     React.useEffect(() => {
         if (!incluirMoto2) {
             setValue("marca2", ""); setValue("moto2", ""); setValue("garantia2", "");
+            setValue("foto_b", null)
             setValue("accesorios2", "0"); setValue("segurosIds2", []); setValue("otroSeguro2", "0");
             setValue("precioDocumentos2", "0"); setValue("descuento2", "0"); setValue("cuotaInicial2", "0");
         }
@@ -518,6 +541,9 @@ const CotizacionFormulario: React.FC = () => {
             producto2CuotaInicial: producto2CuotaInicial,
             marcacion_a: incluirMoto1 ? marcacion1 : 0,
             marcacion_b: incluirMoto2 ? marcacion2 : null,
+
+            foto_a: incluirMoto1 ? (data.foto_a ?? null) : null,
+            foto_b: incluirMoto2 ? (data.foto_b ?? null) : null,
 
         };
 
