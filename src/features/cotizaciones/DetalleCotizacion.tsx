@@ -37,13 +37,14 @@ type Cuotas = {
 };
 
 type Motocicleta = {
-  modelo: string;                  // "Yamaha fz250 – 2025"
+  modelo: string;                  // "YAMAHA R7 – 2024"
   precioBase: number;
   precioDocumentos: number;
-  descuentos: number;              // si llega luego, lo mapeamos
-  accesorios: number;
-  seguros: number;                 // suma de seguros del backend
-  garantiaExtendida: number;       // si tu backend manda $ cámbialo en el mapeo
+  descuentos: number;              // descuentos_a / descuentos_b
+  accesoriosYMarcacion: number;    // accesorios + marcación
+  seguros: number;                 // suma de seguros
+  garantia: boolean;               // si/no
+  totalSinSeguros: number;         // backend o calculado
   total: number;
   cuotas: Cuotas;
   lado: 'A' | 'B';
@@ -86,7 +87,7 @@ type Cotizacion = {
    Helpers
    ======================= */
 const fmtCOP = (v: number) =>
-  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
+  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v ?? 0);
 
 const estadoBadgeClass = (estado?: string) => {
   switch (estado) {
@@ -118,75 +119,108 @@ const fmtFecha = (isoLike?: string) => {
   });
 };
 
-// helper opcional
 const sanitizePhone = (v: any): string | undefined => {
   const s = String(v ?? "").trim();
   if (!s || s === "0" || s === "-") return undefined;
-  const digits = s.replace(/\D+/g, ""); // deja solo dígitos
-  // si quieres forzar longitud (7–10), descomenta:
-  // if (digits.length < 7 || digits.length > 10) return undefined;
+  const digits = s.replace(/\D+/g, "");
   return digits || undefined;
 };
-
-// URLs de descarga (ajusta VITE_API_URL a tu backend)
 
 const numOrUndef = (v: any) => {
   const n = Number(v);
   return Number.isFinite(n) && n > 0 ? n : undefined;
 };
 
+// Suma valores de un JSON de seguros (string o array)
+const sumSegurosFromJson = (raw: unknown): number | undefined => {
+  try {
+    if (Array.isArray(raw)) {
+      return raw.reduce((acc, it: any) => acc + (Number(it?.valor) || 0), 0);
+    }
+    if (typeof raw === 'string') {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.reduce((acc, it: any) => acc + (Number(it?.valor) || 0), 0);
+      }
+    }
+  } catch {
+    // ignora y devuelve undefined
+  }
+  return undefined;
+};
+
 /* =======================
    Mapeo de API -> UI
    ======================= */
 const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
-  const prefix = lado === 'A' ? '_a' : '_b';
+  const suffix = lado === 'A' ? '_a' : '_b';
 
-  const marca = data?.[`marca${prefix}`];
-  const linea = data?.[`linea${prefix}`];
+  const marca = data?.[`marca${suffix}`];
+  const linea = data?.[`linea${suffix}`];
 
   // Si no hay marca/linea ni precios, no devolvemos la moto
   const hasCore =
-    marca || linea || data?.[`precio_base${prefix}`] || data?.[`precio_total${prefix}`];
+    marca || linea || data?.[`precio_base${suffix}`] || data?.[`precio_total${suffix}`];
 
   if (!hasCore) return undefined;
 
-  const modelo = [marca, linea].filter(Boolean).join(' ').trim() || '—';
-  const precioBase = Number(data?.[`precio_base${prefix}`]) || 0;
-  const precioDocumentos = Number(data?.[`precio_documentos${prefix}`]) || 0;
-  const total =
-    Number(data?.[`precio_total${prefix}`]) || (precioBase + precioDocumentos);
+  const modeloLabel = [marca, linea].filter(Boolean).join(' ').trim() || '—';
 
-  const accesorios = Number(data?.[`accesorios${prefix}`]) || 0;
+  const precioBase = Number(data?.[`precio_base${suffix}`]) || 0;
+  const precioDocumentos = Number(data?.[`precio_documentos${suffix}`]) || 0;
 
-  // Seguros (sumatoria)
+  // Descuentos (nuevas columnas)
+  const descuentos = Number(data?.[`descuentos${suffix}`]) || 0;
+
+  // Accesorios + marcación
+  const accesorios = Number(data?.[`accesorios${suffix}`]) || 0;
+  const marcacion = Number(data?.[`marcacion${suffix}`]) || 0;
+  const accesoriosYMarcacion = accesorios + marcacion;
+
+  // Seguros (prioriza JSON; si no viene, suma por campos)
+  const segurosJson = data?.[`seguros${suffix}`];
+  const segurosFromJson = sumSegurosFromJson(segurosJson);
+
   const seguros =
-    (Number(data?.[`seguro_vida${prefix}`]) || 0) +
-    (Number(data?.[`seguro_mascota_s${prefix}`]) || 0) +
-    (Number(data?.[`seguro_mascota_a${prefix}`]) || 0) +
-    (Number(data?.[`otro_seguro${prefix}`]) || 0);
+    typeof segurosFromJson === 'number'
+      ? segurosFromJson
+      : (Number(data?.[`seguro_vida${suffix}`]) || 0) +
+        (Number(data?.[`seguro_mascota_s${suffix}`]) || 0) +
+        (Number(data?.[`seguro_mascota_a${suffix}`]) || 0) +
+        (Number(data?.[`otro_seguro${suffix}`]) || 0);
 
-  // Descuentos y garantía (si llegan luego en $ cámbialos acá)
-  const descuentos = 0;
-  const garantiaExtendida = data?.[`garantia${prefix}`] ? 0 : 0;
+  // Garantía si/no
+  const garantiaStr = String(data?.[`garantia${suffix}`] ?? '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+  const garantia = garantiaStr === 'si' || garantiaStr === 'sí' || garantiaStr === 'true' || garantiaStr === '1';
 
+  // Totales
+  const total = Number(data?.[`precio_total${suffix}`]) ||
+    (precioBase + precioDocumentos + accesoriosYMarcacion + seguros - descuentos);
+
+  const totalSinSeguros =
+    Number(data?.[`total_sin_seguros${suffix}`]) ||
+    (precioBase + precioDocumentos + accesoriosYMarcacion - descuentos);
+
+  // Cuotas
   const cuotas: Cuotas = {
-    inicial: Number(data?.[`cuota_inicial${prefix}`]) || 0,
-    meses6: numOrUndef(data?.[`cuota_6${prefix}`]),
-    meses12: numOrUndef(data?.[`cuota_12${prefix}`]),
-    meses18: numOrUndef(data?.[`cuota_18${prefix}`]),
-    meses24: numOrUndef(data?.[`cuota_24${prefix}`]),
-    meses30: numOrUndef(data?.[`cuota_30${prefix}`]),
-    meses36: numOrUndef(data?.[`cuota_36${prefix}`]),
+    inicial: Number(data?.[`cuota_inicial${suffix}`]) || 0,
+    meses6: numOrUndef(data?.[`cuota_6${suffix}`]),
+    meses12: numOrUndef(data?.[`cuota_12${suffix}`]),
+    meses18: numOrUndef(data?.[`cuota_18${suffix}`]),
+    meses24: numOrUndef(data?.[`cuota_24${suffix}`]),
+    meses30: numOrUndef(data?.[`cuota_30${suffix}`]),
+    meses36: numOrUndef(data?.[`cuota_36${suffix}`]),
   };
 
   return {
-    modelo,
+    modelo: modeloLabel,
     precioBase,
     precioDocumentos,
     descuentos,
-    accesorios,
+    accesoriosYMarcacion,
     seguros,
-    garantiaExtendida,
+    garantia,
+    totalSinSeguros,
     total,
     cuotas,
     lado,
@@ -198,7 +232,7 @@ const mapApiToCotizacion = (data: any): Cotizacion => {
   const nombres = [data?.name, data?.s_name].filter(Boolean).join(' ').trim() || '—';
   const apellidos = [data?.last_name, data?.s_last_name].filter(Boolean).join(' ').trim() || undefined;
   const email = data?.email && data.email !== '0' ? String(data.email) : undefined;
-  const celular = sanitizePhone(data?.celular ?? data?.cel ?? data?.telefono ?? data?.phone); // ✅ asignación
+  const celular = sanitizePhone(data?.celular ?? data?.cel ?? data?.telefono ?? data?.phone);
   const comentario = data?.comentario && data.comentario !== '' ? String(data.comentario) : undefined;
   const comentario2 = data?.comentario2 && data.comentario2 !== '' ? String(data.comentario2) : undefined;
   const cedula = data?.cedula || undefined;
@@ -208,7 +242,7 @@ const mapApiToCotizacion = (data: any): Cotizacion => {
     asesor: data?.asesor || undefined,
     canal_contacto: data?.canal_contacto || undefined,
     financiera: data?.financiera ?? null,
-    tipo_pago: data?.tipo_pago ?? null,
+    tipo_pago: data?.tipo_pago ?? data?.metodo_pago ?? null,
     prospecto: data?.prospecto ?? null,
     pregunta: data?.pregunta ?? null,
   };
@@ -232,7 +266,7 @@ const mapApiToCotizacion = (data: any): Cotizacion => {
 
   return {
     id: String(data?.id ?? ''),
-    estado: estadoNombre, // <<< nombre de negocio
+    estado: estadoNombre,
     creada,
     cliente: { nombres, apellidos, email, celular, comentario, comentario2, cedula },
     comercial,
@@ -255,9 +289,7 @@ const DetalleCotizacion: React.FC = () => {
     [payload]
   );
 
-
   const { data: actividades = [], isLoading: loadingAct } = useCotizacionActividades(id);
-
 
   type ActividadItem = { fecha: string; titulo: string; etiqueta?: string; color?: string };
 
@@ -269,62 +301,32 @@ const DetalleCotizacion: React.FC = () => {
       color: 'info',
     }));
 
-
   const actividadItems = React.useMemo(() => mapActividad(actividades), [actividades]);
 
-  const pdfPayload: QuotePayload | undefined = React.useMemo(
-    () => (payload ? { success: true, data: payload } : undefined),
-    [payload]
-  );
+  // const pdfPayload: QuotePayload | undefined = React.useMemo(
+  //   () => (payload ? { success: true, data: payload } : undefined),
+  //   [payload]
+  // );
 
-  const pdfName = React.useMemo(
-    () => `Cotizacion_${q?.id || id}.pdf`,
-    [q?.id, id]
-  );
-
+  // const pdfName = React.useMemo(
+  //   () => `Cotizacion_${q?.id || id}.pdf`,
+  //   [q?.id, id]
+  // );
 
   // Estado de tab (A/B)
   const [tab, setTab] = React.useState<'A' | 'B'>('A');
   React.useEffect(() => {
-    if (q?.motoB) setTab('A'); // default A si hay B
+    if (q?.motoB) setTab('A');
   }, [q?.motoB]);
 
   const moto = tab === 'A' ? q?.motoA : q?.motoB;
 
-  // Handlers barra de acciones
-  const handleCrearRecordatorio = () => {
-    console.log('Crear recordatorio para cotización', q?.id);
-  };
-
-  const handleEnviarCorreo = () => {
-    if (!q) return;
-    const to = q.cliente.email || '';
-    const subject = `Tu cotización #${q.id}`;
-    const body = [
-      `Hola ${q.cliente.nombres || ''},`,
-      '',
-      `Te compartimos el detalle de tu cotización #${q.id}.`,
-      q.motoA ? `Moto A: ${q.motoA.modelo} | Total: ${fmtCOP(q.motoA.total)}` : '',
-      q.motoB ? `Moto B: ${q.motoB.modelo} | Total: ${fmtCOP(q.motoB.total)}` : '',
-      '',
-      'Quedo atento/a.',
-    ]
-      .filter(Boolean)
-      .join('\n');
-    window.location.href = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  };
-
-
-
-  const handleDescargarRunt = () => {
-    const link = document.createElement('a');
-    link.href = '/runt.pdf';   // ruta pública
-    link.download = 'runt.pdf'; // nombre con el que se descargará
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
+  // Loader global
+  const { show, hide } = useLoaderStore();
+  React.useEffect(() => {
+    if (isLoading) show();
+    else hide();
+  }, [isLoading, show, hide]);
 
   // Blocs de estados
   if (!id) {
@@ -336,17 +338,6 @@ const DetalleCotizacion: React.FC = () => {
       </main>
     );
   }
-
-  // dentro de tu componente
-  const { show, hide } = useLoaderStore();
-
-  React.useEffect(() => {
-    if (isLoading) {
-      show();   // 🔵 activa overlay global
-    } else {
-      hide();   // 🔵 lo apaga
-    }
-  }, [isLoading, show, hide]);
 
   if (error) {
     return (
@@ -377,7 +368,6 @@ const DetalleCotizacion: React.FC = () => {
 
       <section className="w-full mb-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 rounded-2xl bg-gradient-to-r from-slate-50 to-slate-100  border border-info p-6">
-
           {/* Título y estado */}
           <div className="flex flex-col md:flex-row md:items-center md:gap-6 w-full">
             <div>
@@ -400,7 +390,6 @@ const DetalleCotizacion: React.FC = () => {
 
         </div>
       </section>
-
 
       <div className="flex flex-col gap-6">
         {/* Información del cliente */}
@@ -490,11 +479,12 @@ const DetalleCotizacion: React.FC = () => {
                   <DataRow label="Precio base" value={fmtCOP(moto.precioBase)} />
                   <DataRow label="Descuentos" value={fmtCOP(moto.descuentos)} valueClass="text-error font-semibold" />
                   <DataRow label="Seguros" value={fmtCOP(moto.seguros)} />
-                  <DataRow label="Garantía extendida" value={fmtCOP(moto.garantiaExtendida)} />
+                  <DataRowText label="Garantía" value={moto.garantia ? 'Sí' : 'No'} />
                 </div>
                 <div className="space-y-2">
-                  <DataRow label="Precio Documentos" value={fmtCOP(moto.precioDocumentos)} />
-                  <DataRow label="Accesorios / Marcadas / Personalizadas" value={fmtCOP(moto.accesorios)} />
+                  <DataRow label="Precio documentos" value={fmtCOP(moto.precioDocumentos)} />
+                  <DataRow label="Accesorios / Marcación / Personalización" value={fmtCOP(moto.accesoriosYMarcacion)} />
+                  <DataRow label="Total sin seguros" value={fmtCOP(moto.totalSinSeguros)} />
                   <DataRow label="Total" value={fmtCOP(moto.total)} strong />
                 </div>
               </div>
@@ -504,7 +494,7 @@ const DetalleCotizacion: React.FC = () => {
           </div>
         </section>
 
-        {/* Cuotas (dependen de la moto seleccionada) */}
+        {/* Cuotas (opcional – oculto si no quieres) */}
         <section className="card bg-base-100 border border-base-300/60 hidden shadow-sm rounded-2xl">
           <div className="card-body">
             <div className="flex items-center gap-2 mb-2">
@@ -589,72 +579,89 @@ const DetalleCotizacion: React.FC = () => {
       {/* Barra de acciones (inferior) */}
       <section className="sticky bottom-0 mt-4 bg-base-100/90 backdrop-blur border-t border-base-300 px-4 py-3">
         <div className="max-w-full mx-auto flex flex-wrap items-center justify-end gap-2">
-
-
-          {useAuthStore.getState().user?.rol === "Asesor" && q.estado != 'Sin interés' && (
-
-
-            <Link
-              to={`/cotizaciones/estado/${id}`}
-
-            >
-
+          {useAuthStore.getState().user?.rol === "Asesor" && q.estado !== 'Sin interés' && (
+            <Link to={`/cotizaciones/estado/${id}`}>
               <button className="btn btn-warning btn-sm" title="Crear recordatorio">
                 <Edit className="w-4 h-4" />
                 Cambiar estado
               </button>
             </Link>
-
           )}
 
-          <button className="btn btn-success btn-sm" onClick={handleCrearRecordatorio} title="Crear recordatorio">
+          <button className="btn btn-success btn-sm" onClick={() => console.log('Crear recordatorio', q?.id)} title="Crear recordatorio">
             <CalendarPlus className="w-4 h-4" />
             Crear recordatorio
           </button>
 
-          {useAuthStore.getState().user?.rol === "Administrador" && (<>
-            <button
-              className="btn btn-success btn-sm"
-              onClick={handleEnviarCorreo}
-              disabled={!q.cliente.email}
-              title="Enviar por correo"
-            >
-              <MailIcon className="w-4 h-4" />
-              Enviar por correo
-            </button>
-
-          </>)}
-
-
-
-          {pdfPayload && (
-            <PDFDownloadLink
-              document={
-                <CotizacionPDFDoc
-                  payload={pdfPayload}
-                  logoUrl="/moto3.png" // cámbialo si tienes otra ruta/CDN
-                  empresa={{ ciudad: "Cali", almacen: "Feria de la Movilidad" }}
-                />
-              }
-              fileName={pdfName}
-            >
-              {({ loading }) => (
-                <button className="btn btn-success btn-sm" type="button" disabled={loading}>
-                  <FileDown className="w-4 h-4" />
-                  {loading ? "Generando PDF…" : "Descargar Cotización"}
-                </button>
-              )}
-            </PDFDownloadLink>
+          {useAuthStore.getState().user?.rol === "Administrador" && (
+            <>
+              <button
+                className="btn btn-success btn-sm"
+                onClick={() => {
+                  if (!q) return;
+                  const to = q.cliente.email || '';
+                  const subject = `Tu cotización #${q.id}`;
+                  const body = [
+                    `Hola ${q.cliente.nombres || ''},`,
+                    '',
+                    `Te compartimos el detalle de tu cotización #${q.id}.`,
+                    q.motoA ? `Moto A: ${q.motoA.modelo} | Total: ${fmtCOP(q.motoA.total)}` : '',
+                    q.motoB ? `Moto B: ${q.motoB.modelo} | Total: ${fmtCOP(q.motoB.total)}` : '',
+                    '',
+                    'Quedo atento/a.',
+                  ].filter(Boolean).join('\n');
+                  window.location.href = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                }}
+                disabled={!q.cliente.email}
+                title="Enviar por correo"
+              >
+                <MailIcon className="w-4 h-4" />
+                Enviar por correo
+              </button>
+            </>
           )}
 
-          {useAuthStore.getState().user?.rol === "Administrador" && (<>
+          {(() => {
+            const pdfPayload: QuotePayload | undefined = payload ? { success: true, data: payload } : undefined;
+            const pdfName = `Cotizacion_${q?.id || id}.pdf`;
+            return pdfPayload ? (
+              <PDFDownloadLink
+                document={
+                  <CotizacionPDFDoc
+                    payload={pdfPayload}
+                    logoUrl="/moto3.png"
+                    empresa={{ ciudad: "Cali", almacen: "Feria de la Movilidad" }}
+                  />
+                }
+                fileName={pdfName}
+              >
+                {({ loading }) => (
+                  <button className="btn btn-success btn-sm" type="button" disabled={loading}>
+                    <FileDown className="w-4 h-4" />
+                    {loading ? "Generando PDF…" : "Descargar Cotización"}
+                  </button>
+                )}
+              </PDFDownloadLink>
+            ) : null;
+          })()}
 
-
-            <button className="btn btn-success btn-sm" onClick={handleDescargarRunt} title="Descargar RUNT">
+          {useAuthStore.getState().user?.rol === "Administrador" && (
+            <button
+              className="btn btn-success btn-sm"
+              onClick={() => {
+                const link = document.createElement('a');
+                link.href = '/runt.pdf';
+                link.download = 'runt.pdf';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+              title="Descargar RUNT"
+            >
               <FileDown className="w-4 h-4" />
               Descargar RUNT
             </button>
-          </>)}
+          )}
         </div>
       </section>
     </main>
@@ -694,6 +701,14 @@ const DataRow: React.FC<{ label: string; value: React.ReactNode; strong?: boolea
   <div className="flex items-center justify-between bg-[#3498DB]/70 text-white px-3 py-2 rounded-md">
     <span className="font-medium">{label}</span>
     <span className={strong ? 'font-bold' : valueClass || ''}>{value}</span>
+  </div>
+);
+
+// Para valores que no son dinero (p. ej., Sí/No)
+const DataRowText: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
+  <div className="flex items-center justify-between bg-[#3498DB]/70 text-white px-3 py-2 rounded-md">
+    <span className="font-medium">{label}</span>
+    <span className="font-semibold">{value}</span>
   </div>
 );
 

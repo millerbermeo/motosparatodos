@@ -320,7 +320,8 @@ const TablaCotizaciones: React.FC = () => {
                                             r?.estado === "Sin estado" ||
                                             r?.estado === "Alto interés" ||
                                             r?.estado === "Continúa interesado" ||
-                                            r?.estado === "Sin interés"
+                                            r?.estado === "Sin interés" ||
+                                              r?.is_state === 1
                                         ) && (
                                                 <>
 

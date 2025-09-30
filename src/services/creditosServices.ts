@@ -112,6 +112,7 @@ export const useDeudor = (id: string) => {
       );
       return data;
     },
+     retry: false, 
   });
 };
 

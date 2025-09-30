@@ -1,6 +1,6 @@
 import React from "react";
 import { useForm } from "react-hook-form";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { FormInput } from "../../shared/components/FormInput";
 import { useRegistrarSolicitudFacturacion } from "../../services/solicitudServices";
 
@@ -32,7 +32,7 @@ const celularRegex = /^[0-9]{7,10}$/;
 const SolicitudForm: React.FC = () => {
   const { id } = useParams<{ id: string }>(); // <- este es el codigo_credito
   const { mutate: registrar, isPending } = useRegistrarSolicitudFacturacion();
-
+ const navigate = useNavigate();
   const {
     control,
     handleSubmit,
@@ -67,6 +67,9 @@ const SolicitudForm: React.FC = () => {
       fd.append("id_cotizacion", String(id));  // <-- mismo id para id_cotizacion
     }
 
+      // NEW -> activa la actualización de cotizaciones.is_state = 2 en el backend
+  fd.append("is_act", "2");
+  
     fd.append("agencia", "Motos");
     // fd.append("codigo_solicitud", "Motos");
     // 1) Construir el nombre completo sin espacios extra
@@ -101,6 +104,7 @@ const SolicitudForm: React.FC = () => {
     registrar(fd, {
       onSuccess: () => {
         reset(); // limpia cuando la API responde OK
+          navigate(`/cotizaciones`); // navega a la vista de solicitudes
       },
     });
   };

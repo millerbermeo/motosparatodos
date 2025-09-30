@@ -53,11 +53,50 @@ const CreditoDetalle: React.FC = () => {
     // Tomar el código desde la URL
     const { id: codigoFromUrl } = useParams<{ id: string }>();
     const codigo_credito = String(codigoFromUrl ?? '');
+    const navigate = useNavigate();
 
     // Si tu hook soporta "enabled", genial; si no, quítalo
     const { data: datos, isLoading, error } = useCredito({ codigo_credito }, !!codigo_credito);
 
-    const { data: deudor } = useDeudor(codigo_credito);
+    const {
+        data: deudor,
+        isLoading: loadingDeudor,
+        error: errorDeudor,
+    } = useDeudor(codigo_credito);
+
+
+    const warnedMissingDeudor = React.useRef(false);
+
+React.useEffect(() => {
+  if (warnedMissingDeudor.current) return;          // no repetir
+  if (!codigo_credito) return;                      // sin código, nada que hacer
+  if (loadingDeudor) return;                        // espera a que termine
+
+  // ¿404 desde el hook o data vacía?
+  const status =
+    (errorDeudor as any)?.response?.status ??
+    (errorDeudor as any)?.status ??
+    null;
+
+  const notFound = status === 404;
+  const missing = !deudor || (deudor as any)?.data == null;
+
+  if (notFound || missing) {
+    warnedMissingDeudor.current = true;
+
+    Swal.fire({
+      icon: 'warning',
+      title: 'Falta información del crédito',
+      text: 'Debes completar la información del deudor para continuar.',
+      confirmButtonText: 'Completar ahora',
+    }).then(() => {
+      // redirige a la vista de registro con el mismo código
+      navigate(`/creditos/registrar/${encodeURIComponent(codigo_credito)}`, {
+        replace: true,
+      });
+    });
+  }
+}, [codigo_credito, loadingDeudor, errorDeudor, deudor, navigate]);
 
 
     console.log("este el deusdor", deudor)
@@ -120,7 +159,6 @@ const CreditoDetalle: React.FC = () => {
         );
     };
 
-    const navigate = useNavigate();
 
 
     const handleEliminar = async () => {

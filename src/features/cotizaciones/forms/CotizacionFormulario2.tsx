@@ -8,6 +8,7 @@ import { useCreateCotizaciones } from "../../../services/cotizacionesServices";
 import { useAuthStore } from "../../../store/auth.store";
 import ButtonLink from "../../../shared/components/ButtonLink";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 
 type MetodoPago = "contado" | "credibike" | "terceros";
 
@@ -16,6 +17,11 @@ const METODO_PAGO_LABEL: Record<MetodoPago, string> = {
     credibike: "Crédito directo",
     terceros: "Crédito de terceros",
 };
+
+// Helper para alertas
+const warn = (title: string, text: string) =>
+    Swal.fire({ icon: "warning", title, text, confirmButtonText: "Entendido" });
+
 
 type FormValues = {
     metodoPago: MetodoPago;
@@ -247,6 +253,24 @@ const CotizacionFormulario2: React.FC = () => {
         return m ? Number(m.precio_base) : 0;
     }, [motos2?.motos, watch("moto2")]);
 
+    // ===== NUEVO: documentos calculados (fuente única de la verdad) =====
+    const moto1Sel = watch("moto1");
+    const moto2Sel = watch("moto2");
+
+    const documentos1 = React.useMemo(() => {
+        const m = (motos1?.motos ?? []).find(x => x.linea === moto1Sel);
+        if (!incluirMoto1 || !m) return 0;
+        return (metodo === "contado" ? Number(m.matricula_contado) : Number(m.matricula_credito))
+            + Number(m.impuestos) + Number(m.soat);
+    }, [motos1?.motos, moto1Sel, metodo, incluirMoto1]);
+
+    const documentos2 = React.useMemo(() => {
+        const m = (motos2?.motos ?? []).find(x => x.linea === moto2Sel);
+        if (!incluirMoto2 || !m) return 0;
+        return (metodo === "contado" ? Number(m.matricula_contado) : Number(m.matricula_credito))
+            + Number(m.impuestos) + Number(m.soat);
+    }, [motos2?.motos, moto2Sel, metodo, incluirMoto2]);
+
     const { data: seguros = [], isPending: loadingSeguros } = useSeguros();
 
     React.useEffect(() => {
@@ -338,19 +362,16 @@ const CotizacionFormulario2: React.FC = () => {
     const segurosIds1 = watch("segurosIds1") ?? [];
     const otros1 = N(watch("otroSeguro1"));
     const accesorios1Val = N(watch("accesorios1"));
-    const precioDocumentos1Val = N(watch("precioDocumentos1"));
     const descuento1Val = N(watch("descuento1"));
     const inicial1 = N(watch("cuotaInicial1"));
-
     const marcacion1Val = N(watch("marcacion1"));
-
 
     const totalSeguros1 = (showMotos && incluirMoto1)
         ? (segurosIds1 as string[]).reduce((acc, id) => acc + findSeguroValor(id), 0) + otros1
         : 0;
 
     const totalSinSeguros1 = (showMotos && incluirMoto1)
-        ? (precioBase1 + accesorios1Val + precioDocumentos1Val + marcacion1Val - descuento1Val)
+        ? (precioBase1 + accesorios1Val + documentos1 + marcacion1Val - descuento1Val)
         : 0;
 
     const totalConSeguros1 = totalSinSeguros1 + totalSeguros1;
@@ -359,19 +380,16 @@ const CotizacionFormulario2: React.FC = () => {
     const segurosIds2 = watch("segurosIds2") ?? [];
     const otros2 = N(watch("otroSeguro2"));
     const accesorios2Val = N(watch("accesorios2"));
-    const precioDocumentos2Val = N(watch("precioDocumentos2"));
     const descuento2Val = N(watch("descuento2"));
     const inicial2 = N(watch("cuotaInicial2"));
-
     const marcacion2Val = N(watch("marcacion2"));
 
-    // === TOTALES MOTO 2 ===
     const totalSeguros2 = (showMotos && incluirMoto2)
         ? (segurosIds2 as string[]).reduce((acc, id) => acc + findSeguroValor(id), 0) + otros2
         : 0;
 
     const totalSinSeguros2 = (showMotos && incluirMoto2)
-        ? (precioBase2 + accesorios2Val + precioDocumentos2Val + marcacion2Val - descuento2Val)
+        ? (precioBase2 + accesorios2Val + documentos2 + marcacion2Val - descuento2Val)
         : 0;
 
     const totalConSeguros2 = totalSinSeguros2 + totalSeguros2;
@@ -392,23 +410,34 @@ const CotizacionFormulario2: React.FC = () => {
             const raw = unformatNumber(v); return raw ? Number(raw) : null;
         };
 
+        // Validaciones con SweetAlert2 (moto A obligatoria; moto B opcional pero obligatoria si se selecciona)
+        const mustHaveMoto1 = showMotos && incluirMoto1; // Moto 1 es obligatoria si se está mostrando la sección de motos y está marcada
+        const mustHaveMoto2 = showMotos && incluirMoto2; // Moto 2 es opcional; si está marcada, se valida
+
+        if (mustHaveMoto1 && (!moto1Seleccionada || !Number.isFinite(precioBase1) || precioBase1 <= 0)) {
+            return warn("Falta información", "La Moto 1 es obligatoria y debe tener un precio base válido; configúralo en el módulo de motos.");
+        }
+
+        if (mustHaveMoto2 && (!moto2Seleccionada || !Number.isFinite(precioBase2) || precioBase2 <= 0)) {
+            return warn("Falta información", "Seleccionaste la Moto 2; también debe tener un precio base válido; configúralo en el módulo de motos.");
+        }
+
+
         if (!data.comentario || !data.comentario.trim()) {
-            alert("El comentario es obligatorio."); return;
+            return warn("Comentario obligatorio", "Debes ingresar un comentario.");
         }
 
         const accesorios1 = toNumberSafe(data.accesorios1);
         const accesorios2 = toNumberSafe(data.accesorios2);
         const otroSeguro1 = toNumberSafe(data.otroSeguro1);
         const otroSeguro2 = toNumberSafe(data.otroSeguro2);
-        const precioDocumentos1 = toNumberSafe(data.precioDocumentos1);
-        const precioDocumentos2 = toNumberSafe(data.precioDocumentos2);
+
         const descuento1 = toNumberSafe(data.descuento1);
         const descuento2 = toNumberSafe(data.descuento2);
         const cuotaInicial1Num = toNumberSafe(data.cuotaInicial1);
         const cuotaInicial2Num = toNumberSafe(data.cuotaInicial2);
         const marcacion1 = toNumberSafe(data.marcacion1);
         const marcacion2 = toNumberSafe(data.marcacion2);
-
 
         const cuota_6_a = toNumberOrNullMoney(data.cuota_6_a);
         const cuota_12_a = toNumberOrNullMoney(data.cuota_12_a);
@@ -433,13 +462,12 @@ const CotizacionFormulario2: React.FC = () => {
         const seg2 = (data.segurosIds2 ?? []).reduce((acc, id) => acc + findSeguroValor(String(id)), 0);
 
         const totalSinSeg1 = incluirMoto1
-            ? (precioBase1 + accesorios1 + precioDocumentos1 + marcacion1 - descuento1)
+            ? (precioBase1 + accesorios1 + documentos1 + marcacion1 - descuento1)
             : 0;
 
         const totalSinSeg2 = incluirMoto2
-            ? (precioBase2 + accesorios2 + precioDocumentos2 + marcacion2 - descuento2)
+            ? (precioBase2 + accesorios2 + documentos2 + marcacion2 - descuento2)
             : 0;
-
 
         const precioTotalA = incluirMoto1 ? (totalSinSeg1 + seg1 + otroSeguro1) : 0;
         const precioTotalB = incluirMoto2 ? (totalSinSeg2 + seg2 + otroSeguro2) : 0;
@@ -474,7 +502,7 @@ const CotizacionFormulario2: React.FC = () => {
             seguro_mascota_a_a: 0,
             otro_seguro_a: incluirMoto1 ? otroSeguro1 : 0,
             precio_base_a: incluirMoto1 ? precioBase1 : 0,
-            precio_documentos_a: incluirMoto1 ? precioDocumentos1 : 0,
+            precio_documentos_a: incluirMoto1 ? documentos1 : 0,
             precio_total_a: precioTotalA,
             modelo_a: incluirMoto1 ? (data.modelo_a?.trim() || "") : "",
 
@@ -487,7 +515,7 @@ const CotizacionFormulario2: React.FC = () => {
             seguro_mascota_a_b: incluirMoto2 ? 0 : null,
             otro_seguro_b: incluirMoto2 ? otroSeguro2 : null,
             precio_base_b: incluirMoto2 ? precioBase2 : null,
-            precio_documentos_b: incluirMoto2 ? precioDocumentos2 : null,
+            precio_documentos_b: incluirMoto2 ? documentos2 : null,
             precio_total_b: incluirMoto2 ? precioTotalB : null,
             modelo_b: incluirMoto2 ? (data.modelo_b?.trim() || "") : null,
 
@@ -526,6 +554,9 @@ const CotizacionFormulario2: React.FC = () => {
 
             foto_a: incluirMoto1 ? (data.foto_a ?? null) : null,
             foto_b: incluirMoto2 ? (data.foto_b ?? null) : null,
+
+            descuentos_a: incluirMoto1 ? descuento1 : 0,
+            descuentos_b: incluirMoto2 ? descuento2 : null,
 
         };
 
@@ -908,14 +939,14 @@ const CotizacionFormulario2: React.FC = () => {
                                                     min: { value: 0, message: "No puede ser negativo" },
                                                     validate: (v: unknown) => {
                                                         const val = N(v);
-                                                        const max = precioBase1 + accesorios1Val + precioDocumentos1Val;
+                                                        const max = precioBase1 + accesorios1Val + documentos1;
                                                         return val <= max || `El descuento no puede superar ${fmt(max)}`;
                                                     },
                                                 }}
                                             />
 
                                             <p className="text-xs text-base-content/60">
-                                                Máximo permitido: {fmt(precioBase1 + accesorios1Val + precioDocumentos1Val)}
+                                                Máximo permitido: {fmt(precioBase1 + accesorios1Val + documentos1)}
                                             </p>
 
                                             <FormInput<FormValues>
@@ -936,7 +967,7 @@ const CotizacionFormulario2: React.FC = () => {
                                                 <div className="grid grid-cols-1 gap-2 mb-4">
                                                     <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
                                                         <span className="font-medium text-gray-500">Precio documentos:</span>
-                                                        <span>{fmt(precioDocumentos1Val)}</span>
+                                                        <span>{fmt(documentos1)}</span>
                                                     </div>
 
                                                     <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
@@ -1121,14 +1152,14 @@ const CotizacionFormulario2: React.FC = () => {
                                                     min: { value: 0, message: "No puede ser negativo" },
                                                     validate: (v: unknown) => {
                                                         const val = N(v);
-                                                        const max = precioBase2 + accesorios2Val + precioDocumentos2Val;
+                                                        const max = precioBase2 + accesorios2Val + documentos2;
                                                         return val <= max || `El descuento no puede superar ${fmt(max)}`;
                                                     },
                                                 }}
                                             />
 
                                             <p className="text-xs text-base-content/60">
-                                                Máximo permitido: {fmt(precioBase2 + accesorios2Val + precioDocumentos2Val)}
+                                                Máximo permitido: {fmt(precioBase2 + accesorios2Val + documentos2)}
                                             </p>
 
                                             <FormInput<FormValues>
@@ -1149,7 +1180,7 @@ const CotizacionFormulario2: React.FC = () => {
                                                 <div className="grid grid-cols-1 gap-2 mb-4">
                                                     <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
                                                         <span className="font-medium text-gray-500">Precio documentos:</span>
-                                                        <span>{fmt(precioDocumentos2Val)}</span>
+                                                        <span>{fmt(documentos2)}</span>
                                                     </div>
 
                                                     <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
