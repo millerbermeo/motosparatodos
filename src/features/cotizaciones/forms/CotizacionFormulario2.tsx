@@ -90,7 +90,19 @@ type FormValues = {
 
     foto_a?: string | null;
     foto_b?: string | null;
+
+    garantiaExtendida1?: "no" | "12" | "24" | "36";
+    garantiaExtendida2?: "no" | "12" | "24" | "36";
 };
+
+
+const garantiaExtendidaOptions: SelectOption[] = [
+    { value: "no", label: "No" },
+    { value: "12", label: "12 meses" },
+    { value: "24", label: "24 meses" },
+    { value: "36", label: "36 meses" },
+];
+
 
 const CotizacionFormulario2: React.FC = () => {
 
@@ -126,6 +138,8 @@ const CotizacionFormulario2: React.FC = () => {
             marca1: "",
             moto1: "",
             garantia1: "",
+            garantiaExtendida1: "no", // NUEVO
+
             accesorios1: "0",
             segurosIds1: [],
             otroSeguro1: "0",
@@ -136,6 +150,8 @@ const CotizacionFormulario2: React.FC = () => {
             marca2: "",
             moto2: "",
             garantia2: "",
+            garantiaExtendida2: "no", // NUEVO
+
             accesorios2: "0",
             segurosIds2: [],
             otroSeguro2: "0",
@@ -280,6 +296,7 @@ const CotizacionFormulario2: React.FC = () => {
             setValue("accesorios1", "0"); setValue("segurosIds1", []); setValue("otroSeguro1", "0");
             setValue("foto_b", null)
             setValue("precioDocumentos1", "0"); setValue("descuento1", "0"); setValue("cuotaInicial1", "0");
+            setValue("garantiaExtendida1", "no");
         }
     }, [incluirMoto1, setValue]);
 
@@ -288,6 +305,7 @@ const CotizacionFormulario2: React.FC = () => {
             setValue("marca2", ""); setValue("moto2", ""); setValue("garantia2", "");
             setValue("accesorios2", "0"); setValue("segurosIds2", []); setValue("otroSeguro2", "0");
             setValue("precioDocumentos2", "0"); setValue("descuento2", "0"); setValue("cuotaInicial2", "0");
+            setValue("garantiaExtendida2", "no");
         }
     }, [incluirMoto2, setValue]);
 
@@ -850,6 +868,16 @@ const CotizacionFormulario2: React.FC = () => {
                                                 disabled={!showMotos || !incluirMoto1 || esCreditoDirecto}  // 👈 BLOQUEA EN CRÉDITO
                                                 rules={reqIf(showMotos && incluirMoto1, "La garantía es obligatoria")}
                                             />
+
+                                            <FormSelect<FormValues>
+                                                name="garantiaExtendida1"
+                                                label="Garantía extendida"
+                                                control={control}
+                                                options={garantiaExtendidaOptions}
+                                                placeholder="Seleccione..."
+                                                disabled={!showMotos || !incluirMoto1}
+                                            />
+
                                         </>
                                     )}
 
@@ -1062,6 +1090,16 @@ const CotizacionFormulario2: React.FC = () => {
                                                 disabled={!showMotos || !incluirMoto2 || esCreditoDirecto}  // 👈 BLOQUEA EN CRÉDITO
                                                 rules={reqIf(showMotos && incluirMoto2, "La garantía es obligatoria")}
                                             />
+
+                                            <FormSelect<FormValues>
+                                                name="garantiaExtendida2"
+                                                label="Garantía extendida"
+                                                control={control}
+                                                options={garantiaExtendidaOptions}
+                                                placeholder="Seleccione..."
+                                                disabled={!showMotos || !incluirMoto2}
+                                            />
+
                                         </>
                                     )}
 
