@@ -14,6 +14,10 @@ import { useAuthStore } from '../../store/auth.store';
 import { useLoaderStore } from '../../store/loader.store';
 import ButtonLink from '../../shared/components/ButtonLink';
 
+// 1) Helper arriba (fuera del componente o dentro, como prefieras)
+const isNonEmpty = (v?: string | number | null) =>
+    v !== undefined && v !== null && String(v).trim().length > 0;
+
 
 const fmtCOP = (v: number) =>
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
@@ -91,6 +95,12 @@ const CreditoDetalleAdmin: React.FC = () => {
 
     // Descargas: si hay "firmas" o "soportes", habilitar enlaces; de lo contrario, botones simulados
 
+    // 2) Campos mínimos requeridos
+    const nombresOk =
+        isNonEmpty(informacion_personal?.primer_nombre)
+
+
+    const camposCompletosMinimos = nombresOk
 
 
     const { show, hide } = useLoaderStore();
@@ -102,7 +112,6 @@ const CreditoDetalleAdmin: React.FC = () => {
             hide();   // 🔵 lo oculta
         }
     }, [isLoading, show, hide]);
-
 
 
 
@@ -175,21 +184,22 @@ const CreditoDetalleAdmin: React.FC = () => {
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <div className="rounded-xl p-4 ring-1 ring-slate-200 bg-slate-50">
-                                <Row label="Motocicleta" value={moto?.modelo} />
-                                <Row label="Número de cuotas" value={moto?.numeroCuotas} />
-                                <Row label="Fecha de pago" value={moto?.fechaPago} /> {/* estático si no hay */}
-                                <Row label="Número de chasis" value={moto?.numeroChasis} />
-                                <Row label="Placa" value={moto?.placa} />
+                                <Row label="Motocicleta" value={moto?.modelo ?? "Crédito no facturado actualmente"} />
+                                <Row label="Número de cuotas" value={moto?.numeroCuotas ?? "Crédito no facturado actualmente"} />
+                                <Row label="Fecha de pago" value={moto?.fechaPago ?? "Crédito no facturado actualmente"} />
+                                <Row label="Número de chasis" value={moto?.numeroChasis ?? "Crédito no facturado actualmente"} />
+                                <Row label="Placa" value={moto?.placa ?? "Crédito no facturado actualmente"} />
 
                             </div>
 
 
                             <div className="rounded-xl p-4 ring-1 ring-slate-200 bg-slate-50">
-                                <Row label="Valor de motocicleta" value={moto?.valorMotocicleta != null ? fmtCOP(moto.valorMotocicleta) : '—'} />
-                                <Row label="Cuota inicial" value={moto?.cuotaInicial != null ? fmtCOP(moto.cuotaInicial) : '—'} />
-                                <Row label="Valor cuota" value={moto?.valorCuota != null ? fmtCOP(moto.valorCuota) : '—'} /> {/* estático si no hay */}
-                                <Row label="Número de motor" value={moto?.numeroMotor} />
-                                <Row label="Fecha de entrega" value={moto?.fechaEntrega} />
+                                <Row label="Valor de motocicleta" value={moto?.valorMotocicleta != null ? fmtCOP(moto.valorMotocicleta) : 'Crédito no facturado actualmente'} />
+                                <Row label="Cuota inicial" value={moto?.cuotaInicial != null ? fmtCOP(moto.cuotaInicial) : 'Crédito no facturado actualmente'} />
+                                <Row label="Valor cuota" value={moto?.valorCuota != null ? fmtCOP(moto.valorCuota) : 'Crédito no facturado actualmente'} /> {/* estático si no hay */}
+                                <Row label="Número de motor" value={moto?.numeroMotor ?? "Crédito no facturado actualmente"} />
+                                <Row label="Fecha de entrega" value={moto?.fechaEntrega ?? "Crédito no facturado actualmente"} />
+
                             </div>
                         </div>
                     </div>
@@ -213,8 +223,15 @@ const CreditoDetalleAdmin: React.FC = () => {
                                 <Row label="Número de documento" value={informacion_personal?.numero_documento} />
                                 <Row label="Fecha de expedición" value={informacion_personal?.fecha_expedicion} />
                                 <Row label="Lugar de expedición" value={informacion_personal?.lugar_expedicion} />
-                                <Row label="Nombres" value={`${informacion_personal?.primer_nombre} ${informacion_personal?.segundo_nombre}`} />
-                                <Row label="Apellidos" value={`${informacion_personal?.primer_apellido} ${informacion_personal?.segundo_apellido}`} />
+                                <Row
+                                    label="Nombres"
+                                    value={`${informacion_personal?.primer_nombre || ""} ${informacion_personal?.segundo_nombre || "—"}`}
+                                />
+                                <Row
+                                    label="Apellidos"
+                                    value={`${informacion_personal?.primer_apellido || ""} ${informacion_personal?.segundo_apellido || "—"}`}
+                                />
+
                                 <Row label="Fecha de nacimiento" value={informacion_personal?.fecha_nacimiento} />
                                 <Row label="Nivel de estudios" value={informacion_personal?.nivel_estudios} />
                             </div>
@@ -228,25 +245,38 @@ const CreditoDetalleAdmin: React.FC = () => {
                                 <Row label="Estado civil" value={informacion_personal?.estado_civil} />
                                 <Row label="Personas a cargo" value={informacion_personal?.personas_a_cargo} />
                                 <Row label="Tipo de vivienda" value={informacion_personal?.tipo_vivienda} />
-                                <Row label="Costo del arriendo" value={fmtCOP(Number(informacion_personal?.costo_arriendo))} />
+                                <Row
+                                    label="Costo del arriendo"
+                                    value={informacion_personal?.costo_arriendo != null
+                                        ? fmtCOP(Number(informacion_personal.costo_arriendo))
+                                        : "—"}
+                                />
                                 <Row label="Finca raíz" value={informacion_personal?.finca_raiz} />
                             </div>
                         </div>
 
                     </div>
                 </section>
+                {/* <CambiarEstadoCredito codigo_credito={codigo_credito} data={{
+                                informacion_personal,
+                                moto,
+                                credito, // si prefieres, puedes enviar solo { estado: credito?.estado, ... }
+                            }} /> */}
 
-
-                {useAuthStore.getState().user?.rol === "Administrador" && estado != 'Aprobado' && (
-
-                    <>
-                        {/* CAMBIAR ESTADO ADMIN */}
-
-                        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
-                            <CambiarEstadoCredito codigo_credito={codigo_credito} />
-                        </section>
-                    </>
-
+                {useAuthStore.getState().user?.rol === "Administrador" && estado !== 'Aprobado' && (
+                    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
+                        {camposCompletosMinimos ? (
+                            <CambiarEstadoCredito codigo_credito={codigo_credito} data={{
+                                informacion_personal,
+                                moto,
+                                credito, // si prefieres, puedes enviar solo { estado: credito?.estado, ... }
+                            }} />
+                        ) : (
+                            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800 text-sm">
+                                Para habilitar el cambio de estado, completa la información primero:
+                            </div>
+                        )}
+                    </section>
                 )}
 
 

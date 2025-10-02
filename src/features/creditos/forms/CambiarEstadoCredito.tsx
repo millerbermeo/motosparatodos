@@ -6,8 +6,10 @@ import { FormSelect, type SelectOption } from "../../../shared/components/FormSe
 import Swal from "sweetalert2";
 import { useCambiarEstadoCredito } from "../../../services/creditosServices";
 import { useAuthStore } from "../../../store/auth.store";
+import type { PlanPagosInput } from "../pdf/PlanPagosPDF";
+import PlanPagosPDF from "../pdf/PlanPagosPDF";
 
-type Props = { codigo_credito: string | number };
+type Props = { codigo_credito: string | number,   data?: any; };
 
 type CambiarEstadoValues = {
   estado: "Pendiente" | "Aprobado" | "No viable" | "";
@@ -23,7 +25,7 @@ const optionsEstado: SelectOption[] = [
   { value: "No viable", label: "No viable" },
 ];
 
-const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito }) => {
+const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
   const cambiar = useCambiarEstadoCredito();
   const { user } = useAuthStore();
 
@@ -37,6 +39,7 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito }) => {
     mode: "onBlur",
   });
 
+  
   const isAprobado = watch("estado") === "Aprobado";
 
   const onSubmit = async (values: CambiarEstadoValues) => {
@@ -75,6 +78,39 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito }) => {
     });
   };
 
+  console.log("data del credito", data)
+
+
+  // ====== Armar input para el PDF ======
+const inputPDF: PlanPagosInput = {
+  codigo: codigo_credito,
+  ciudad: "Cali",
+  cliente: {
+    nombre: `${
+      data?.informacion_personal?.primer_nombre ?? ""
+    } ${data?.informacion_personal?.segundo_nombre ?? ""} ${
+      data?.informacion_personal?.primer_apellido ?? ""
+    } ${data?.informacion_personal?.segundo_apellido ?? ""}`.replace(/\s+/g, " ").trim(),
+    documento: data?.informacion_personal?.numero_documento ?? "",
+    direccion: data?.informacion_personal?.direccion_residencia ?? "",
+    telefono: data?.informacion_personal?.celular ?? "",
+  },
+  producto: {
+    nombre: data?.credito?.producto ?? data?.moto?.modelo ?? "Motocicleta",
+    valor: Number(data?.credito?.valor_producto ?? data?.moto?.valorMotocicleta ?? 0),
+  },
+  credito: {
+    cuotaInicial: Number(data?.credito?.cuota_inicial ?? data?.moto?.cuotaInicial ?? 0),
+    plazoMeses: Number(data?.credito?.plazo_meses ?? data?.moto?.numeroCuotas ?? 1),
+    // Defaults si no viene la tasa:
+    tasaMensual: 0.0196,
+    tasaAnual: 0.2352,
+    fechaInicio: new Date(),
+    fechaEntrega: data?.credito?.fecha_entrega ?? null,
+  },
+};
+
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="flex items-center justify-between border-b border-info pb-2">
@@ -103,7 +139,7 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito }) => {
             required: "El comentario es obligatorio",
             minLength: { value: 3, message: "Mínimo 3 caracteres" },
           }}
-          className="md:col-span-1"
+          className="md:col-span-1 mt-6"
         />
       </div>
 
@@ -153,15 +189,7 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito }) => {
           />
 
           <div>
-            <button
-              type="button"
-              className="btn btn-accent w-full"
-              onClick={() => {
-                // tu lógica para descargar la tabla de amortización
-              }}
-            >
-              Descargar tabla de amortización
-            </button>
+               <PlanPagosPDF input={inputPDF} />
           </div>
         </div>
       )}

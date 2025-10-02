@@ -674,7 +674,7 @@ const CotizacionFormulario: React.FC = () => {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
 
             <div className="pt-4 mb-3">
-                <ButtonLink to="/cotizaciones" label="Volver a cotizaciones" />
+                <ButtonLink to="/cotizaciones" label="Volver a cotizaciones" direction="back"/>
             </div>
 
             <div className="flex gap-6 flex-col w-full bg-white p-3 rounded-xl">

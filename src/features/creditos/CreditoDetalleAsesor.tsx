@@ -40,7 +40,7 @@ const BadgeEstado: React.FC<{ value?: string }> = ({ value }) => {
 const Row: React.FC<{ label: string; value?: React.ReactNode, color?: string, val?: string }> = ({ label, value, color = 'text-slate-600', val = 'text-slate-900' }) => (
     <div className="flex items-start justify-between gap-4 py-2">
         <span className={`text-sm ${color}`}>{label}</span>
-        <span className={`text-sm font-medium  text-right ${val}`}>{value ?? '—'}</span>
+        <span className={`text-sm font-medium  text-right ${val}`}>{value ?? 'Crédito no facturado actualmente'}</span>
     </div>
 );
 

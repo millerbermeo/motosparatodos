@@ -21,6 +21,8 @@ import { Image, FileText } from 'lucide-react';
 import ButtonLink from '../../shared/components/ButtonLink';
 
 
+
+
 const fmtCOP = (v: number) =>
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
 
@@ -44,7 +46,7 @@ const BadgeEstado: React.FC<{ value?: string }> = ({ value }) => {
 const Row: React.FC<{ label: string; value?: React.ReactNode, color?: string, val?: string }> = ({ label, value, color = 'text-slate-600', val = 'text-slate-900' }) => (
     <div className="flex items-start justify-between gap-4 py-2">
         <span className={`text-sm ${color}`}>{label}</span>
-        <span className={`text-sm font-medium  text-right ${val}`}>{value ?? '—'}</span>
+        <span className={`text-sm font-medium  text-right ${val}`}>{value ?? 'Crédito no facturado actualmente'}</span>
     </div>
 );
 
@@ -66,40 +68,39 @@ const CreditoDetalle: React.FC = () => {
 
 
     const warnedMissingDeudor = React.useRef(false);
+    const rol = useAuthStore((s) => s.user?.rol);
 
-React.useEffect(() => {
-  if (warnedMissingDeudor.current) return;          // no repetir
-  if (!codigo_credito) return;                      // sin código, nada que hacer
-  if (loadingDeudor) return;                        // espera a que termine
+    React.useEffect(() => {
+        if (warnedMissingDeudor.current) return;    // no repetir
+        if (rol !== 'Asesor') return;               // 🔴 solo aplica a Asesor
+        if (!codigo_credito) return;                // sin código, nada que hacer
+        if (loadingDeudor) return;                  // espera a que termine
 
-  // ¿404 desde el hook o data vacía?
-  const status =
-    (errorDeudor as any)?.response?.status ??
-    (errorDeudor as any)?.status ??
-    null;
+        const status =
+            (errorDeudor as any)?.response?.status ??
+            (errorDeudor as any)?.status ??
+            null;
 
-  const notFound = status === 404;
-  const missing = !deudor || (deudor as any)?.data == null;
+        const notFound = status === 404;
+        const missing = !deudor || (deudor as any)?.data == null;
 
-  if (notFound || missing) {
-    warnedMissingDeudor.current = true;
+        if (notFound || missing) {
+            warnedMissingDeudor.current = true;
 
-    Swal.fire({
-      icon: 'warning',
-      title: 'Falta información del crédito',
-      text: 'Debes completar la información del deudor para continuar.',
-      confirmButtonText: 'Completar ahora',
-    }).then(() => {
-      // redirige a la vista de registro con el mismo código
-      navigate(`/creditos/registrar/${encodeURIComponent(codigo_credito)}`, {
-        replace: true,
-      });
-    });
-  }
-}, [codigo_credito, loadingDeudor, errorDeudor, deudor, navigate]);
+            Swal.fire({
+                icon: 'warning',
+                title: 'Falta información del crédito',
+                text: 'Debes completar la información del deudor para continuar.',
+                confirmButtonText: 'Completar ahora',
+            }).then(() => {
+                navigate(`/creditos/registrar/${encodeURIComponent(codigo_credito)}`, {
+                    replace: true,
+                });
+            });
+        }
+    }, [rol, codigo_credito, loadingDeudor, errorDeudor, deudor, navigate]);
 
 
-    console.log("este el deusdor", deudor)
     const deudorData = (deudor as any)?.data ?? (datos as any)?.data ?? {};
 
     // Evita crasheos al desestructurar
@@ -234,7 +235,6 @@ React.useEffect(() => {
     }, [isLoading, show, hide]);
 
 
-
     return (
         <main className="min-h-screen w-full bg-gradient-to-b from-white to-slate-50">
             {/* Header */}
@@ -311,6 +311,16 @@ React.useEffect(() => {
                                 <Row label="Placa" value={moto?.placa} />
 
 
+                                {estado != 'Aprobado' && (
+                                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <ChipButton
+                                            label="Descargar solicitud"
+                                            icon={<ClipboardCheck className="w-4 h-4" />}
+                                            onClick={fakeDownload('Solicitud de crédito')}
+                                            color="bg-blue-500 hover:bg-blue-600"
+                                        />
+                                    </div>
+                                )}
                                 {estado === 'Aprobado' && (
                                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         <ChipButton
@@ -344,11 +354,22 @@ React.useEffect(() => {
 
                             <div className="rounded-xl p-4 ring-1 ring-slate-200 bg-slate-50">
                                 <Row label="Valor de motocicleta" value={moto?.valorMotocicleta != null ? fmtCOP(moto.valorMotocicleta) : '—'} />
-                                <Row label="Cuota inicial" value={moto?.cuotaInicial != null ? fmtCOP(moto.cuotaInicial) : '—'} />
-                                <Row label="Valor cuota" value={moto?.valorCuota != null ? fmtCOP(moto.valorCuota) : '—'} /> {/* estático si no hay */}
+                                <Row label="Cuota inicial" value={moto?.cuotaInicial != null ? fmtCOP(moto.cuotaInicial) : 'Crédito no facturado actualmente'} />
+                                <Row label="Valor cuota" value={moto?.valorCuota != null ? fmtCOP(moto.valorCuota) : 'Crédito no facturado actualmente'} /> {/* estático si no hay */}
                                 <Row label="Número de motor" value={moto?.numeroMotor} />
                                 <Row label="Fecha de entrega" value={moto?.fechaEntrega} />
 
+
+                                {estado != 'Aprobado' && (
+                                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <ChipButton
+                                            label="Descargar firmas de solicitud"
+                                            icon={<FileDown className="w-4 h-4" />}
+                                            onClick={!firmasHref ? fakeDownload('Firmas de solicitud') : undefined}
+                                            color="bg-pink-500 hover:bg-pink-600"
+                                        />
+                                    </div>
+                                )}
 
                                 {estado === 'Aprobado' && (
                                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
