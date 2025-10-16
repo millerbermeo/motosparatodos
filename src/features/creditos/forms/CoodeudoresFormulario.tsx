@@ -22,6 +22,34 @@ const toNumberPesos = (v: unknown): number => {
   return Number.isFinite(n) ? n : 0;
 };
 
+// Validación reusable para fechas pasadas
+export function buildPastDateValidation(optional = true) {
+  return {
+    validate: (val: unknown): true | string => {
+      const v = typeof val === "string" ? val : "";
+
+      // Si es opcional y está vacío → válido
+      if (optional && !v) return true;
+      if (!optional && !v) return "Requerido";
+
+      const exp = new Date(`${v}T00:00:00`);
+      exp.setHours(0, 0, 0, 0);
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+
+      if (+exp === +today) return "No puede ser hoy";
+      if (exp > yesterday) return "No puede ser una fecha futura";
+      return true;
+    },
+  };
+}
+
+
+
 /** Centavos (DB, escala 2) → string de pesos (sin formato) para el form */
 const centsToPesosStr = (cents: unknown): string => {
   const n = Number(cents);
@@ -163,14 +191,14 @@ const emptyCoodeudor: Coodeudor = {
   primerApellido: "",
   segundoApellido: "",
   fechaNacimiento: "",
-  nivelEstudios: "Educación superior",
+  nivelEstudios: undefined,
   ciudadResidencia: "",
   barrioResidencia: "",
   direccionResidencia: "",
   celular: "",
   telFijo: "",
   email: "",
-  estadoCivil: "Soltero/a",
+  estadoCivil: undefined,
   personasACargo: "",
   tipoVivienda: "Propia",
   costoArriendo: "0",    // ← empieza en "0" (no arriendo)
@@ -179,7 +207,7 @@ const emptyCoodeudor: Coodeudor = {
   direccionEmpleador: "",
   telEmpleador: "",
   cargo: "",
-  tipoContrato: "Indefinido",
+  tipoContrato: undefined,
   salario: "0",
   tiempoServicio: "",
   vehPlaca: "",
@@ -188,15 +216,15 @@ const emptyCoodeudor: Coodeudor = {
   vehTipo: "",
   vehNumMotor: "",
   ref1Nombre: "",
-  ref1Tipo: "Familiar",
+  ref1Tipo: undefined,
   ref1Direccion: "",
   ref1Telefono: "",
   ref2Nombre: "",
-  ref2Tipo: "Familiar",
+  ref2Tipo: undefined,
   ref2Direccion: "",
   ref2Telefono: "",
   ref3Nombre: "",
-  ref3Tipo: "Familiar",
+  ref3Tipo: undefined,
   ref3Direccion: "",
   ref3Telefono: "",
 };
@@ -568,7 +596,9 @@ const CoodeudoresFormulario: React.FC = () => {
                 }}
               />
               <FormSelect control={control} name={`codeudores.${idx}.tipoDocumento`} label="Tipo de documento" options={tipoDocumentoOptions} />
-              <FormInput control={control} name={`codeudores.${idx}.fechaExpedicion`} className="mt-6" label="Fecha de expedición" type="date" />
+              <FormInput control={control} name={`codeudores.${idx}.fechaExpedicion`} className="mt-6" label="Fecha de expedición" type="date"             // evita elegir hoy/futuro en el datepicker
+                rules={buildPastDateValidation(true)} // opcional
+              />
 
               <FormInput
                 control={control}
@@ -588,7 +618,8 @@ const CoodeudoresFormulario: React.FC = () => {
 
               <FormInput control={control} name={`codeudores.${idx}.primerApellido`} label="Primer apellido" />
               <FormInput control={control} name={`codeudores.${idx}.segundoApellido`} label="Segundo apellido" />
-              <FormInput control={control} name={`codeudores.${idx}.fechaNacimiento`} label="Fecha de nacimiento" type="date" />
+              <FormInput control={control} name={`codeudores.${idx}.fechaNacimiento`} label="Fecha de nacimiento" type="date" rules={buildPastDateValidation(true)} // opcional
+              />
 
               <FormSelect control={control} name={`codeudores.${idx}.nivelEstudios`} label="Nivel de estudios" options={nivelEstudiosOptions} />
               <FormInput

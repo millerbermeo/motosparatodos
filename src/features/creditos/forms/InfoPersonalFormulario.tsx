@@ -12,26 +12,26 @@ import { unformatNumber } from "../../../shared/components/moneyUtils";
 
 /** Convierte string con puntos/comas/etc. a número en pesos */
 const toNumberPesos = (v: unknown): number => {
-  if (v == null) return 0;
-  const raw = String(v);
-  const digits = unformatNumber(raw); // "1.200.000" -> "1200000"
-  const n = Number(digits);
-  return Number.isFinite(n) ? n : 0;
+    if (v == null) return 0;
+    const raw = String(v);
+    const digits = unformatNumber(raw); // "1.200.000" -> "1200000"
+    const n = Number(digits);
+    return Number.isFinite(n) ? n : 0;
 };
 
 /** Centavos (DB) -> string de pesos sin formato (para que FormInput lo enmascare) */
 const centsToPesosStr = (cents: unknown): string => {
-  const n = Number(cents);
-  if (!Number.isFinite(n)) return "0";
-  // 123456 (centavos) -> 1234 (pesos). Redondea hacia abajo por seguridad.
-  const pesos = Math.trunc(n / 100);
-  return String(pesos);
+    const n = Number(cents);
+    if (!Number.isFinite(n)) return "0";
+    // 123456 (centavos) -> 1234 (pesos). Redondea hacia abajo por seguridad.
+    const pesos = Math.trunc(n / 100);
+    return String(pesos);
 };
 
 /** String de pesos formateado -> número en centavos (DB) */
 const pesosStrToCentsNumber = (value: unknown): number => {
-  const pesos = toNumberPesos(value); // "1.234.567" -> 1234567
-  return pesos * 100;                 // 123456700 centavos
+    const pesos = toNumberPesos(value); // "1.234.567" -> 1234567
+    return pesos * 100;                 // 123456700 centavos
 };
 
 // ============================ Tipos ============================
@@ -190,6 +190,19 @@ const mapFincaRaiz = (v: any): "Si" | "No" | "Otro" => {
     return "Si";
 };
 
+
+const dateNotTodayOrFuture = (val: unknown): true | string => {
+    const v = typeof val === "string" ? val : "";
+    if (!v) return true;
+    const exp = new Date(`${v}T00:00:00`);
+    exp.setHours(0, 0, 0, 0);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+
+    if (+exp === +today) return "No puede ser hoy";
+    if (exp > today) return "No puede ser una fecha futura";
+    return true;
+};
+
 // ============================ Props ============================
 
 
@@ -309,7 +322,7 @@ const InfoPersonalFormulario: React.FC = () => {
             estado_civil: p.estado_civil ?? "",
             personas_a_cargo: toNumber(p.personas_a_cargo ?? 0),
             tipo_vivienda: p.tipo_vivienda ?? "",
-     costo_arriendo: centsToPesosStr(p.costo_arriendo ?? 0),
+            costo_arriendo: centsToPesosStr(p.costo_arriendo ?? 0),
             finca_raiz: mapFincaRaiz(p.finca_raiz),
 
             informacion_laboral: {
@@ -318,7 +331,7 @@ const InfoPersonalFormulario: React.FC = () => {
                 telefono_empleador: l.telefono_empleador ?? "",
                 cargo: l.cargo ?? "",
                 tipo_contrato: l.tipo_contrato,
-               salario: centsToPesosStr(l.salario ?? 0),
+                salario: centsToPesosStr(l.salario ?? 0),
                 tiempo_servicio: l.tiempo_servicio ?? "",
             },
 
@@ -387,7 +400,7 @@ const InfoPersonalFormulario: React.FC = () => {
             estado_civil: values.estado_civil,
             personas_a_cargo: toNumber(values.personas_a_cargo),
             tipo_vivienda: values.tipo_vivienda,
-           costo_arriendo: pesosStrToCentsNumber(values.costo_arriendo),
+            costo_arriendo: pesosStrToCentsNumber(values.costo_arriendo),
             finca_raiz: mapFincaRaizToBackend(values.finca_raiz as string),
         };
 
@@ -396,8 +409,8 @@ const InfoPersonalFormulario: React.FC = () => {
             direccion_empleador: values.informacion_laboral?.direccion_empleador?.trim() || "",
             telefono_empleador: values.informacion_laboral?.telefono_empleador?.trim() || "",
             cargo: values.informacion_laboral?.cargo?.trim() || "",
-            tipo_contrato: values.informacion_laboral?.tipo_contrato?.trim() || "",
-           salario: pesosStrToCentsNumber(values.informacion_laboral?.salario),
+            tipo_contrato: values.informacion_laboral?.tipo_contrato?.trim() || null,
+            salario: pesosStrToCentsNumber(values.informacion_laboral?.salario),
             tiempo_servicio: values.informacion_laboral?.tiempo_servicio?.trim() || "",
         };
 
@@ -504,7 +517,7 @@ const InfoPersonalFormulario: React.FC = () => {
                         label="Fecha de expedición*"
                         type="date"
                         control={control}
-                        rules={{ required: "Requerido" }}
+                        rules={{ required: "Requerido", validate: dateNotTodayOrFuture }}
                     />
 
                     <FormInput
@@ -542,7 +555,7 @@ const InfoPersonalFormulario: React.FC = () => {
                         label="Fecha de nacimiento*"
                         type="date"
                         control={control}
-                        rules={{ required: "Requerido" }}
+                        rules={{ required: "Requerido", validate: dateNotTodayOrFuture }}
                     />
 
                     <FormSelect

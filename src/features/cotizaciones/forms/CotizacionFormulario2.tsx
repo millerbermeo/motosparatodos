@@ -18,6 +18,18 @@ const METODO_PAGO_LABEL: Record<MetodoPago, string> = {
     terceros: "Crédito de terceros",
 };
 
+const dateNotTodayOrFuture = (val: unknown): true | string => {
+    const v = typeof val === "string" ? val : "";
+    if (!v) return true;
+    const exp = new Date(`${v}T00:00:00`);
+    exp.setHours(0, 0, 0, 0);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+
+    if (+exp === +today) return "No puede ser hoy";
+    if (exp > today) return "No puede ser una fecha futura";
+    return true;
+};
+
 // Helper para alertas
 const warn = (title: string, text: string) =>
     Swal.fire({ icon: "warning", title, text, confirmButtonText: "Entendido" });
@@ -656,7 +668,7 @@ const CotizacionFormulario2: React.FC = () => {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
 
             <div className="pt-4 mb-3">
-                <ButtonLink to="/creditos" label="Volver a créditos" direction="back"/>
+                <ButtonLink to="/creditos" label="Volver a créditos" direction="back" />
             </div>
 
             <div className="flex gap-6 flex-col w-full bg-white p-3 rounded-xl">
@@ -787,7 +799,7 @@ const CotizacionFormulario2: React.FC = () => {
                         label="Fecha de nacimiento"
                         type="date"
                         control={control}
-                        rules={{ required: "La fecha de nacimiento es obligatoria." }}
+                        rules={{ required: "Requerido", validate: dateNotTodayOrFuture }}
                     />
                     <FormInput<FormValues> name="primer_nombre" label="Primer nombre" control={control} rules={{ required: "El primer nombre es obligatorio." }} />
                     <FormInput<FormValues> name="segundo_nombre" label="Segundo nombre" control={control} />
@@ -989,52 +1001,63 @@ const CotizacionFormulario2: React.FC = () => {
 
 
                                             {/* RESUMEN MOTO 1 */}
-                                            <div className="bg-base-100 shadow-lg rounded-xl p-6 border border-base-300">
-                                                <h3 className="text-lg font-bold mb-4 text-success">Resumen de costos</h3>
+                                            <div className="bg-base-100 shadow-xl rounded-2xl p-6 border border-base-300">
+                                                {/* Encabezado */}
+                                                <h3 className="text-lg font-bold mb-4 text-success bg-success/5 px-4 py-2 rounded-lg">
+                                                    Resumen de costos
+                                                </h3>
 
-                                                <div className="grid grid-cols-1 gap-2 mb-4">
-                                                    <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                        <span className="font-medium text-gray-500">Precio documentos:</span>
+                                                {/* Bloque de detalles */}
+                                                <div className="bg-base-200/70 p-4 rounded-xl mb-4 space-y-2">
+                                                    {/* Precio documentos */}
+                                                    <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-gray-700">Precio documentos:</span>
                                                         <span>{fmt(documentos1)}</span>
                                                     </div>
 
-                                                    <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                        <span className="font-medium text-gray-500">Descuento:</span>
+                                                    {/* Descuento */}
+                                                    <div className="flex justify-between bg-error/5 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-gray-700">Descuento:</span>
                                                         <span className="text-error font-semibold">
                                                             {descuento1Val > 0 ? `-${fmt(descuento1Val)}` : "0 COP"}
                                                         </span>
                                                     </div>
 
-                                                    <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                        <span className="font-medium text-gray-500">Cascos y Accesorios</span>
+                                                    {/* Cascos y accesorios */}
+                                                    <div className="flex justify-between bg-blue-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-gray-700">Cascos y Accesorios:</span>
                                                         <span>{fmt(accesorios1Val)}</span>
                                                     </div>
 
-                                                    {/* 👇 AQUI INSERTA MARCACIÓN MOTO 1 */}
-                                                    <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                        <span className="font-medium text-gray-500">Marcación y personalización:</span>
+                                                    {/* Marcación */}
+                                                    <div className="flex justify-between bg-indigo-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-gray-700">Marcación y personalización:</span>
                                                         <span>{fmt(marcacion1Val)}</span>
                                                     </div>
 
+                                                    {/* Inicial (si aplica) */}
                                                     {esCreditoDirecto && (
-                                                        <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                            <span className="font-medium text-gray-500">Inicial:</span>
+                                                        <div className="flex justify-between bg-yellow-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                            <span className="font-medium text-gray-700">Inicial:</span>
                                                             <span>{fmt(inicial1)}</span>
                                                         </div>
                                                     )}
                                                 </div>
 
+                                                {/* Totales */}
                                                 <div className="space-y-2">
-                                                    <div className="flex justify-between items-center bg-warning/10 px-4 py-2 rounded-md">
+                                                    <div className="flex justify-between items-center bg-warning/10 px-4 py-2 rounded-md border border-warning/30 shadow-sm">
                                                         <span className="font-semibold text-warning">TOTAL SIN SEGUROS:</span>
                                                         <span className="font-bold">{fmt(totalSinSeguros1)}</span>
                                                     </div>
-                                                    <div className="flex justify-between items-center bg-success/20 px-4 py-2 rounded-md">
+
+                                                    <div className="flex justify-between items-center bg-success/10 px-4 py-2 rounded-md border border-success/30 shadow-sm">
                                                         <span className="font-bold text-success">TOTAL CON SEGUROS:</span>
                                                         <span className="text-success font-extrabold text-lg">{fmt(totalConSeguros1)}</span>
                                                     </div>
                                                 </div>
                                             </div>
+
                                         </>
                                     )}
 
@@ -1212,54 +1235,63 @@ const CotizacionFormulario2: React.FC = () => {
 
 
                                             {/* RESUMEN MOTO 2 */}
-                                            <div className="bg-base-100 shadow-lg rounded-xl p-6 border border-base-300">
-                                                <h3 className="text-lg font-bold mb-4 text-success">Resumen de costos</h3>
+                                            <div className="bg-base-100 shadow-xl rounded-2xl p-6 border border-base-300">
+                                                {/* Encabezado */}
+                                                <h3 className="text-lg font-bold mb-4 text-success bg-success/5 px-4 py-2 rounded-lg">
+                                                    Resumen de costos
+                                                </h3>
 
-                                                <div className="grid grid-cols-1 gap-2 mb-4">
-                                                    <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                        <span className="font-medium text-gray-500">Precio documentos:</span>
+                                                {/* Bloque de detalles */}
+                                                <div className="bg-base-200/70 p-4 rounded-xl mb-4 space-y-2">
+                                                    {/* Precio documentos */}
+                                                    <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-gray-700">Precio documentos:</span>
                                                         <span>{fmt(documentos2)}</span>
                                                     </div>
 
-                                                    <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                        <span className="font-medium text-gray-500">Descuento:</span>
+                                                    {/* Descuento */}
+                                                    <div className="flex justify-between bg-error/5 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-gray-700">Descuento:</span>
                                                         <span className="text-error font-semibold">
                                                             {descuento2Val > 0 ? `-${fmt(descuento2Val)}` : "0 COP"}
                                                         </span>
                                                     </div>
 
-                                                    <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                        <span className="font-medium text-gray-500">Cascos y Accesorios</span>
+                                                    {/* Cascos y accesorios */}
+                                                    <div className="flex justify-between bg-blue-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-gray-700">Cascos y Accesorios:</span>
                                                         <span>{fmt(accesorios2Val)}</span>
                                                     </div>
 
-                                                    {/* 👇 AQUI INSERTA MARCACIÓN MOTO 2 */}
-                                                    <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                        <span className="font-medium text-gray-500">Marcación y personalización:</span>
+                                                    {/* Marcación */}
+                                                    <div className="flex justify-between bg-indigo-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-gray-700">Marcación y personalización:</span>
                                                         <span>{fmt(marcacion2Val)}</span>
                                                     </div>
 
-
+                                                    {/* Inicial (si aplica) */}
                                                     {esCreditoDirecto && (
-                                                        <div className="flex justify-between bg-base-200 px-4 py-2 rounded-md">
-                                                            <span className="font-medium text-gray-500">Inicial:</span>
+                                                        <div className="flex justify-between bg-yellow-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                            <span className="font-medium text-gray-700">Inicial:</span>
                                                             <span>{fmt(inicial2)}</span>
                                                         </div>
                                                     )}
                                                 </div>
 
+                                                {/* Totales */}
                                                 <div className="space-y-2">
-                                                    <div className="flex justify-between items-center bg-warning/10 px-4 py-2 rounded-md">
+                                                    <div className="flex justify-between items-center bg-warning/10 px-4 py-2 rounded-md border border-warning/30 shadow-sm">
                                                         <span className="font-semibold text-warning">TOTAL SIN SEGUROS:</span>
                                                         <span className="font-bold">{fmt(totalSinSeguros2)}</span>
                                                     </div>
-                                                    <div className="flex justify-between items-center bg-success/20 px-4 py-2 rounded-md">
+
+                                                    <div className="flex justify-between items-center bg-success/10 px-4 py-2 rounded-md border border-success/30 shadow-sm">
                                                         <span className="font-bold text-success">TOTAL CON SEGUROS:</span>
                                                         <span className="text-success font-extrabold text-lg">{fmt(totalConSeguros2)}</span>
                                                     </div>
                                                 </div>
-
                                             </div>
+
                                         </>
                                     )}
                                 </div>
