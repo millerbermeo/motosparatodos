@@ -85,7 +85,6 @@ const esCreditoDirecto = (row: any) =>
 const opcionesEstados = (row: any): any[] => {
     const soloCreditoEnDirecto = esCreditoDirecto(row);
     return [
-        { value: '', label: 'Seleccione...' },
         { value: '3', label: 'Continúa interesado' },
         { value: '4', label: 'Alto interés' },
         soloCreditoEnDirecto
@@ -498,10 +497,17 @@ const DetalleCambiarEstado: React.FC = () => {
                                     className="select select-bordered"
                                     value={estadoNombre}
                                     onChange={(e) => setEstadoNombre(e.target.value)}
-                                    required
+                                    
                                 >
+                                    {estadoNombre === '' && (
+                                        <option value="" disabled>
+                                            Seleccionar estado
+                                        </option>
+                                    )}
+
                                     {opts.map(({ value, label }) => (
-                                        <option key={value || 'empty'} value={label} disabled={value === ''}>
+                                        // OJO: tu backend recibe el NOMBRE, por eso value={label}
+                                        <option key={value} value={label}>
                                             {label}
                                         </option>
                                     ))}
@@ -520,7 +526,7 @@ const DetalleCambiarEstado: React.FC = () => {
                                     value={comentario2}
                                     onChange={(e) => setComentario2(e.target.value)}
                                     maxLength={500}
-                                    required
+                                    
                                 />
                                 <div className="text-xs opacity-60 text-right mt-1">{comentario2.length} / 500</div>
                             </div>
