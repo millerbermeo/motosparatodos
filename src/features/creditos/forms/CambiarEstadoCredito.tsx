@@ -8,8 +8,9 @@ import { useCambiarEstadoCredito } from "../../../services/creditosServices";
 import { useAuthStore } from "../../../store/auth.store";
 import type { PlanPagosInput } from "../pdf/PlanPagosPDF";
 import PlanPagosPDF from "../pdf/PlanPagosPDF";
+import { useNavigate } from "react-router-dom";
 
-type Props = { codigo_credito: string | number,   data?: any; };
+type Props = { codigo_credito: string | number, data?: any; };
 
 type CambiarEstadoValues = {
   estado: "Pendiente" | "Aprobado" | "No viable" | "";
@@ -39,7 +40,9 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
     mode: "onBlur",
   });
 
-  
+  const navigate = useNavigate();
+
+
   const isAprobado = watch("estado") === "Aprobado";
 
   const onSubmit = async (values: CambiarEstadoValues) => {
@@ -76,39 +79,48 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
         datacredito_deudor1: values.datacredito_deudor1 ?? null,
       },
     });
+
+    Swal.fire({
+      icon: "success",
+      title: "Estado actualizado",
+      text: "El estado del crédito fue actualizado correctamente.",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+
+    navigate("/solicitudes"); // 👈 Navegar a la ruta de Solicitud
+
   };
 
   console.log("data del credito", data)
 
 
   // ====== Armar input para el PDF ======
-const inputPDF: PlanPagosInput = {
-  codigo: codigo_credito,
-  ciudad: "Cali",
-  cliente: {
-    nombre: `${
-      data?.informacion_personal?.primer_nombre ?? ""
-    } ${data?.informacion_personal?.segundo_nombre ?? ""} ${
-      data?.informacion_personal?.primer_apellido ?? ""
-    } ${data?.informacion_personal?.segundo_apellido ?? ""}`.replace(/\s+/g, " ").trim(),
-    documento: data?.informacion_personal?.numero_documento ?? "",
-    direccion: data?.informacion_personal?.direccion_residencia ?? "",
-    telefono: data?.informacion_personal?.celular ?? "",
-  },
-  producto: {
-    nombre: data?.credito?.producto ?? data?.moto?.modelo ?? "Motocicleta",
-    valor: Number(data?.credito?.valor_producto ?? data?.moto?.valorMotocicleta ?? 0),
-  },
-  credito: {
-    cuotaInicial: Number(data?.credito?.cuota_inicial ?? data?.moto?.cuotaInicial ?? 0),
-    plazoMeses: Number(data?.credito?.plazo_meses ?? data?.moto?.numeroCuotas ?? 1),
-    // Defaults si no viene la tasa:
-    tasaMensual: 0.0196,
-    tasaAnual: 0.2352,
-    fechaInicio: new Date(),
-    fechaEntrega: data?.credito?.fecha_entrega ?? null,
-  },
-};
+  const inputPDF: PlanPagosInput = {
+    codigo: codigo_credito,
+    ciudad: "Cali",
+    cliente: {
+      nombre: `${data?.informacion_personal?.primer_nombre ?? ""
+        } ${data?.informacion_personal?.segundo_nombre ?? ""} ${data?.informacion_personal?.primer_apellido ?? ""
+        } ${data?.informacion_personal?.segundo_apellido ?? ""}`.replace(/\s+/g, " ").trim(),
+      documento: data?.informacion_personal?.numero_documento ?? "",
+      direccion: data?.informacion_personal?.direccion_residencia ?? "",
+      telefono: data?.informacion_personal?.celular ?? "",
+    },
+    producto: {
+      nombre: data?.credito?.producto ?? data?.moto?.modelo ?? "Motocicleta",
+      valor: Number(data?.credito?.valor_producto ?? data?.moto?.valorMotocicleta ?? 0),
+    },
+    credito: {
+      cuotaInicial: Number(data?.credito?.cuota_inicial ?? data?.moto?.cuotaInicial ?? 0),
+      plazoMeses: Number(data?.credito?.plazo_meses ?? data?.moto?.numeroCuotas ?? 1),
+      // Defaults si no viene la tasa:
+      tasaMensual: 0.0196,
+      tasaAnual: 0.2352,
+      fechaInicio: new Date(),
+      fechaEntrega: data?.credito?.fecha_entrega ?? null,
+    },
+  };
 
 
   return (
@@ -189,7 +201,7 @@ const inputPDF: PlanPagosInput = {
           />
 
           <div>
-               <PlanPagosPDF input={inputPDF} />
+            <PlanPagosPDF input={inputPDF} />
           </div>
         </div>
       )}

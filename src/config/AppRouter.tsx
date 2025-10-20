@@ -43,6 +43,10 @@ const FacturarCreditoSolicitud = lazy(() => import("../features/creditos/forms/F
 
 const RegistrarFacturacion = lazy(() => import("../pages/RegistrarFacturacion")); // 👈 crea esta página simple
 
+const Garantia = lazy(() => import("../pages/Garantia")); // 👈 crea esta página simple
+const SolicitarFacturacionPage = lazy(() => import("../pages/SolicitarFacturacionPage"));
+
+
 
 const Fallback: React.FC = () => {
   const { show, hide } = useLoaderStore();
@@ -88,11 +92,13 @@ const AppRouter: React.FC = () => {
                 <Route path="/cotizaciones" element={<Cotizaciones />} />
                 <Route path="/cotizaciones/:id" element={<Detalles />} /> {/* 👈 aquí */}
                 <Route path="/cotizaciones/estado/:id" element={<DetalleEstado />} /> {/* 👈 aquí */}
+                <Route path="/garantia" element={<Garantia />} /> {/* 👈 aquí */}
+                <Route path="/cotizaciones/facturacion/:codigo" element={<SolicitarFacturacionPage />} />
 
               </Route>
 
               <Route element={<RequireModule name="Créditos" />}>
-              
+
                 <Route path="/creditos" element={<Creditos />} />
                 <Route path="/creditos/registrar/:id" element={<CreditosForm />} />
                 <Route path="/creditos/detalle/:id" element={<CreditoDetalle />} />

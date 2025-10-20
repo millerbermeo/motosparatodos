@@ -95,6 +95,71 @@ const opcionesEstados = (row: any): any[] => {
     ];
 };
 
+// =======================
+// Payload para /solicitudes/:id
+// =======================
+const buildSolicitudState = (row: any) => {
+    const safe = (v: any) => (v === null || v === undefined ? '' : String(v).trim());
+
+    // Cliente (lo que tu formulario necesita + extra)
+    const clienteForForm = {
+        primerNombre: safe(row?.name),
+        segundoNombre: safe(row?.s_name),
+        primerApellido: safe(row?.last_name),
+        segundoApellido: safe(row?.s_last_name),
+        numeroDocumento: safe(row?.cedula),
+        numeroCelular: safe(row?.celular),
+        fechaNacimiento: safe(row?.fecha_nacimiento).slice(0, 10), // "YYYY-MM-DD"
+        ciudadResidencia: safe(row?.ciudad),
+        direccionResidencia: safe(row?.direccion),
+    };
+
+    // Motos calculadas (usa tus helpers buildMotoCalc/modeloMoto/hasMoto)
+    const showA = hasMoto(row, 'a');
+    const showB = hasMoto(row, 'b');
+
+    const motoA = showA
+        ? {
+            modelo: modeloMoto(row, 'a'),
+            ...buildMotoCalc(row, 'a'),
+            foto: safe(row?.foto_a) || undefined,
+            marca: safe(row?.marca_a) || undefined,
+            linea: safe(row?.linea_a) || undefined,
+            garantiaExtendidaMeses: Number(row?.garantia_extendida_a) || undefined,
+        }
+        : null;
+
+    const motoB = showB
+        ? {
+            modelo: modeloMoto(row, 'b'),
+            ...buildMotoCalc(row, 'b'),
+            foto: safe(row?.foto_b) || undefined,
+            marca: safe(row?.marca_b) || undefined,
+            linea: safe(row?.linea_b) || undefined,
+            garantiaExtendidaMeses: Number(row?.garantia_extendida_b) || undefined,
+        }
+        : null;
+
+    // Comercial
+    const comercial = {
+        asesor: safe(row?.asesor) || undefined,
+        tipo_pago: safe(row?.tipo_pago) || safe(row?.metodo_pago) || undefined,
+        financiera: safe(row?.financiera) || undefined,
+        canal_contacto: safe(row?.canal_contacto) || undefined,
+        pregunta: safe(row?.pregunta) || undefined,
+        prospecto: safe(row?.prospecto) || undefined,
+    };
+
+    return {
+        cotizacionId: Number(row?.id) || undefined,
+        clienteForForm,
+        motos: { A: motoA, B: motoB },
+        comercial,
+        raw: row, // por si la vista de solicitudes quiere acceder a todo lo demás
+    };
+};
+
+
 /* =======================
    Motos helpers
    ======================= */
@@ -204,6 +269,9 @@ const DetalleCambiarEstado: React.FC = () => {
     const [comentario2, setComentario2] = React.useState<string>('');
     const [loading, setLoading] = useState(false);
 
+    // NUEVO: selección de moto cuando es "Solicitar facturación"
+    const [motoSeleccion, setMotoSeleccion] = React.useState<'' | 'A' | 'B'>('');
+
     // ⬇️ Redirigir si la cotización ya está marcada para facturación (is_state = 1)
     React.useEffect(() => {
         if (isLoading) return;     // espera a que termine la carga
@@ -219,7 +287,10 @@ const DetalleCambiarEstado: React.FC = () => {
                 timer: 1200,
                 showConfirmButton: false,
             }).then(() => {
-                navigate(`/solicitudes/${id}`, { replace: true });
+                navigate(`/solicitudes/${id}`, {
+                    state: buildSolicitudState(row),
+                });
+
             });
         }
     }, [row, id, isLoading, navigate]);
@@ -242,62 +313,132 @@ const DetalleCambiarEstado: React.FC = () => {
             .trim()
             .toLowerCase() === 'solicitar credito';
 
+    const esSolicitarFacturacion = (s?: string) =>
+        (s || '')
+            .normalize('NFD')
+            .replace(/\p{Diacritic}/gu, '')
+            .trim()
+            .toLowerCase() === 'solicitar facturacion';
+
+    // Cuando cambia el estado, si es "Solicitar facturación", proponemos una moto por defecto
+    React.useEffect(() => {
+        if (!row) return;
+        if (esSolicitarFacturacion(estadoNombre)) {
+            const tieneA = hasMoto(row, 'a');
+            const tieneB = hasMoto(row, 'b');
+            if (tieneA) setMotoSeleccion('A');
+            else if (tieneB) setMotoSeleccion('B');
+            else setMotoSeleccion('');
+        } else {
+            // si cambia a otro estado, limpiamos la selección
+            setMotoSeleccion('');
+        }
+    }, [estadoNombre, row]);
+
     // Submit
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if (!id) return;
+const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  if (!id) return;
 
-        if (!estadoNombre) {
-            Swal.fire({ icon: 'warning', title: 'Selecciona un estado' });
-            return;
-        }
-        if (!comentario2.trim()) {
-            Swal.fire({ icon: 'warning', title: 'Escribe un comentario' });
-            return;
-        }
+  if (!estadoNombre) {
+    Swal.fire({ icon: "warning", title: "Selecciona un estado" });
+    return;
+  }
 
-        try {
-            setLoading(true);
+  // Validaciones según estado
+  if (esSolicitarFacturacion(estadoNombre)) {
+    // Facturación: NO comentario, SÍ seleccionar moto si hay A/B
+    const tieneA = hasMoto(row, "a");
+    const tieneB = hasMoto(row, "b");
+    const hayMotos = tieneA || tieneB;
+    if (hayMotos && !motoSeleccion) {
+      Swal.fire({ icon: "warning", title: "Selecciona la motocicleta" });
+      return;
+    }
 
-            const resp = await api.put('/actualizar_cotizacion.php', {
-                id: Number(id),
-                estado: estadoNombre, // el backend recibe el NOMBRE
-                comentario2: comentario2.trim(),
-                nombre_usuario: user?.name || 'Desconocido',
-                rol_usuario: user?.rol || 'Usuario',
-            });
+    const safe = (v: any) => (v === null || v === undefined ? "" : String(v).trim());
+    const motoSel =
+      motoSeleccion === "A"
+        ? {
+            modelo: modeloMoto(row, "a"),
+            ...buildMotoCalc(row, "a"),
+            foto: safe(row?.foto_a) || undefined,
+            marca: safe(row?.marca_a) || undefined,
+            linea: safe(row?.linea_a) || undefined,
+            garantiaExtendidaMeses: Number(row?.garantia_extendida_a) || undefined,
+          }
+        : motoSeleccion === "B"
+        ? {
+            modelo: modeloMoto(row, "b"),
+            ...buildMotoCalc(row, "b"),
+            foto: safe(row?.foto_b) || undefined,
+            marca: safe(row?.marca_b) || undefined,
+            linea: safe(row?.linea_b) || undefined,
+            garantiaExtendidaMeses: Number(row?.garantia_extendida_b) || undefined,
+          }
+        : null;
 
-            const codigoCredito: string | undefined =
-                resp?.data?.codigo_credito ?? resp?.data?.data?.codigo_credito;
+    // SOLO navegar (sin PUT) para facturación
+    await Swal.fire({
+      icon: "info",
+      title: "Abrir solicitud de facturación",
+      text: "Te llevaremos al registro para facturar.",
+      timer: 1200,
+      showConfirmButton: false,
+    });
 
-            await Swal.fire({
-                icon: 'success',
-                title: 'Estado actualizado',
-                text: `Nuevo estado: ${estadoNombre}`,
-                timer: 1400,
-                showConfirmButton: false,
-            });
+    navigate(`/solicitudes/${id}`, {
+      state: {
+        ...buildSolicitudState(row),
+        motoSeleccion,
+        motos: { seleccionada: motoSel },
+      },
+    });
+    return;
+  }
 
-            if (esSolicitarCredito(estadoNombre) && codigoCredito) {
-                navigate(`/creditos/registrar/${encodeURIComponent(codigoCredito)}`);
-            } else if (
-                estadoNombre
-                    .normalize('NFD')
-                    .replace(/\p{Diacritic}/gu, '')
-                    .trim()
-                    .toLowerCase() === 'solicitar facturacion'
-            ) {
-                navigate(`/solicitudes/${id}`);
-            } else {
-                navigate('/cotizaciones');
-            }
-        } catch (err: any) {
-            const msg = err?.response?.data?.message || 'No se pudo actualizar el estado.';
-            Swal.fire({ icon: 'error', title: 'Error', text: String(msg) });
-        } finally {
-            setLoading(false);
-        }
-    };
+  // Para los demás (incluye Solicitar crédito): comentario obligatorio
+  if (!comentario2.trim()) {
+    Swal.fire({ icon: "warning", title: "Escribe un comentario" });
+    return;
+  }
+
+  // 🔁 “Solicitar crédito” y el resto SÍ hacen PUT
+  try {
+    setLoading(true);
+
+    const resp = await api.put("/actualizar_cotizacion.php", {
+      id: Number(id),
+      estado: estadoNombre, // el backend recibe el NOMBRE del estado
+      comentario2: comentario2.trim(),
+      nombre_usuario: user?.name || "Desconocido",
+      rol_usuario: user?.rol || "Usuario",
+    });
+
+    const codigoCredito: string | undefined =
+      resp?.data?.codigo_credito ?? resp?.data?.data?.codigo_credito;
+
+    await Swal.fire({
+      icon: "success",
+      title: "Estado actualizado",
+      text: `Nuevo estado: ${estadoNombre}`,
+      timer: 1400,
+      showConfirmButton: false,
+    });
+
+    if (esSolicitarCredito(estadoNombre) && codigoCredito) {
+      navigate(`/creditos/registrar/${encodeURIComponent(codigoCredito)}`);
+    } else {
+      navigate("/cotizaciones");
+    }
+  } catch (err: any) {
+    const msg = err?.response?.data?.message || "No se pudo actualizar el estado.";
+    Swal.fire({ icon: "error", title: "Error", text: String(msg) });
+  } finally {
+    setLoading(false);
+  }
+};
+
 
     // Loading / errores
     if (!id) {
@@ -356,6 +497,11 @@ const DetalleCambiarEstado: React.FC = () => {
 
     const motoA = showMotoA ? buildMotoCalc(row, 'a') : undefined;
     const motoB = showMotoB ? buildMotoCalc(row, 'b') : undefined;
+
+    // Opciones de select para motos en facturación
+    const motoOptions: Array<{ key: 'A' | 'B'; label: string }> = [];
+    if (showMotoA) motoOptions.push({ key: 'A', label: modeloMoto(row, 'a') });
+    if (showMotoB) motoOptions.push({ key: 'B', label: modeloMoto(row, 'b') });
 
     return (
         <main className="w-full min-h-screen px-4 md:px-6 pb-6">
@@ -497,7 +643,7 @@ const DetalleCambiarEstado: React.FC = () => {
                                     className="select select-bordered"
                                     value={estadoNombre}
                                     onChange={(e) => setEstadoNombre(e.target.value)}
-                                    
+
                                 >
                                     {estadoNombre === '' && (
                                         <option value="" disabled>
@@ -514,22 +660,46 @@ const DetalleCambiarEstado: React.FC = () => {
                                 </select>
                             </div>
 
-                            <div className="form-control">
-                                <label className="label w-28">
-                                    <span className="label-text">
-                                        Comentario <span className="text-error">*</span>
-                                    </span>
-                                </label>
-                                <textarea
-                                    className="textarea textarea-bordered min-h-28"
-                                    placeholder="Escribe un comentario"
-                                    value={comentario2}
-                                    onChange={(e) => setComentario2(e.target.value)}
-                                    maxLength={500}
-                                    
-                                />
-                                <div className="text-xs opacity-60 text-right mt-1">{comentario2.length} / 500</div>
-                            </div>
+                            {/* Si es "Solicitar facturación": mostramos select de motos.
+                                En caso contrario: mostramos comentario obligatorio. */}
+                            {esSolicitarFacturacion(estadoNombre) ? (
+                                <div className="form-control">
+                                    <label className="label w-28">
+                                        <span className="label-text">
+                                            Selecciona la motocicleta <span className="text-error">*</span>
+                                        </span>
+                                    </label>
+                                    <select
+                                        className="select select-bordered"
+                                        value={motoSeleccion}
+                                        onChange={(e) => setMotoSeleccion(e.target.value as 'A' | 'B' | '')}
+                                    >
+                                        {motoSeleccion === '' && <option value="" disabled>Seleccionar motocicleta</option>}
+                                        {motoOptions.map(op => (
+                                            <option key={op.key} value={op.key}>
+                                                {op.label || (op.key === 'A' ? 'Moto A' : 'Moto B')}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            ) : (
+                                <div className="form-control">
+                                    <label className="label w-28">
+                                        <span className="label-text">
+                                            Comentario <span className="text-error">*</span>
+                                        </span>
+                                    </label>
+                                    <textarea
+                                        className="textarea textarea-bordered min-h-28"
+                                        placeholder="Escribe un comentario"
+                                        value={comentario2}
+                                        onChange={(e) => setComentario2(e.target.value)}
+                                        maxLength={500}
+
+                                    />
+                                    <div className="text-xs opacity-60 text-right mt-1">{comentario2.length} / 500</div>
+                                </div>
+                            )}
 
                             <div className="flex items-center justify-between pt-2">
                                 <button

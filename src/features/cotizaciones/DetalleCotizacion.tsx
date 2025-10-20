@@ -23,6 +23,7 @@ import { PDFDownloadLink } from "@react-pdf/renderer";
 import { CotizacionPDFDoc, type QuotePayload } from "./CotizacionPDFDoc";
 import { useAuthStore } from '../../store/auth.store';
 import { useLoaderStore } from '../../store/loader.store';
+import { useGarantiaExtByCotizacionId } from '../../services/garantiaExtServices';
 
 const BaseUrl = import.meta.env.VITE_API_URL ?? "http://tuclick.vozipcolombia.net.co/motos/back";
 
@@ -300,9 +301,9 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
     typeof segurosFromJson === 'number'
       ? segurosFromJson
       : (Number(data?.[`seguro_vida${suffix}`]) || 0) +
-        (Number(data?.[`seguro_mascota_s${suffix}`]) || 0) +
-        (Number(data?.[`seguro_mascota_a${suffix}`]) || 0) +
-        (Number(data?.[`otro_seguro${suffix}`]) || 0);
+      (Number(data?.[`seguro_mascota_s${suffix}`]) || 0) +
+      (Number(data?.[`seguro_mascota_a${suffix}`]) || 0) +
+      (Number(data?.[`otro_seguro${suffix}`]) || 0);
 
   // Garantía si/no
   const garantiaStr = String(data?.[`garantia${suffix}`] ?? '')
@@ -352,6 +353,8 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
     lado,
   };
 };
+
+
 
 const mapApiToCotizacion = (data: any): Cotizacion => {
   // Cliente
@@ -416,6 +419,11 @@ const DetalleCotizacion: React.FC = () => {
   );
 
   const { data: actividades = [], isLoading: loadingAct } = useCotizacionActividades(id);
+
+  // Garantía extendida por cotizacion_id (toma prioridad sobre lo que venga en la cotización)
+  const { data: geResp, isLoading: geLoading } = useGarantiaExtByCotizacionId(id);
+  const ge = geResp?.data; // { meses_a, valor_a, meses_b, valor_b, ... }
+
 
   type ActividadItem = { fecha: string; titulo: string; etiqueta?: string; color?: string };
 
@@ -594,7 +602,7 @@ const DetalleCotizacion: React.FC = () => {
                 <div className="space-y-2">
                   <DataRow label="Precio base" value={fmtCOP(moto.precioBase)} />
                   <DataRow label="Descuentos" value={fmtCOP(moto.descuentos)} valueClass="text-error font-semibold" />
-                  <DataRow label="Seguros" value={fmtCOP(moto.seguros)} />
+                  <DataRow label="Seguro todo riesgo" value={fmtCOP(moto.seguros)} />
                   <DataRowText label="Garantía" value={moto.garantia ? 'Sí' : 'No'} />
                   {/* 👇 NUEVO: Garantía extendida */}
                   <DataRowText
@@ -618,6 +626,90 @@ const DetalleCotizacion: React.FC = () => {
             ) : (
               <div className="text-sm opacity-70">No hay información de la {tab === 'A' ? 'Moto A' : 'Moto B'}.</div>
             )}
+          </div>
+        </section>
+
+        {/* ======================= Garantía extendida (toggle A/B) ======================= */}
+        <section className="card bg-base-100 border border-base-300/60 shadow-sm rounded-2xl">
+          <div className="card-body">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2">
+                <BadgeCheck className="w-5 h-5" />
+                <h2 className="card-title text-lg">Garantía extendida</h2>
+                {geLoading && <span className="loading loading-spinner loading-xs" />}
+              </div>
+
+              {/* Toggle A/B reutilizando el mismo estado `tab` */}
+              {q.motoB && (
+                <div role="tablist" className="tabs tabs-boxed">
+                  <button
+                    role="tab"
+                    className={`tab rounded-lg px-4 py-2 ${tab === 'A'
+                      ? 'tab-active bg-green-500 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    onClick={() => setTab('A')}
+                  >
+                    Moto A
+                  </button>
+                  <button
+                    role="tab"
+                    className={`tab rounded-lg px-4 py-2 ml-2 ${tab === 'B'
+                      ? 'tab-active bg-green-500 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    onClick={() => setTab('B')}
+                  >
+                    Moto B
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Contenido según tab */}
+            {(() => {
+              const isA = tab === 'A';
+              const meses = isA
+                ? (ge?.meses_a ?? (q?.motoA?.garantiaExtendidaMeses ?? null))
+                : (ge?.meses_b ?? (q?.motoB?.garantiaExtendidaMeses ?? null));
+
+              const valor = isA ? ge?.valor_a : ge?.valor_b;
+
+              const plan = isA
+                ? (ge?.garantia_extendida_a ??
+                  (typeof q?.motoA?.garantiaExtendidaMeses === 'number'
+                    ? `${q?.motoA?.garantiaExtendidaMeses}m` : '—'))
+                : (ge?.garantia_extendida_b ??
+                  (typeof q?.motoB?.garantiaExtendidaMeses === 'number'
+                    ? `${q?.motoB?.garantiaExtendidaMeses}m` : '—'));
+
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="badge badge-ghost">{isA ? 'Moto A' : 'Moto B'}</div>
+
+                    <DataRowText
+                      label="Meses"
+                      value={typeof meses === 'number' && meses > 0 ? `${meses} meses` : 'No aplica'}
+                    />
+
+                    <DataRow
+                      label="Valor garantía extendida"
+                      value={
+                        typeof valor === 'number'
+                          ? fmtCOP(valor)
+                          : (typeof meses === 'number' && meses > 0 ? fmtCOP(0) : '—')
+                      }
+                    />
+
+                    <DataRowText
+                      label="Plan"
+                      value={plan || '—'}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </section>
 

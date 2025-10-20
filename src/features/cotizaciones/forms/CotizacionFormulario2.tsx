@@ -105,6 +105,9 @@ type FormValues = {
 
     garantiaExtendida1?: "no" | "12" | "24" | "36";
     garantiaExtendida2?: "no" | "12" | "24" | "36";
+
+    valor_garantia_extendida_a?: string;
+    valor_garantia_extendida_b?: string;
 };
 
 
@@ -113,6 +116,8 @@ const garantiaExtendidaOptions: SelectOption[] = [
     { value: "12", label: "12 meses" },
     { value: "24", label: "24 meses" },
     { value: "36", label: "36 meses" },
+    { value: "48", label: "48 meses" },
+
 ];
 
 
@@ -192,6 +197,9 @@ const CotizacionFormulario2: React.FC = () => {
             modelo_b: "",
             marcacion1: "0",
             marcacion2: "0",
+
+            valor_garantia_extendida_a: "0",
+            valor_garantia_extendida_b: "0",
         },
         mode: "onBlur",
         shouldUnregister: false,
@@ -299,7 +307,7 @@ const CotizacionFormulario2: React.FC = () => {
             + Number(m.impuestos) + Number(m.soat);
     }, [motos2?.motos, moto2Sel, metodo, incluirMoto2]);
 
-    const { data: seguros = [], isPending: loadingSeguros } = useSeguros();
+    const { data: seguros = [] } = useSeguros();
 
     React.useEffect(() => {
         if (!incluirMoto1) {
@@ -308,7 +316,8 @@ const CotizacionFormulario2: React.FC = () => {
             setValue("accesorios1", "0"); setValue("segurosIds1", []); setValue("otroSeguro1", "0");
             setValue("foto_b", null)
             setValue("precioDocumentos1", "0"); setValue("descuento1", "0"); setValue("cuotaInicial1", "0");
-            setValue("garantiaExtendida1", "no");
+            setValue("garantiaExtendida1", "no"); setValue("garantiaExtendida1", "no");
+            setValue("valor_garantia_extendida_a", "0"); // 👈
         }
     }, [incluirMoto1, setValue]);
 
@@ -317,9 +326,20 @@ const CotizacionFormulario2: React.FC = () => {
             setValue("marca2", ""); setValue("moto2", ""); setValue("garantia2", "");
             setValue("accesorios2", "0"); setValue("segurosIds2", []); setValue("otroSeguro2", "0");
             setValue("precioDocumentos2", "0"); setValue("descuento2", "0"); setValue("cuotaInicial2", "0");
-            setValue("garantiaExtendida2", "no");
+            setValue("garantiaExtendida2", "no"); setValue("garantiaExtendida2", "no");
+            setValue("valor_garantia_extendida_b", "0"); // 👈
         }
     }, [incluirMoto2, setValue]);
+
+
+    // Si cambian la opción de garantía extendida a "no", limpia el valor
+    React.useEffect(() => {
+        if (watch("garantiaExtendida1") === "no") setValue("valor_garantia_extendida_a", "0");
+    }, [watch("garantiaExtendida1"), setValue]);
+
+    React.useEffect(() => {
+        if (watch("garantiaExtendida2") === "no") setValue("valor_garantia_extendida_b", "0");
+    }, [watch("garantiaExtendida2"), setValue]);
 
     React.useEffect(() => {
         if (metodo === "contado") {
@@ -389,37 +409,54 @@ const CotizacionFormulario2: React.FC = () => {
     }, [metodo, setValue]);
 
     // ===== CÁLCULOS MOTO 1 =====
-    const segurosIds1 = watch("segurosIds1") ?? [];
+    // const segurosIds1 = watch("segurosIds1") ?? [];
     const otros1 = N(watch("otroSeguro1"));
     const accesorios1Val = N(watch("accesorios1"));
     const descuento1Val = N(watch("descuento1"));
     const inicial1 = N(watch("cuotaInicial1"));
     const marcacion1Val = N(watch("marcacion1"));
 
-    const totalSeguros1 = (showMotos && incluirMoto1)
-        ? (segurosIds1 as string[]).reduce((acc, id) => acc + findSeguroValor(id), 0) + otros1
-        : 0;
+
+    // ===== CÁLCULOS MOTO 1 =====
+    const garantiaExt1Sel = watch("garantiaExtendida1") ?? "no";
+    const garantiaExtVal1 = N(watch("valor_garantia_extendida_a"));
+
+    // ===== CÁLCULOS MOTO 2 =====
+    const garantiaExt2Sel = watch("garantiaExtendida2") ?? "no";
+    const garantiaExtVal2 = N(watch("valor_garantia_extendida_b"));
+
+
+    // const totalSeguros1 = (showMotos && incluirMoto1)
+    //     ? (segurosIds1 as string[]).reduce((acc, id) => acc + findSeguroValor(id), 0) + otros1
+    //     : 0;
+
+    const totalSeguros1 = (showMotos && incluirMoto1) ? otros1 : 0;
+
 
     const totalSinSeguros1 = (showMotos && incluirMoto1)
-        ? (precioBase1 + accesorios1Val + documentos1 + marcacion1Val - descuento1Val)
+        ? (precioBase1 + accesorios1Val + documentos1 + marcacion1Val - descuento1Val
+            + (garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0)) // 👈 suma
         : 0;
-
     const totalConSeguros1 = totalSinSeguros1 + totalSeguros1;
 
     // ===== CÁLCULOS MOTO 2 =====
-    const segurosIds2 = watch("segurosIds2") ?? [];
+    // const segurosIds2 = watch("segurosIds2") ?? [];
     const otros2 = N(watch("otroSeguro2"));
     const accesorios2Val = N(watch("accesorios2"));
     const descuento2Val = N(watch("descuento2"));
     const inicial2 = N(watch("cuotaInicial2"));
     const marcacion2Val = N(watch("marcacion2"));
 
-    const totalSeguros2 = (showMotos && incluirMoto2)
-        ? (segurosIds2 as string[]).reduce((acc, id) => acc + findSeguroValor(id), 0) + otros2
-        : 0;
+    // const totalSeguros2 = (showMotos && incluirMoto2)
+    //     ? (segurosIds2 as string[]).reduce((acc, id) => acc + findSeguroValor(id), 0) + otros2
+    //     : 0;
+
+    const totalSeguros2 = (showMotos && incluirMoto2) ? otros2 : 0;
+
 
     const totalSinSeguros2 = (showMotos && incluirMoto2)
-        ? (precioBase2 + accesorios2Val + documentos2 + marcacion2Val - descuento2Val)
+        ? (precioBase2 + accesorios2Val + documentos2 + marcacion2Val - descuento2Val
+            + (garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0)) // 👈 suma
         : 0;
 
     const totalConSeguros2 = totalSinSeguros2 + totalSeguros2;
@@ -487,6 +524,10 @@ const CotizacionFormulario2: React.FC = () => {
         const producto1CuotaInicial = toNumberSafe(data.producto1CuotaInicial);
         const producto2Precio = toNumberSafe(data.producto2Precio);
         const producto2CuotaInicial = toNumberSafe(data.producto2CuotaInicial);
+
+        const valorGarantiaA = toNumberSafe(data.valor_garantia_extendida_a);
+        const valorGarantiaB = toNumberSafe(data.valor_garantia_extendida_b);
+
 
         const seg1 = (data.segurosIds1 ?? []).reduce((acc, id) => acc + findSeguroValor(String(id)), 0);
         const seg2 = (data.segurosIds2 ?? []).reduce((acc, id) => acc + findSeguroValor(String(id)), 0);
@@ -587,6 +628,10 @@ const CotizacionFormulario2: React.FC = () => {
 
             descuentos_a: incluirMoto1 ? descuento1 : 0,
             descuentos_b: incluirMoto2 ? descuento2 : null,
+
+            // 👇 NUEVOS
+            valor_garantia_extendida_a: incluirMoto1 && data.garantiaExtendida1 !== "no" ? valorGarantiaA : 0,
+            valor_garantia_extendida_b: incluirMoto2 && data.garantiaExtendida2 !== "no" ? valorGarantiaB : null,
 
         };
 
@@ -889,12 +934,29 @@ const CotizacionFormulario2: React.FC = () => {
                                                 placeholder="Seleccione..."
                                                 disabled={!showMotos || !incluirMoto1}
                                             />
+                                            {watch("garantiaExtendida1") !== "no" && (
+                                                <FormInput<FormValues>
+                                                    name="valor_garantia_extendida_a"
+                                                    label="Valor garantía extendida A"
+                                                    type="number"
+                                                    formatThousands
+                                                    control={control}
+                                                    placeholder="0"
+                                                    disabled={!showMotos || !incluirMoto1}
+                                                    rules={{
+                                                        required: "Ingresa el valor de la garantía extendida",
+                                                        min: { value: 0, message: "No puede ser negativo" },
+                                                        setValueAs: (v) => (v === "" ? "" : String(v)),
+                                                    }}
+                                                />
+                                            )}
+
 
                                         </>
                                     )}
 
                                     {/* SEGUROS MULTI */}
-                                    <div className="p-3 rounded-md bg-[#3498DB] ">
+                                    {/* <div className="p-3 rounded-md bg-[#3498DB] ">
                                         <p className="font-semibold mb-2 text-white">Selecciona uno o varios seguros</p>
                                         <div className="flex flex-col gap-2 text-white">
                                             {loadingSeguros && <span>Cargando seguros...</span>}
@@ -923,7 +985,24 @@ const CotizacionFormulario2: React.FC = () => {
                                                 formatThousands
                                             />
                                         </div>
+                                    </div> */}
+
+                                    {/* SOLO INPUT OTROS SEGUROS (SIN CHECKBOXES) */}
+                                    <div className="p-3 rounded-md bg-[#3498DB]">
+                                        <p className="font-semibold mb-2 text-white">Seguro todo riesgo</p>
+
+                                        <FormInput<FormValues>
+                                            name="otroSeguro1"
+                                            label="Valor seguro todo riesgo"
+                                            control={control}
+                                            placeholder="0"
+                                            type="number"
+                                            disabled={!showMotos || !incluirMoto1}
+                                            rules={{ setValueAs: (v) => (v === "" ? "" : Number(v)) }}
+                                            formatThousands
+                                        />
                                     </div>
+
 
                                     {moto1Seleccionada && (
                                         <>
@@ -966,6 +1045,18 @@ const CotizacionFormulario2: React.FC = () => {
                                                 disabled={!showMotos || !incluirMoto1}
                                             />
 
+
+                                            <FormInput<FormValues>
+                                                name="marcacion1"
+                                                label="Marcación y personalización"
+                                                type="number"
+                                                formatThousands
+                                                control={control}
+                                                placeholder="0"
+                                                disabled={!showMotos || !incluirMoto1}
+                                            />
+
+
                                             {/* DESCUENTO CON VALIDACIÓN */}
                                             <FormInput<FormValues>
                                                 name="descuento1"
@@ -989,17 +1080,6 @@ const CotizacionFormulario2: React.FC = () => {
                                                 Máximo permitido: {fmt(precioBase1 + accesorios1Val + documentos1)}
                                             </p>
 
-                                            <FormInput<FormValues>
-                                                name="marcacion1"
-                                                label="Marcación y personalización"
-                                                type="number"
-                                                formatThousands
-                                                control={control}
-                                                placeholder="0"
-                                                disabled={!showMotos || !incluirMoto1}
-                                            />
-
-
                                             {/* RESUMEN MOTO 1 */}
                                             <div className="bg-base-100 shadow-xl rounded-2xl p-6 border border-base-300">
                                                 {/* Encabezado */}
@@ -1011,7 +1091,7 @@ const CotizacionFormulario2: React.FC = () => {
                                                 <div className="bg-base-200/70 p-4 rounded-xl mb-4 space-y-2">
                                                     {/* Precio documentos */}
                                                     <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
-                                                        <span className="font-medium text-gray-700">Precio documentos:</span>
+                                                        <span className="font-medium text-gray-700">Matrícula y SOAT:</span>
                                                         <span>{fmt(documentos1)}</span>
                                                     </div>
 
@@ -1022,6 +1102,17 @@ const CotizacionFormulario2: React.FC = () => {
                                                             {descuento1Val > 0 ? `-${fmt(descuento1Val)}` : "0 COP"}
                                                         </span>
                                                     </div>
+
+                                                    {/* Garantía extendida (si aplica) */}
+                                                    {garantiaExt1Sel !== "no" && (
+                                                        <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                            <span className="font-medium text-gray-700">
+                                                                Garantía extendida ({garantiaExt1Sel} meses):
+                                                            </span>
+                                                            <span>{fmt(garantiaExtVal1)}</span>
+                                                        </div>
+                                                    )}
+
 
                                                     {/* Cascos y accesorios */}
                                                     <div className="flex justify-between bg-blue-50/70 px-4 py-2 rounded-md shadow-sm">
@@ -1123,11 +1214,29 @@ const CotizacionFormulario2: React.FC = () => {
                                                 disabled={!showMotos || !incluirMoto2}
                                             />
 
+                                            {watch("garantiaExtendida2") !== "no" && (
+                                                <FormInput<FormValues>
+                                                    name="valor_garantia_extendida_b"
+                                                    label="Valor garantía extendida B"
+                                                    type="number"
+                                                    formatThousands
+                                                    control={control}
+                                                    placeholder="0"
+                                                    disabled={!showMotos || !incluirMoto2}
+                                                    rules={{
+                                                        required: "Ingresa el valor de la garantía extendida",
+                                                        min: { value: 0, message: "No puede ser negativo" },
+                                                        setValueAs: (v) => (v === "" ? "" : String(v)),
+                                                    }}
+                                                />
+                                            )}
+
+
                                         </>
                                     )}
 
                                     {/* SEGUROS MULTI */}
-                                    <div className="p-3 rounded-md bg-[#3498DB]">
+                                    {/* <div className="p-3 rounded-md bg-[#3498DB]">
                                         <p className="font-semibold mb-2 text-white">Selecciona uno o varios seguros</p>
                                         <div className="flex flex-col gap-2 text-white">
                                             {loadingSeguros && <span>Cargando seguros...</span>}
@@ -1156,7 +1265,25 @@ const CotizacionFormulario2: React.FC = () => {
                                                 rules={{ setValueAs: (v) => (v === "" ? "" : Number(v)) }}
                                             />
                                         </div>
+                                    </div> */}
+
+
+                                    {/* SOLO INPUT OTROS SEGUROS (SIN CHECKBOXES) */}
+                                    <div className="p-3 rounded-md bg-[#3498DB]">
+                                        <p className="font-semibold mb-2 text-white">Seguro todo riesgo</p>
+
+                                        <FormInput<FormValues>
+                                            name="otroSeguro2"
+                                            label="Valor seguro todo riesgo"
+                                            control={control}
+                                            placeholder="0"
+                                            type="number"
+                                            disabled={!showMotos || !incluirMoto2}
+                                            rules={{ setValueAs: (v) => (v === "" ? "" : Number(v)) }}
+                                            formatThousands
+                                        />
                                     </div>
+
 
                                     {moto2Seleccionada && (
                                         <>
@@ -1200,6 +1327,19 @@ const CotizacionFormulario2: React.FC = () => {
                                                 disabled={!showMotos || !incluirMoto2}
                                             />
 
+
+
+                                            <FormInput<FormValues>
+                                                name="marcacion2"
+                                                label="Marcación y personalización"
+                                                type="number"
+                                                formatThousands
+                                                control={control}
+                                                placeholder="0"
+                                                disabled={!showMotos || !incluirMoto2}
+                                            />
+
+
                                             {/* DESCUENTO CON VALIDACIÓN */}
                                             <FormInput<FormValues>
                                                 name="descuento2"
@@ -1223,16 +1363,6 @@ const CotizacionFormulario2: React.FC = () => {
                                                 Máximo permitido: {fmt(precioBase2 + accesorios2Val + documentos2)}
                                             </p>
 
-                                            <FormInput<FormValues>
-                                                name="marcacion2"
-                                                label="Marcación y personalización"
-                                                type="number"
-                                                formatThousands
-                                                control={control}
-                                                placeholder="0"
-                                                disabled={!showMotos || !incluirMoto2}
-                                            />
-
 
                                             {/* RESUMEN MOTO 2 */}
                                             <div className="bg-base-100 shadow-xl rounded-2xl p-6 border border-base-300">
@@ -1245,7 +1375,7 @@ const CotizacionFormulario2: React.FC = () => {
                                                 <div className="bg-base-200/70 p-4 rounded-xl mb-4 space-y-2">
                                                     {/* Precio documentos */}
                                                     <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
-                                                        <span className="font-medium text-gray-700">Precio documentos:</span>
+                                                        <span className="font-medium text-gray-700">Matrícula y SOAT:</span>
                                                         <span>{fmt(documentos2)}</span>
                                                     </div>
 
@@ -1256,6 +1386,17 @@ const CotizacionFormulario2: React.FC = () => {
                                                             {descuento2Val > 0 ? `-${fmt(descuento2Val)}` : "0 COP"}
                                                         </span>
                                                     </div>
+
+                                                    {/* Garantía extendida (si aplica) */}
+                                                    {garantiaExt2Sel !== "no" && (
+                                                        <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                            <span className="font-medium text-gray-700">
+                                                                Garantía extendida ({garantiaExt2Sel} meses):
+                                                            </span>
+                                                            <span>{fmt(garantiaExtVal2)}</span>
+                                                        </div>
+                                                    )}
+
 
                                                     {/* Cascos y accesorios */}
                                                     <div className="flex justify-between bg-blue-50/70 px-4 py-2 rounded-md shadow-sm">

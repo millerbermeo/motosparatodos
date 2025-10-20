@@ -1,10 +1,12 @@
+// src/pages/SolicitudForm.tsx
 import React from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { FormInput } from "../../shared/components/FormInput";
-import { useRegistrarSolicitudFacturacion } from "../../services/solicitudServices";
+import { useRegistrarProcesoContado } from "../../services/procesoContadoServices";
+import { useGetProcesoContadoPorCotizacionYMoto } from "../../services/procesoContadoHooks";
 
-// ============================ Tipos (solo lo que pide la UI) ============================
+/* ============================ Tipos (solo lo que pide la UI) ============================ */
 type SolicitudFormValues = {
   // Información del cliente
   primerNombre: string;
@@ -24,15 +26,81 @@ type SolicitudFormValues = {
   color?: string;
 };
 
-// ============================ Reglas/regex ============================
+type ClienteForForm = Partial<
+  Pick<
+    SolicitudFormValues,
+    | "primerNombre"
+    | "segundoNombre"
+    | "primerApellido"
+    | "segundoApellido"
+    | "numeroDocumento"
+    | "numeroCelular"
+    | "fechaNacimiento"
+    | "ciudadResidencia"
+    | "direccionResidencia"
+  >
+>;
+
+// 👇 Estructura esperada desde buildSolicitudState(row)
+type MotosState = {
+  A?: any | null;
+  B?: any | null;
+  seleccionada?: any | null; // cuando viene solo una elegida
+};
+type IncomingCotizacionState = {
+  cotizacionId?: number;
+  clienteForForm?: ClienteForForm;
+  motos?: MotosState;
+  comercial?: any;
+  raw?: any; // payload completo original de la cotización (si lo envías)
+  motoSeleccion?: "A" | "B" | ""; // en caso de que se haya elegido en la pantalla anterior
+};
+
+/* ============================ Reglas/regex ============================ */
 const soloLetras = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s.'-]+$/;
 const soloDigitos = /^[0-9]+$/;
 const celularRegex = /^[0-9]{7,10}$/;
 
+// helper para serializar sin undefined
+const safeJSONString = (obj: any) => {
+  try {
+    return JSON.stringify(obj ?? null);
+  } catch {
+    return "{}";
+  }
+};
+
+// extraer posibles datos de moto desde location.state
+const pickMotoFromState = (incoming?: IncomingCotizacionState | null) => {
+  const sel = incoming?.motos?.seleccionada ?? null;
+  // intentamos varios nombres comunes
+  const numero_chasis =
+    sel?.numero_chasis ?? sel?.chasis ?? sel?.vin ?? sel?.numeroChasis ?? "";
+  const numero_motor =
+    sel?.numero_motor ?? sel?.motor ?? sel?.numeroMotor ?? "";
+  const color = sel?.color ?? "";
+  const placa = sel?.placa ?? "";
+  return {
+    numero_chasis: String(numero_chasis || ""),
+    numero_motor: String(numero_motor || ""),
+    color: String(color || ""),
+    placa: String(placa || ""),
+  };
+};
+
 const SolicitudForm: React.FC = () => {
-  const { id } = useParams<{ id: string }>(); // <- este es el codigo_credito
-  const { mutate: registrar, isPending } = useRegistrarSolicitudFacturacion();
- const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>(); // <- id de la cotización
+  const navigate = useNavigate();
+  const { mutate: registrar, isPending } = useRegistrarProcesoContado();
+
+  // ⬇️ Recibir TODO lo que venga desde navigate(..., { state })
+  const location = useLocation();
+  const incoming = (location.state as IncomingCotizacionState) || {};
+  const clienteForForm = incoming?.clienteForForm;
+
+  // "semilla" de moto desde location para poder consultar proceso_contado
+  const motoSeed = React.useMemo(() => pickMotoFromState(incoming), [incoming]);
+
   const {
     control,
     handleSubmit,
@@ -58,35 +126,103 @@ const SolicitudForm: React.FC = () => {
     },
   });
 
+  // Prefill SOLO datos de cliente si llegaron por state (no tocamos los campos de producto)
+  React.useEffect(() => {
+    if (!clienteForForm) return;
+    reset((prev) => ({
+      ...prev,
+      primerNombre: clienteForForm.primerNombre ?? "",
+      segundoNombre: clienteForForm.segundoNombre ?? "",
+      primerApellido: clienteForForm.primerApellido ?? "",
+      segundoApellido: clienteForForm.segundoApellido ?? "",
+      numeroDocumento: clienteForForm.numeroDocumento ?? "",
+      numeroCelular: clienteForForm.numeroCelular ?? "",
+      fechaNacimiento: clienteForForm.fechaNacimiento ?? "",
+      ciudadResidencia: clienteForForm.ciudadResidencia ?? "",
+      direccionResidencia: clienteForForm.direccionResidencia ?? "",
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clienteForForm]);
+
+  // Prefill de producto con lo que venga en location.state (solo si hay algo)
+  React.useEffect(() => {
+    const hasSeed =
+      (motoSeed.numero_chasis && motoSeed.numero_chasis.length > 0) ||
+      (motoSeed.numero_motor && motoSeed.numero_motor.length > 0) ||
+      (motoSeed.color && motoSeed.color.length > 0) ||
+      (motoSeed.placa && motoSeed.placa.length > 0);
+    if (!hasSeed) return;
+    reset((prev) => ({
+      ...prev,
+      numeroChasis: motoSeed.numero_chasis || prev.numeroChasis,
+      numeroMotor: motoSeed.numero_motor || prev.numeroMotor,
+      color: motoSeed.color || prev.color,
+      placa: motoSeed.placa || prev.placa,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [motoSeed.numero_chasis, motoSeed.numero_motor, motoSeed.color, motoSeed.placa]);
+
+  // ==================== Consultar proceso_contado ====================
+  // También observamos lo que el usuario escriba, por si quiere buscar con datos distintos
+
+  const cotizacionId = React.useMemo(
+    () => (id ? Number(id) : incoming?.cotizacionId ?? undefined),
+    [id, incoming?.cotizacionId]
+  );
+const { data: pcData, isFetching: pcLoading } =
+  useGetProcesoContadoPorCotizacionYMoto({
+    cotizacion_id: cotizacionId,
+  });
+
+
+console.log("sss", pcData);
+
+  // Aplicar autocompletado UNA sola vez cuando pcData llega
+  const didAutofillRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!pcData || didAutofillRef.current) return;
+
+    // mapear del API -> inputs del form
+    reset((prev) => ({
+      ...prev,
+      primerNombre: pcData.primer_nombre ?? prev.primerNombre,
+      segundoNombre: pcData.segundo_nombre ?? prev.segundoNombre,
+      primerApellido: pcData.primer_apellido ?? prev.primerApellido,
+      segundoApellido: pcData.segundo_apellido ?? prev.segundoApellido,
+      numeroDocumento: pcData.numero_documento ?? prev.numeroDocumento,
+      numeroCelular: pcData.numero_celular ?? prev.numeroCelular,
+      fechaNacimiento: pcData.fecha_nacimiento ?? prev.fechaNacimiento,
+      ciudadResidencia: pcData.ciudad_residencia ?? prev.ciudadResidencia,
+      direccionResidencia: pcData.direccion_residencia ?? prev.direccionResidencia,
+      numeroChasis: pcData.numero_chasis ?? prev.numeroChasis,
+      numeroMotor: pcData.numero_motor ?? prev.numeroMotor,
+      placa: pcData.placa ?? prev.placa,
+      color: pcData.color ?? prev.color,
+    }));
+
+    didAutofillRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pcData]);
+
   // ============================ Submit ============================
   const onSubmit = (values: SolicitudFormValues) => {
     const fd = new FormData();
 
-    // Campos EXACTOS (snake_case) + codigo_credito (id)
-    if (id) {
-      fd.append("id_cotizacion", String(id));  // <-- mismo id para id_cotizacion
-    }
-
-      // NEW -> activa la actualización de cotizaciones.is_state = 2 en el backend
-  fd.append("is_act", "2");
-  
+    if (id) fd.append("id_cotizacion", String(id));
+    fd.append("is_act", "2");
     fd.append("agencia", "Motos");
-    // fd.append("codigo_solicitud", "Motos");
-    // 1) Construir el nombre completo sin espacios extra
+
     const nombreCliente = [
       values.primerNombre,
       values.segundoNombre,
       values.primerApellido,
       values.segundoApellido,
     ]
-      .map(v => (v ?? "").trim())   // limpia extremos
-      .filter(Boolean)               // elimina vacíos
-      .join(" ")                     // une con un espacio
-      .replace(/\s+/g, " ");         // colapsa espacios múltiples
-
-    // 2) Agregar al FormData con la clave que espera el backend
+      .map((v) => (v ?? "").trim())
+      .filter(Boolean)
+      .join(" ")
+      .replace(/\s+/g, " ");
     fd.append("nombre_cliente", nombreCliente);
-
 
     fd.append("numero_documento", values.numeroDocumento.trim());
     fd.append("numero_celular", values.numeroCelular.trim());
@@ -100,11 +236,37 @@ const SolicitudForm: React.FC = () => {
     fd.append("color", (values.color ?? "").trim());
     fd.append("tipo_solicitud", "Contado");
 
+    // Payloads extra que ya tenías
+    fd.append(
+      "cotizacion_payload",
+      safeJSONString({
+        cotizacionId: incoming?.cotizacionId ?? (id ? Number(id) : null),
+        comercial: incoming?.comercial ?? null,
+        motos: incoming?.motos ?? null,
+        motoSeleccion: incoming?.motoSeleccion ?? null,
+      })
+    );
+    if (incoming?.motos?.seleccionada) {
+      fd.append("moto_seleccionada", safeJSONString(incoming.motos.seleccionada));
+    }
+    if (incoming?.raw) {
+      fd.append("cotizacion_raw", safeJSONString(incoming.raw));
+    }
+    if (incoming?.clienteForForm) {
+      fd.append("cliente_from_state", safeJSONString(incoming.clienteForForm));
+    }
 
+    // ✅ Aquí capturamos la respuesta para tomar el "codigo" y navegar
     registrar(fd, {
-      onSuccess: () => {
-        reset(); // limpia cuando la API responde OK
-          navigate(`/cotizaciones`); // navega a la vista de solicitudes
+      onSuccess: (resp: any) => {
+        const codigo = resp?.codigo;
+        if (codigo) {
+          reset();
+          navigate(`/cotizaciones/facturacion/${encodeURIComponent(codigo)}`);
+        } else {
+          reset();
+          navigate(`/cotizaciones`);
+        }
       },
     });
   };
@@ -118,11 +280,18 @@ const SolicitudForm: React.FC = () => {
         <h2 className="text-xl md:text-2xl font-semibold">Diligencie la siguiente información</h2>
       </div>
 
+      {/* Puedes mostrar un pequeño estado mientras busca en proceso_contado */}
+      {pcLoading && (
+        <div className="alert alert-info mb-3">Buscando datos previos del cliente y la moto…</div>
+      )}
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         {/* ================== Información del cliente ================== */}
         <section className="rounded-xl border border-gray-300 bg-base-100 shadow-sm">
           <div className="border-b bg-sky-500 overflow-hidden rounded-t-2xl border-gray-300 px-4 py-3 md:px-6">
-            <h3 className="text-lg md:text-xl font-semibold text-center text-white">Información del cliente</h3>
+            <h3 className="text-lg md:text-xl font-semibold text-center text-white">
+              Información del cliente
+            </h3>
           </div>
 
           <div className={`p-4 md:p-6 ${grid}`}>
@@ -211,7 +380,9 @@ const SolicitudForm: React.FC = () => {
         {/* ================== Información del producto ================== */}
         <section className="rounded-2xl border border-gray-300 bg-base-100 shadow-sm">
           <div className="border-b bg-sky-500 overflow-hidden rounded-t-2xl border-gray-300 px-4 py-3 md:px-6">
-            <h3 className="text-lg md:text-xl font-semibold text-center text-white">Información del producto</h3>
+            <h3 className="text-lg md:text-xl font-semibold text-center text-white">
+              Información del producto
+            </h3>
           </div>
 
           <div className={`p-4 md:p-6 ${grid}`}>
@@ -265,6 +436,7 @@ const SolicitudForm: React.FC = () => {
               type="submit"
               className="btn btn-success"
               disabled={!isValid || isSubmitting || isPending}
+              onClick={handleSubmit(onSubmit)}
             >
               Aceptar
             </button>

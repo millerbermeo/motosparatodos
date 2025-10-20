@@ -29,13 +29,15 @@ export const MENU_ESTATICO: MenuItem[] = [
     orden: 8,
     children: [
       { nombre: "Cumpleaños", ruta: "/happy", icono: "Gift", requireModule: "Alertas", orden: 1 },
-      { nombre: "Soat", ruta: "/soat", icono: "Shield", requireModule: "Alertas", orden: 2 },
-      { nombre: "Revisiones", ruta: "/revisiones", icono: "Wrench", requireModule: "Alertas", orden: 3 },
+      // { nombre: "Soat", ruta: "/soat", icono: "Shield", requireModule: "Alertas", orden: 2 },
+      // { nombre: "Revisiones", ruta: "/revisiones", icono: "Wrench", requireModule: "Alertas", orden: 3 },
     ],
   },
 
-  { nombre: "Reportes", ruta: "/reportes", icono: "FileText", requireModule: "Reportes", orden: 9 },
-  { nombre: "Usuarios", ruta: "/usuarios", icono: "User", requireModule: "Usuarios", orden: 10 },
-  { nombre: "Formatos", ruta: "/formatos", icono: "FileType", requireModule: "Formatos", orden: 11 },
-  { nombre: "Ayuda", ruta: "/ayuda", icono: "HelpCircle", requireModule: "Ayuda", orden: 12 },
+    { nombre: "Garantia Extendida", ruta: "/garantia", icono: "ShieldCheck", requireModule: "Cotizaciones", orden: 9 },
+
+  { nombre: "Reportes", ruta: "/reportes", icono: "FileText", requireModule: "Reportes", orden: 10 },
+  { nombre: "Usuarios", ruta: "/usuarios", icono: "User", requireModule: "Usuarios", orden: 11 },
+  { nombre: "Formatos", ruta: "/formatos", icono: "FileType", requireModule: "Formatos", orden: 12 },
+  { nombre: "Ayuda", ruta: "/ayuda", icono: "HelpCircle", requireModule: "Ayuda", orden: 13 },
 ];

@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { FormInput } from "../../../shared/components/FormInput";
 import { useCerrarCredito } from "../../../services/creditosServices";
 import Swal from "sweetalert2";
+import { useNavigate } from "react-router-dom";
 
 export type CerrarCreditoValues = {
   cerrar_credito: boolean;
@@ -40,9 +41,9 @@ const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito }) => {
   });
 
   const enabled = watch("cerrar_credito");
+  const navigate = useNavigate();
 
   const onSubmit = async (values: CerrarCreditoValues) => {
-    // Normalización rápida
     const payload = {
       numero_chasis: values.numero_chasis.trim().toUpperCase() || null,
       numero_motor: values.numero_motor.trim().toUpperCase() || null,
@@ -51,18 +52,18 @@ const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito }) => {
       capacidad: values.capacidad.replace(/\s+/g, " ").trim() || null,
     };
 
-    await Swal.fire({
+    const result = await Swal.fire({
       title: "¿Guardar cierre de crédito?",
       html: `
-        <div style="text-align:left;font-size:13px;line-height:1.35">
-          <b>Código:</b> ${String(codigo_credito)}<br/>
-          <b>Chasis:</b> ${payload.numero_chasis ?? "(vacío)"}<br/>
-          <b>Motor:</b> ${payload.numero_motor ?? "(vacío)"}<br/>
-          <b>Placa:</b> ${payload.placa ?? "(vacío)"}<br/>
-          <b>Color:</b> ${payload.color ?? "(vacío)"}<br/>
-          <b>Capacidad:</b> ${payload.capacidad ?? "(vacío)"}
-        </div>
-      `,
+      <div style="text-align:left;font-size:13px;line-height:1.35">
+        <b>Código:</b> ${String(codigo_credito)}<br/>
+        <b>Chasis:</b> ${payload.numero_chasis ?? "(vacío)"}<br/>
+        <b>Motor:</b> ${payload.numero_motor ?? "(vacío)"}<br/>
+        <b>Placa:</b> ${payload.placa ?? "(vacío)"}<br/>
+        <b>Color:</b> ${payload.color ?? "(vacío)"}<br/>
+        <b>Capacidad:</b> ${payload.capacidad ?? "(vacío)"}
+      </div>
+    `,
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "Sí, guardar",
@@ -71,11 +72,7 @@ const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito }) => {
       allowOutsideClick: () => !Swal.isLoading(),
       preConfirm: async () => {
         try {
-          // usa mutateAsync para esperar dentro del modal
-          await cerrar.mutateAsync({
-            codigo_credito,
-            payload,
-          });
+          await cerrar.mutateAsync({ codigo_credito, payload });
         } catch (err: any) {
           Swal.showValidationMessage(
             err?.response?.data?.message || "No se pudo actualizar"
@@ -84,7 +81,20 @@ const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito }) => {
         }
       },
     });
-    // El hook ya muestra swal de éxito/errores; no hace falta más aquí.
+
+    // Si el usuario confirmó y la mutación fue OK:
+    if (result.isConfirmed) {
+      await Swal.fire({
+        icon: "success",
+        title: "Crédito cerrado",
+        text: "Se guardó la información del cierre.",
+        timer: 1500,
+        showConfirmButton: false,
+        willClose: () => navigate("/creditos"),
+      });
+      // Fallback, por si el willClose no dispara (navega igual):
+      navigate("/creditos");
+    }
   };
 
   return (
@@ -93,7 +103,7 @@ const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito }) => {
       <div className="flex items-center justify-between border-b border-success pb-2">
         <label className="label cursor-pointer gap-2">
           <input
-          disabled
+            disabled
             type="checkbox"
             className="checkbox checkbox-success"
             checked={enabled}
@@ -200,7 +210,7 @@ const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito }) => {
           <button
             className="btn btn-ghost"
             type="button"
-            // onClick={() => window.history.back()}
+          // onClick={() => window.history.back()}
           >
             Cancelar
           </button>

@@ -159,6 +159,8 @@ export interface ServerError {
  *   const { mutate: registrar, isPending } = useRegistrarSolicitudFacturacion();
  *   registrar(formData);
  */
+
+
 export const useRegistrarSolicitudFacturacion = (
   opts?: {
     /** Permitir sobreescribir el endpoint si lo necesitas */
@@ -207,7 +209,41 @@ export const useRegistrarSolicitudFacturacion = (
 };
 
 
+export const useRegistrarSolicitudFacturacion2 = (opts?: { endpoint?: string }) => {
+  const qc = useQueryClient();
 
+  return useMutation<RegistrarSolicitudResponse, AxiosError<ServerError>, FormData>({
+    mutationFn: async (formData) => {
+      const { data } = await api.post<RegistrarSolicitudResponse>(
+        opts?.endpoint ?? "/crear_solicitud_facturacion.php",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+      return data;
+    },
+    onSuccess: async (resp /*, formData */) => {
+      // ✅ Sin uso de codigo_credito
+      await qc.invalidateQueries({ queryKey: ["solicitudes-facturacion"] });
+
+      const texto =
+        Array.isArray(resp?.message) ? resp.message.join("\n") :
+        resp?.message ?? "Solicitud de facturación registrada correctamente";
+
+      Swal.fire({
+        icon: "success",
+        title: "Solicitud registrada",
+        text: texto,
+        timer: 1600,
+        showConfirmButton: false,
+      });
+    },
+    onError: (error) => {
+           const raw = error.response?.data?.message ?? "No se pudo registrar la solicitud";
+      const arr = Array.isArray(raw) ? raw : [raw];
+      Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
+    },
+  });
+};
 
 export const useSolicitudesPorCodigoCredito = (codigoCredito: string | number) => {
   return useQuery<SolicitudFacturacion[], AxiosError>({
