@@ -120,24 +120,24 @@ const buildSolicitudState = (row: any) => {
 
     const motoA = showA
         ? {
-            modelo: modeloMoto(row, 'a'),
-            ...buildMotoCalc(row, 'a'),
-            foto: safe(row?.foto_a) || undefined,
-            marca: safe(row?.marca_a) || undefined,
-            linea: safe(row?.linea_a) || undefined,
-            garantiaExtendidaMeses: Number(row?.garantia_extendida_a) || undefined,
-        }
+              modelo: modeloMoto(row, 'a'),
+              ...buildMotoCalc(row, 'a'),
+              foto: safe(row?.foto_a) || undefined,
+              marca: safe(row?.marca_a) || undefined,
+              linea: safe(row?.linea_a) || undefined,
+              garantiaExtendidaMeses: Number(row?.garantia_extendida_a) || undefined,
+          }
         : null;
 
     const motoB = showB
         ? {
-            modelo: modeloMoto(row, 'b'),
-            ...buildMotoCalc(row, 'b'),
-            foto: safe(row?.foto_b) || undefined,
-            marca: safe(row?.marca_b) || undefined,
-            linea: safe(row?.linea_b) || undefined,
-            garantiaExtendidaMeses: Number(row?.garantia_extendida_b) || undefined,
-        }
+              modelo: modeloMoto(row, 'b'),
+              ...buildMotoCalc(row, 'b'),
+              foto: safe(row?.foto_b) || undefined,
+              marca: safe(row?.marca_b) || undefined,
+              linea: safe(row?.linea_b) || undefined,
+              garantiaExtendidaMeses: Number(row?.garantia_extendida_b) || undefined,
+          }
         : null;
 
     // Comercial
@@ -158,7 +158,6 @@ const buildSolicitudState = (row: any) => {
         raw: row, // por si la vista de solicitudes quiere acceder a todo lo demás
     };
 };
-
 
 /* =======================
    Motos helpers
@@ -222,20 +221,25 @@ const buildMotoCalc = (row: any, side: 'a' | 'b'): MotoCalc => {
 
     const segurosJson = row?.[`seguros${sfx}`];
     const segurosFromJson = sumSegurosFromJson(segurosJson);
-    const seguros = typeof segurosFromJson === 'number'
-        ? segurosFromJson
-        : (Number(row?.[`seguro_vida${sfx}`]) || 0) +
-        (Number(row?.[`seguro_mascota_s${sfx}`]) || 0) +
-        (Number(row?.[`seguro_mascota_a${sfx}`]) || 0) +
-        (Number(row?.[`otro_seguro${sfx}`]) || 0);
+    const seguros =
+        typeof segurosFromJson === 'number'
+            ? segurosFromJson
+            : (Number(row?.[`seguro_vida${sfx}`]) || 0) +
+              (Number(row?.[`seguro_mascota_s${sfx}`]) || 0) +
+              (Number(row?.[`seguro_mascota_a${sfx}`]) || 0) +
+              (Number(row?.[`otro_seguro${sfx}`]) || 0);
 
-    const gStr = String(row?.[`garantia${sfx}`] ?? '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+    const gStr = String(row?.[`garantia${sfx}`] ?? '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '');
     const garantia = gStr === 'si' || gStr === 'sí' || gStr === 'true' || gStr === '1';
 
-    const totalSinSeguros = Number(row?.[`total_sin_seguros${sfx}`]) ||
-        (precioBase + precioDocumentos + accesoriosYMarcacion - descuentos);
+    const totalSinSeguros =
+        Number(row?.[`total_sin_seguros${sfx}`]) ||
+        precioBase + precioDocumentos + accesoriosYMarcacion - descuentos;
 
-    const total = Number(row?.[`precio_total${sfx}`]) || (totalSinSeguros + seguros);
+    const total = Number(row?.[`precio_total${sfx}`]) || totalSinSeguros + seguros;
 
     const cuotaInicial = Number(row?.[`cuota_inicial${sfx}`]) || 0;
 
@@ -269,12 +273,12 @@ const DetalleCambiarEstado: React.FC = () => {
     const [comentario2, setComentario2] = React.useState<string>('');
     const [loading, setLoading] = useState(false);
 
-    // NUEVO: selección de moto cuando es "Solicitar facturación"
+    // Selección de moto para facturación / crédito / crédito express
     const [motoSeleccion, setMotoSeleccion] = React.useState<'' | 'A' | 'B'>('');
 
     // ⬇️ Redirigir si la cotización ya está marcada para facturación (is_state = 1)
     React.useEffect(() => {
-        if (isLoading) return;     // espera a que termine la carga
+        if (isLoading) return; // espera a que termine la carga
         if (!row || !id) return;
 
         const isState = Number((row as any).is_state ?? 0);
@@ -290,16 +294,14 @@ const DetalleCambiarEstado: React.FC = () => {
                 navigate(`/solicitudes/${id}`, {
                     state: buildSolicitudState(row),
                 });
-
             });
         }
     }, [row, id, isLoading, navigate]);
 
-
     React.useEffect(() => {
         if (!row) return;
         const preEstado = typeof row?.estado === 'string' ? row.estado.trim() : '';
-        const labelsValidos = new Set(opcionesEstados(row).map(o => o.label));
+        const labelsValidos = new Set(opcionesEstados(row).map((o) => o.label));
         setEstadoNombre(preEstado && labelsValidos.has(preEstado) ? preEstado : '');
         setComentario2(safeText(row?.comentario2) || '');
     }, [row]);
@@ -313,6 +315,13 @@ const DetalleCambiarEstado: React.FC = () => {
             .trim()
             .toLowerCase() === 'solicitar credito';
 
+    const esSolicitarCreditoExpress = (s?: string) =>
+        (s || '')
+            .normalize('NFD')
+            .replace(/\p{Diacritic}/gu, '')
+            .trim()
+            .toLowerCase() === 'solicitar credito express';
+
     const esSolicitarFacturacion = (s?: string) =>
         (s || '')
             .normalize('NFD')
@@ -320,10 +329,14 @@ const DetalleCambiarEstado: React.FC = () => {
             .trim()
             .toLowerCase() === 'solicitar facturacion';
 
-    // Cuando cambia el estado, si es "Solicitar facturación", proponemos una moto por defecto
+    // Estados que requieren seleccionar moto y ocultan comentario
+    const requiereSeleccionMoto = (s?: string) =>
+        esSolicitarFacturacion(s) || esSolicitarCredito(s) || esSolicitarCreditoExpress(s);
+
+    // Cuando cambia el estado, si requiere moto, proponemos una por defecto
     React.useEffect(() => {
         if (!row) return;
-        if (esSolicitarFacturacion(estadoNombre)) {
+        if (requiereSeleccionMoto(estadoNombre)) {
             const tieneA = hasMoto(row, 'a');
             const tieneB = hasMoto(row, 'b');
             if (tieneA) setMotoSeleccion('A');
@@ -336,109 +349,122 @@ const DetalleCambiarEstado: React.FC = () => {
     }, [estadoNombre, row]);
 
     // Submit
-const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  if (!id) return;
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!id) return;
 
-  if (!estadoNombre) {
-    Swal.fire({ icon: "warning", title: "Selecciona un estado" });
-    return;
-  }
+        if (!estadoNombre) {
+            Swal.fire({ icon: 'warning', title: 'Selecciona un estado' });
+            return;
+        }
 
-  // Validaciones según estado
-  if (esSolicitarFacturacion(estadoNombre)) {
-    // Facturación: NO comentario, SÍ seleccionar moto si hay A/B
-    const tieneA = hasMoto(row, "a");
-    const tieneB = hasMoto(row, "b");
-    const hayMotos = tieneA || tieneB;
-    if (hayMotos && !motoSeleccion) {
-      Swal.fire({ icon: "warning", title: "Selecciona la motocicleta" });
-      return;
-    }
+        const tieneA = hasMoto(row, 'a');
+        const tieneB = hasMoto(row, 'b');
+        const hayMotos = tieneA || tieneB;
 
-    const safe = (v: any) => (v === null || v === undefined ? "" : String(v).trim());
-    const motoSel =
-      motoSeleccion === "A"
-        ? {
-            modelo: modeloMoto(row, "a"),
-            ...buildMotoCalc(row, "a"),
-            foto: safe(row?.foto_a) || undefined,
-            marca: safe(row?.marca_a) || undefined,
-            linea: safe(row?.linea_a) || undefined,
-            garantiaExtendidaMeses: Number(row?.garantia_extendida_a) || undefined,
-          }
-        : motoSeleccion === "B"
-        ? {
-            modelo: modeloMoto(row, "b"),
-            ...buildMotoCalc(row, "b"),
-            foto: safe(row?.foto_b) || undefined,
-            marca: safe(row?.marca_b) || undefined,
-            linea: safe(row?.linea_b) || undefined,
-            garantiaExtendidaMeses: Number(row?.garantia_extendida_b) || undefined,
-          }
-        : null;
+        // validación común para estados que requieren selección de moto
+        if (requiereSeleccionMoto(estadoNombre) && hayMotos && !motoSeleccion) {
+            Swal.fire({ icon: 'warning', title: 'Selecciona la motocicleta' });
+            return;
+        }
 
-    // SOLO navegar (sin PUT) para facturación
-    await Swal.fire({
-      icon: "info",
-      title: "Abrir solicitud de facturación",
-      text: "Te llevaremos al registro para facturar.",
-      timer: 1200,
-      showConfirmButton: false,
-    });
+        const safe = (v: any) => (v === null || v === undefined ? '' : String(v).trim());
+        const motoSel =
+            motoSeleccion === 'A'
+                ? {
+                      modelo: modeloMoto(row, 'a'),
+                      ...buildMotoCalc(row, 'a'),
+                      foto: safe(row?.foto_a) || undefined,
+                      marca: safe(row?.marca_a) || undefined,
+                      linea: safe(row?.linea_a) || undefined,
+                      garantiaExtendidaMeses: Number(row?.garantia_extendida_a) || undefined,
+                  }
+                : motoSeleccion === 'B'
+                ? {
+                      modelo: modeloMoto(row, 'b'),
+                      ...buildMotoCalc(row, 'b'),
+                      foto: safe(row?.foto_b) || undefined,
+                      marca: safe(row?.marca_b) || undefined,
+                      linea: safe(row?.linea_b) || undefined,
+                      garantiaExtendidaMeses: Number(row?.garantia_extendida_b) || undefined,
+                  }
+                : null;
 
-    navigate(`/solicitudes/${id}`, {
-      state: {
-        ...buildSolicitudState(row),
-        motoSeleccion,
-        motos: { seleccionada: motoSel },
-      },
-    });
-    return;
-  }
+        // FACTURACIÓN: SOLO navegar (sin PUT)
+        if (esSolicitarFacturacion(estadoNombre)) {
+            await Swal.fire({
+                icon: 'info',
+                title: 'Abrir solicitud de facturación',
+                text: 'Te llevaremos al registro para facturar.',
+                timer: 1200,
+                showConfirmButton: false,
+            });
 
-  // Para los demás (incluye Solicitar crédito): comentario obligatorio
-  if (!comentario2.trim()) {
-    Swal.fire({ icon: "warning", title: "Escribe un comentario" });
-    return;
-  }
+            navigate(`/solicitudes/${id}`, {
+                state: {
+                    ...buildSolicitudState(row),
+                    motoSeleccion,
+                    motos: { seleccionada: motoSel },
+                },
+            });
+            return;
+        }
 
-  // 🔁 “Solicitar crédito” y el resto SÍ hacen PUT
-  try {
-    setLoading(true);
+        // Para otros estados:
+        // - Crédito / Crédito Express: se oculta comentario (no es obligatorio)
+        // - Resto: comentario obligatorio
+        const requiereComentario = !requiereSeleccionMoto(estadoNombre);
+        if (requiereComentario && !comentario2.trim()) {
+            Swal.fire({ icon: 'warning', title: 'Escribe un comentario' });
+            return;
+        }
 
-    const resp = await api.put("/actualizar_cotizacion.php", {
-      id: Number(id),
-      estado: estadoNombre, // el backend recibe el NOMBRE del estado
-      comentario2: comentario2.trim(),
-      nombre_usuario: user?.name || "Desconocido",
-      rol_usuario: user?.rol || "Usuario",
-    });
+        try {
+            setLoading(true);
 
-    const codigoCredito: string | undefined =
-      resp?.data?.codigo_credito ?? resp?.data?.data?.codigo_credito;
+            const payload: any = {
+                id: Number(id),
+                estado: estadoNombre, // el backend recibe el NOMBRE del estado
+                comentario2: requiereComentario ? comentario2.trim() : '', // vacío cuando se oculta
+                nombre_usuario: user?.name || 'Desconocido',
+                rol_usuario: user?.rol || 'Usuario',
+            };
 
-    await Swal.fire({
-      icon: "success",
-      title: "Estado actualizado",
-      text: `Nuevo estado: ${estadoNombre}`,
-      timer: 1400,
-      showConfirmButton: false,
-    });
+            // Enviar cuál moto fue elegida cuando aplica
+            if (requiereSeleccionMoto(estadoNombre)) {
+                payload.moto_seleccion = motoSeleccion || null; // 'A' | 'B' | null
+                // opcional: detalles completos de la moto seleccionada
+                payload.moto_detalle = motoSel;
+            }
 
-    if (esSolicitarCredito(estadoNombre) && codigoCredito) {
-      navigate(`/creditos/registrar/${encodeURIComponent(codigoCredito)}`);
-    } else {
-      navigate("/cotizaciones");
-    }
-  } catch (err: any) {
-    const msg = err?.response?.data?.message || "No se pudo actualizar el estado.";
-    Swal.fire({ icon: "error", title: "Error", text: String(msg) });
-  } finally {
-    setLoading(false);
-  }
-};
+            const resp = await api.put('/actualizar_cotizacion.php', payload);
 
+            const codigoCredito: string | undefined =
+                resp?.data?.codigo_credito ?? resp?.data?.data?.codigo_credito;
+
+            await Swal.fire({
+                icon: 'success',
+                title: 'Estado actualizado',
+                text: `Nuevo estado: ${estadoNombre}`,
+                timer: 1400,
+                showConfirmButton: false,
+            });
+
+            // Para ambos: crédito y crédito express
+            if ((esSolicitarCredito(estadoNombre) || esSolicitarCreditoExpress(estadoNombre)) && codigoCredito) {
+                navigate(`/creditos/registrar/${encodeURIComponent(codigoCredito)}`, {
+                    state: { motoSeleccion, motoDetalle: motoSel },
+                });
+            } else {
+                navigate('/cotizaciones');
+            }
+        } catch (err: any) {
+            const msg = err?.response?.data?.message || 'No se pudo actualizar el estado.';
+            Swal.fire({ icon: 'error', title: 'Error', text: String(msg) });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Loading / errores
     if (!id) {
@@ -484,8 +510,7 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 
     // Datos personales
     const nombres = fullName(row);
-    const apellidos =
-        [safeText(row?.last_name), safeText(row?.s_last_name)].filter(Boolean).join(' ') || '—';
+    const apellidos = [safeText(row?.last_name), safeText(row?.s_last_name)].filter(Boolean).join(' ') || '—';
     const email = safeText(row?.email) || '—';
     const telefono = safeText((row as any)?.celular) || '—';
     const estadoActual = safeText(row?.estado) || 'Sin estado';
@@ -498,7 +523,7 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     const motoA = showMotoA ? buildMotoCalc(row, 'a') : undefined;
     const motoB = showMotoB ? buildMotoCalc(row, 'b') : undefined;
 
-    // Opciones de select para motos en facturación
+    // Opciones de select para motos
     const motoOptions: Array<{ key: 'A' | 'B'; label: string }> = [];
     if (showMotoA) motoOptions.push({ key: 'A', label: modeloMoto(row, 'a') });
     if (showMotoB) motoOptions.push({ key: 'B', label: modeloMoto(row, 'b') });
@@ -506,7 +531,7 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     return (
         <main className="w-full min-h-screen px-4 md:px-6 pb-6">
             <section className="w-full mb-6">
-                <div className='pt-4 mb-3'>
+                <div className="pt-4 mb-3">
                     <ButtonLink to="/cotizaciones" label="Volver a cotizaciones" />
                 </div>
             </section>
@@ -583,9 +608,7 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                     {/* Moto A */}
                     {showMotoA && motoA && (
                         <article className="overflow-hidden rounded-xl shadow-sm mb-4">
-                            <header className="px-4 py-2 font-semibold bg-[#3498DB]/70 text-white">
-                                {modeloMoto(row, 'a')}
-                            </header>
+                            <header className="px-4 py-2 font-semibold bg-[#3498DB]/70 text-white">{modeloMoto(row, 'a')}</header>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
                                 <InfoKV label="Precio base:" value={fmtCOP(motoA.precioBase)} />
                                 <InfoKV label="Precio documentos:" value={fmtCOP(motoA.precioDocumentos)} />
@@ -603,9 +626,7 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                     {/* Moto B */}
                     {showMotoB && motoB && (
                         <article className="overflow-hidden rounded-xl shadow-sm">
-                            <header className="px-4 py-2 font-semibold bg-[#3498DB]/70 text-white">
-                                {modeloMoto(row, 'b')}
-                            </header>
+                            <header className="px-4 py-2 font-semibold bg-[#3498DB]/70 text-white">{modeloMoto(row, 'b')}</header>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
                                 <InfoKV label="Precio base:" value={fmtCOP(motoB.precioBase)} />
                                 <InfoKV label="Precio documentos:" value={fmtCOP(motoB.precioDocumentos)} />
@@ -620,14 +641,12 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                         </article>
                     )}
 
-                    {!showMotoA && !showMotoB && (
-                        <div className="text-sm opacity-70">Sin información de motocicletas.</div>
-                    )}
+                    {!showMotoA && !showMotoB && <div className="text-sm opacity-70">Sin información de motocicletas.</div>}
                 </div>
             </section>
 
             {/* Formulario cambiar estado */}
-            {useAuthStore.getState().user?.rol === "Asesor" && (safeText(row?.estado) || 'Sin estado') !== 'Sin interés' && (
+            {useAuthStore.getState().user?.rol === 'Asesor' && (safeText(row?.estado) || 'Sin estado') !== 'Sin interés' && (
                 <section className="card bg-base-100 border border-base-300/60 shadow-sm rounded-2xl">
                     <div className="card-body">
                         <h2 className="card-title text-lg mb-2">Actualizar estado</h2>
@@ -643,7 +662,6 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                                     className="select select-bordered"
                                     value={estadoNombre}
                                     onChange={(e) => setEstadoNombre(e.target.value)}
-
                                 >
                                     {estadoNombre === '' && (
                                         <option value="" disabled>
@@ -652,7 +670,7 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                                     )}
 
                                     {opts.map(({ value, label }) => (
-                                        // OJO: tu backend recibe el NOMBRE, por eso value={label}
+                                        // el backend recibe el NOMBRE, por eso value={label}
                                         <option key={value} value={label}>
                                             {label}
                                         </option>
@@ -660,9 +678,9 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                                 </select>
                             </div>
 
-                            {/* Si es "Solicitar facturación": mostramos select de motos.
-                                En caso contrario: mostramos comentario obligatorio. */}
-                            {esSolicitarFacturacion(estadoNombre) ? (
+                            {/* Mostrar select de moto para facturación / crédito / crédito express.
+                                En caso contrario: mostrar comentario obligatorio. */}
+                            {requiereSeleccionMoto(estadoNombre) ? (
                                 <div className="form-control">
                                     <label className="label w-28">
                                         <span className="label-text">
@@ -675,7 +693,7 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                                         onChange={(e) => setMotoSeleccion(e.target.value as 'A' | 'B' | '')}
                                     >
                                         {motoSeleccion === '' && <option value="" disabled>Seleccionar motocicleta</option>}
-                                        {motoOptions.map(op => (
+                                        {motoOptions.map((op) => (
                                             <option key={op.key} value={op.key}>
                                                 {op.label || (op.key === 'A' ? 'Moto A' : 'Moto B')}
                                             </option>
@@ -695,34 +713,20 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
                                         value={comentario2}
                                         onChange={(e) => setComentario2(e.target.value)}
                                         maxLength={500}
-
                                     />
                                     <div className="text-xs opacity-60 text-right mt-1">{comentario2.length} / 500</div>
                                 </div>
                             )}
 
                             <div className="flex items-center justify-between pt-2">
-                                <button
-                                    type="button"
-                                    className="btn btn-error btn-sm"
-                                    onClick={() => navigate(-1)}
-                                >
+                                <button type="button" className="btn btn-error btn-sm" onClick={() => navigate(-1)}>
                                     ← Volver
                                 </button>
 
-                                <button
-                                    type="submit"
-                                    className="btn btn-success btn-sm"
-                                    disabled={loading}
-                                    aria-busy={loading}
-                                >
+                                <button type="submit" className="btn btn-success btn-sm" disabled={loading} aria-busy={loading}>
                                     {loading ? (
                                         <>
-                                            <span
-                                                className="spinner-border spinner-border-sm me-2"
-                                                role="status"
-                                                aria-hidden="true"
-                                            ></span>
+                                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                                             Procesando...
                                         </>
                                     ) : (

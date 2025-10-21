@@ -8,14 +8,25 @@ import ButtonLink from '../../../shared/components/ButtonLink';
 
 type MaybeNum = number | undefined | null;
 
-const fmtCOP = (v?: MaybeNum) =>
-  typeof v === 'number' && Number.isFinite(v)
-    ? new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      maximumFractionDigits: 0,
-    }).format(v)
-    : (v === 0 ? '0 COP' : ''); // si no existe, vacío; si es 0, muestra 0 COP
+// --- Helpers de formato / casting ---
+const toNum = (v: unknown): number | undefined => {
+  if (typeof v === 'number') return Number.isFinite(v) ? v : undefined;
+  if (typeof v === 'string') {
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : undefined;
+  }
+  return undefined;
+};
+
+const fmtCOP = (v?: MaybeNum | string) => {
+  const num = typeof v === 'string' ? parseFloat(v) : v;
+  if (num === undefined || num === null || isNaN(Number(num)) || Number(num) === 0) return '';
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+  }).format(Number(num));
+};
 
 const safeStr = (v?: unknown) => (typeof v === 'string' ? v : '');
 
@@ -26,20 +37,16 @@ const FacturarCredito: React.FC = () => {
   const { data: datos, isLoading, error } = useCredito({ codigo_credito }, !!codigo_credito);
   const { data: deudor } = useDeudor(codigo_credito);
 
-
-  // ➕ NUEVO: consultar si ya hay solicitud para este crédito
+  // ➕ Consultar si ya hay solicitud para este crédito
   const { data: solicitudesCredito, isLoading: loadingSolic } =
     useSolicitudesPorCodigoCredito(codigo_credito);
   const solicitud = solicitudesCredito?.[0] ?? null;
-
-
-  console.log("ss", solicitud)
 
   // si hay solicitud -> ocultar formulario
   const [yaRegistrada, setYaRegistrada] = useState(false);
   useEffect(() => { setYaRegistrada(!!solicitud); }, [solicitud]);
 
-  // -------------------- NUEVO: estado del formulario --------------------
+  // -------------------- Estado del formulario --------------------
   const [distribuidora, setDistribuidora] = useState<string>("");
   const [numeroRecibo, setNumeroRecibo] = useState<string>("");
   const [observaciones, setObservaciones] = useState<string>("");
@@ -54,14 +61,10 @@ const FacturarCredito: React.FC = () => {
 
   const { mutate: registrarSolicitud, isPending } = useRegistrarSolicitudFacturacion();
 
-
   // Hook/función para enviar al backend (reemplaza por tu hook real .mutate(fd))
   const submitFormData = (fd: FormData) => {
-    // 👉 Reemplaza esto por tu hook ya hecho, por ejemplo:
-    // enviarFactura.mutate(fd)
     registrarSolicitud(fd);
   };
-  // ----------------------------------------------------------------------
 
   // Fuente de verdad (mismo criterio que usas en otras vistas)
   const deudorData = (deudor as any)?.data ?? (datos as any)?.data ?? {};
@@ -80,17 +83,15 @@ const FacturarCredito: React.FC = () => {
   const clienteCorreo = safeStr(deudorData?.informacion_personal?.email);
 
   // --- Moto ---
-  const motoNombre = safeStr(credito?.producto); // p.ej. "Kymco Agility Fusion"
+  const motoNombre = safeStr(credito?.producto);
   const numMotor = safeStr(credito?.numero_motor);
   const numChasis = safeStr(credito?.numero_chasis);
   const color = safeStr((credito as any)?.color);
 
   // --- Costos base ---
-  const valorMoto: number | undefined =
-    typeof credito?.valor_producto === 'number' ? credito?.valor_producto : undefined;
+  const valorMoto: number | undefined = toNum(credito?.valor_producto);
 
   // Si hay valorMoto, calculamos bruto + IVA para la primera tabla "Condiciones del negocio".
-  // Tomamos el bruto como valorMoto / 1.19 (redondeo a entero) y el IVA como diferencia.
   const { valorBruto, ivaCalc } = useMemo(() => {
     if (typeof valorMoto === 'number' && Number.isFinite(valorMoto) && valorMoto > 0) {
       const bruto = Math.round(valorMoto / 1.19);
@@ -100,16 +101,35 @@ const FacturarCredito: React.FC = () => {
     return { valorBruto: undefined, ivaCalc: undefined };
   }, [valorMoto]);
 
-  // Extras opcionales (si no existen, se dejan vacíos)
-  const soat: MaybeNum = (credito as any)?.soat;
-  const matricula: MaybeNum = (credito as any)?.matricula;
-  const impuestos: MaybeNum = (credito as any)?.impuestos;
-  const accesoriosYSeguros: MaybeNum = (credito as any)?.accesorios || (credito as any)?.seguros_accesorios;
+  // --- Documentos / extras del backend (vienen como string) ---
+  const soat: MaybeNum = toNum((credito as any)?.soat);
+  const matricula: MaybeNum = toNum((credito as any)?.matricula);
+  const impuestos: MaybeNum = toNum((credito as any)?.impuestos);
 
-  // TOTAL general (si alguno no existe, no rompe; suma solo los numéricos)
+  // --- Seguros y accesorios (nuevos campos del backend) ---
+  const accesoriosTotal: MaybeNum = toNum((credito as any)?.accesorios_total);
+  const precioSeguros: MaybeNum = toNum((credito as any)?.precio_seguros);
+
+  // Usaremos "Seguros y accesorios" como la suma de accesorios + seguros (sin garantía extendida)
+  const accesoriosYSeguros: MaybeNum = useMemo(() => {
+    const a = typeof accesoriosTotal === 'number' ? accesoriosTotal : 0;
+    const s = typeof precioSeguros === 'number' ? precioSeguros : 0;
+    const sum = a + s;
+    return sum > 0 ? sum : undefined;
+  }, [accesoriosTotal, precioSeguros]);
+
+  // Subtotal documentos (SOAT + Matrícula + Impuestos)
+  const subtotalDocumentos: MaybeNum = useMemo(() => {
+    const parts = [soat, matricula, impuestos].filter(
+      (n): n is number => typeof n === 'number' && Number.isFinite(n) && n > 0
+    );
+    return parts.length ? parts.reduce((a, b) => a + b, 0) : undefined;
+  }, [soat, matricula, impuestos]);
+
+  // TOTAL general
   const totalGeneral: number | undefined = useMemo(() => {
     const parts = [valorMoto, soat, matricula, impuestos, accesoriosYSeguros].filter(
-      (n): n is number => typeof n === 'number' && Number.isFinite(n)
+      (n): n is number => typeof n === 'number' && Number.isFinite(n) && n > 0
     );
     return parts.length ? parts.reduce((a, b) => a + b, 0) : undefined;
   }, [valorMoto, soat, matricula, impuestos, accesoriosYSeguros]);
@@ -119,19 +139,18 @@ const FacturarCredito: React.FC = () => {
   const numeroSolicitud = credito?.id ?? credito?.codigo_credito ?? credito?.codigo_credito ?? codigo_credito;
 
   // Observaciones (cuota inicial y saldo)
-  const cuotaInicial: MaybeNum = typeof (credito as any)?.cuota_inicial === 'number' ? (credito as any)?.cuota_inicial : undefined;
+  const cuotaInicial: MaybeNum = toNum((credito as any)?.cuota_inicial);
   const saldoFinanciar: number | undefined =
     typeof valorMoto === 'number'
       ? Math.max(valorMoto - (typeof cuotaInicial === 'number' ? cuotaInicial : 0), 0)
       : undefined;
 
   // Garantía extendida (si existe)
-  const garantiaExtendida: MaybeNum = (credito as any)?.garantia_extendida_valor;
+  const garantiaExtendida: MaybeNum = toNum((credito as any)?.garantia_extendida_valor);
 
   // -------------------- Listas pedidas --------------------
   const AGENCIAS = ["Sucursal Norte", "Sucursal Centro", "Sucursal Sur"];
 
-  // Encima del componente (o fuera del return)
   const DISTRIBUIDORAS = [
     { value: "", label: "Seleccione…" },
     { value: "gente-motos", label: "Gente Motos" },
@@ -154,17 +173,12 @@ const FacturarCredito: React.FC = () => {
     { value: "megamotos-akt", label: "Megamotos AKT" },
   ];
 
-  // -------------------- Submit: armar FormData como en Postman --------------------
+  // -------------------- Submit --------------------
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
 
-    // Agencia aleatoria
     const agenciaRandom = AGENCIAS[Math.floor(Math.random() * AGENCIAS.length)];
-
-    // Distribuidora: mandamos el label (texto visible)
     const distLabel = DISTRIBUIDORAS.find(d => d.value === distribuidora)?.label ?? "";
-
-    // Código de solicitud: 4 cifras
     const codigo4 = String(Math.floor(1000 + Math.random() * 9000)); // 1000..9999
 
     const fd = new FormData();
@@ -176,7 +190,7 @@ const FacturarCredito: React.FC = () => {
     fd.append('nombre_cliente', clienteNombre);
     fd.append('tipo_solicitud', 'Crédito directo');
     fd.append('numero_recibo', numeroRecibo);
-    fd.append('resibo_pago', ''); // null en multipart: cadena vacía
+    fd.append('resibo_pago', '');
     fd.append('facturador', loggedUserName);
     fd.append('autorizado', 'Si');
     fd.append('facturado', 'No');
@@ -188,21 +202,17 @@ const FacturarCredito: React.FC = () => {
 
     submitFormData(fd);
   }, [AGENCIAS, DISTRIBUIDORAS, distribuidora, numeroRecibo, observaciones, cedulaFile, manifiestoFile, codigo_credito, clienteNombre, loggedUserName]);
-  // -------------------------------------------------------------------------------
 
   const BaseUrl = import.meta.env.VITE_API_URL ?? "http://tuclick.vozipcolombia.net.co/motos/back";
-
 
   return (
     <main className="min-h-screen w-full bg-slate-50">
       {/* Header / Migas */}
       <div className="border-b border-slate-200 bg-white/70 backdrop-blur">
-            
-
         <div className="max-w-full mx-auto px-6 py-4 flex items-center justify-start gap-5">
-           <div className='pt-4 mb-3'>
-                    <ButtonLink to="/solicitudes" label="Volver a facturación" direction="back" />
-                </div>
+          <div className='pt-4 mb-3'>
+            <ButtonLink to="/solicitudes" label="Volver a facturación" direction="back" />
+          </div>
           <h1 className="text-xl font-semibold tracking-tight badge badge-soft badge-success">Solicitudes de facturación</h1>
         </div>
       </div>
@@ -286,6 +296,19 @@ const FacturarCredito: React.FC = () => {
           </div>
         </section>
 
+        {/* 🔹 NUEVO: Precio de documentos */}
+        <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+          <div className="bg-sky-700 text-white font-semibold px-5 py-2.5 text-sm">
+            Precio de documentos
+          </div>
+          <div className="divide-y divide-slate-200">
+            <RowRight label="SOAT:" value={fmtCOP(soat)} />
+            <RowRight label="Matrícula:" value={fmtCOP(matricula)} />
+            <RowRight label="Impuestos:" value={fmtCOP(impuestos)} />
+            <RowRight label="Subtotal documentos:" value={fmtCOP(subtotalDocumentos)} bold />
+          </div>
+        </section>
+
         {/* Dos columnas: Seguros y accesorios / TOTAL */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Seguros y accesorios */}
@@ -294,6 +317,9 @@ const FacturarCredito: React.FC = () => {
               Seguros y accesorios
             </div>
             <div className="divide-y divide-slate-200">
+              <RowRight label="Accesorios:" value={fmtCOP(accesoriosTotal)} />
+              <RowRight label="Seguros:" value={fmtCOP(precioSeguros)} />
+              {/* Desglose sobre el total de seguros+accesorios */}
               <RowRight label="Valor bruto:" value={fmtCOP(accesoriosYSeguros ? Math.round((accesoriosYSeguros as number) / 1.19) : undefined)} />
               <RowRight label="IVA:" value={fmtCOP(accesoriosYSeguros ? (accesoriosYSeguros as number) - Math.round((accesoriosYSeguros as number) / 1.19) : undefined)} />
               <RowRight label="Total:" value={fmtCOP(accesoriosYSeguros)} />
@@ -307,7 +333,7 @@ const FacturarCredito: React.FC = () => {
             </div>
             <div className="divide-y divide-slate-200">
               <RowRight label="Valor Moto:" value={fmtCOP(valorMoto)} />
-              <RowRight label="SOAT:" value={fmtCOP(soat)} />
+              <RowRight label="SOAT:" value={fmtCOP(precioSeguros)} />
               <RowRight label="Matrícula:" value={fmtCOP(matricula)} />
               <RowRight label="Impuestos:" value={fmtCOP(impuestos)} />
               <RowRight label="Seguros y accesorios:" value={fmtCOP(accesoriosYSeguros)} />
@@ -332,19 +358,17 @@ const FacturarCredito: React.FC = () => {
             <li>
               La garantía extendida tiene un valor de <span className="font-semibold text-slate-900">{fmtCOP(garantiaExtendida)}</span>
             </li>
-            <li>
+            {/* <li>
               Incluye los siguientes seguros:
-            </li>
+            </li> */}
           </ul>
         </section>
 
         {/* Formulario inferior */}
-
         {!yaRegistrada ? (
           <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <h3 className="text-center text-slate-900 font-semibold mb-6">Complete la siguiente información</h3>
 
-            {/* 🔽 Envolvemos en <form> para manejar submit sin romper estilos */}
             <form className="grid grid-cols-1 md:grid-cols-2 gap-5" onSubmit={handleSubmit}>
               <div className="flex flex-col gap-1">
                 <label className="text-sm text-slate-600">Distribuidora</label>
@@ -414,11 +438,12 @@ const FacturarCredito: React.FC = () => {
                 </Link>
                 <button type="submit" disabled={isPending} className="btn bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600">
                   {isPending ? 'Enviando…' : '✓ Aceptar'}
-                </button>            </div>
+                </button>
+              </div>
             </form>
           </section>
         ) : (
-          /* Si NO hay solicitud registrada, mostramos el formulario */
+          /* Si hay solicitud registrada, mostramos el detalle */
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             {/* Encabezado */}
             <div className="flex items-center justify-between gap-3 mb-6">
@@ -576,14 +601,12 @@ const FacturarCredito: React.FC = () => {
                     )}
                   </li>
 
-
                   <li className="flex items-center justify-between gap-4">
                     <div className="min-w-0">
                       <span className="font-medium block">Factura</span>
                       <span className="text-xs text-slate-500">Factura electrónica (demo)</span>
                     </div>
                     <FacturaFinalDownload />
-
                   </li>
                 </ul>
               </div>
@@ -603,7 +626,6 @@ const FacturarCredito: React.FC = () => {
               </Link>
             </div>
           </section>
-
         )}
       </div>
     </main>
@@ -620,8 +642,6 @@ const RowRight: React.FC<{ label: string; value?: string; bold?: boolean, badge?
 );
 
 export default FacturarCredito;
-
-
 
 // Helper para badges DaisyUI
 const estadoBadge = (ok?: boolean) => ({
