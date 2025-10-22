@@ -86,10 +86,10 @@ const TablaSolicitudes: React.FC = () => {
     const hasCoti = idCotizacion !== null && idCotizacion !== undefined && String(idCotizacion).trim() !== "";
 
     if (hasCodigo) {
-      return `/creditos/detalle/facturar-credito/${encodeURIComponent(String(codigoCredito))}`;
+      return `/solicitudes/detalle/facturar-credito/${encodeURIComponent(String(codigoCredito))}`;
     }
     if (hasCoti) {
-      return `/creditos/detalle/facturar-solicitud/${encodeURIComponent(String(idCotizacion))}`;
+      return `/solicitudes/detalle/facturar-solicitud/${encodeURIComponent(String(idCotizacion))}`;
     }
     return null; // sin identificadores válidos
   };

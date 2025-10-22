@@ -28,6 +28,11 @@ const fmtCOP = (v?: string | number | null) => {
 };
 const safe = (v?: string | null) => (v ? String(v) : "—");
 
+const fmtOptCOP = (v?: string | number | null) => {
+    if (v === null || v === undefined || v === "") return "—";
+    return fmtCOP(v);
+};
+
 const Box = ({
     title,
     right,
@@ -82,6 +87,7 @@ const SolicitarFacturacionPage: React.FC = () => {
     // Datos origen
     const { data, isLoading, error } = useGetFacturacionPorCodigo(codigo);
 
+    console.log(data)
     // Hook submit
     const { mutate: registrarSolicitud, isPending } =
         useRegistrarSolicitudFacturacion2({
@@ -286,11 +292,12 @@ const SolicitarFacturacionPage: React.FC = () => {
                 <Box title="TOTAL">
                     <div className="p-3">
                         <Row cols={["Valor Moto:", <span className="font-semibold">{fmtCOP(data.tot_valor_moto)}</span>]} />
-                        <Row cols={["SOAT:", <span className="font-semibold">{fmtCOP(data.tot_soat)}</span>]} />
-                        <Row cols={["Matrícula:", <span className="font-semibold">{fmtCOP(data.tot_matricula)}</span>]} />
-                        <Row cols={["Impuestos:", <span className="font-semibold">{fmtCOP(data.tot_impuestos)}</span>]} />
+                        <Row cols={["SOAT:", <span className="font-semibold">{fmtOptCOP(data.tot_soat)}</span>]} />          {/* ← antes fmtCOP */}
+                        <Row cols={["Matrícula:", <span className="font-semibold">{fmtOptCOP(data.tot_matricula)}</span>]} />     {/* ← antes fmtCOP */}
+                        <Row cols={["Impuestos:", <span className="font-semibold">{fmtOptCOP(data.tot_impuestos)}</span>]} />     {/* ← antes fmtCOP */}
                         <Row cols={["Seguros y accesorios:", <span className="font-semibold">{fmtCOP(data.tot_seguros_accesorios)}</span>]} />
                         <Row cols={["TOTAL:", <span className="font-bold">{fmtCOP(data.tot_general)}</span>]} />
+
                     </div>
                 </Box>
             </div>
@@ -307,7 +314,7 @@ const SolicitarFacturacionPage: React.FC = () => {
                         {/* Columna izquierda */}
                         <div className="space-y-4">
                             {/* Documentos */}
-                            <div className="form-control">
+                            <div className="form-control flex flex-col">
                                 <label className="label">
                                     <span className="label-text">
                                         Documentos <span className="text-error">*</span>
@@ -326,7 +333,7 @@ const SolicitarFacturacionPage: React.FC = () => {
                             </div>
 
                             {/* Recibo de pago */}
-                            <div className="form-control">
+                            <div className="form-control flex flex-col">
                                 <label className="label">
                                     <span className="label-text">
                                         Recibo de pago Nº <span className="text-error">*</span>
@@ -347,7 +354,7 @@ const SolicitarFacturacionPage: React.FC = () => {
                             </div>
 
                             {/* Saldo contraentrega */}
-                            <div className="form-control">
+                            <div className="form-control flex flex-col">
                                 <label className="label">
                                     <span className="label-text">Saldo contraentrega</span>
                                 </label>
@@ -367,7 +374,7 @@ const SolicitarFacturacionPage: React.FC = () => {
                             </div>
 
                             {/* Manifiesto (requerido si Documentos = Si) */}
-                            <div className="form-control">
+                            <div className="form-control flex flex-col">
                                 <label className="label">
                                     <span className="label-text">
                                         Manifiesto {docValue === "Si" && <span className="text-error">*</span>}
@@ -390,7 +397,7 @@ const SolicitarFacturacionPage: React.FC = () => {
                             </div>
 
                             {/* Observaciones */}
-                            <div className="form-control">
+                            <div className="form-control flex flex-col">
                                 <label className="label">
                                     <span className="label-text">
                                         Observaciones <span className="text-error">*</span>
@@ -415,7 +422,7 @@ const SolicitarFacturacionPage: React.FC = () => {
                         {/* Columna derecha */}
                         <div className="space-y-4">
                             {/* Distribuidora */}
-                            <div className="form-control">
+                            <div className="form-control flex flex-col">
                                 <label className="label">
                                     <span className="label-text">Distribuidora</span>
                                 </label>
@@ -430,7 +437,7 @@ const SolicitarFacturacionPage: React.FC = () => {
                             </div>
 
                             {/* Descuento a autorizar */}
-                            <div className="form-control">
+                            <div className="form-control flex flex-col">
                                 <label className="label">
                                     <span className="label-text">Descuento a autorizar</span>
                                 </label>
@@ -450,7 +457,7 @@ const SolicitarFacturacionPage: React.FC = () => {
                             </div>
 
                             {/* Copia de la cédula (requerido si Documentos = Si) */}
-                            <div className="form-control">
+                            <div className="form-control flex flex-col ">
                                 <label className="label">
                                     <span className="label-text">
                                         Copia de la cédula {docValue === "Si" && <span className="text-error">*</span>}
@@ -484,7 +491,7 @@ const SolicitarFacturacionPage: React.FC = () => {
                             className="btn btn-success"
                             disabled={isSubmitting || isPending}
                         >
-                            {isSubmitting || isPending ? "Procesando…" : "✓ Aceptar"}
+                            {isSubmitting || isPending ? "Procesando…" : "✓ Facturar"}
                         </button>
                     </div>
                 </form>

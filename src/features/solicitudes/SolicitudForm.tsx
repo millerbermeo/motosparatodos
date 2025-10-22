@@ -96,6 +96,8 @@ const SolicitudForm: React.FC = () => {
   // ⬇️ Recibir TODO lo que venga desde navigate(..., { state })
   const location = useLocation();
   const incoming = (location.state as IncomingCotizacionState) || {};
+
+  console.log(incoming)
   const clienteForForm = incoming?.clienteForForm;
 
   // "semilla" de moto desde location para poder consultar proceso_contado
@@ -169,13 +171,17 @@ const SolicitudForm: React.FC = () => {
     () => (id ? Number(id) : incoming?.cotizacionId ?? undefined),
     [id, incoming?.cotizacionId]
   );
-const { data: pcData, isFetching: pcLoading } =
-  useGetProcesoContadoPorCotizacionYMoto({
-    cotizacion_id: cotizacionId,
-  });
+  const { data: pcData, isFetching: pcLoading } =
+    useGetProcesoContadoPorCotizacionYMoto({
+      cotizacion_id: cotizacionId,
+    });
 
 
-console.log("sss", pcData);
+  console.log("sss", pcData);
+
+
+
+
 
   // Aplicar autocompletado UNA sola vez cuando pcData llega
   const didAutofillRef = React.useRef(false);
@@ -208,6 +214,42 @@ console.log("sss", pcData);
   const onSubmit = (values: SolicitudFormValues) => {
     const fd = new FormData();
 
+    // ==== helpers locales SOLO para este submit ====
+    const inferLadoFromIncoming = (incoming?: IncomingCotizacionState | null): 'a' | 'b' | null => {
+      if (!incoming) return null;
+      if (incoming.motoSeleccion === 'A') return 'a';
+      if (incoming.motoSeleccion === 'B') return 'b';
+
+      const sel = incoming?.motos?.seleccionada;
+      const raw = incoming?.raw;
+      if (!sel || !raw) return null;
+
+      const norm = (s: any) =>
+        String(s ?? '')
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/\p{Diacritic}/gu, '')
+          .trim();
+
+      const lineaSel = norm(sel.linea ?? sel.modelo ?? '');
+      const lineaA = norm(raw.linea_a ?? '');
+      const lineaB = norm(raw.linea_b ?? '');
+
+      if (lineaSel && lineaA && lineaSel.includes(lineaA)) return 'a';
+      if (lineaSel && lineaB && lineaSel.includes(lineaB)) return 'b';
+      return null;
+    };
+
+    const getDocsFor = (raw: any, lado: 'a' | 'b') => {
+      const suf = `_${lado}`;
+      const soat = Number(raw?.[`soat${suf}`]) || 0;
+      const impuestos = Number(raw?.[`impuestos${suf}`]) || 0;
+      const matricula = Number(raw?.[`matricula${suf}`]) || 0;
+      const precio_documentos = Number(raw?.[`precio_documentos${suf}`]) || 0;
+      return { soat, impuestos, matricula, precio_documentos };
+    };
+    // =================================================
+
     if (id) fd.append("id_cotizacion", String(id));
     fd.append("is_act", "2");
     fd.append("agencia", "Motos");
@@ -236,25 +278,92 @@ console.log("sss", pcData);
     fd.append("color", (values.color ?? "").trim());
     fd.append("tipo_solicitud", "Contado");
 
-    // Payloads extra que ya tenías
+    // ==== NUEVO: enriquecer motos/seleccionada con SOAT/IMP/MAT/Docs ====
+    const ladoInferido = inferLadoFromIncoming(incoming);
+    const raw = incoming?.raw ?? {};
+
+    let motoSeleccionadaEnriched = incoming?.motos?.seleccionada ?? null;
+    if (motoSeleccionadaEnriched && ladoInferido) {
+      const docs = getDocsFor(raw, ladoInferido);
+      motoSeleccionadaEnriched = {
+        ...motoSeleccionadaEnriched,
+        soat: docs.soat,
+        impuestos: docs.impuestos,
+        matricula: docs.matricula,
+        precioDocumentos: docs.precio_documentos,
+        _lado: ladoInferido.toUpperCase(), // "A" | "B" (solo informativo)
+      };
+    }
+
+    const docsA = getDocsFor(raw, 'a');
+    const docsB = getDocsFor(raw, 'b');
+
+    const motosPayload = (() => {
+      const base = incoming?.motos ? { ...incoming.motos } : {};
+      const A = base?.A ?? null;
+      const B = base?.B ?? null;
+
+      const A_enriched = A
+        ? {
+          ...A,
+          soat: docsA.soat,
+          impuestos: docsA.impuestos,
+          matricula: docsA.matricula,
+          precioDocumentos: docsA.precio_documentos,
+        }
+        : A;
+
+      const B_enriched = B
+        ? {
+          ...B,
+          soat: docsB.soat,
+          impuestos: docsB.impuestos,
+          matricula: docsB.matricula,
+          precioDocumentos: docsB.precio_documentos,
+        }
+        : B;
+
+      return {
+        ...base,
+        A: A_enriched,
+        B: B_enriched,
+        seleccionada: motoSeleccionadaEnriched ?? base.seleccionada ?? null,
+      };
+    })();
+    // ================================================================
+
+    // Payloads extra que ya tenías (usando ahora los enriquecidos)
     fd.append(
       "cotizacion_payload",
       safeJSONString({
         cotizacionId: incoming?.cotizacionId ?? (id ? Number(id) : null),
         comercial: incoming?.comercial ?? null,
-        motos: incoming?.motos ?? null,
+        motos: motosPayload, // 👈 con soat/impuestos/matricula/precioDocumentos
         motoSeleccion: incoming?.motoSeleccion ?? null,
       })
     );
-    if (incoming?.motos?.seleccionada) {
+
+    if (motoSeleccionadaEnriched) {
+      fd.append("moto_seleccionada", safeJSONString(motoSeleccionadaEnriched));
+    } else if (incoming?.motos?.seleccionada) {
+      // fallback si por alguna razón no se pudo enriquecer
       fd.append("moto_seleccionada", safeJSONString(incoming.motos.seleccionada));
     }
+
     if (incoming?.raw) {
       fd.append("cotizacion_raw", safeJSONString(incoming.raw));
     }
     if (incoming?.clienteForForm) {
       fd.append("cliente_from_state", safeJSONString(incoming.clienteForForm));
     }
+
+    // (Opcional) Si tu backend quiere estos valores aparte, descomenta:
+    // if (motoSeleccionadaEnriched) {
+    //   const s = motoSeleccionadaEnriched as any;
+    //   if (typeof s.soat === 'number') fd.append("soat_moto", String(s.soat));
+    //   if (typeof s.impuestos === 'number') fd.append("impuestos_moto", String(s.impuestos));
+    //   if (typeof s.matricula === 'number') fd.append("matricula_moto", String(s.matricula));
+    // }
 
     // ✅ Aquí capturamos la respuesta para tomar el "codigo" y navegar
     registrar(fd, {

@@ -53,6 +53,10 @@ type Motocicleta = {
   total: number;
   cuotas: Cuotas;
   lado: 'A' | 'B';
+
+  soat?: number;
+  matricula?: number;
+  impuestos?: number;
 };
 
 type Evento = {
@@ -297,6 +301,11 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
   const segurosJson = data?.[`seguros${suffix}`];
   const segurosFromJson = sumSegurosFromJson(segurosJson);
 
+  const soat = Number(data?.[`soat${suffix}`]) || 0;
+  const matricula = Number(data?.[`matricula${suffix}`]) || 0;
+  const impuestos = Number(data?.[`impuestos${suffix}`]) || 0;
+
+
   const seguros =
     typeof segurosFromJson === 'number'
       ? segurosFromJson
@@ -351,6 +360,9 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
     total,
     cuotas,
     lado,
+    soat,         // 👈 nuevo
+    matricula,    // 👈 nuevo
+    impuestos,    // 👈 nuevo
   };
 };
 
@@ -602,15 +614,19 @@ const DetalleCotizacion: React.FC = () => {
                 <div className="space-y-2">
                   <DataRow label="Precio base" value={fmtCOP(moto.precioBase)} />
                   <DataRow label="Descuentos" value={fmtCOP(moto.descuentos)} valueClass="text-error font-semibold" />
+                  <DataRow label="SOAT" value={fmtCOP(moto.soat || 0)} />       {/* 👈 NUEVO */}
+                  <DataRow label="Matrícula" value={fmtCOP(moto.matricula || 0)} /> {/* 👈 NUEVO */}
+                  <DataRow label="Impuestos" value={fmtCOP(moto.impuestos || 0)} /> {/* 👈 NUEVO */}
                   <DataRow label="Seguro todo riesgo" value={fmtCOP(moto.seguros)} />
+
+                </div>
+                <div className="space-y-2">
                   <DataRowText label="Garantía" value={moto.garantia ? 'Sí' : 'No'} />
                   {/* 👇 NUEVO: Garantía extendida */}
                   <DataRowText
                     label="Garantía extendida"
-                    value={typeof moto.garantiaExtendidaMeses === 'number' ? `${moto.garantiaExtendidaMeses} meses` : '—'}
+                    value={typeof moto.garantiaExtendidaMeses === 'number' ? `${moto.garantiaExtendidaMeses} meses` : ''}
                   />
-                </div>
-                <div className="space-y-2">
                   <DataRow label="Precio documentos" value={fmtCOP(moto.precioDocumentos)} />
                   <DataRow label="Accesorios / Marcación / Personalización" value={fmtCOP(moto.accesoriosYMarcacion)} />
                   <DataRow label="Total sin seguros" value={fmtCOP(moto.totalSinSeguros)} />
@@ -798,14 +814,18 @@ const DetalleCotizacion: React.FC = () => {
       {/* Barra de acciones (inferior) */}
       <section className="sticky bottom-0 mt-4 bg-base-100/90 backdrop-blur border-t border-base-300 px-4 py-3">
         <div className="max-w-full mx-auto flex flex-wrap items-center justify-end gap-2">
-          {useAuthStore.getState().user?.rol === "Asesor" && q.estado !== 'Sin interés' && (
-            <Link to={`/cotizaciones/estado/${id}`}>
-              <button className="btn btn-warning btn-sm" title="Crear recordatorio">
-                <Edit className="w-4 h-4" />
-                Cambiar estado
-              </button>
-            </Link>
-          )}
+          {useAuthStore.getState().user?.rol === "Asesor" &&
+            q.estado !== 'Sin interés' &&
+            q.estado !== 'Solicitar facturación' &&
+            q.estado !== 'Solicitar crédito' &&
+            q.estado !== 'Solicitar crédito express' && (
+              <Link to={`/cotizaciones/estado/${id}`}>
+                <button className="btn btn-warning btn-sm" title="Crear recordatorio">
+                  <Edit className="w-4 h-4" />
+                  Cambiar estado
+                </button>
+              </Link>
+            )}
 
           <button className="btn btn-success btn-sm" onClick={() => console.log('Crear recordatorio', q?.id)} title="Crear recordatorio">
             <CalendarPlus className="w-4 h-4" />

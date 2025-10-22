@@ -110,6 +110,15 @@ type FormValues = {
     valor_garantia_extendida_a?: string;
     valor_garantia_extendida_b?: string;
 
+    soat_a?: string;
+    impuestos_a?: string;
+    matricula_a?: string;
+
+    soat_b?: string;
+    impuestos_b?: string;
+    matricula_b?: string;
+
+
 };
 
 const garantiaExtendidaOptions: SelectOption[] = [
@@ -256,12 +265,17 @@ const CotizacionFormulario: React.FC = () => {
             setValue("modelo_a", m.modelo?.trim() || "");
             const descuento = Number(m.descuento_empresa) + Number(m.descuento_ensambladora);
             setValue("descuento1", descuento.toString());
-            const documentos =
-                (metodo === "contado" ? Number(m.matricula_contado) : Number(m.matricula_credito)) +
-                Number(m.impuestos) + Number(m.soat);
+
+            // NUEVO: separar
+            setValue("soat_a", String(Number(m.soat) || 0));
+            setValue("impuestos_a", String(Number(m.impuestos) || 0));
+            setValue("matricula_a", String(getMatricula(m, metodo)));
+
+            // Compatibilidad: documentos visibles (M+I+S)
+            const documentos = getMatricula(m, metodo) + Number(m.impuestos) + Number(m.soat);
             setValue("precioDocumentos1", documentos.toString());
 
-            // 👇 NUEVO: guarda la url de la foto
+            // Foto
             setValue("foto_a", m.foto ?? null);
         }
     }, [watch("moto1"), motos1, metodo, setValue]);
@@ -274,15 +288,41 @@ const CotizacionFormulario: React.FC = () => {
             setValue("modelo_b", m.modelo?.trim() || "");
             const descuento = Number(m.descuento_empresa) + Number(m.descuento_ensambladora);
             setValue("descuento2", descuento.toString());
-            const documentos =
-                (metodo === "contado" ? Number(m.matricula_contado) : Number(m.matricula_credito)) +
-                Number(m.impuestos) + Number(m.soat);
+
+            // NUEVO: separar
+            setValue("soat_b", String(Number(m.soat) || 0));
+            setValue("impuestos_b", String(Number(m.impuestos) || 0));
+            setValue("matricula_b", String(getMatricula(m, metodo)));
+
+            // Compatibilidad: documentos visibles (M+I+S)
+            const documentos = getMatricula(m, metodo) + Number(m.impuestos) + Number(m.soat);
             setValue("precioDocumentos2", documentos.toString());
 
-            // 👇 NUEVO: guarda la url de la foto
+            // Foto
             setValue("foto_b", m.foto ?? null);
         }
     }, [watch("moto2"), motos2, metodo, setValue]);
+
+
+    React.useEffect(() => {
+        // A
+        const selA = watch("moto1");
+        const mA = (motos1?.motos ?? []).find((x) => x.linea === selA);
+        if (mA) {
+            setValue("matricula_a", String(getMatricula(mA, metodo)));
+            const docsA = getMatricula(mA, metodo) + Number(mA.impuestos) + Number(mA.soat);
+            setValue("precioDocumentos1", docsA.toString());
+        }
+        // B
+        const selB = watch("moto2");
+        const mB = (motos2?.motos ?? []).find((x) => x.linea === selB);
+        if (mB) {
+            setValue("matricula_b", String(getMatricula(mB, metodo)));
+            const docsB = getMatricula(mB, metodo) + Number(mB.impuestos) + Number(mB.soat);
+            setValue("precioDocumentos2", docsB.toString());
+        }
+    }, [metodo, motos1, motos2, watch("moto1"), watch("moto2"), setValue]);
+
 
     const garantiaOptions: SelectOption[] = [
         { value: "si", label: "Sí" },
@@ -305,22 +345,25 @@ const CotizacionFormulario: React.FC = () => {
     }, [motos2?.motos, watch("moto2")]);
 
     // ===== NUEVO: documentos calculados (fuente única de la verdad) =====
-    const moto1Sel = watch("moto1");
-    const moto2Sel = watch("moto2");
+    // const moto1Sel = watch("moto1");
+    // const moto2Sel = watch("moto2");
 
+    const soat1 = N(watch("soat_a"));
+    const imp1 = N(watch("impuestos_a"));
+    const mat1 = N(watch("matricula_a"));
     const documentos1 = React.useMemo(() => {
-        const m = (motos1?.motos ?? []).find(x => x.linea === moto1Sel);
-        if (!incluirMoto1 || !m) return 0;
-        return (metodo === "contado" ? Number(m.matricula_contado) : Number(m.matricula_credito))
-            + Number(m.impuestos) + Number(m.soat);
-    }, [motos1?.motos, moto1Sel, metodo, incluirMoto1]);
+        if (!incluirMoto1) return 0;
+        return mat1 + imp1 + soat1;
+    }, [mat1, imp1, soat1, incluirMoto1]);
 
+    const soat2 = N(watch("soat_b"));
+    const imp2 = N(watch("impuestos_b"));
+    const mat2 = N(watch("matricula_b"));
     const documentos2 = React.useMemo(() => {
-        const m = (motos2?.motos ?? []).find(x => x.linea === moto2Sel);
-        if (!incluirMoto2 || !m) return 0;
-        return (metodo === "contado" ? Number(m.matricula_contado) : Number(m.matricula_credito))
-            + Number(m.impuestos) + Number(m.soat);
-    }, [motos2?.motos, moto2Sel, metodo, incluirMoto2]);
+        if (!incluirMoto2) return 0;
+        return mat2 + imp2 + soat2;
+    }, [mat2, imp2, soat2, incluirMoto2]);
+
 
     const { data: seguros = [] } = useSeguros();
 
@@ -333,6 +376,7 @@ const CotizacionFormulario: React.FC = () => {
             setValue("garantiaExtendida1", "no")
             setValue("garantiaExtendida1", "no");
             setValue("valor_garantia_extendida_a", "0"); // 👈
+            setValue("soat_a", "0"); setValue("impuestos_a", "0"); setValue("matricula_a", "0");
         }
     }, [incluirMoto1, setValue]);
 
@@ -345,6 +389,8 @@ const CotizacionFormulario: React.FC = () => {
             setValue("garantiaExtendida2", "no");
             setValue("garantiaExtendida2", "no");
             setValue("valor_garantia_extendida_b", "0"); // 👈
+            setValue("soat_b", "0"); setValue("impuestos_b", "0"); setValue("matricula_b", "0");
+
         }
     }, [incluirMoto2, setValue]);
 
@@ -371,13 +417,16 @@ const CotizacionFormulario: React.FC = () => {
     });
 
     // ====== HELPERS NUMÉRICOS (ajustado) ======
-    const N = (v: any) => {
+    function N(v: any): number {
         if (v === null || v === undefined || v === "") return 0;
-        const s = String(v).replace(/[^\d-]/g, "");   // quita . , espacios, COP, etc. (conserva signo)
+        const s = String(v).replace(/[^\d-]/g, "");
         return s ? Number(s) : 0;
-    };
-
+    }
     const fmt = (n: number) => n.toLocaleString("es-CO") + " COP";
+
+    const getMatricula = (m: any, metodo: "contado" | "credibike" | "terceros") =>
+        metodo === "contado" ? Number(m.matricula_contado) : Number(m.matricula_credito);
+
 
     const findSeguroValor = (id: string) => {
         const s = seguros.find((x: any) => String(x.id) === String(id));
@@ -442,12 +491,12 @@ const CotizacionFormulario: React.FC = () => {
     //     ? (segurosIds1 as string[]).reduce((acc, id) => acc + findSeguroValor(id), 0) + otros1
     //     : 0;
 
-        const totalSeguros1 = (showMotos && incluirMoto1) ? otros1 : 0;
+    const totalSeguros1 = (showMotos && incluirMoto1) ? otros1 : 0;
 
 
     const totalSinSeguros1 = (showMotos && incluirMoto1)
         ? (precioBase1 + accesorios1Val + documentos1 + marcacion1Val - descuento1Val
-            + (garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0)) // 👈 suma
+            + (garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0))
         : 0;
 
     const totalConSeguros1 = totalSinSeguros1 + totalSeguros1;
@@ -469,7 +518,7 @@ const CotizacionFormulario: React.FC = () => {
 
     const totalSinSeguros2 = (showMotos && incluirMoto2)
         ? (precioBase2 + accesorios2Val + documentos2 + marcacion2Val - descuento2Val
-            + (garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0)) // 👈 suma
+            + (garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0))
         : 0;
 
     const totalConSeguros2 = totalSinSeguros2 + totalSeguros2;
@@ -655,6 +704,14 @@ const CotizacionFormulario: React.FC = () => {
 
             valor_garantia_extendida_a: incluirMoto1 && data.garantiaExtendida1 !== "no" ? valorGarantiaA : 0,
             valor_garantia_extendida_b: incluirMoto2 && data.garantiaExtendida2 !== "no" ? valorGarantiaB : null,
+            soat_a: incluirMoto1 ? N(data.soat_a) : 0,
+            impuestos_a: incluirMoto1 ? N(data.impuestos_a) : 0,
+            matricula_a: incluirMoto1 ? N(data.matricula_a) : 0,
+
+            soat_b: incluirMoto2 ? N(data.soat_b) : null,
+            impuestos_b: incluirMoto2 ? N(data.impuestos_b) : null,
+            matricula_b: incluirMoto2 ? N(data.matricula_b) : null,
+
         };
 
         console.log("SUBMIT (payload EXACTO BD):", payload);
@@ -1102,9 +1159,26 @@ const CotizacionFormulario: React.FC = () => {
                                                 {/* Bloque de detalles */}
                                                 <div className="bg-base-200/70 p-4 rounded-xl mb-4 space-y-2">
                                                     {/* Precio documentos */}
-                                                    <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
+                                                    {/* <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-medium text-gray-700">Matrícula y SOAT:</span>
                                                         <span>{fmt(documentos1)}</span>
+                                                    </div> */}
+
+                                                    <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-gray-700">Matrícula:</span>
+                                                        <span>{fmt(mat1)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-gray-700">Impuestos:</span>
+                                                        <span>{fmt(imp1)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-gray-700">SOAT:</span>
+                                                        <span>{fmt(soat1)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-semibold text-gray-800">Documentos (M+I+S):</span>
+                                                        <span className="font-semibold">{fmt(documentos1)}</span>
                                                     </div>
 
                                                     {/* Descuento */}
@@ -1387,9 +1461,26 @@ const CotizacionFormulario: React.FC = () => {
                                                 {/* Bloque de detalles */}
                                                 <div className="bg-base-200/70 p-4 rounded-xl mb-4 space-y-2">
                                                     {/* Precio documentos */}
-                                                    <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
+                                                    {/* <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-medium text-gray-700">Matrícula y SOAT:</span>
                                                         <span>{fmt(documentos2)}</span>
+                                                    </div> */}
+
+                                                    <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-gray-700">Matrícula:</span>
+                                                        <span>{fmt(mat2)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-gray-700">Impuestos:</span>
+                                                        <span>{fmt(imp2)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-gray-700">SOAT:</span>
+                                                        <span>{fmt(soat2)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm border-t pt-2">
+                                                        <span className="font-semibold text-gray-800">Documentos (M+I+S):</span>
+                                                        <span className="font-semibold">{fmt(documentos2)}</span>
                                                     </div>
 
                                                     {/* Descuento */}

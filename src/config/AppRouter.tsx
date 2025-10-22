@@ -115,6 +115,9 @@ const AppRouter: React.FC = () => {
 
               <Route element={<RequireModule name="Solicitudes de facturación" />}>
                 <Route path="/solicitudes" element={<SolicitudFacturacion />} />
+                <Route path="/solicitudes/detalle/facturar-credito/:id" element={<FacturarCredito />} />
+                <Route path="/solicitudes/detalle/facturar-solicitud/:id" element={<FacturarCreditoSolicitud />} />
+
               </Route>
 
 
