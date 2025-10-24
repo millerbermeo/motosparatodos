@@ -31,8 +31,10 @@ const fmtCOP = (v?: MaybeNum | string) => {
 const safeStr = (v?: unknown) => (typeof v === 'string' ? v : '');
 
 const FacturarCredito: React.FC = () => {
-  const { id: codigoFromUrl } = useParams<{ id: string }>();
+  const { id: codigoFromUrl, cot } = useParams<{ id: string; cot: string }>();
   const codigo_credito = String(codigoFromUrl ?? '');
+
+const id_cotizacion = String(cot ?? "");
 
   const { data: datos, isLoading, error } = useCredito({ codigo_credito }, !!codigo_credito);
   const { data: deudor } = useDeudor(codigo_credito);
@@ -136,7 +138,7 @@ const FacturarCredito: React.FC = () => {
 
   const fechaCreacion = safeStr(credito?.fecha_creacion);
   const asesor = safeStr(credito?.asesor);
-  const numeroSolicitud = credito?.id ?? credito?.codigo_credito ?? credito?.codigo_credito ?? codigo_credito;
+  const numeroSolicitud = credito?.cotizacion_id ?? codigo_credito;
 
   // Observaciones (cuota inicial y saldo)
   const cuotaInicial: MaybeNum = toNum((credito as any)?.cuota_inicial);
@@ -187,6 +189,7 @@ const FacturarCredito: React.FC = () => {
     fd.append('distribuidora_id', '1');
     fd.append('codigo_solicitud', codigo4);
     fd.append('codigo_credito', codigo_credito);
+    if (id_cotizacion) fd.append('id_cotizacion', id_cotizacion);  // 👈 aquí viaja la cotización
     fd.append('nombre_cliente', clienteNombre);
     fd.append('tipo_solicitud', 'Crédito directo');
     fd.append('numero_recibo', numeroRecibo);

@@ -47,6 +47,7 @@ const Garantia = lazy(() => import("../pages/Garantia")); // 👈 crea esta pág
 const SolicitarFacturacionPage = lazy(() => import("../pages/SolicitarFacturacionPage"));
 
 
+const DetallesFacturacion = lazy(() => import("../pages/DetallesFacturacion"));
 
 const Fallback: React.FC = () => {
   const { show, hide } = useLoaderStore();
@@ -103,8 +104,8 @@ const AppRouter: React.FC = () => {
                 <Route path="/creditos/registrar/:id" element={<CreditosForm />} />
                 <Route path="/creditos/detalle/:id" element={<CreditoDetalle />} />
                 <Route path="/creditos/detalle/cambiar-estado/:id" element={<CreditoDetalleAdmin />} />
-                <Route path="/creditos/detalle/cerrar-credito/:id" element={<CreditoDetalleAsesor />} />
-                <Route path="/creditos/detalle/facturar-credito/:id" element={<FacturarCredito />} />
+                <Route path="/creditos/detalle/cerrar-credito/:id/:cot" element={<CreditoDetalleAsesor />} />
+                <Route path="/creditos/detalle/facturar-credito/:id/:cot" element={<FacturarCredito />} />
                 <Route path="/creditos/detalle/facturar-solicitud/:id" element={<FacturarCreditoSolicitud />} />
 
                 <Route path="/solicitudes/:id" element={<RegistrarFacturacion />} />
@@ -117,6 +118,7 @@ const AppRouter: React.FC = () => {
                 <Route path="/solicitudes" element={<SolicitudFacturacion />} />
                 <Route path="/solicitudes/detalle/facturar-credito/:id" element={<FacturarCredito />} />
                 <Route path="/solicitudes/detalle/facturar-solicitud/:id" element={<FacturarCreditoSolicitud />} />
+                <Route path="solicitudes/facturacion/:id" element={<DetallesFacturacion />} />
 
               </Route>
 

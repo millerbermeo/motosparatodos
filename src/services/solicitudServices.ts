@@ -331,3 +331,37 @@ export const useUltimaSolicitudYCotizacion = (
     },
   });
 };
+
+
+type AprobarPayload = { id: string | number };
+type AprobarResponse = { success: boolean; message?: string | string[] };
+
+export const useAprobarEntregaFacturacion = (opts?: {
+  endpoint?: string; // por defecto /aprobar_entrega.php
+}) => {
+  const qc = useQueryClient();
+
+  return useMutation<AprobarResponse, AxiosError<ServerError>, AprobarPayload>({
+    mutationFn: async ({ id }) => {
+      const fd = new FormData();
+      fd.append("cotizacion_id", String(id));
+      const { data } = await api.post<AprobarResponse>(
+        opts?.endpoint ?? "/actualizar_estado_por_cotizacion.php",
+        fd,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+      return data;
+    },
+    onSuccess: async (_resp, { id }) => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["solicitudes-facturacion"] }),
+        qc.invalidateQueries({ queryKey: ["solicitud-facturacion", id] }),
+      ]);
+    },
+    onError: (error) => {
+      const raw = error.response?.data?.message ?? "No se pudo aprobar la entrega";
+      const arr = Array.isArray(raw) ? raw : [raw];
+      Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
+    },
+  });
+};

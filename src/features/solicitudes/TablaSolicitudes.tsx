@@ -1,9 +1,8 @@
 // src/components/solicitudes/TablaSolicitudes.tsx
 import React from "react";
 import { useSolicitudesFacturacion, type SolicitudFacturacion } from "../../services/solicitudServices";
-// import { useAuthStore } from "../../store/auth.store";
 import { Link } from "react-router-dom";
-import { Pencil } from "lucide-react";
+import { Eye, Pencil } from "lucide-react";
 import { useLoaderStore } from "../../store/loader.store";
 
 const PAGE_SIZE = 10;
@@ -34,12 +33,20 @@ const btnGhost = `${btnBase} btn-ghost bg-base-200 text-base-content/70 hover:bg
 const btnActive = `${btnBase} btn-primary text-primary-content`;
 const btnEllipsis = "btn btn-xs rounded-xl min-w-8 h-8 px-3 bg-base-200 text-base-content/60 pointer-events-none";
 
-const BadgeSiNo: React.FC<{ v: boolean }> = ({ v }) => (
-  <span className={`badge ${v ? "badge-success" : "badge-ghost"}`}>{v ? "Sí" : "No"}</span>
-);
+/** Acepta boolean o 'Si'/'No' (case-insensitive) */
+const coerceBool = (v: unknown): boolean => {
+  if (typeof v === "boolean") return v;
+  if (typeof v === "string") return v.trim().toLowerCase() === "si";
+  if (typeof v === "number") return v === 1;
+  return false;
+};
+
+const BadgeSiNo: React.FC<{ v: boolean | string | number }> = ({ v }) => {
+  const ok = coerceBool(v);
+  return <span className={`badge ${ok ? "badge-success" : "badge-ghost"}`}>{ok ? "Sí" : "No"}</span>;
+};
 
 const TablaSolicitudes: React.FC = () => {
-  // Puedes pasar filtros aquí si quieres: useSolicitudesFacturacion({ agencia: "NORTE" })
   const { data, isLoading, isError, refetch } = useSolicitudesFacturacion();
   const solicitudes = data ?? [];
 
@@ -60,41 +67,34 @@ const TablaSolicitudes: React.FC = () => {
   const goTo = (p: number) => setPage(Math.min(Math.max(1, p), totalPages));
 
   const { show, hide } = useLoaderStore();
+  React.useEffect(() => { isLoading ? show() : hide(); }, [isLoading, show, hide]);
 
-  React.useEffect(() => {
-    if (isLoading) {
-      show();   // 👈 activa el overlay global
-    } else {
-      hide();   // 👈 lo oculta
-    }
-  }, [isLoading, show, hide]);
+  if (isError) {
+    return (
+      <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4 text-error">
+        Error al cargar solicitudes. <button className="btn btn-xs ml-2" onClick={() => refetch()}>Reintentar</button>
+      </div>
+    );
+  }
 
-
-  if (isError) return (
-    <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4 text-error">
-      Error al cargar solicitudes. <button className="btn btn-xs ml-2" onClick={() => refetch()}>Reintentar</button>
-    </div>
-  );
-
-
+  /** SOLO usar id de la cotización para construir la ruta */
   const buildDetallePath = (s: SolicitudFacturacion) => {
-    // Soportar ambas convenciones de nombre por si aún no actualizaste tipos:
-    const codigoCredito = (s as any).codigoCredito ?? (s as any).codigo_credito;
-    const idCotizacion = (s as any).idCotizacion ?? (s as any).id_cotizacion;
+    // Soportar distintas convenciones desde backend:
+    const idCotizacion =
+      (s as any).idCotizacion ??
+      (s as any).id_cotizacion ??
+      (s as any).cotizacion_id;
 
-    const hasCodigo = codigoCredito !== null && codigoCredito !== undefined && String(codigoCredito).trim() !== "";
-    const hasCoti = idCotizacion !== null && idCotizacion !== undefined && String(idCotizacion).trim() !== "";
+    const hasCoti =
+      idCotizacion !== null &&
+      idCotizacion !== undefined &&
+      String(idCotizacion).trim() !== "";
 
-    if (hasCodigo) {
-      return `/solicitudes/detalle/facturar-credito/${encodeURIComponent(String(codigoCredito))}`;
-    }
-    if (hasCoti) {
-      return `/solicitudes/detalle/facturar-solicitud/${encodeURIComponent(String(idCotizacion))}`;
-    }
-    return null; // sin identificadores válidos
+    return hasCoti ? `/solicitudes/facturacion/${encodeURIComponent(String(idCotizacion))}` : null;
+
+    // Si tu detalle vive en otra ruta, por ejemplo:
+    // return hasCoti ? `/facturacion/detalles/${encodeURIComponent(String(idCotizacion))}` : null;
   };
-
-
 
   return (
     <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
@@ -102,7 +102,6 @@ const TablaSolicitudes: React.FC = () => {
         <h3 className="text-sm font-semibold tracking-wide text-base-content/70">
           Solicitudes de facturación
         </h3>
-        {/* Aquí podrías poner filtros rápidos (agencia, autorizado, etc.) */}
       </div>
 
       <div className="relative overflow-x-auto max-w-full px-4">
@@ -129,7 +128,6 @@ const TablaSolicitudes: React.FC = () => {
             {visible.map((s: SolicitudFacturacion) => (
               <tr key={s.id} className="transition-colors">
                 <th className="text-base-content/50">{s.id}</th>
-                {/* {useAuthStore.getState().user?.rol === "Administrador" && c.estado != 'Aprobado' && ( */}
                 <td>
                   {(() => {
                     const to = buildDetallePath(s);
@@ -137,15 +135,15 @@ const TablaSolicitudes: React.FC = () => {
                       <Link to={to}>
                         <button
                           className="btn btn-sm text-warning bg-white btn-circle"
-                          title="Editar Estado"
+                          title="Ver detalles"
                         >
-                          <Pencil size="18px" />
+                          <Eye size="18px" />
                         </button>
                       </Link>
                     ) : (
                       <button
                         className="btn btn-sm btn-disabled bg-white btn-circle"
-                        title="Sin identificador"
+                        title="Sin id de cotización"
                         disabled
                       >
                         <Pencil size="18px" />
@@ -154,22 +152,20 @@ const TablaSolicitudes: React.FC = () => {
                   })()}
                 </td>
 
-                {/* )} */}
-                <td className="font-medium whitespace-nowrap">{s.codigo}</td>
-                <td className="whitespace-nowrap">{s.cliente}</td>
-                <td className="whitespace-nowrap">{s.agencia}</td>
-                <td className="whitespace-nowrap">{s.tipo}</td>
-                <td className="hidden lg:table-cell">{s.numeroRecibo ?? "—"}</td>
-                <td className="hidden lg:table-cell">{s.facturador ?? "—"}</td>
-                <td><BadgeSiNo v={s.autorizado} /></td>
-                <td className="hidden sm:table-cell"><BadgeSiNo v={s.facturado} /></td>
-                <td className="hidden sm:table-cell"><BadgeSiNo v={s.entregaAutorizada} /></td>
-                <td className="hidden md:table-cell whitespace-nowrap">{s.fechaCreacion}</td>
-                <td className="hidden md:table-cell whitespace-nowrap">{s.actualizado}</td>
+                <td className="font-medium whitespace-nowrap">{(s as any).codigo ?? "—"}</td>
+                <td className="whitespace-nowrap">{(s as any).cliente ?? "—"}</td>
+                <td className="whitespace-nowrap">{(s as any).agencia ?? "—"}</td>
+                <td className="whitespace-nowrap">{(s as any).tipo ?? "—"}</td>
+                <td className="hidden lg:table-cell">{(s as any).numeroRecibo ?? "—"}</td>
+                <td className="hidden lg:table-cell">{(s as any).facturador ?? "—"}</td>
+                <td><BadgeSiNo v={(s as any).autorizado} /></td>
+                <td className="hidden sm:table-cell"><BadgeSiNo v={(s as any).facturado} /></td>
+                <td className="hidden sm:table-cell"><BadgeSiNo v={(s as any).entregaAutorizada} /></td>
+                <td className="hidden md:table-cell whitespace-nowrap">{(s as any).fechaCreacion ?? "—"}</td>
+                <td className="hidden md:table-cell whitespace-nowrap">{(s as any).actualizado ?? "—"}</td>
               </tr>
             ))}
           </tbody>
-
         </table>
       </div>
 
@@ -179,13 +175,15 @@ const TablaSolicitudes: React.FC = () => {
         </span>
         <div className="flex items-center gap-2">
           <button className={btnGhost} onClick={goPrev} disabled={page === 1}>«</button>
-          {items.map((it, i) => it === "..." ? (
-            <span key={`e-${i}`} className={btnEllipsis}>…</span>
-          ) : (
-            <button key={`p-${it}`} className={it === page ? btnActive : btnGhost} onClick={() => goTo(Number(it))}>
-              {it}
-            </button>
-          ))}
+          {items.map((it, i) =>
+            it === "..." ? (
+              <span key={`e-${i}`} className={btnEllipsis}>…</span>
+            ) : (
+              <button key={`p-${it}`} className={it === page ? btnActive : btnGhost} onClick={() => goTo(Number(it))}>
+                {it}
+              </button>
+            )
+          )}
           <button className={btnGhost} onClick={goNext} disabled={page === totalPages}>»</button>
         </div>
       </div>

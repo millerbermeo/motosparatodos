@@ -15,11 +15,13 @@ export type CerrarCreditoValues = {
   placa: string;
 };
 
+
 type Props = {
   codigo_credito: string | number;
+  id_cotizacion: string | number;   // 👈 agregamos esta prop
 };
 
-const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito }) => {
+const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito, id_cotizacion }) => {
   const cerrar = useCerrarCredito();
 
   const {
@@ -50,6 +52,8 @@ const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito }) => {
       placa: values.placa.trim().toUpperCase() || null,
       color: values.color.trim().toUpperCase() || null,
       capacidad: values.capacidad.replace(/\s+/g, " ").trim() || null,
+      id_cotizacion, // 👈 incluimos la prop en el body
+
     };
 
     const result = await Swal.fire({

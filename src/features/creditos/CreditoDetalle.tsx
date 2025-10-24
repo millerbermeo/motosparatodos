@@ -142,6 +142,7 @@ const CreditoDetalle: React.FC = () => {
     // Descargas: si hay "firmas" o "soportes", habilitar enlaces; de lo contrario, botones simulados
     const firmasHref: string | undefined = typeof credito?.firmas === 'string' && credito.firmas.length > 0 ? `/${credito.firmas}` : undefined;
 
+    const idCot = credito?.cotizacion_id ?? null;
 
 
     const fakeDownload = (what: string) => () => alert(`Descargando: ${what} (simulado)`);
@@ -635,7 +636,7 @@ const CreditoDetalle: React.FC = () => {
 
                     {useAuthStore.getState().user?.rol === "Asesor" && estado === 'Aprobado' && !tieneDatosMoto && (
                         <>
-                            <Link to={`/creditos/detalle/cerrar-credito/${codigo_credito}`}>
+                            <Link to={`/creditos/detalle/cerrar-credito/${encodeURIComponent(codigo_credito)}/${encodeURIComponent(idCot ?? '')}`}>
                                 <button className="btn flex btn-warning items-center gap-2">
                                     <FileMinusIcon className="w-4 h-4" />
                                     Cerrar Crédito
@@ -692,7 +693,7 @@ const CreditoDetalle: React.FC = () => {
                         <>
 
 
-                            <Link to={`/creditos/detalle/facturar-credito/${codigo_credito}`}>
+                            <Link to={`/creditos/detalle/facturar-credito/${codigo_credito}/${encodeURIComponent(idCot ?? '')}`}>
 
                                 <button
                                     className="btn bg-sky-400 hover:bg-sky-500 text-white flex items-center gap-2"

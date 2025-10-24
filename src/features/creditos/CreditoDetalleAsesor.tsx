@@ -47,8 +47,9 @@ const Row: React.FC<{ label: string; value?: React.ReactNode, color?: string, va
 
 const CreditoDetalleAsesor: React.FC = () => {
     // Tomar el código desde la URL
-    const { id: codigoFromUrl } = useParams<{ id: string }>();
+  const { id: codigoFromUrl, cot: cotizacionFromUrl } = useParams<{ id: string; cot: string }>();
     const codigo_credito = String(codigoFromUrl ?? '');
+  const id_cotizacion = String(cotizacionFromUrl ?? '');
 
     // Si tu hook soporta "enabled", genial; si no, quítalo
     const { data: datos, isLoading, error } = useCredito({ codigo_credito }, !!codigo_credito);
@@ -247,7 +248,7 @@ const CreditoDetalleAsesor: React.FC = () => {
                         {/* CERRAR CREDITO */}
 
                         <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
-                            <CerrarCreditoFormulario codigo_credito={codigo_credito} />
+                            <CerrarCreditoFormulario codigo_credito={codigo_credito} id_cotizacion={id_cotizacion} />
                         </section>
 
                     </>

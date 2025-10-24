@@ -88,7 +88,7 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
       showConfirmButton: false,
     });
 
-    navigate("/solicitudes"); // 👈 Navegar a la ruta de Solicitud
+    navigate("/creditos"); // 👈 Navegar a la ruta de Solicitud
 
   };
 
