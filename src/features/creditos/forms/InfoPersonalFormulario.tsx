@@ -7,6 +7,7 @@ import { useDeudor, useRegistrarDeudor, useActualizarDeudor } from "../../../ser
 import { useParams } from "react-router-dom";
 import { useWizardStore } from "../../../store/wizardStore"; // ⬅️ nuevo
 import { unformatNumber } from "../../../shared/components/moneyUtils";
+import { useCotizacionByCodigoCredito } from "../../../services/cotizacionesServices";
 
 
 
@@ -460,7 +461,48 @@ const InfoPersonalFormulario: React.FC = () => {
         navDirRef.current = e.shiftKey ? 'prev' : 'next';
     };
 
+const { data: cotizacion } = useCotizacionByCodigoCredito(id);
 
+console.log("Datos de cotización obtenidos:", cotizacion);
+// Precargar desde la COTIZACIÓN si NO hay datos de deudor
+const prefilledFromCotRef = React.useRef(false);
+
+React.useEffect(() => {
+  if (prefilledFromCotRef.current) return;
+  if (!cotizacion?.success) return;
+
+  // ¿Ya existe deudor? entonces no precargamos desde la cotización
+  const hasDeudor =
+    Boolean((data as any)?.informacion_personal?.codigo_credito) ||
+    Boolean((data as any)?.data?.informacion_personal?.codigo_credito);
+
+  if (hasDeudor) return;
+
+  const c = (cotizacion as any)?.cotizacion ?? {};
+
+  // Mapeo de cotización → formulario
+  const mapped: Partial<InfoPersonalFormValues> = {
+    codigo_credito: String(id),
+    numero_documento: c.cedula ?? "",
+    primer_nombre: c.name ?? "",
+    segundo_nombre: c.s_name ?? "",
+    primer_apellido: c.last_name ?? "",
+    segundo_apellido: c.s_last_name ?? "",
+    celular: c.celular ?? "",
+    email: c.email ?? "",
+    fecha_nacimiento: (c.fecha_nacimiento ?? "").slice(0, 10), // YYYY-MM-DD
+    // Puedes setear más si los tienes en la cotización:
+    // ciudad_residencia: c.ciudad ?? "",
+  };
+
+  // Mezclamos con los valores actuales para no perder defaults
+  const current = getValues();
+  const merged = { ...current, ...mapped };
+
+  reset(merged, { keepDirty: false, keepTouched: false });
+
+  prefilledFromCotRef.current = true;
+}, [cotizacion, data, id, getValues, reset]);
 
     // // UI
     // if (isLoading) return <p>Cargando datos del deudor…</p>;

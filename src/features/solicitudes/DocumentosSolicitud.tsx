@@ -17,6 +17,11 @@ type Props = {
   onAprobado?: (id: string | number) => void; // callback opcional
 };
 
+const API_BASE =
+  (import.meta as any)?.env?.VITE_API_URL?.replace(/\/+$/, "") || "";
+
+  
+
 const DocumentosSolicitud: React.FC<Props> = ({
   id,
   docs,
@@ -27,7 +32,9 @@ const DocumentosSolicitud: React.FC<Props> = ({
   const aprobar = useAprobarEntregaFacturacion();
 
   const abrir = (url?: string | null) => {
-    if (url) window.open(url, "_blank", "noopener,noreferrer");
+
+    // alert(`${API_BASE}/${url}`)
+    if (url) window.open(`${API_BASE}/${url}`, "_blank", "noopener,noreferrer");
   };
 
   const onAceptar = async () => {

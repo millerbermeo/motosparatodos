@@ -2,7 +2,7 @@
 import React from "react";
 import { useSolicitudesFacturacion, type SolicitudFacturacion } from "../../services/solicitudServices";
 import { Link } from "react-router-dom";
-import { Eye, Pencil } from "lucide-react";
+import { Eye } from "lucide-react";
 import { useLoaderStore } from "../../store/loader.store";
 
 const PAGE_SIZE = 10;
@@ -128,7 +128,7 @@ const TablaSolicitudes: React.FC = () => {
             {visible.map((s: SolicitudFacturacion) => (
               <tr key={s.id} className="transition-colors">
                 <th className="text-base-content/50">{s.id}</th>
-                <td>
+                {/* <td>
                   {(() => {
                     const to = buildDetallePath(s);
                     return to ? (
@@ -148,6 +148,25 @@ const TablaSolicitudes: React.FC = () => {
                       >
                         <Pencil size="18px" />
                       </button>
+                    );
+                  })()}
+                </td> */}
+
+                <td>
+                  {(() => {
+                    const to = buildDetallePath(s);
+                    return to ? (
+                      <Link to={to}>
+                        <button
+                          className="btn btn-sm text-warning bg-white btn-circle"
+                          title="Ver detalles"
+                        >
+                          <Eye size="18px" />
+                        </button>
+                      </Link>
+                    ) : (
+                      // Nada (o un guion) cuando no hay id de cotización
+                      <span className="text-base-content/30 select-none"></span>
                     );
                   })()}
                 </td>

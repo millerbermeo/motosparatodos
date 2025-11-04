@@ -196,3 +196,30 @@ export const useCotizacionActividades = (
     staleTime: 30_000, // opcional
   });
 };
+
+
+// === Buscar cotización por código de crédito ===
+export const useCotizacionByCodigoCredito = (codigoCredito: string | undefined) => {
+  const codigo = (codigoCredito ?? "").trim();
+
+  return useQuery({
+    queryKey: ["cotizacion-by-codigo", codigo],
+    enabled: codigo.length > 0,
+    queryFn: async () => {
+      const { data } = await api.get("/get_cotizacion_por_codigo_credito.php", {
+        params: { codigo_credito: codigo },
+      });
+
+      if (!data?.success) {
+        throw new Error(
+          data?.error ?? "No se pudo obtener la cotización por código de crédito"
+        );
+      }
+
+      // Devuelve directamente el objeto completo que incluye:
+      // success, codigo_credito, cotizacion_id y cotizacion
+      return data;
+    },
+
+  });
+};

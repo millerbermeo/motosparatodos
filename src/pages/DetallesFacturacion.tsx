@@ -4,6 +4,7 @@ import { useCotizacionFullById } from "../services/fullServices";
 import DocumentosSolicitud from "../features/solicitudes/DocumentosSolicitud";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import SolicitudFacturaPDF from "../features/creditos/pdf/SolicitudFacturaPDF";
+import { useIvaDecimal } from "../services/ivaServices"; // ← NUEVO
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 type Num = number | undefined | null;
@@ -71,6 +72,17 @@ const DetallesFacturacion: React.FC = () => {
 
     const { data, isLoading, isError, error, refetch } = useCotizacionFullById(id_cotizacion);
 
+    // NUEVO: IVA desde backend con fallback si carga/falla
+    const {
+        ivaDecimal,
+        porcentaje,
+        isLoading: ivaLoading,
+        error: ivaError,
+    } = useIvaDecimal();
+
+    const IVA_DEC = ivaLoading || ivaError ? 0.19 : ivaDecimal ?? 0.19; // ej. 0.19
+    const IVA_PCT = ivaLoading || ivaError ? 19 : Number(porcentaje ?? 19); // ej. 19
+
     // data = { success: boolean, data: { cotizacion, creditos, solicitar_estado_facturacion } }
     const cot = data?.data?.cotizacion ?? null;
     const cred = data?.data?.creditos ?? null;
@@ -108,7 +120,10 @@ const DetallesFacturacion: React.FC = () => {
 
     // ── Condiciones del negocio (vehículo) ────────────────────────────────
     const cn_total = toNum(pick(sol?.cn_total, cot?.precio_total_a, cred?.total));
-    const cn_bruto = toNum(pick(sol?.cn_valor_bruto, Math.round((cn_total ?? 0) / 1.19)));
+
+    // NUEVO: bruto calculado con IVA del backend si no viene explícito
+    const cn_bruto = toNum(pick(sol?.cn_valor_bruto, (typeof cn_total === "number" ? Math.round(cn_total / (1 + IVA_DEC)) : undefined)));
+
     const cn_iva = useMemo(() => {
         const ivaExplicito = toNum(sol?.cn_iva);
         if (typeof ivaExplicito === "number") return ivaExplicito;
@@ -125,20 +140,18 @@ const DetallesFacturacion: React.FC = () => {
     const impuestos = toNum(pick(sol?.tot_impuestos, cot?.impuestos_b, cot?.impuestos_a, cred?.impuestos));
     const subtotalDocs = sum(soat, matricula, impuestos);
 
-    // ── Seguros y accesorios (IVA 19% SOLO sobre accesorios) ──────────────
+    // ── Seguros y accesorios (IVA SOLO sobre accesorios) ──────────────────
     // Entradas:
     const accesorios_bruto = toNum(pick(sol?.tot_accesorios, cred?.accesorios_total)); // sin IVA
     const seguros_total = toNum(pick(sol?.tot_seguros, cred?.precio_seguros));      // se toma tal cual
 
-    // Cálculo de IVA de accesorios (si hay accesorios):
-    const acc_iva_accesorios = typeof accesorios_bruto === "number" ? Math.round(accesorios_bruto * 0.19) : undefined;
+    // NUEVO: IVA accesorios con tarifa vigente
+    const acc_iva_accesorios = typeof accesorios_bruto === "number" ? Math.round(accesorios_bruto * IVA_DEC) : undefined;
     const acc_total_accesorios = typeof accesorios_bruto === "number" && typeof acc_iva_accesorios === "number"
         ? accesorios_bruto + acc_iva_accesorios
         : accesorios_bruto; // si no hay accesorios, queda undefined
 
     // Totales combinados de "Seguros y accesorios"
-    //   const acc_seg_bruto = sum(accesorios_bruto, seguros_total); // base sin IVA de acc + seguros (asumimos seguros ya vienen finales)
-    //   const acc_seg_iva    = acc_iva_accesorios;                  // solo IVA accesorios
     const acc_seg_total = sum(acc_total_accesorios, seguros_total); // total combinado
 
     // ── TOTAL GENERAL ─────────────────────────────────────────────────────
@@ -239,7 +252,7 @@ const DetallesFacturacion: React.FC = () => {
                             </div>
                             <div className="divide-y divide-slate-200">
                                 <RowRight label="Valor bruto:" value={fmtCOP(cn_bruto)} />
-                                <RowRight label="IVA:" value={fmtCOP(cn_iva)} />
+                                <RowRight label={`IVA (${IVA_PCT}%):`} value={fmtCOP(cn_iva)} />
                                 <RowRight
                                     label="Total vehículo:"
                                     value={fmtCOP(cn_total)}
@@ -271,7 +284,7 @@ const DetallesFacturacion: React.FC = () => {
                                 <div className="divide-y divide-slate-200">
                                     {/* Accesorios */}
                                     <RowRight label="Accesorios (bruto):" value={fmtCOP(accesorios_bruto)} />
-                                    <RowRight label="IVA accesorios (19%):" value={fmtCOP(acc_iva_accesorios)} />
+                                    <RowRight label={`IVA accesorios (${IVA_PCT}%):`} value={fmtCOP(acc_iva_accesorios)} />
                                     <RowRight label="Accesorios (total):" value={fmtCOP(acc_total_accesorios)} />
                                     {/* Seguros */}
                                     <RowRight label="Seguros:" value={fmtCOP(seguros_total)} />
