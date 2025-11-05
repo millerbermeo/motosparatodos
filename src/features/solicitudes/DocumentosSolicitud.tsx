@@ -2,6 +2,8 @@ import React from "react";
 import { FileDown, CheckCircle2 } from "lucide-react";
 import Swal from "sweetalert2";
 import { useAprobarEntregaFacturacion } from "../../services/solicitudServices";
+import { useModalStore } from "../../store/modalStore";
+import ActaEntregaFormulario from "../../shared/components/ActaEntregaFormulario";
 
 type Docs = {
   manifiesto_url?: string | null;
@@ -11,6 +13,8 @@ type Docs = {
 
 type Props = {
   id: string | number;
+  id_factura: number;                // 👈 NUEVO: lo necesitamos para el acta
+  responsableDefault?: string;       // 👈 opcional: para autollenar responsable en el acta
   docs: Docs;
   loading?: boolean;
   onVolver?: () => void;
@@ -20,53 +24,75 @@ type Props = {
 const API_BASE =
   (import.meta as any)?.env?.VITE_API_URL?.replace(/\/+$/, "") || "";
 
-  
-
 const DocumentosSolicitud: React.FC<Props> = ({
   id,
+  id_factura,
+  responsableDefault,
   docs,
   loading = false,
   onVolver,
   onAprobado,
 }) => {
   const aprobar = useAprobarEntregaFacturacion();
+  const open = useModalStore((s) => s.open);
 
   const abrir = (url?: string | null) => {
-
-    // alert(`${API_BASE}/${url}`)
     if (url) window.open(`${API_BASE}/${url}`, "_blank", "noopener,noreferrer");
   };
 
+  // ✅ Nuevo flujo:
+  // 1) Clic en "Aceptar" -> abre modal global con el formulario del acta
+  // 2) Al guardar el acta (onSuccess) -> ejecuta aprobar.mutate({ id }) y muestra alert de éxito
   const onAceptar = async () => {
-    const res = await Swal.fire({
-      icon: "warning",
-      title: "¿Está seguro?",
-      text: "El negocio será aprobado para su entrega",
-      showCancelButton: true,
-      confirmButtonText: "Sí",
-      cancelButtonText: "No, ¡cancelar!",
-      reverseButtons: true,
-      confirmButtonColor: "#10B981", // emerald-500
-      cancelButtonColor: "#EF4444",  // red-500
-    });
-    if (!res.isConfirmed) return;
+    if (!id_factura || Number(id_factura) <= 0) {
+      await Swal.fire({
+        icon: "warning",
+        title: "Falta id_factura",
+        text: "No se encontró el id de la factura para registrar el acta.",
+      });
+      return;
+    }
 
-    aprobar.mutate(
-      { id },
-      {
-        onSuccess: async (resp) => {
-          await Swal.fire({
-            icon: "success",
-            title: "Aprobado",
-            text:
-              (Array.isArray(resp?.message) ? resp.message.join("\n") : resp?.message) ??
-              "La entrega fue aprobada correctamente.",
-            timer: 1400,
-            showConfirmButton: false,
-          });
-          onAprobado?.(id);
-        },
-      }
+    open(
+      <ActaEntregaFormulario
+        key={`acta-${id_factura}`}
+        id_factura={Number(id_factura)}
+        responsableDefault={responsableDefault}
+        onSuccess={async () => {
+          // Cuando el acta se crea correctamente, aprobamos la entrega
+          aprobar.mutate(
+            { id },
+            {
+              onSuccess: async (resp) => {
+                await Swal.fire({
+                  icon: "success",
+                  title: "Entrega aprobada",
+                  text:
+                    (Array.isArray(resp?.message)
+                      ? resp.message.join("\n")
+                      : (resp as any)?.message) ??
+                    "La entrega fue aprobada correctamente.",
+                  timer: 1400,
+                  showConfirmButton: false,
+                });
+                onAprobado?.(id);
+              },
+              onError: async (err: any) => {
+                const msg =
+                  (Array.isArray(err?.response?.data?.message)
+                    ? err?.response?.data?.message.join("\n")
+                    : err?.response?.data?.error || err?.response?.data?.message) ||
+                  "Error al aprobar la entrega";
+                await Swal.fire({ icon: "error", title: "Error", text: String(msg) });
+              },
+            }
+          );
+        }}
+      />,
+      // Título del modal
+      "Acta de entrega",
+      // Opciones del modal global
+      { size: "5xl", position: "center" }
     );
   };
 

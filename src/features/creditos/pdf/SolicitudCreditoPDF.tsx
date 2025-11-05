@@ -16,12 +16,25 @@ const fmtCOP = (v?: number | null) => {
 const fmtDate = (d?: string | null) => {
   if (!d) return "—";
   try {
-    const dt = new Date(d);
+    // Soporta "YYYY-MM-DD" y "YYYY-MM-DD HH:mm:ss"
+    const norm = d.replace(" ", "T");
+    const dt = new Date(norm);
     if (Number.isNaN(dt.getTime())) return d;
     return dt.toLocaleDateString("es-CO", { year: "numeric", month: "2-digit", day: "2-digit" });
   } catch {
     return d;
   }
+};
+
+const calcEdad = (fecha?: string | null) => {
+  if (!fecha) return "—";
+  const dt = new Date(fecha);
+  if (Number.isNaN(dt.getTime())) return "—";
+  const today = new Date();
+  let age = today.getFullYear() - dt.getFullYear();
+  const m = today.getMonth() - dt.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dt.getDate())) age--;
+  return `${Math.max(0, age)}`;
 };
 
 // ================= Styles (clonado del diseño) =================
@@ -91,43 +104,151 @@ const Row2 = ({ l1, v1, l2, v2 }: { l1: string; v1: React.ReactNode; l2: string;
   </View>
 );
 
-// ================= PDF Document (clonado del diseño) =================
+// ================= Normalizadores para el JSON del ejemplo =================
+function parseSegurosJSON(raw?: string | null): Array<{ id: number; nombre: string; tipo: string | null; valor: number }> {
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    if (Array.isArray(arr)) return arr as any;
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+function pickOfertaAB(data: any) {
+  // Si existe "precio_base_a" o "precio_total_a", elegimos A; si no, B; si no, null
+  const hasA = data && (data.precio_base_a != null || data.precio_total_a != null);
+  const hasB = data && (data.precio_base_b != null || data.precio_total_b != null);
+  const key = hasA ? "a" : hasB ? "b" : null;
+  if (!key) return null;
+
+  const pre = (k: string) => `${k}_${key}`;
+
+  const segurosArr = parseSegurosJSON(data?.[pre("seguros")]);
+  const segurosOtros = (data?.[pre("otro_seguro")] ?? 0) + segurosArr.reduce((acc, s) => acc + (Number(s?.valor) || 0), 0);
+
+  const accesorios = Number(data?.[pre("accesorios")]) || 0;
+  const marcacion = Number(data?.[pre("marcacion")]) || 0;
+  const documentos = Number(data?.[pre("precio_documentos")]) || 0;
+  const soat = Number(data?.[pre("soat")]) || 0;
+  const impuestos = Number(data?.[pre("impuestos")]) || 0;
+  const matricula = Number(data?.[pre("matricula")]) || 0;
+  const descuento = Number(data?.[pre("descuentos")]) || 0;
+  const precioVenta = Number(data?.[pre("precio_base")]) || 0;
+  const garantiaExtendida = Number(data?.[pre("valor_garantia_extendida")]) || 0;
+  const cuotaInicial = Number(data?.[pre("cuota_inicial")]) || 0;
+
+  // Preferimos los totales que ya vienen calculados
+  const precioTotal = (data?.[pre("precio_total")] != null)
+    ? Number(data?.[pre("precio_total")])
+    : Math.max(0,
+        precioVenta - descuento + documentos + soat + impuestos + matricula + accesorios + marcacion + segurosOtros
+      );
+
+  const valorFinanciar = Math.max(0, precioTotal + garantiaExtendida - cuotaInicial);
+
+  const producto = `${data?.[pre("marca")] ?? ""} ${data?.[pre("linea")] ?? ""}`.trim();
+  const modelo = data?.[pre("modelo")] ?? "";
+
+  return {
+    key,
+    producto: [producto, modelo].filter(Boolean).join(" – "),
+    precioVenta,
+    descuento,
+    documentos,
+    soat,
+    impuestos,
+    matricula,
+    accesorios,
+    marcacion,
+    segurosOtros,
+    precioTotal,
+    garantiaExtendida,
+    cuotaInicial,
+    valorFinanciar,
+    plazo: data?.cant_cuotas ?? data?.plazo_meses ?? null,
+    cuotaMensual: null as number | null, // en el JSON vienen nulas las cuotas; dejamos en blanco
+  };
+}
+
+function mapPersonaDesdeJSON(data: any, fallbackIP: any = {}) {
+  // Convierte el JSON dado al shape esperado por el PDF (cuando no exista deudorData clásico)
+  const nombre = [data?.name, data?.s_name, data?.last_name, data?.s_last_name].filter(Boolean).join(" ") || undefined;
+  return {
+    numero_documento: data?.cedula ?? fallbackIP?.numero_documento,
+    lugar_expedicion: fallbackIP?.lugar_expedicion ?? "—",
+    primer_nombre: undefined,
+    segundo_nombre: undefined,
+    primer_apellido: undefined,
+    segundo_apellido: undefined,
+    nombre_completo: nombre,
+    edad: calcEdad(data?.fecha_nacimiento),
+    direccion_residencia: fallbackIP?.direccion_residencia ?? "—",
+    telefono_fijo: fallbackIP?.telefono_fijo ?? undefined,
+    celular: data?.celular ?? fallbackIP?.celular,
+    email: data?.email ?? fallbackIP?.email,
+    estado_civil: fallbackIP?.estado_civil ?? "—",
+    personas_a_cargo: fallbackIP?.personas_a_cargo ?? "—",
+    finca_raiz: fallbackIP?.finca_raiz ?? "—",
+    tipo_vivienda: fallbackIP?.tipo_vivienda ?? "—",
+    costo_arriendo: fallbackIP?.costo_arriendo ?? 0,
+    vehiculo: fallbackIP?.vehiculo ?? "—",
+    placa: fallbackIP?.placa ?? "—",
+    ciudad_residencia: fallbackIP?.ciudad_residencia ?? "—",
+  };
+}
+
+// ================= PDF Document (clonado y acomodado al JSON) =================
 export const SolicitudCreditoPDFDoc: React.FC<{
   codigo_credito: string;
-  credito: any | undefined;
+  credito: any | undefined; // puede venir en forma "antigua" o como el JSON del ejemplo
   deudorData: any | undefined;
   logoUrl?: string;
 }> = ({ codigo_credito, credito, deudorData, logoUrl }) => {
-  const ip = deudorData?.informacion_personal ?? {};
+  // Datos personales
+  const ipBase = deudorData?.informacion_personal ?? {};
+  const ip = credito && ("cedula" in (credito || {})) ? mapPersonaDesdeJSON(credito, ipBase) : ipBase;
   const refs: any[] = deudorData?.referencias ?? [];
 
-  const detalle = {
+  // Detalle económico desde el JSON A/B si existe; si no, cae al esquema anterior
+  const oferta = credito ? pickOfertaAB(credito) : null;
+
+  const detalle = oferta ?? {
     producto: credito?.producto,
     precioVenta: typeof credito?.valor_producto === "number" ? credito?.valor_producto : undefined,
     descuento: 0,
-    gastosMatricula: credito?.gasto_matricula ?? 420000,
-    soat: credito?.soat ?? 388000,
-    garantiaExtendida: credito?.garantia_ext ?? 247475,
-    segurosOtros: 1,
-    valorTotal: credito?.valor_total ?? 10707001,
-    valorFinanciar: typeof credito?.valor_financiar === "number" ? credito?.valor_financiar : 10954464,
-    cuotaInicial: typeof credito?.cuota_inicial === "number" ? credito?.cuota_inicial : 12,
-    plazo: credito?.plazo_meses ?? 4,
-    cuotaMensual: credito?.valor_cuota ?? 2875000,
+    documentos: 0,
+    impuestos: 0,
+    matricula: credito?.gasto_matricula ?? 0,
+    soat: credito?.soat ?? 0,
+    accesorios: 0,
+    marcacion: 0,
+    segurosOtros: 0,
+    precioTotal: credito?.valor_total,
+    valorFinanciar: typeof credito?.valor_financiar === "number" ? credito?.valor_financiar : undefined,
+    cuotaInicial: typeof credito?.cuota_inicial === "number" ? credito?.cuota_inicial : undefined,
+    garantiaExtendida: credito?.garantia_ext ?? 0,
+    plazo: credito?.plazo_meses ?? null,
+    cuotaMensual: credito?.valor_cuota ?? null,
   };
 
-  const firmaCc = ip?.numero_documento ?? "CC 444444";
+  const firmaCc = ip?.numero_documento ? `CC ${ip.numero_documento}` : "";
 
   const fecha = fmtDate(credito?.fecha_creacion);
-  const ciudad = ip?.ciudad_residencia || credito?.ciudad || "Cali";
+  const ciudad = ip?.ciudad_residencia || (credito?.ciudad ?? "—");
 
   const LogoSrc =
     logoUrl || (import.meta as any)?.env?.VITE_LOGO_URL || "/moto3.png"; // usa tu CDN si lo tienes
 
+  const nombreMostrado = ip?.nombre_completo
+    || `${ip?.primer_nombre ?? ""} ${ip?.segundo_nombre ?? ""} ${ip?.primer_apellido ?? ""} ${ip?.segundo_apellido ?? ""}`
+      .replace(/\s+/g, " ").trim() || "—";
+
   // Render PDF
   return (
     <Document>
-<Page size="A4" orientation="portrait" style={styles.page}>
+      <Page size="A4" orientation="portrait" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
           <Image src={LogoSrc} style={styles.logo} />
@@ -154,31 +275,19 @@ export const SolicitudCreditoPDFDoc: React.FC<{
         {/* Deudor / Información personal */}
         <Text style={styles.sectionTitle}>Deudor / Información personal</Text>
         <View style={styles.hr2} />
-        <Row2 l1="Documento de identidad" v1={ip?.numero_documento ?? "CC 444444"} l2="De" v2={ip?.lugar_expedicion ?? "Neiva"} />
-        <Row2
-          l1="Nombre"
-          v1={`${ip?.primer_nombre ?? "prueba"} ${ip?.segundo_nombre ?? "Alberto"} ${ip?.primer_apellido ?? "Muñoz"} ${ip?.segundo_apellido ?? "Pérez"}`.replace(/\s+/g, " ").trim()}
-          l2="Edad"
-          v2={ip?.edad ?? "0"}
-        />
-        <Row2 l1="Dirección de residencia" v1={ip?.direccion_residencia ?? "calle"} l2="Teléfono" v2={`${ip?.telefono_fijo ? ip.telefono_fijo + " - " : "- "}${ip?.celular ?? "3115380029"}`} />
-        <Row2 l1="Estado civil" v1={ip?.estado_civil ?? "Soltero(a)"} l2="Personas a cargo" v2={ip?.personas_a_cargo ?? "0"} />
-        <Row2 l1="Finca raiz" v1={ip?.finca_raiz ?? "No"} l2="Inmueble" v2={ip?.tipo_vivienda ?? "Propia"} />
-        <Row2 l1="Valor de arriendo" v1={fmtCOP(Number(ip?.costo_arriendo) || 0)} l2="" v2="" />
-        <Row2 l1="Vehículo" v1={ip?.vehiculo ?? "NR"} l2="Placa" v2={ip?.placa ?? "NR"} />
+        <Row2 l1="Documento de identidad" v1={ip?.numero_documento ?? "—"} l2="De" v2={ip?.lugar_expedicion ?? "—"} />
+        <Row2 l1="Nombre" v1={nombreMostrado} l2="Edad" v2={ip?.edad ?? "—"} />
+        <Row2 l1="Dirección de residencia" v1={ip?.direccion_residencia ?? "—"} l2="Teléfono" v2={`${ip?.telefono_fijo ? ip.telefono_fijo + " - " : ""}${ip?.celular ?? "—"}`} />
+        <Row2 l1="Correo electrónico" v1={ip?.email ?? "—"} l2="Estado civil" v2={ip?.estado_civil ?? "—"} />
+        <Row2 l1="Personas a cargo" v1={ip?.personas_a_cargo ?? "—"} l2="Ciudad de residencia" v2={ip?.ciudad_residencia ?? "—"} />
+        <Row2 l1="Finca raiz" v1={ip?.finca_raiz ?? "—"} l2="Inmueble" v2={ip?.tipo_vivienda ?? "—"} />
+        <Row2 l1="Valor de arriendo" v1={fmtCOP(Number(ip?.costo_arriendo) || 0)} l2="Vehículo" v2={ip?.vehiculo ?? "—"} />
+        <Row2 l1="Placa" v1={ip?.placa ?? "—"} l2="" v2="" />
 
         {/* Referencias */}
         <Text style={styles.sectionTitle}>Deudor / Referencias</Text>
         <View style={styles.hr2} />
-        {(refs?.length
-          ? refs
-          : [1, 2, 3].map((i) => ({
-              nombre_completo: "dev",
-              direccion: i === 1 ? "dev" : "calle",
-              tipo_referencia: "Familiar",
-              telefono: i === 2 ? "21212112" : i === 1 ? "122112" : "12212121",
-            })) // fallback para mantener el look
-        ).map((r: any, idx: number) => (
+        {(refs?.length ? refs : []).map((r: any, idx: number) => (
           <View key={idx}>
             <View style={{ flexDirection: "row", alignItems: "center", marginTop: 6 }}>
               <View
@@ -198,10 +307,13 @@ export const SolicitudCreditoPDFDoc: React.FC<{
               </View>
               <Text style={{ fontSize: 10, fontWeight: 700 }}>Tipo</Text>
             </View>
-            <Row2 l1="Familiar" v1="" l2="Nombre" v2={r?.nombre_completo ?? "dev"} />
-            <Row2 l1="Dirección" v1={r?.direccion ?? "dev"} l2="Teléfono" v2={r?.telefono ?? ""} />
+            <Row2 l1={r?.tipo_referencia ?? "—"} v1="" l2="Nombre" v2={r?.nombre_completo ?? "—"} />
+            <Row2 l1="Dirección" v1={r?.direccion ?? "—"} l2="Teléfono" v2={r?.telefono ?? "—"} />
           </View>
         ))}
+        {(!refs || refs.length === 0) && (
+          <Text style={{ fontSize: 9, marginTop: 6 }}>No se registraron referencias en esta solicitud.</Text>
+        )}
 
         {/* Dos columnas: Detalle de la venta / Condiciones del negocio */}
         <Text style={[styles.sectionTitle, { marginTop: 12 }]}>Detalle de la venta</Text>
@@ -220,21 +332,47 @@ export const SolicitudCreditoPDFDoc: React.FC<{
               <Text style={styles.lineLabel}>- Descuento</Text>
               <Text style={styles.lineValue}>{fmtCOP(detalle.descuento)}</Text>
             </View>
-            <View style={styles.lineItem}>
-              <Text style={styles.lineLabel}>+ Gastos de matrícula</Text>
-              <Text style={styles.lineValue}>{fmtCOP(detalle.gastosMatricula)}</Text>
-            </View>
+            {('documentos' in detalle) && (
+              <View style={styles.lineItem}>
+                <Text style={styles.lineLabel}>+ Documentos</Text>
+                <Text style={styles.lineValue}>{fmtCOP((detalle as any).documentos)}</Text>
+              </View>
+            )}
+            {('impuestos' in detalle) && (
+              <View style={styles.lineItem}>
+                <Text style={styles.lineLabel}>+ Impuestos</Text>
+                <Text style={styles.lineValue}>{fmtCOP((detalle as any).impuestos)}</Text>
+              </View>
+            )}
+            {('matricula' in detalle) && (
+              <View style={styles.lineItem}>
+                <Text style={styles.lineLabel}>+ Matrícula</Text>
+                <Text style={styles.lineValue}>{fmtCOP((detalle as any).matricula)}</Text>
+              </View>
+            )}
             <View style={styles.lineItem}>
               <Text style={styles.lineLabel}>+ SOAT</Text>
               <Text style={styles.lineValue}>{fmtCOP(detalle.soat)}</Text>
             </View>
+            {('accesorios' in detalle) && (
+              <View style={styles.lineItem}>
+                <Text style={styles.lineLabel}>+ Accesorios</Text>
+                <Text style={styles.lineValue}>{fmtCOP((detalle as any).accesorios)}</Text>
+              </View>
+            )}
+            {('marcacion' in detalle) && (
+              <View style={styles.lineItem}>
+                <Text style={styles.lineLabel}>+ Marcación</Text>
+                <Text style={styles.lineValue}>{fmtCOP((detalle as any).marcacion)}</Text>
+              </View>
+            )}
             <View style={styles.lineItem}>
               <Text style={styles.lineLabel}>+ Seguros / Otros</Text>
               <Text style={styles.lineValue}>{fmtCOP(detalle.segurosOtros)}</Text>
             </View>
             <View style={styles.lineItem}>
               <Text style={[styles.lineLabel, { fontWeight: 700 }]}>= Valor total</Text>
-              <Text style={styles.lineValue}>{fmtCOP(detalle.valorTotal)}</Text>
+              <Text style={styles.lineValue}>{fmtCOP((detalle as any).precioTotal ?? (detalle as any).valorTotal)}</Text>
             </View>
           </View>
 
@@ -242,23 +380,23 @@ export const SolicitudCreditoPDFDoc: React.FC<{
             <Text style={{ fontSize: 11, fontWeight: 700, marginBottom: 6 }}>Condiciones del negocio</Text>
             <View style={styles.lineItem}>
               <Text style={styles.lineLabel}>- Cuota inicial</Text>
-              <Text style={styles.lineValue}>{fmtCOP(detalle.cuotaInicial)}</Text>
+              <Text style={styles.lineValue}>{fmtCOP(detalle.cuotaInicial as any)}</Text>
             </View>
             <View style={styles.lineItem}>
               <Text style={styles.lineLabel}>+ Garantía extendida</Text>
-              <Text style={styles.lineValue}>{fmtCOP(detalle.garantiaExtendida)}</Text>
+              <Text style={styles.lineValue}>{fmtCOP((detalle as any).garantiaExtendida)}</Text>
             </View>
             <View style={styles.lineItem}>
               <Text style={styles.lineLabel}>= Valor a financiar</Text>
-              <Text style={styles.lineValue}>{fmtCOP(detalle.valorFinanciar)}</Text>
+              <Text style={styles.lineValue}>{fmtCOP((detalle as any).valorFinanciar ?? (detalle as any).valorFinanciar)}</Text>
             </View>
             <View style={styles.lineItem}>
               <Text style={styles.lineLabel}>Plazo</Text>
-              <Text style={styles.lineValue}>{`${detalle.plazo} meses`}</Text>
+              <Text style={styles.lineValue}>{detalle.plazo ? `${detalle.plazo} meses` : "—"}</Text>
             </View>
             <View style={styles.lineItem}>
               <Text style={[styles.lineLabel, { fontWeight: 700 }]}>Total de cuota mensual</Text>
-              <Text style={styles.lineValue}>{fmtCOP(detalle.cuotaMensual)}</Text>
+              <Text style={styles.lineValue}>{detalle.cuotaMensual ? fmtCOP(detalle.cuotaMensual) : "—"}</Text>
             </View>
           </View>
         </View>
@@ -324,7 +462,8 @@ const SolicitudCreditoPDF: React.FC<{ logoUrl?: string }> = ({ logoUrl }) => {
   const { data: deudor } = useDeudor(codigo_credito);
 
   const deudorData = (deudor as any)?.data ?? (datos as any)?.data ?? {};
-  const credito = (datos as any)?.creditos?.[0];
+  // "creditos?.[0]" puede ser el shape tradicional o el JSON plano que nos envían ahora
+  const credito = (datos as any)?.creditos?.[0] ?? (datos as any) ?? undefined;
 
   const fileName = useMemo(
     () => `SolicitudCredito_${codigo_credito || "sin_codigo"}.pdf`,

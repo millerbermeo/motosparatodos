@@ -820,14 +820,14 @@ const DetalleCotizacion: React.FC = () => {
             q.estado !== 'Solicitar crédito' &&
             q.estado !== 'Solicitar crédito express' && (
               <Link to={`/cotizaciones/estado/${id}`}>
-                <button className="btn btn-warning btn-sm" title="Crear recordatorio">
+                <button className="btn btn-warning btn-sm" title="Canbiar estado de la cotización">
                   <Edit className="w-4 h-4" />
                   Cambiar estado
                 </button>
               </Link>
             )}
 
-          <button className="btn btn-success btn-sm" onClick={() => console.log('Crear recordatorio', q?.id)} title="Crear recordatorio">
+          <button disabled className="btn btn-success btn-sm" onClick={() => console.log('Crear recordatorio', q?.id)} title="Crear recordatorio">
             <CalendarPlus className="w-4 h-4" />
             Crear recordatorio
           </button>

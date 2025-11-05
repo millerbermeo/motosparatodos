@@ -6,6 +6,7 @@ import {
   useRegistrarSolicitudFacturacion,
   useUltimaSolicitudYCotizacion,
 } from '../../../services/solicitudServices';
+import { useDistribuidoras } from '../../../services/distribuidoraServices'; // 👈 nuevo import
 import FacturaFinalDownload from '../pdf/FacturaFinal';
 import ButtonLink from '../../../shared/components/ButtonLink';
 
@@ -48,27 +49,18 @@ const parseJSON = <T,>(raw: unknown, fallback: T): T => {
 
 const AGENCIAS = ['Sucursal Norte', 'Sucursal Centro', 'Sucursal Sur'];
 
-const DISTRIBUIDORAS = [
-  { value: '', label: 'Seleccione…' },
-  { value: 'gente-motos', label: 'Gente Motos' },
-  { value: 'supermotos-mym', label: 'Supermotos MyM' },
-  { value: 'unymotos-sas', label: 'Unymotos SAS' },
-  { value: 'distrimotos-yamaha', label: 'Distrimotos Yamaha' },
-  { value: 'dismerca', label: 'Dismerca' },
-  { value: 'supermotos-honda', label: 'Supermotos Honda' },
-  { value: 'motored-hero', label: 'Motored Hero' },
-  { value: 'los-coches', label: 'Los Coches' },
-  { value: 'potenza', label: 'Potenza' },
-  { value: 'garcia-y-montoya', label: 'Garcia y Montoya' },
-  { value: 'motox-1-yamaha', label: 'Motox 1 Yamaha' },
-  { value: 'yamaha-del-cafe', label: 'Yamaha del Cafe' },
-  { value: 'ibiza-motos', label: 'Ibiza Motos' },
-  { value: 'sukipartes', label: 'Sukipartes' },
-  { value: 'tiendas-uma', label: 'Tiendas UMA' },
-  { value: 'zagamotos', label: 'Zagamotos' },
-  { value: 'simotos', label: 'Simotos' },
-  { value: 'megamotos-akt', label: 'Megamotos AKT' },
-];
+/** 🔧 Helper para generar el "value" (slug) que ya usabas en tu array */
+const slugify = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+/** Placeholder inicial (se mantiene la misma forma del array que ya usabas) */
+const PLACEHOLDER_OPTION = [{ value: '', label: 'Seleccione…' }];
 
 const FacturarCreditoSolicitud: React.FC = () => {
   const { id: codigoFromUrl } = useParams<{ id: string }>();
@@ -80,6 +72,12 @@ const FacturarCreditoSolicitud: React.FC = () => {
     isLoading,
     error,
   } = useUltimaSolicitudYCotizacion(codigo_credito);
+
+  // 👇 Cargamos distribuidoras desde backend (hasta 200; ajusta si necesitas más)
+  const { data: distsResp, isLoading: loadingDists } = useDistribuidoras({
+    page: 1,
+    limit: 200,
+  });
 
   // Atajo a objetos
   const solicitud = (SolicitudFacturacion as any)?.solicitud ?? null;
@@ -233,7 +231,7 @@ const FacturarCreditoSolicitud: React.FC = () => {
       : undefined;
 
   // Formulario: estado
-  const [distribuidora, setDistribuidora] = useState<string>('');
+  const [distribuidora, setDistribuidora] = useState<string>(''); // mantiene tu estado original (slug)
   const [numeroRecibo, setNumeroRecibo] = useState<string>('');
   const [observaciones, setObservaciones] = useState<string>('');
   const [cedulaFile, setCedulaFile] = useState<File | null>(null);
@@ -251,20 +249,52 @@ const FacturarCreditoSolicitud: React.FC = () => {
     registrarSolicitud(fd);
   };
 
+  /** ========= Distribuidoras dinámicas sin cambiar tu lógica ========= */
+
+  // 1) Normaliza el catálogo a tu misma forma { value, label }
+  const DISTRIBUIDORAS = useMemo(() => {
+    const items = (distsResp?.data ?? []).map((d) => ({
+      value: slugify(d.nombre), // mantiene "value" como slug
+      label: d.nombre,          // muestra el nombre real
+    }));
+    // si quieres fallback a unos estáticos cuando no llegue nada, puedes agregar aquí
+    return PLACEHOLDER_OPTION.concat(items);
+  }, [distsResp]);
+
+  // 2) Mapa slug → id (para armar distribuidora_id en el submit)
+  const distSlugToId = useMemo(() => {
+    const map = new Map<string, number>();
+    (distsResp?.data ?? []).forEach((d) => map.set(slugify(d.nombre), d.id));
+    return map;
+  }, [distsResp]);
+
   // Submit usando SOLO datos del nuevo endpoint
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
 
       const agenciaRandom = AGENCIAS[Math.floor(Math.random() * AGENCIAS.length)];
-      const distLabel =
+      const selectedLabel =
         DISTRIBUIDORAS.find((d) => d.value === distribuidora)?.label ?? '';
+
+      // Validación mínima de selección
+      if (!distribuidora || !selectedLabel) {
+        alert('Selecciona una distribuidora');
+        return;
+      }
+
+      const selectedId = distSlugToId.get(distribuidora) ?? null;
+      if (!selectedId) {
+        alert('No se pudo resolver el ID de la distribuidora seleccionada');
+        return;
+      }
+
       const codigo4 = String(Math.floor(1000 + Math.random() * 9000)); // 1000..9999
 
       const fd = new FormData();
       fd.append('agencia', agenciaRandom);
-      fd.append('distribuidora', distLabel);
-      fd.append('distribuidora_id', '1');
+      fd.append('distribuidora', selectedLabel);         // 👈 nombre para backend
+      fd.append('distribuidora_id', String(selectedId)); // 👈 ID real desde BD
       fd.append('codigo_solicitud', codigo4);
       fd.append('codigo_credito', codigo_credito);
       fd.append('nombre_cliente', clienteNombre);
@@ -284,6 +314,8 @@ const FacturarCreditoSolicitud: React.FC = () => {
     },
     [
       distribuidora,
+      DISTRIBUIDORAS,
+      distSlugToId,
       numeroRecibo,
       observaciones,
       cedulaFile,
@@ -502,6 +534,7 @@ const FacturarCreditoSolicitud: React.FC = () => {
                   value={distribuidora}
                   onChange={(e) => setDistribuidora(e.target.value)}
                   required
+                  disabled={loadingDists} // evita seleccionar mientras carga
                 >
                   {DISTRIBUIDORAS.map((opt) => (
                     <option key={opt.value || 'default'} value={opt.value}>
@@ -509,6 +542,9 @@ const FacturarCreditoSolicitud: React.FC = () => {
                     </option>
                   ))}
                 </select>
+                {loadingDists && (
+                  <span className="text-xs text-slate-500 mt-1">Cargando distribuidoras…</span>
+                )}
               </div>
 
               <div className="flex flex-col gap-1">
@@ -574,7 +610,7 @@ const FacturarCreditoSolicitud: React.FC = () => {
                 </Link>
                 <button
                   type="submit"
-                  disabled={isPending}
+                  disabled={isPending || loadingDists || !distribuidora}
                   className="btn bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600"
                 >
                   {isPending ? 'Enviando…' : '✓ Aceptar'}

@@ -332,7 +332,7 @@ const DetallesFacturacion: React.FC = () => {
                             </div>
                         </section>
 
-                        <DocumentosSolicitud
+                        <DocumentosSolicitud id_factura={Number(id_cotizacion)}
                             id={id_cotizacion}
                             docs={{
                                 manifiesto_url: data?.data?.creditos?.formato_referencia ?? null,

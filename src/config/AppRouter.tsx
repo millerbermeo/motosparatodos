@@ -46,6 +46,7 @@ const RegistrarFacturacion = lazy(() => import("../pages/RegistrarFacturacion"))
 const Garantia = lazy(() => import("../pages/Garantia")); // 👈 crea esta página simple
 const SolicitarFacturacionPage = lazy(() => import("../pages/SolicitarFacturacionPage"));
 
+const Dis = lazy(() => import("../pages/Dis"));
 
 const DetallesFacturacion = lazy(() => import("../pages/DetallesFacturacion"));
 
@@ -133,6 +134,12 @@ const AppRouter: React.FC = () => {
               <Route element={<RequireModule name="Puntos" />}>
                 <Route path="/agencias" element={<Agencias />} />
               </Route>
+
+              
+              <Route element={<RequireModule name="Puntos" />}>
+                <Route path="/distribuidoras" element={<Dis />} />
+              </Route>
+
 
 
               {/* -------------------- SUBEMENU ALERTAS -------------------- */}

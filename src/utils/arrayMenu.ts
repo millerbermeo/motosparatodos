@@ -19,6 +19,8 @@ export const MENU_ESTATICO: MenuItem[] = [
     children: [
       { nombre: "Empresas", ruta: "/empresas", icono: "Building2", requireModule: "Puntos", orden: 1 },
       { nombre: "Agencias", ruta: "/agencias", icono: "FileType", requireModule: "Puntos", orden: 2 },
+      { nombre: "Distribuidoras", ruta: "/distribuidoras", icono: "Building2", requireModule: "Puntos", orden: 3 },
+
     ],
   },
 
@@ -34,7 +36,7 @@ export const MENU_ESTATICO: MenuItem[] = [
     ],
   },
 
-    { nombre: "Garantia Extendida", ruta: "/garantia", icono: "ShieldCheck", requireModule: "Cotizaciones", orden: 9 },
+  { nombre: "Garantia Extendida", ruta: "/garantia", icono: "ShieldCheck", requireModule: "Cotizaciones", orden: 9 },
 
   { nombre: "Reportes", ruta: "/reportes", icono: "FileText", requireModule: "Reportes", orden: 10 },
   { nombre: "Usuarios", ruta: "/usuarios", icono: "User", requireModule: "Usuarios", orden: 11 },

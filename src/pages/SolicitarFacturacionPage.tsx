@@ -6,10 +6,11 @@ import Swal from "sweetalert2";
 import { useGetFacturacionPorCodigo } from "../services/procesoContadoServices"; // <- mismo servicio
 import { useRegistrarSolicitudFacturacion2 } from "../services/solicitudServices";
 import { useAuthStore } from "../store/auth.store";
+import { useDistribuidoras } from "../services/distribuidoraServices"; // 👈 NUEVO: hook catálogo
 
 type FormValues = {
     documentos: "Si" | "No";
-    distribuidora?: string;
+    distribuidora?: string;       // guardaremos el "slug" como value del select
     reciboPago?: string;
     descuentoAut?: string;        // opcional
     saldoContraentrega?: string;  // opcional
@@ -32,6 +33,15 @@ const fmtOptCOP = (v?: string | number | null) => {
     if (v === null || v === undefined || v === "") return "—";
     return fmtCOP(v);
 };
+
+// helper para value (slug) del select
+const slugify = (s: string) =>
+  s
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
 const Box = ({
     title,
@@ -87,7 +97,31 @@ const SolicitarFacturacionPage: React.FC = () => {
     // Datos origen
     const { data, isLoading, error } = useGetFacturacionPorCodigo(codigo);
 
-    console.log(data)
+    // Catálogo de distribuidoras desde backend
+    const { data: distsResp, isLoading: loadingDists } = useDistribuidoras({
+        page: 1,
+        limit: 200,
+    });
+
+    // Construimos opciones del select manteniendo tu shape { value, label }
+    const DIST_OPTS = React.useMemo(
+        () => [
+            { value: "", label: "Seleccione…" },
+            ...((distsResp?.data ?? []).map((d) => ({
+                value: slugify(d.nombre),
+                label: d.nombre,
+            })) as Array<{ value: string; label: string }>),
+        ],
+        [distsResp]
+    );
+
+    // Mapa slug -> { id, nombre } para enviar ID real y nombre en el payload
+    const distSlugMap = React.useMemo(() => {
+        const m = new Map<string, { id: number; nombre: string }>();
+        (distsResp?.data ?? []).forEach((d) => m.set(slugify(d.nombre), { id: d.id, nombre: d.nombre }));
+        return m;
+    }, [distsResp]);
+
     // Hook submit
     const { mutate: registrarSolicitud, isPending } =
         useRegistrarSolicitudFacturacion2({
@@ -112,19 +146,25 @@ const SolicitarFacturacionPage: React.FC = () => {
     });
 
     const docValue = watch("documentos");
+    const distSlugSelected = watch("distribuidora"); // ← slug seleccionado
 
     const user = useAuthStore((state) => state.user);
 
     const onSubmit = async (values: FormValues) => {
         if (!data) return;
 
+        // Resolver nombre e ID reales desde el slug seleccionado
+        const dist = values.distribuidora ? distSlugMap.get(values.distribuidora) : undefined;
+        const distNombre = dist?.nombre ?? "";
+        const distId = dist?.id ?? "";
+
         const fd = new FormData();
 
-        // ===== Backend payload (sin cambios) =====
+        // ===== Backend payload (manteniendo tu estructura) =====
         fd.append("id_cotizacion", String(data.cotizacion_id ?? ""));
         fd.append("agencia", "Motos");
-        fd.append("distribuidora", values.distribuidora || "");
-        fd.append("distribuidora_id", "");
+        fd.append("distribuidora", distNombre); // 👈 nombre desde catálogo
+        fd.append("distribuidora_id", String(distId)); // 👈 id real
         fd.append("codigo_solicitud", codigo || "");
         fd.append("codigo_credito", "");
         fd.append("nombre_cliente", data.nombre_cliente || "");
@@ -421,19 +461,32 @@ const SolicitarFacturacionPage: React.FC = () => {
 
                         {/* Columna derecha */}
                         <div className="space-y-4">
-                            {/* Distribuidora */}
+                            {/* Distribuidora (dinámico con hook) */}
                             <div className="form-control flex flex-col">
                                 <label className="label">
                                     <span className="label-text">Distribuidora</span>
                                 </label>
                                 <select
                                     className="select select-bordered"
+                                    disabled={loadingDists}
                                     {...register("distribuidora")}
+                                    value={distSlugSelected ?? ""}
+                                    onChange={(e) => {
+                                        // mantener integración con react-hook-form
+                                        const event = { target: { name: "distribuidora", value: e.target.value } } as any;
+                                        // @ts-ignore
+                                        register("distribuidora").onChange(event);
+                                    }}
                                 >
-                                    <option value="">Seleccione…</option>
-                                    <option value="Distribuidora A">Distribuidora A</option>
-                                    <option value="Distribuidora B">Distribuidora B</option>
+                                    {DIST_OPTS.map((opt) => (
+                                        <option key={opt.value || "default"} value={opt.value}>
+                                            {opt.label}
+                                        </option>
+                                    ))}
                                 </select>
+                                {loadingDists && (
+                                    <p className="text-xs text-slate-500 mt-1">Cargando distribuidoras…</p>
+                                )}
                             </div>
 
                             {/* Descuento a autorizar */}
@@ -489,7 +542,7 @@ const SolicitarFacturacionPage: React.FC = () => {
                         <button
                             type="submit"
                             className="btn btn-success"
-                            disabled={isSubmitting || isPending}
+                            disabled={isSubmitting || isPending || loadingDists}
                         >
                             {isSubmitting || isPending ? "Procesando…" : "✓ Facturar"}
                         </button>
