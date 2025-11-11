@@ -22,8 +22,20 @@ type Props = {
   estadoCotizacion?: string; // 👈 NUEVO: estado actual de la cotización
 };
 
+// Backend base (env o fallback fijo)
 const API_BASE =
-  (import.meta as any)?.env?.VITE_API_URL?.replace(/\/+$/, "") || "";
+  (import.meta as any)?.env?.VITE_API_URL?.replace(/\/+$/, "") ||
+  "https://tuclick.vozipcolombia.net.co/motos/back";
+
+const resolveUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  // Si ya es absoluta, la usamos tal cual
+  if (/^https?:\/\//i.test(url)) return url;
+  // Si es relativa, la pegamos al backend
+  const base = API_BASE.replace(/\/+$/, "");
+  const path = url.replace(/^\/+/, "");
+  return `${base}/${path}`;
+};
 
 const DocumentosSolicitud: React.FC<Props> = ({
   id,
@@ -35,18 +47,17 @@ const DocumentosSolicitud: React.FC<Props> = ({
   onAprobado,
   estadoCotizacion,
 }) => {
-  // const aprobar = useAprobarEntregaFacturacion(); // 👈 ELIMINADO
   const open = useModalStore((s) => s.open);
 
   const abrir = (url?: string | null) => {
-    if (url) {
-      window.open(`${API_BASE}/${url}`, "_blank", "noopener,noreferrer");
-    }
+    const finalUrl = resolveUrl(url);
+    if (!finalUrl) return;
+    window.open(finalUrl, "_blank", "noopener,noreferrer");
   };
 
   // ✅ Nuevo flujo:
   // 1) Clic en "Aceptar" -> abre modal global con el formulario del acta
-  // 2) El componente 'ActaEntregaFormulario' se encarga del resto.
+  // 2) El componente 'ActaEntregaFormulario' se encarga de guardar y actualizar estados.
   const onAceptar = () => {
     open(
       <ActaEntregaFormulario
@@ -54,14 +65,10 @@ const DocumentosSolicitud: React.FC<Props> = ({
         id_factura={Number(id_factura)}
         responsableDefault={responsableDefault}
         onSuccess={() => {
-          // El formulario tuvo éxito (presumiblemente creó el acta y actualizó estados)
-          // Llamamos al callback 'onAprobado' si existe (ej: para hacer refetch en el padre).
           onAprobado?.(id);
         }}
       />,
-      // Título del modal
       "Acta de entrega",
-      // Opciones del modal global
       { size: "5xl", position: "center" }
     );
   };
@@ -106,7 +113,6 @@ const DocumentosSolicitud: React.FC<Props> = ({
           onClick={onVolver}
           className="inline-flex items-center justify-center rounded-lg px-4 py-2
                      bg-rose-100 text-rose-700 hover:bg-rose-200"
-          // disabled={loading || aprobar.isPending} // 👈 MODIFICADO
           disabled={loading}
         >
           ← Volver
@@ -117,14 +123,12 @@ const DocumentosSolicitud: React.FC<Props> = ({
           <button
             type="button"
             onClick={onAceptar}
-            // disabled={loading || aprobar.isPending} // 👈 MODIFICADO
             disabled={loading}
             className="inline-flex items-center gap-2 rounded-lg px-4 py-2
                        bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed"
             title="Aprobar entrega"
           >
             <CheckCircle2 className="w-4 h-4" />
-            {/* {aprobar.isPending ? "Aprobando…" : "Aceptar"} // 👈 MODIFICADO */}
             Aceptar
           </button>
         )}

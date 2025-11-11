@@ -94,8 +94,8 @@ const DetallesFacturacion: React.FC = () => {
   // Estado de la cotización (para ocultar botón Aceptar cuando esté Facturado)
   const estadoCotizacion: string | undefined =
     cot?.estado ||
-    sol?.estado ||
-    sol?.estado_facturacion ||
+    (sol as any)?.estado ||
+    (sol as any)?.estado_facturacion ||
     undefined;
 
   // Cliente
@@ -214,6 +214,23 @@ const DetallesFacturacion: React.FC = () => {
   const cuota_inicial = toNum(cred?.cuota_inicial) ?? 0;
   const saldoFinanciar =
     max0((totalGeneral ?? 0) - cuota_inicial) ?? 0;
+
+  // 👇 Construimos las URLs de documentos usando “de un lado o de otro”
+  const manifiesto_url =
+    sol && (sol as any).manifiesto_url
+      ? (sol as any).manifiesto_url
+      : cred?.formato_referencia || null;
+
+  const cedula_url =
+    sol && (sol as any).cedula_url
+      ? (sol as any).cedula_url
+      : cred?.formato_datacredito || null;
+
+  // Si algún día guardas factura en solicitar_estado_facturacion
+  const factura_url =
+    (sol as any)?.factura_url ||
+    (cot as any)?.factura_url ||
+    null;
 
   return (
     <main className="min-h-screen w-full bg-slate-50">
@@ -469,18 +486,12 @@ const DetallesFacturacion: React.FC = () => {
               id_factura={Number(id_cotizacion)}
               id={id_cotizacion}
               docs={{
-                manifiesto_url:
-                  data?.data?.creditos?.formato_referencia ?? null,
-                cedula_url:
-                  data?.data?.creditos?.formato_datacredito ?? null,
-                factura_url:
-                  data?.data?.solicitar_estado_facturacion
-                    ?.factura_url ?? null,
+                manifiesto_url: manifiesto_url,
+                cedula_url: cedula_url,
+                factura_url: factura_url,
               }}
               estadoCotizacion={estadoCotizacion}
               onAprobado={() => {
-                // Después de crear acta + actualizar estados,
-                // recargamos para que el botón desaparezca al estar Facturado.
                 refetch();
               }}
             />
