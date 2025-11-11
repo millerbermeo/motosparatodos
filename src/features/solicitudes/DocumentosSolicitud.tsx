@@ -1,7 +1,7 @@
 import React from "react";
 import { FileDown, CheckCircle2 } from "lucide-react";
-import Swal from "sweetalert2";
-import { useAprobarEntregaFacturacion } from "../../services/solicitudServices";
+// import Swal from "sweetalert2"; // 👈 ELIMINADO
+// import { useAprobarEntregaFacturacion } from "../../services/solicitudServices"; // 👈 ELIMINADO
 import { useModalStore } from "../../store/modalStore";
 import ActaEntregaFormulario from "../../shared/components/ActaEntregaFormulario";
 
@@ -13,12 +13,13 @@ type Docs = {
 
 type Props = {
   id: string | number;
-  id_factura: number;                // 👈 NUEVO: lo necesitamos para el acta
-  responsableDefault?: string;       // 👈 opcional: para autollenar responsable en el acta
+  id_factura: number;
+  responsableDefault?: string;
   docs: Docs;
   loading?: boolean;
   onVolver?: () => void;
   onAprobado?: (id: string | number) => void; // callback opcional
+  estadoCotizacion?: string; // 👈 NUEVO: estado actual de la cotización
 };
 
 const API_BASE =
@@ -32,61 +33,30 @@ const DocumentosSolicitud: React.FC<Props> = ({
   loading = false,
   onVolver,
   onAprobado,
+  estadoCotizacion,
 }) => {
-  const aprobar = useAprobarEntregaFacturacion();
+  // const aprobar = useAprobarEntregaFacturacion(); // 👈 ELIMINADO
   const open = useModalStore((s) => s.open);
 
   const abrir = (url?: string | null) => {
-    if (url) window.open(`${API_BASE}/${url}`, "_blank", "noopener,noreferrer");
+    if (url) {
+      window.open(`${API_BASE}/${url}`, "_blank", "noopener,noreferrer");
+    }
   };
 
   // ✅ Nuevo flujo:
   // 1) Clic en "Aceptar" -> abre modal global con el formulario del acta
-  // 2) Al guardar el acta (onSuccess) -> ejecuta aprobar.mutate({ id }) y muestra alert de éxito
-  const onAceptar = async () => {
-    if (!id_factura || Number(id_factura) <= 0) {
-      await Swal.fire({
-        icon: "warning",
-        title: "Falta id_factura",
-        text: "No se encontró el id de la factura para registrar el acta.",
-      });
-      return;
-    }
-
+  // 2) El componente 'ActaEntregaFormulario' se encarga del resto.
+  const onAceptar = () => {
     open(
       <ActaEntregaFormulario
         key={`acta-${id_factura}`}
         id_factura={Number(id_factura)}
         responsableDefault={responsableDefault}
-        onSuccess={async () => {
-          // Cuando el acta se crea correctamente, aprobamos la entrega
-          aprobar.mutate(
-            { id },
-            {
-              onSuccess: async (resp) => {
-                await Swal.fire({
-                  icon: "success",
-                  title: "Entrega aprobada",
-                  text:
-                    (Array.isArray(resp?.message)
-                      ? resp.message.join("\n")
-                      : (resp as any)?.message) ??
-                    "La entrega fue aprobada correctamente.",
-                  timer: 1400,
-                  showConfirmButton: false,
-                });
-                onAprobado?.(id);
-              },
-              onError: async (err: any) => {
-                const msg =
-                  (Array.isArray(err?.response?.data?.message)
-                    ? err?.response?.data?.message.join("\n")
-                    : err?.response?.data?.error || err?.response?.data?.message) ||
-                  "Error al aprobar la entrega";
-                await Swal.fire({ icon: "error", title: "Error", text: String(msg) });
-              },
-            }
-          );
+        onSuccess={() => {
+          // El formulario tuvo éxito (presumiblemente creó el acta y actualizó estados)
+          // Llamamos al callback 'onAprobado' si existe (ej: para hacer refetch en el padre).
+          onAprobado?.(id);
         }}
       />,
       // Título del modal
@@ -95,6 +65,11 @@ const DocumentosSolicitud: React.FC<Props> = ({
       { size: "5xl", position: "center" }
     );
   };
+
+  // 👇 Si la cotización está en "Facturado", NO mostramos el botón Aceptar
+  const isFacturado =
+    estadoCotizacion &&
+    estadoCotizacion.toString().toLowerCase() === "facturado";
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
@@ -131,22 +106,28 @@ const DocumentosSolicitud: React.FC<Props> = ({
           onClick={onVolver}
           className="inline-flex items-center justify-center rounded-lg px-4 py-2
                      bg-rose-100 text-rose-700 hover:bg-rose-200"
-          disabled={loading || aprobar.isPending}
+          // disabled={loading || aprobar.isPending} // 👈 MODIFICADO
+          disabled={loading}
         >
           ← Volver
         </button>
 
-        <button
-          type="button"
-          onClick={onAceptar}
-          disabled={loading || aprobar.isPending}
-          className="inline-flex items-center gap-2 rounded-lg px-4 py-2
-                     bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed"
-          title="Aprobar entrega"
-        >
-          <CheckCircle2 className="w-4 h-4" />
-          {aprobar.isPending ? "Aprobando…" : "Aceptar"}
-        </button>
+        {/* Solo mostramos "Aceptar" si NO está facturado */}
+        {!isFacturado && (
+          <button
+            type="button"
+            onClick={onAceptar}
+            // disabled={loading || aprobar.isPending} // 👈 MODIFICADO
+            disabled={loading}
+            className="inline-flex items-center gap-2 rounded-lg px-4 py-2
+                       bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed"
+            title="Aprobar entrega"
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            {/* {aprobar.isPending ? "Aprobando…" : "Aceptar"} // 👈 MODIFICADO */}
+            Aceptar
+          </button>
+        )}
       </div>
     </div>
   );
@@ -166,7 +147,13 @@ const DownloadButton: React.FC<{
     "bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed";
   return (
     <div className="flex flex-col gap-1">
-      <button type="button" className={base} onClick={onClick} disabled={disabled} title={label}>
+      <button
+        type="button"
+        className={base}
+        onClick={onClick}
+        disabled={disabled}
+        title={label}
+      >
         <FileDown className="w-4 h-4" />
         {label}
       </button>

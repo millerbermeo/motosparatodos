@@ -333,35 +333,58 @@ export const useUltimaSolicitudYCotizacion = (
 };
 
 
-type AprobarPayload = { id: string | number };
-type AprobarResponse = { success: boolean; message?: string | string[] };
+// Debajo de tus otros tipos
+export interface RegistrarActaResponse {
+  success: boolean;
+  id_acta?: number | string;
+  message?: string | string[];
+  estado?: string;
+  id_factura?: number | string;
+}
 
-export const useAprobarEntregaFacturacion = (opts?: {
-  endpoint?: string; // por defecto /aprobar_entrega.php
+// ...
+
+export const useRegistrarActaEntrega = (opts?: {
+  endpoint?: string; // por defecto nuestro endpoint de acta
 }) => {
   const qc = useQueryClient();
 
-  return useMutation<AprobarResponse, AxiosError<ServerError>, AprobarPayload>({
-    mutationFn: async ({ id }) => {
-      const fd = new FormData();
-      fd.append("cotizacion_id", String(id));
-      const { data } = await api.post<AprobarResponse>(
+  return useMutation<RegistrarActaResponse, AxiosError<ServerError>, FormData>({
+    mutationFn: async (formData) => {
+      const { data } = await api.post<RegistrarActaResponse>(
         opts?.endpoint ?? "/actualizar_estado_por_cotizacion.php",
-        fd,
+        formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
       return data;
     },
-    onSuccess: async (_resp, { id }) => {
-      await Promise.all([
-        qc.invalidateQueries({ queryKey: ["solicitudes-facturacion"] }),
-        qc.invalidateQueries({ queryKey: ["solicitud-facturacion", id] }),
-      ]);
+    onSuccess: async (resp) => {
+      // invalidamos listados relacionados
+      await qc.invalidateQueries({ queryKey: ["solicitudes-facturacion"] });
+
+      const texto =
+        Array.isArray(resp?.message)
+          ? resp!.message!.join("\n")
+          : resp?.message ?? "Acta registrada correctamente";
+
+      Swal.fire({
+        icon: "success",
+        title: "Acta registrada",
+        text: texto,
+        timer: 1600,
+        showConfirmButton: false,
+      });
     },
     onError: (error) => {
-      const raw = error.response?.data?.message ?? "No se pudo aprobar la entrega";
+      const raw =
+        error.response?.data?.message ??
+        "No se pudo registrar el acta de entrega";
       const arr = Array.isArray(raw) ? raw : [raw];
-      Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        html: arr.join("<br/>"),
+      });
     },
   });
 };

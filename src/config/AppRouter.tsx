@@ -119,7 +119,7 @@ const AppRouter: React.FC = () => {
                 <Route path="/solicitudes" element={<SolicitudFacturacion />} />
                 <Route path="/solicitudes/detalle/facturar-credito/:id" element={<FacturarCredito />} />
                 <Route path="/solicitudes/detalle/facturar-solicitud/:id" element={<FacturarCreditoSolicitud />} />
-                <Route path="solicitudes/facturacion/:id" element={<DetallesFacturacion />} />
+                <Route path="/solicitudes/facturacion/:id" element={<DetallesFacturacion />} />
 
               </Route>
 
