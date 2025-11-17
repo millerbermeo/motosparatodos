@@ -106,6 +106,7 @@ type FormValues = {
     garantiaExtendida1?: "no" | "12" | "24" | "36";
     garantiaExtendida2?: "no" | "12" | "24" | "36";
 
+    // 👇 NUEVOS
     valor_garantia_extendida_a?: string;
     valor_garantia_extendida_b?: string;
 
@@ -116,8 +117,21 @@ type FormValues = {
     soat_b?: string;
     impuestos_b?: string;
     matricula_b?: string;
-};
 
+    valorRunt1: string;
+    valorLicencia1: string;
+    valorDefensas1: string;
+    valorHandSavers1: string;
+    valorOtrosAdicionales1: string;
+
+    // Valores adicionales MOTO 2
+    valorRunt2: string;
+    valorLicencia2: string;
+    valorDefensas2: string;
+    valorHandSavers2: string;
+    valorOtrosAdicionales2: string;
+
+};
 
 const garantiaExtendidaOptions: SelectOption[] = [
     { value: "no", label: "No" },
@@ -125,7 +139,6 @@ const garantiaExtendidaOptions: SelectOption[] = [
     { value: "24", label: "24 meses" },
     { value: "36", label: "36 meses" },
     { value: "48", label: "48 meses" },
-
 ];
 
 
@@ -163,6 +176,7 @@ const CotizacionFormulario2: React.FC = () => {
             marca1: "",
             moto1: "",
             garantia1: "",
+
             garantiaExtendida1: "no", // NUEVO
 
             accesorios1: "0",
@@ -205,18 +219,27 @@ const CotizacionFormulario2: React.FC = () => {
             modelo_b: "",
             marcacion1: "0",
             marcacion2: "0",
-
             valor_garantia_extendida_a: "0",
             valor_garantia_extendida_b: "0",
 
+            valorRunt1: "0",
+            valorLicencia1: "0",
+            valorDefensas1: "0",
+            valorHandSavers1: "0",
+            valorOtrosAdicionales1: "0",
 
+            // MOTO 2
+            valorRunt2: "0",
+            valorLicencia2: "0",
+            valorDefensas2: "0",
+            valorHandSavers2: "0",
+            valorOtrosAdicionales2: "0",
         },
         mode: "onBlur",
         shouldUnregister: false,
     });
 
     const navigate = useNavigate();
-
 
     const { mutate: cotizacion, isPending } = useCreateCotizaciones();
 
@@ -258,6 +281,41 @@ const CotizacionFormulario2: React.FC = () => {
         value: m.linea,
         label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP Modelo ${m.modelo ?? ""}`,
     }));
+
+
+    // Checkboxes solo para habilitar inputs de adicionales (NO van al backend)
+    const [adicionalesMoto1, setAdicionalesMoto1] = React.useState({
+        runt: false,
+        licencia: false,
+        defensas: false,
+        hand: false,
+        otros: false,
+    });
+
+    const [adicionalesMoto2, setAdicionalesMoto2] = React.useState({
+        runt: false,
+        licencia: false,
+        defensas: false,
+        hand: false,
+        otros: false,
+    });
+
+
+    React.useEffect(() => {
+        if (!incluirMoto1) {
+            setAdicionalesMoto1({ runt: false, licencia: false, defensas: false, hand: false, otros: false });
+        }
+    }, [incluirMoto1]);
+
+    React.useEffect(() => {
+        if (!incluirMoto2) {
+            setAdicionalesMoto2({ runt: false, licencia: false, defensas: false, hand: false, otros: false });
+        }
+    }, [incluirMoto2]);
+
+
+
+
     // MOTO 1
     React.useEffect(() => {
         const sel = watch("moto1");
@@ -371,38 +429,29 @@ const CotizacionFormulario2: React.FC = () => {
     React.useEffect(() => {
         if (!incluirMoto1) {
             setValue("marca1", ""); setValue("moto1", ""); setValue("garantia1", "");
-            setValue("foto_a", null)
+            setValue("foto_a", null);
             setValue("accesorios1", "0"); setValue("segurosIds1", []); setValue("otroSeguro1", "0");
-            setValue("foto_b", null)
             setValue("precioDocumentos1", "0"); setValue("descuento1", "0"); setValue("cuotaInicial1", "0");
-            setValue("garantiaExtendida1", "no"); setValue("garantiaExtendida1", "no");
+            setValue("garantiaExtendida1", "no")
+            setValue("garantiaExtendida1", "no");
             setValue("valor_garantia_extendida_a", "0"); // 👈
             setValue("soat_a", "0"); setValue("impuestos_a", "0"); setValue("matricula_a", "0");
-
         }
     }, [incluirMoto1, setValue]);
 
     React.useEffect(() => {
         if (!incluirMoto2) {
             setValue("marca2", ""); setValue("moto2", ""); setValue("garantia2", "");
+            setValue("foto_b", null)
             setValue("accesorios2", "0"); setValue("segurosIds2", []); setValue("otroSeguro2", "0");
             setValue("precioDocumentos2", "0"); setValue("descuento2", "0"); setValue("cuotaInicial2", "0");
-            setValue("garantiaExtendida2", "no"); setValue("garantiaExtendida2", "no");
+            setValue("garantiaExtendida2", "no");
+            setValue("garantiaExtendida2", "no");
             setValue("valor_garantia_extendida_b", "0"); // 👈
             setValue("soat_b", "0"); setValue("impuestos_b", "0"); setValue("matricula_b", "0");
 
         }
     }, [incluirMoto2, setValue]);
-
-
-    // Si cambian la opción de garantía extendida a "no", limpia el valor
-    React.useEffect(() => {
-        if (watch("garantiaExtendida1") === "no") setValue("valor_garantia_extendida_a", "0");
-    }, [watch("garantiaExtendida1"), setValue]);
-
-    React.useEffect(() => {
-        if (watch("garantiaExtendida2") === "no") setValue("valor_garantia_extendida_b", "0");
-    }, [watch("garantiaExtendida2"), setValue]);
 
     React.useEffect(() => {
         if (metodo === "contado") {
@@ -413,6 +462,14 @@ const CotizacionFormulario2: React.FC = () => {
             setValue("categoria", "motos");
         }
     }, [metodo, setValue]);
+
+    React.useEffect(() => {
+        if (watch("garantiaExtendida1") === "no") setValue("valor_garantia_extendida_a", "0");
+    }, [watch("garantiaExtendida1"), setValue]);
+
+    React.useEffect(() => {
+        if (watch("garantiaExtendida2") === "no") setValue("valor_garantia_extendida_b", "0");
+    }, [watch("garantiaExtendida2"), setValue]);
 
     const reqIf = (cond: boolean, msg: string) => ({
         validate: (v: any) => (!cond ? true : (v !== undefined && v !== null && String(v).trim().length > 0) || msg),
@@ -425,9 +482,9 @@ const CotizacionFormulario2: React.FC = () => {
         return s ? Number(s) : 0;
     }
     const fmt = (n: number) => n.toLocaleString("es-CO") + " COP";
+
     const getMatricula = (m: any, metodo: "contado" | "credibike" | "terceros") =>
         metodo === "contado" ? Number(m.matricula_contado) : Number(m.matricula_credito);
-
 
 
     const findSeguroValor = (id: string) => {
@@ -482,15 +539,29 @@ const CotizacionFormulario2: React.FC = () => {
     const inicial1 = N(watch("cuotaInicial1"));
     const marcacion1Val = N(watch("marcacion1"));
 
+    // ===== ADICIONALES MOTO 1 =====
+    const extrasMoto1 =
+        (adicionalesMoto1.runt ? N(watch("valorRunt1")) : 0) +
+        (adicionalesMoto1.licencia ? N(watch("valorLicencia1")) : 0) +
+        (adicionalesMoto1.defensas ? N(watch("valorDefensas1")) : 0) +
+        (adicionalesMoto1.hand ? N(watch("valorHandSavers1")) : 0) +
+        (adicionalesMoto1.otros ? N(watch("valorOtrosAdicionales1")) : 0);
 
-    // ===== CÁLCULOS MOTO 1 =====
+    // ===== ADICIONALES MOTO 2 =====
+    const extrasMoto2 =
+        (adicionalesMoto2.runt ? N(watch("valorRunt2")) : 0) +
+        (adicionalesMoto2.licencia ? N(watch("valorLicencia2")) : 0) +
+        (adicionalesMoto2.defensas ? N(watch("valorDefensas2")) : 0) +
+        (adicionalesMoto2.hand ? N(watch("valorHandSavers2")) : 0) +
+        (adicionalesMoto2.otros ? N(watch("valorOtrosAdicionales2")) : 0);
+
+
     const garantiaExt1Sel = watch("garantiaExtendida1") ?? "no";
     const garantiaExtVal1 = N(watch("valor_garantia_extendida_a"));
 
     // ===== CÁLCULOS MOTO 2 =====
     const garantiaExt2Sel = watch("garantiaExtendida2") ?? "no";
     const garantiaExtVal2 = N(watch("valor_garantia_extendida_b"));
-
 
     // const totalSeguros1 = (showMotos && incluirMoto1)
     //     ? (segurosIds1 as string[]).reduce((acc, id) => acc + findSeguroValor(id), 0) + otros1
@@ -501,7 +572,8 @@ const CotizacionFormulario2: React.FC = () => {
 
     const totalSinSeguros1 = (showMotos && incluirMoto1)
         ? (precioBase1 + accesorios1Val + documentos1 + marcacion1Val - descuento1Val
-            + (garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0))
+            + (garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0)
+            + extrasMoto1)
         : 0;
 
 
@@ -524,7 +596,8 @@ const CotizacionFormulario2: React.FC = () => {
 
     const totalSinSeguros2 = (showMotos && incluirMoto2)
         ? (precioBase2 + accesorios2Val + documentos2 + marcacion2Val - descuento2Val
-            + (garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0))
+            + (garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0)
+            + extrasMoto2)
         : 0;
 
     const totalConSeguros2 = totalSinSeguros2 + totalSeguros2;
@@ -533,6 +606,7 @@ const CotizacionFormulario2: React.FC = () => {
     const moto2Seleccionada = Boolean(watch("moto2"));
 
     const onSubmit = (data: FormValues) => {
+
 
         const unformatNumber = (v: string | number | null | undefined): string => {
             if (v === null || v === undefined) return "";
@@ -562,11 +636,14 @@ const CotizacionFormulario2: React.FC = () => {
             return warn("Comentario obligatorio", "Debes ingresar un comentario.");
         }
 
+
         const accesorios1 = toNumberSafe(data.accesorios1);
         const accesorios2 = toNumberSafe(data.accesorios2);
         const otroSeguro1 = toNumberSafe(data.otroSeguro1);
         const otroSeguro2 = toNumberSafe(data.otroSeguro2);
-
+        // Mantengo estas dos líneas, aunque ya no se usan para el cálculo final:
+        // const precioDocumentos1 = toNumberSafe(data.precioDocumentos1);
+        // const precioDocumentos2 = toNumberSafe(data.precioDocumentos2);
         const descuento1 = toNumberSafe(data.descuento1);
         const descuento2 = toNumberSafe(data.descuento2);
         const cuotaInicial1Num = toNumberSafe(data.cuotaInicial1);
@@ -629,12 +706,16 @@ const CotizacionFormulario2: React.FC = () => {
             canal_contacto: data.canal,
             pregunta: data.pregunta,
 
+
+
             celular: data.celular?.replace(/\D/g, "").trim(),
             fecha_nacimiento: data.fecha_nac,
 
             marca_a: incluirMoto1 ? data.marca1 : "",
             linea_a: lineaA_final,
             garantia_a: incluirMoto1 ? (data.garantia1 || "") : "",
+            garantia_extendida_a: incluirMoto1 ? (data.garantiaExtendida1 || "no") : "no", // NUEVO
+
             accesorios_a: incluirMoto1 ? accesorios1 : 0,
             seguro_vida_a: incluirMoto1 ? seg1 : 0,
             seguro_mascota_s_a: 0,
@@ -648,6 +729,8 @@ const CotizacionFormulario2: React.FC = () => {
             marca_b: incluirMoto2 ? data.marca2 : null,
             linea_b: lineaB_final,
             garantia_b: incluirMoto2 ? (data.garantia2 || "") : null,
+            garantia_extendida_b: incluirMoto2 ? (data.garantiaExtendida2 || "no") : null, // NUEVO
+
             accesorios_b: incluirMoto2 ? accesorios2 : null,
             seguro_vida_b: incluirMoto2 ? seg2 : null,
             seguro_mascota_s_b: incluirMoto2 ? 0 : null,
@@ -694,10 +777,10 @@ const CotizacionFormulario2: React.FC = () => {
             foto_a: incluirMoto1 ? (data.foto_a ?? null) : null,
             foto_b: incluirMoto2 ? (data.foto_b ?? null) : null,
 
+
             descuentos_a: incluirMoto1 ? descuento1 : 0,
             descuentos_b: incluirMoto2 ? descuento2 : null,
 
-            // 👇 NUEVOS
             valor_garantia_extendida_a: incluirMoto1 && data.garantiaExtendida1 !== "no" ? valorGarantiaA : 0,
             valor_garantia_extendida_b: incluirMoto2 && data.garantiaExtendida2 !== "no" ? valorGarantiaB : null,
             soat_a: incluirMoto1 ? N(data.soat_a) : 0,
@@ -707,6 +790,41 @@ const CotizacionFormulario2: React.FC = () => {
             soat_b: incluirMoto2 ? N(data.soat_b) : null,
             impuestos_b: incluirMoto2 ? N(data.impuestos_b) : null,
             matricula_b: incluirMoto2 ? N(data.matricula_b) : null,
+
+
+             // 👇 NUEVOS CAMPOS QUE VAN AL PHP
+  valorRunt1: incluirMoto1 && adicionalesMoto1.runt
+    ? toNumberSafe(data.valorRunt1)
+    : 0,
+  valorLicencia1: incluirMoto1 && adicionalesMoto1.licencia
+    ? toNumberSafe(data.valorLicencia1)
+    : 0,
+  valorDefensas1: incluirMoto1 && adicionalesMoto1.defensas
+    ? toNumberSafe(data.valorDefensas1)
+    : 0,
+  valorHandSavers1: incluirMoto1 && adicionalesMoto1.hand
+    ? toNumberSafe(data.valorHandSavers1)
+    : 0,
+  valorOtrosAdicionales1: incluirMoto1 && adicionalesMoto1.otros
+    ? toNumberSafe(data.valorOtrosAdicionales1)
+    : 0,
+
+  valorRunt2: incluirMoto2 && adicionalesMoto2.runt
+    ? toNumberSafe(data.valorRunt2)
+    : 0,
+  valorLicencia2: incluirMoto2 && adicionalesMoto2.licencia
+    ? toNumberSafe(data.valorLicencia2)
+    : 0,
+  valorDefensas2: incluirMoto2 && adicionalesMoto2.defensas
+    ? toNumberSafe(data.valorDefensas2)
+    : 0,
+  valorHandSavers2: incluirMoto2 && adicionalesMoto2.hand
+    ? toNumberSafe(data.valorHandSavers2)
+    : 0,
+  valorOtrosAdicionales2: incluirMoto2 && adicionalesMoto2.otros
+    ? toNumberSafe(data.valorOtrosAdicionales2)
+    : 0,
+
         };
 
         console.log("SUBMIT (payload EXACTO BD):", payload);
@@ -745,8 +863,6 @@ const CotizacionFormulario2: React.FC = () => {
         }
     }, [esCreditoDirecto, incluirMoto2, setValue]);
 
-
-    // MOTO 1
     React.useEffect(() => {
         const sel = watch("moto1");
         const m = (motos1?.motos ?? []).find((x) => x.linea === sel);
@@ -756,15 +872,12 @@ const CotizacionFormulario2: React.FC = () => {
             setValue("descuento1", descuento.toString());
             const documentos =
                 (metodo === "contado" ? Number(m.matricula_contado) : Number(m.matricula_credito)) +
-                Number(m.impuestos) + Number(m.soat);
+                Number(m.impuestos) +
+                Number(m.soat);
             setValue("precioDocumentos1", documentos.toString());
-
-            // 👇 NUEVO: guarda la url de la foto
-            setValue("foto_a", m.foto ?? null);
         }
     }, [watch("moto1"), motos1, metodo, setValue]);
 
-    // MOTO 2
     React.useEffect(() => {
         const sel = watch("moto2");
         const m = (motos2?.motos ?? []).find((x) => x.linea === sel);
@@ -774,20 +887,17 @@ const CotizacionFormulario2: React.FC = () => {
             setValue("descuento2", descuento.toString());
             const documentos =
                 (metodo === "contado" ? Number(m.matricula_contado) : Number(m.matricula_credito)) +
-                Number(m.impuestos) + Number(m.soat);
+                Number(m.impuestos) +
+                Number(m.soat);
             setValue("precioDocumentos2", documentos.toString());
-
-            // 👇 NUEVO: guarda la url de la foto
-            setValue("foto_b", m.foto ?? null);
         }
     }, [watch("moto2"), motos2, metodo, setValue]);
-
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
 
             <div className="pt-4 mb-3">
-                <ButtonLink to="/creditos" label="Volver a créditos" direction="back" />
+                <ButtonLink to="/cotizaciones" label="Volver a cotizaciones" direction="back" />
             </div>
 
             <div className="flex gap-6 flex-col w-full bg-white p-3 rounded-xl">
@@ -823,7 +933,6 @@ const CotizacionFormulario2: React.FC = () => {
                         <span className="label-text">Crédito de terceros</span>
                     </label>
                 </div>
-
 
                 {errors.metodoPago && <p className="text-sm text-error">Selecciona una opción.</p>}
 
@@ -999,7 +1108,6 @@ const CotizacionFormulario2: React.FC = () => {
                                                 disabled={!showMotos || !incluirMoto1 || esCreditoDirecto}  // 👈 BLOQUEA EN CRÉDITO
                                                 rules={reqIf(showMotos && incluirMoto1, "La garantía es obligatoria")}
                                             />
-
                                             <FormSelect<FormValues>
                                                 name="garantiaExtendida1"
                                                 label="Garantía extendida"
@@ -1008,6 +1116,7 @@ const CotizacionFormulario2: React.FC = () => {
                                                 placeholder="Seleccione..."
                                                 disabled={!showMotos || !incluirMoto1}
                                             />
+
                                             {watch("garantiaExtendida1") !== "no" && (
                                                 <FormInput<FormValues>
                                                     name="valor_garantia_extendida_a"
@@ -1024,7 +1133,6 @@ const CotizacionFormulario2: React.FC = () => {
                                                     }}
                                                 />
                                             )}
-
 
                                         </>
                                     )}
@@ -1154,6 +1262,141 @@ const CotizacionFormulario2: React.FC = () => {
                                                 Máximo permitido: {fmt(precioBase1 + accesorios1Val + documentos1)}
                                             </p>
 
+
+                                            {/* PRODUCTOS / SERVICIOS ADICIONALES MOTO 1 */}
+                                            <div className="rounded-xl border border-base-200 p-3 space-y-3 bg-base-100">
+                                                <p className="font-semibold text-sm">Productos y servicios adicionales (Moto 1)</p>
+
+                                                <div className="grid grid-cols-2 gap-4">
+
+                                                    {/* RUNT */}
+                                                    <div className="flex flex-col">
+                                                        <label className="flex items-center gap-2 mb-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="checkbox checkbox-success checkbox-sm"
+                                                                checked={adicionalesMoto1.runt}
+                                                                onChange={(e) =>
+                                                                    setAdicionalesMoto1((prev) => ({ ...prev, runt: e.target.checked }))
+                                                                }
+                                                                disabled={!showMotos || !incluirMoto1}
+                                                            />
+                                                            <span>Inscripción RUNT</span>
+                                                        </label>
+                                                        <FormInput<FormValues>
+                                                            name="valorRunt1"
+                                                            label=""                 // 👈 OBLIGATORIO PARA EL TIPO
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled={!showMotos || !incluirMoto1 || !adicionalesMoto1.runt}
+                                                        />
+                                                    </div>
+
+                                                    {/* Licencias */}
+                                                    <div className="flex flex-col">
+                                                        <label className="flex items-center gap-2 mb-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="checkbox checkbox-success checkbox-sm"
+                                                                checked={adicionalesMoto1.licencia}
+                                                                onChange={(e) =>
+                                                                    setAdicionalesMoto1((prev) => ({ ...prev, licencia: e.target.checked }))
+                                                                }
+                                                                disabled={!showMotos || !incluirMoto1}
+                                                            />
+                                                            <span>Licencias</span>
+                                                        </label>
+                                                        <FormInput<FormValues>
+                                                            name="valorLicencia1"
+                                                            label=""
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled={!showMotos || !incluirMoto1 || !adicionalesMoto1.licencia}
+                                                        />
+                                                    </div>
+
+                                                    {/* Defensas */}
+                                                    <div className="flex flex-col">
+                                                        <label className="flex items-center gap-2 mb-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="checkbox checkbox-success checkbox-sm"
+                                                                checked={adicionalesMoto1.defensas}
+                                                                onChange={(e) =>
+                                                                    setAdicionalesMoto1((prev) => ({ ...prev, defensas: e.target.checked }))
+                                                                }
+                                                                disabled={!showMotos || !incluirMoto1}
+                                                            />
+                                                            <span>Defensas</span>
+                                                        </label>
+                                                        <FormInput<FormValues>
+                                                            name="valorDefensas1"
+                                                            label=""
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled={!showMotos || !incluirMoto1 || !adicionalesMoto1.defensas}
+                                                        />
+                                                    </div>
+
+                                                    {/* Hand savers */}
+                                                    <div className="flex flex-col">
+                                                        <label className="flex items-center gap-2 mb-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="checkbox checkbox-success checkbox-sm"
+                                                                checked={adicionalesMoto1.hand}
+                                                                onChange={(e) =>
+                                                                    setAdicionalesMoto1((prev) => ({ ...prev, hand: e.target.checked }))
+                                                                }
+                                                                disabled={!showMotos || !incluirMoto1}
+                                                            />
+                                                            <span>Hand savers</span>
+                                                        </label>
+                                                        <FormInput<FormValues>
+                                                            name="valorHandSavers1"
+                                                            label=""
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled={!showMotos || !incluirMoto1 || !adicionalesMoto1.hand}
+                                                        />
+                                                    </div>
+
+                                                    {/* Otros */}
+                                                    <div className="flex flex-col">
+                                                        <label className="flex items-center gap-2 mb-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="checkbox checkbox-success checkbox-sm"
+                                                                checked={adicionalesMoto1.otros}
+                                                                onChange={(e) =>
+                                                                    setAdicionalesMoto1((prev) => ({ ...prev, otros: e.target.checked }))
+                                                                }
+                                                                disabled={!showMotos || !incluirMoto1}
+                                                            />
+                                                            <span>Otros adicionales</span>
+                                                        </label>
+                                                        <FormInput<FormValues>
+                                                            name="valorOtrosAdicionales1"
+                                                            label=""
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled={!showMotos || !incluirMoto1 || !adicionalesMoto1.otros}
+                                                        />
+                                                    </div>
+
+                                                </div>
+                                            </div>
+
                                             {/* RESUMEN MOTO 1 */}
                                             <div className="bg-base-100 shadow-xl rounded-2xl p-6 border border-base-300">
                                                 {/* Encabezado */}
@@ -1186,6 +1429,14 @@ const CotizacionFormulario2: React.FC = () => {
                                                         <span className="font-semibold">{fmt(documentos1)}</span>
                                                     </div>
 
+    {/* 🔹 Costos adicionales */}
+    <div className="flex justify-between bg-purple-50/70 px-4 py-2 rounded-md shadow-sm">
+      <span className="font-medium text-gray-700">
+        Costos adicionales (RUNT, licencias, defensas, etc.):
+      </span>
+      <span>{fmt(extrasMoto1)}</span>
+    </div>
+
 
                                                     {/* Descuento */}
                                                     <div className="flex justify-between bg-error/5 px-4 py-2 rounded-md shadow-sm">
@@ -1206,7 +1457,7 @@ const CotizacionFormulario2: React.FC = () => {
                                                     )}
 
 
-                                                    {/* Cascos y accesorios */}
+                                                    {/* Cascos y Accesorios */}
                                                     <div className="flex justify-between bg-blue-50/70 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-medium text-gray-700">Cascos y Accesorios:</span>
                                                         <span>{fmt(accesorios1Val)}</span>
@@ -1314,7 +1565,7 @@ const CotizacionFormulario2: React.FC = () => {
                                                     formatThousands
                                                     control={control}
                                                     placeholder="0"
-                                                    disabled={!showMotos || !incluirMoto2}
+                                                    disabled={!showMotos || !incluirMoto1}
                                                     rules={{
                                                         required: "Ingresa el valor de la garantía extendida",
                                                         min: { value: 0, message: "No puede ser negativo" },
@@ -1358,7 +1609,6 @@ const CotizacionFormulario2: React.FC = () => {
                                             />
                                         </div>
                                     </div> */}
-
 
                                     {/* SOLO INPUT OTROS SEGUROS (SIN CHECKBOXES) */}
                                     <div className="p-3 rounded-md bg-[#3498DB]">
@@ -1420,7 +1670,6 @@ const CotizacionFormulario2: React.FC = () => {
                                             />
 
 
-
                                             <FormInput<FormValues>
                                                 name="marcacion2"
                                                 label="Marcación y personalización"
@@ -1430,6 +1679,7 @@ const CotizacionFormulario2: React.FC = () => {
                                                 placeholder="0"
                                                 disabled={!showMotos || !incluirMoto2}
                                             />
+
 
 
                                             {/* DESCUENTO CON VALIDACIÓN */}
@@ -1455,6 +1705,141 @@ const CotizacionFormulario2: React.FC = () => {
                                                 Máximo permitido: {fmt(precioBase2 + accesorios2Val + documentos2)}
                                             </p>
 
+                                            {/* PRODUCTOS / SERVICIOS ADICIONALES MOTO 2 */}
+                                            <div className="rounded-xl border border-base-200 p-3 space-y-3 bg-base-100">
+                                                <p className="font-semibold text-sm">Productos y servicios adicionales (Moto 2)</p>
+
+                                                <div className="grid grid-cols-2 gap-4">
+
+                                                    {/* RUNT */}
+                                                    <div className="flex flex-col">
+                                                        <label className="flex items-center gap-2 mb-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="checkbox checkbox-success checkbox-sm"
+                                                                checked={adicionalesMoto2.runt}
+                                                                onChange={(e) =>
+                                                                    setAdicionalesMoto2((prev) => ({ ...prev, runt: e.target.checked }))
+                                                                }
+                                                                disabled={!showMotos || !incluirMoto2}
+                                                            />
+                                                            <span>Inscripción RUNT</span>
+                                                        </label>
+                                                        <FormInput<FormValues>
+                                                            name="valorRunt2"
+                                                            label=""
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled={!showMotos || !incluirMoto2 || !adicionalesMoto2.runt}
+                                                        />
+                                                    </div>
+
+                                                    {/* Licencias */}
+                                                    <div className="flex flex-col">
+                                                        <label className="flex items-center gap-2 mb-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="checkbox checkbox-success checkbox-sm"
+                                                                checked={adicionalesMoto2.licencia}
+                                                                onChange={(e) =>
+                                                                    setAdicionalesMoto2((prev) => ({ ...prev, licencia: e.target.checked }))
+                                                                }
+                                                                disabled={!showMotos || !incluirMoto2}
+                                                            />
+                                                            <span>Licencias</span>
+                                                        </label>
+                                                        <FormInput<FormValues>
+                                                            name="valorLicencia2"
+                                                            label=""
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled={!showMotos || !incluirMoto2 || !adicionalesMoto2.licencia}
+                                                        />
+                                                    </div>
+
+                                                    {/* Defensas */}
+                                                    <div className="flex flex-col">
+                                                        <label className="flex items-center gap-2 mb-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="checkbox checkbox-success checkbox-sm"
+                                                                checked={adicionalesMoto2.defensas}
+                                                                onChange={(e) =>
+                                                                    setAdicionalesMoto2((prev) => ({ ...prev, defensas: e.target.checked }))
+                                                                }
+                                                                disabled={!showMotos || !incluirMoto2}
+                                                            />
+                                                            <span>Defensas</span>
+                                                        </label>
+                                                        <FormInput<FormValues>
+                                                            name="valorDefensas2"
+                                                            label=""
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled={!showMotos || !incluirMoto2 || !adicionalesMoto2.defensas}
+                                                        />
+                                                    </div>
+
+                                                    {/* Hand savers */}
+                                                    <div className="flex flex-col">
+                                                        <label className="flex items-center gap-2 mb-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="checkbox checkbox-success checkbox-sm"
+                                                                checked={adicionalesMoto2.hand}
+                                                                onChange={(e) =>
+                                                                    setAdicionalesMoto2((prev) => ({ ...prev, hand: e.target.checked }))
+                                                                }
+                                                                disabled={!showMotos || !incluirMoto2}
+                                                            />
+                                                            <span>Hand savers</span>
+                                                        </label>
+                                                        <FormInput<FormValues>
+                                                            name="valorHandSavers2"
+                                                            label=""
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled={!showMotos || !incluirMoto2 || !adicionalesMoto2.hand}
+                                                        />
+                                                    </div>
+
+                                                    {/* Otros */}
+                                                    <div className="flex flex-col">
+                                                        <label className="flex items-center gap-2 mb-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="checkbox checkbox-success checkbox-sm"
+                                                                checked={adicionalesMoto2.otros}
+                                                                onChange={(e) =>
+                                                                    setAdicionalesMoto2((prev) => ({ ...prev, otros: e.target.checked }))
+                                                                }
+                                                                disabled={!showMotos || !incluirMoto2}
+                                                            />
+                                                            <span>Otros adicionales</span>
+                                                        </label>
+                                                        <FormInput<FormValues>
+                                                            name="valorOtrosAdicionales2"
+                                                            label=""
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled={!showMotos || !incluirMoto2 || !adicionalesMoto2.otros}
+                                                        />
+                                                    </div>
+
+                                                </div>
+                                            </div>
+
+
 
                                             {/* RESUMEN MOTO 2 */}
                                             <div className="bg-base-100 shadow-xl rounded-2xl p-6 border border-base-300">
@@ -1462,6 +1847,9 @@ const CotizacionFormulario2: React.FC = () => {
                                                 <h3 className="text-lg font-bold mb-4 text-success bg-success/5 px-4 py-2 rounded-lg">
                                                     Resumen de costos
                                                 </h3>
+
+
+
 
                                                 {/* Bloque de detalles */}
                                                 <div className="bg-base-200/70 p-4 rounded-xl mb-4 space-y-2">
@@ -1488,6 +1876,14 @@ const CotizacionFormulario2: React.FC = () => {
                                                         <span className="font-semibold">{fmt(documentos2)}</span>
                                                     </div>
 
+                                                        {/* 🔹 Costos adicionales */}
+    <div className="flex justify-between bg-purple-50/70 px-4 py-2 rounded-md shadow-sm">
+      <span className="font-medium text-gray-700">
+        Costos adicionales (RUNT, licencias, defensas, etc.):
+      </span>
+      <span>{fmt(extrasMoto2)}</span>
+    </div>
+
                                                     {/* Descuento */}
                                                     <div className="flex justify-between bg-error/5 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-medium text-gray-700">Descuento:</span>
@@ -1495,6 +1891,7 @@ const CotizacionFormulario2: React.FC = () => {
                                                             {descuento2Val > 0 ? `-${fmt(descuento2Val)}` : "0 COP"}
                                                         </span>
                                                     </div>
+
 
                                                     {/* Garantía extendida (si aplica) */}
                                                     {garantiaExt2Sel !== "no" && (
@@ -1507,7 +1904,7 @@ const CotizacionFormulario2: React.FC = () => {
                                                     )}
 
 
-                                                    {/* Cascos y accesorios */}
+                                                    {/* Cascos y Accesorios */}
                                                     <div className="flex justify-between bg-blue-50/70 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-medium text-gray-700">Cascos y Accesorios:</span>
                                                         <span>{fmt(accesorios2Val)}</span>

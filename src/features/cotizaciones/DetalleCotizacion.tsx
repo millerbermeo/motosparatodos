@@ -57,6 +57,14 @@ type Motocicleta = {
   soat?: number;
   matricula?: number;
   impuestos?: number;
+
+    // 👇 NUEVOS CAMPOS DE ADICIONALES
+  adicionalesRunt?: number;
+  adicionalesLicencia?: number;
+  adicionalesDefensas?: number;
+  adicionalesHandSavers?: number;
+  adicionalesOtros?: number;
+  adicionalesTotal?: number;
 };
 
 type Evento = {
@@ -306,6 +314,24 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
   const impuestos = Number(data?.[`impuestos${suffix}`]) || 0;
 
 
+    // 👇 Adicionales (RUNT, licencias, defensas, etc.) vienen como _1 o _2
+  const isA = lado === 'A';
+
+  const adicionalesRunt = Number(data?.[isA ? 'runt_1' : 'runt_2']) || 0;
+  const adicionalesLicencia = Number(data?.[isA ? 'licencia_1' : 'licencia_2']) || 0;
+  const adicionalesDefensas = Number(data?.[isA ? 'defensas_1' : 'defensas_2']) || 0;
+  const adicionalesHandSavers = Number(data?.[isA ? 'hand_savers_1' : 'hand_savers_2']) || 0;
+  const adicionalesOtros = Number(data?.[isA ? 'otros_adicionales_1' : 'otros_adicionales_2']) || 0;
+
+  const adicionalesTotal =
+    Number(data?.[isA ? 'total_adicionales_1' : 'total_adicionales_2']) ||
+    (adicionalesRunt +
+      adicionalesLicencia +
+      adicionalesDefensas +
+      adicionalesHandSavers +
+      adicionalesOtros);
+
+
   const seguros =
     typeof segurosFromJson === 'number'
       ? segurosFromJson
@@ -328,13 +354,17 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
     return Number.isFinite(num) && num > 0 ? num : undefined;
   })();
 
-  // Totales
-  const total = Number(data?.[`precio_total${suffix}`]) ||
-    (precioBase + precioDocumentos + accesoriosYMarcacion + seguros - descuentos);
-
   const totalSinSeguros =
     Number(data?.[`total_sin_seguros${suffix}`]) ||
-    (precioBase + precioDocumentos + accesoriosYMarcacion - descuentos);
+    (precioBase +
+      precioDocumentos +
+      accesoriosYMarcacion +
+      adicionalesTotal - // 👈 suma adicionales
+      descuentos);
+
+  const total =
+    Number(data?.[`precio_total${suffix}`]) ||
+    (totalSinSeguros + seguros);
 
   // Cuotas
   const cuotas: Cuotas = {
@@ -363,6 +393,13 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
     soat,         // 👈 nuevo
     matricula,    // 👈 nuevo
     impuestos,    // 👈 nuevo
+
+      adicionalesRunt,
+    adicionalesLicencia,
+    adicionalesDefensas,
+    adicionalesHandSavers,
+    adicionalesOtros,
+    adicionalesTotal,
   };
 };
 
@@ -618,6 +655,24 @@ const DetalleCotizacion: React.FC = () => {
                   <DataRow label="Matrícula" value={fmtCOP(moto.matricula || 0)} /> {/* 👈 NUEVO */}
                   <DataRow label="Impuestos" value={fmtCOP(moto.impuestos || 0)} /> {/* 👈 NUEVO */}
                   <DataRow label="Seguro todo riesgo" value={fmtCOP(moto.seguros)} />
+
+      {(moto.adicionalesTotal ?? 0) > 0 && (
+        <div className="mt-2 space-y-1">
+          <div className="text-xs font-semibold uppercase tracking-wide opacity-80">
+            Adicionales (RUNT / licencias / defensas / hand savers / otros)
+          </div>
+          <DataRow2 label="RUNT" value={fmtCOP(moto.adicionalesRunt || 0)} />
+          <DataRow2 label="Licencias" value={fmtCOP(moto.adicionalesLicencia || 0)} />
+          <DataRow2 label="Defensas" value={fmtCOP(moto.adicionalesDefensas || 0)} />
+          <DataRow2 label="Hand savers" value={fmtCOP(moto.adicionalesHandSavers || 0)} />
+          <DataRow2 label="Otros adicionales" value={fmtCOP(moto.adicionalesOtros || 0)} />
+          <DataRow2
+            label="TOTAL adicionales"
+            value={fmtCOP(moto.adicionalesTotal || 0)}
+            strong
+          />
+        </div>
+      )}
 
                 </div>
                 <div className="space-y-2">
@@ -942,6 +997,19 @@ const DataRow: React.FC<{ label: string; value: React.ReactNode; strong?: boolea
     <span className={strong ? 'font-bold' : valueClass || ''}>{value}</span>
   </div>
 );
+
+const DataRow2: React.FC<{ label: string; value: React.ReactNode; strong?: boolean; valueClass?: string }> = ({
+  label,
+  value,
+  strong,
+  valueClass,
+}) => (
+  <div className="flex items-center justify-between bg-success/70 text-white px-3 py-2 rounded-md">
+    <span className="font-medium">{label}</span>
+    <span className={strong ? 'font-bold' : valueClass || ''}>{value}</span>
+  </div>
+);
+
 
 // Para valores que no son dinero (p. ej., Sí/No)
 const DataRowText: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (

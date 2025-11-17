@@ -118,6 +118,18 @@ type FormValues = {
     impuestos_b?: string;
     matricula_b?: string;
 
+    valorRunt1: string;
+    valorLicencia1: string;
+    valorDefensas1: string;
+    valorHandSavers1: string;
+    valorOtrosAdicionales1: string;
+
+    // Valores adicionales MOTO 2
+    valorRunt2: string;
+    valorLicencia2: string;
+    valorDefensas2: string;
+    valorHandSavers2: string;
+    valorOtrosAdicionales2: string;
 
 };
 
@@ -209,6 +221,19 @@ const CotizacionFormulario: React.FC = () => {
             marcacion2: "0",
             valor_garantia_extendida_a: "0",
             valor_garantia_extendida_b: "0",
+
+            valorRunt1: "0",
+            valorLicencia1: "0",
+            valorDefensas1: "0",
+            valorHandSavers1: "0",
+            valorOtrosAdicionales1: "0",
+
+            // MOTO 2
+            valorRunt2: "0",
+            valorLicencia2: "0",
+            valorDefensas2: "0",
+            valorHandSavers2: "0",
+            valorOtrosAdicionales2: "0",
         },
         mode: "onBlur",
         shouldUnregister: false,
@@ -256,6 +281,40 @@ const CotizacionFormulario: React.FC = () => {
         value: m.linea,
         label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP Modelo ${m.modelo ?? ""}`,
     }));
+
+
+    // Checkboxes solo para habilitar inputs de adicionales (NO van al backend)
+    const [adicionalesMoto1, setAdicionalesMoto1] = React.useState({
+        runt: false,
+        licencia: false,
+        defensas: false,
+        hand: false,
+        otros: false,
+    });
+
+    const [adicionalesMoto2, setAdicionalesMoto2] = React.useState({
+        runt: false,
+        licencia: false,
+        defensas: false,
+        hand: false,
+        otros: false,
+    });
+
+
+    React.useEffect(() => {
+        if (!incluirMoto1) {
+            setAdicionalesMoto1({ runt: false, licencia: false, defensas: false, hand: false, otros: false });
+        }
+    }, [incluirMoto1]);
+
+    React.useEffect(() => {
+        if (!incluirMoto2) {
+            setAdicionalesMoto2({ runt: false, licencia: false, defensas: false, hand: false, otros: false });
+        }
+    }, [incluirMoto2]);
+
+
+
 
     // MOTO 1
     React.useEffect(() => {
@@ -424,6 +483,11 @@ const CotizacionFormulario: React.FC = () => {
     }
     const fmt = (n: number) => n.toLocaleString("es-CO") + " COP";
 
+    const calcCuotaPlano = (saldo: number, meses: number): number => {
+        if (saldo <= 0 || meses <= 0) return 0;
+        return Math.round(saldo / meses);
+    };
+
     const getMatricula = (m: any, metodo: "contado" | "credibike" | "terceros") =>
         metodo === "contado" ? Number(m.matricula_contado) : Number(m.matricula_credito);
 
@@ -480,6 +544,23 @@ const CotizacionFormulario: React.FC = () => {
     const inicial1 = N(watch("cuotaInicial1"));
     const marcacion1Val = N(watch("marcacion1"));
 
+    // ===== ADICIONALES MOTO 1 =====
+    const extrasMoto1 =
+        (adicionalesMoto1.runt ? N(watch("valorRunt1")) : 0) +
+        (adicionalesMoto1.licencia ? N(watch("valorLicencia1")) : 0) +
+        (adicionalesMoto1.defensas ? N(watch("valorDefensas1")) : 0) +
+        (adicionalesMoto1.hand ? N(watch("valorHandSavers1")) : 0) +
+        (adicionalesMoto1.otros ? N(watch("valorOtrosAdicionales1")) : 0);
+
+    // ===== ADICIONALES MOTO 2 =====
+    const extrasMoto2 =
+        (adicionalesMoto2.runt ? N(watch("valorRunt2")) : 0) +
+        (adicionalesMoto2.licencia ? N(watch("valorLicencia2")) : 0) +
+        (adicionalesMoto2.defensas ? N(watch("valorDefensas2")) : 0) +
+        (adicionalesMoto2.hand ? N(watch("valorHandSavers2")) : 0) +
+        (adicionalesMoto2.otros ? N(watch("valorOtrosAdicionales2")) : 0);
+
+
     const garantiaExt1Sel = watch("garantiaExtendida1") ?? "no";
     const garantiaExtVal1 = N(watch("valor_garantia_extendida_a"));
 
@@ -496,8 +577,10 @@ const CotizacionFormulario: React.FC = () => {
 
     const totalSinSeguros1 = (showMotos && incluirMoto1)
         ? (precioBase1 + accesorios1Val + documentos1 + marcacion1Val - descuento1Val
-            + (garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0))
+            + (garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0)
+            + extrasMoto1)
         : 0;
+
 
     const totalConSeguros1 = totalSinSeguros1 + totalSeguros1;
 
@@ -518,13 +601,17 @@ const CotizacionFormulario: React.FC = () => {
 
     const totalSinSeguros2 = (showMotos && incluirMoto2)
         ? (precioBase2 + accesorios2Val + documentos2 + marcacion2Val - descuento2Val
-            + (garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0))
+            + (garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0)
+            + extrasMoto2)
         : 0;
 
     const totalConSeguros2 = totalSinSeguros2 + totalSeguros2;
 
     const moto1Seleccionada = Boolean(watch("moto1"));
     const moto2Seleccionada = Boolean(watch("moto2"));
+
+
+
 
     const onSubmit = (data: FormValues) => {
 
@@ -670,12 +757,25 @@ const CotizacionFormulario: React.FC = () => {
             financiera: esFinanciado ? (data.financiera || null) : null,
             cant_cuotas: esFinanciado ? (data.cuotas ? Number(data.cuotas) : null) : null,
 
-            cuota_6_a, cuota_6_b,
-            cuota_12_a, cuota_12_b,
-            cuota_18_a, cuota_18_b,
-            cuota_24_a, cuota_24_b,
-            cuota_30_a, cuota_30_b,
-            cuota_36_a, cuota_36_b,
+            // Para terceros, usa las ingresadas manualmente.
+            // Para credibike, usa las automáticas en 12, 24 y 36 meses.
+            cuota_6_a,
+            cuota_6_b,
+
+            cuota_12_a: data.metodoPago === "credibike" ? cuota12_a_auto : cuota_12_a,
+            cuota_12_b: data.metodoPago === "credibike" ? cuota12_b_auto : cuota_12_b,
+
+            cuota_18_a,
+            cuota_18_b,
+
+            cuota_24_a: data.metodoPago === "credibike" ? cuota24_a_auto : cuota_24_a,
+            cuota_24_b: data.metodoPago === "credibike" ? cuota24_b_auto : cuota_24_b,
+
+            cuota_30_a,
+            cuota_30_b,
+
+            cuota_36_a: data.metodoPago === "credibike" ? cuota36_a_auto : cuota_36_a,
+            cuota_36_b: data.metodoPago === "credibike" ? cuota36_b_auto : cuota_36_b,
 
             comentario: data.comentario?.trim(),
 
@@ -711,6 +811,44 @@ const CotizacionFormulario: React.FC = () => {
             soat_b: incluirMoto2 ? N(data.soat_b) : null,
             impuestos_b: incluirMoto2 ? N(data.impuestos_b) : null,
             matricula_b: incluirMoto2 ? N(data.matricula_b) : null,
+
+
+            // 👇 NUEVOS CAMPOS QUE VAN AL PHP
+            valorRunt1: incluirMoto1 && adicionalesMoto1.runt
+                ? toNumberSafe(data.valorRunt1)
+                : 0,
+            valorLicencia1: incluirMoto1 && adicionalesMoto1.licencia
+                ? toNumberSafe(data.valorLicencia1)
+                : 0,
+            valorDefensas1: incluirMoto1 && adicionalesMoto1.defensas
+                ? toNumberSafe(data.valorDefensas1)
+                : 0,
+            valorHandSavers1: incluirMoto1 && adicionalesMoto1.hand
+                ? toNumberSafe(data.valorHandSavers1)
+                : 0,
+            valorOtrosAdicionales1: incluirMoto1 && adicionalesMoto1.otros
+                ? toNumberSafe(data.valorOtrosAdicionales1)
+                : 0,
+
+            valorRunt2: incluirMoto2 && adicionalesMoto2.runt
+                ? toNumberSafe(data.valorRunt2)
+                : 0,
+            valorLicencia2: incluirMoto2 && adicionalesMoto2.licencia
+                ? toNumberSafe(data.valorLicencia2)
+                : 0,
+            valorDefensas2: incluirMoto2 && adicionalesMoto2.defensas
+                ? toNumberSafe(data.valorDefensas2)
+                : 0,
+            valorHandSavers2: incluirMoto2 && adicionalesMoto2.hand
+                ? toNumberSafe(data.valorHandSavers2)
+                : 0,
+            valorOtrosAdicionales2: incluirMoto2 && adicionalesMoto2.otros
+                ? toNumberSafe(data.valorOtrosAdicionales2)
+                : 0,
+
+            saldo_financiar_a: saldoFinanciar1,
+            saldo_financiar_b: saldoFinanciar2,
+
 
         };
 
@@ -780,6 +918,30 @@ const CotizacionFormulario: React.FC = () => {
         }
     }, [watch("moto2"), motos2, metodo, setValue]);
 
+
+    const saldoFinanciar1 =
+        esCreditoDirecto && incluirMoto1
+            ? Math.max(totalConSeguros1 - inicial1, 0)
+            : 0;
+
+    const saldoFinanciar2 =
+        esCreditoDirecto && incluirMoto2
+            ? Math.max(totalConSeguros2 - inicial2, 0)
+            : 0;
+
+// Cuotas automáticas para MOTO 1
+const cuota12_a_auto = metodo === "credibike" && incluirMoto1 ? calcCuotaPlano(saldoFinanciar1, 12) : 0;
+const cuota24_a_auto = metodo === "credibike" && incluirMoto1 ? calcCuotaPlano(saldoFinanciar1, 24) : 0;
+const cuota36_a_auto = metodo === "credibike" && incluirMoto1 ? calcCuotaPlano(saldoFinanciar1, 36) : 0;
+
+// Cuotas automáticas para MOTO 2
+const cuota12_b_auto = metodo === "credibike" && incluirMoto2 ? calcCuotaPlano(saldoFinanciar2, 12) : 0;
+const cuota24_b_auto = metodo === "credibike" && incluirMoto2 ? calcCuotaPlano(saldoFinanciar2, 24) : 0;
+const cuota36_b_auto = metodo === "credibike" && incluirMoto2 ? calcCuotaPlano(saldoFinanciar2, 36) : 0;
+
+
+
+            
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
 
@@ -1149,6 +1311,141 @@ const CotizacionFormulario: React.FC = () => {
                                                 Máximo permitido: {fmt(precioBase1 + accesorios1Val + documentos1)}
                                             </p>
 
+
+                                            {/* PRODUCTOS / SERVICIOS ADICIONALES MOTO 1 */}
+                                            <div className="rounded-xl border border-base-200 p-3 space-y-3 bg-base-100">
+                                                <p className="font-semibold text-sm">Productos y servicios adicionales (Moto 1)</p>
+
+                                                <div className="grid grid-cols-2 gap-4">
+
+                                                    {/* RUNT */}
+                                                    <div className="flex flex-col">
+                                                        <label className="flex items-center gap-2 mb-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="checkbox checkbox-success checkbox-sm"
+                                                                checked={adicionalesMoto1.runt}
+                                                                onChange={(e) =>
+                                                                    setAdicionalesMoto1((prev) => ({ ...prev, runt: e.target.checked }))
+                                                                }
+                                                                disabled={!showMotos || !incluirMoto1}
+                                                            />
+                                                            <span>Inscripción RUNT</span>
+                                                        </label>
+                                                        <FormInput<FormValues>
+                                                            name="valorRunt1"
+                                                            label=""                 // 👈 OBLIGATORIO PARA EL TIPO
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled={!showMotos || !incluirMoto1 || !adicionalesMoto1.runt}
+                                                        />
+                                                    </div>
+
+                                                    {/* Licencias */}
+                                                    <div className="flex flex-col">
+                                                        <label className="flex items-center gap-2 mb-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="checkbox checkbox-success checkbox-sm"
+                                                                checked={adicionalesMoto1.licencia}
+                                                                onChange={(e) =>
+                                                                    setAdicionalesMoto1((prev) => ({ ...prev, licencia: e.target.checked }))
+                                                                }
+                                                                disabled={!showMotos || !incluirMoto1}
+                                                            />
+                                                            <span>Licencias</span>
+                                                        </label>
+                                                        <FormInput<FormValues>
+                                                            name="valorLicencia1"
+                                                            label=""
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled={!showMotos || !incluirMoto1 || !adicionalesMoto1.licencia}
+                                                        />
+                                                    </div>
+
+                                                    {/* Defensas */}
+                                                    <div className="flex flex-col">
+                                                        <label className="flex items-center gap-2 mb-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="checkbox checkbox-success checkbox-sm"
+                                                                checked={adicionalesMoto1.defensas}
+                                                                onChange={(e) =>
+                                                                    setAdicionalesMoto1((prev) => ({ ...prev, defensas: e.target.checked }))
+                                                                }
+                                                                disabled={!showMotos || !incluirMoto1}
+                                                            />
+                                                            <span>Defensas</span>
+                                                        </label>
+                                                        <FormInput<FormValues>
+                                                            name="valorDefensas1"
+                                                            label=""
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled={!showMotos || !incluirMoto1 || !adicionalesMoto1.defensas}
+                                                        />
+                                                    </div>
+
+                                                    {/* Hand savers */}
+                                                    <div className="flex flex-col">
+                                                        <label className="flex items-center gap-2 mb-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="checkbox checkbox-success checkbox-sm"
+                                                                checked={adicionalesMoto1.hand}
+                                                                onChange={(e) =>
+                                                                    setAdicionalesMoto1((prev) => ({ ...prev, hand: e.target.checked }))
+                                                                }
+                                                                disabled={!showMotos || !incluirMoto1}
+                                                            />
+                                                            <span>Hand savers</span>
+                                                        </label>
+                                                        <FormInput<FormValues>
+                                                            name="valorHandSavers1"
+                                                            label=""
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled={!showMotos || !incluirMoto1 || !adicionalesMoto1.hand}
+                                                        />
+                                                    </div>
+
+                                                    {/* Otros */}
+                                                    <div className="flex flex-col">
+                                                        <label className="flex items-center gap-2 mb-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="checkbox checkbox-success checkbox-sm"
+                                                                checked={adicionalesMoto1.otros}
+                                                                onChange={(e) =>
+                                                                    setAdicionalesMoto1((prev) => ({ ...prev, otros: e.target.checked }))
+                                                                }
+                                                                disabled={!showMotos || !incluirMoto1}
+                                                            />
+                                                            <span>Otros adicionales</span>
+                                                        </label>
+                                                        <FormInput<FormValues>
+                                                            name="valorOtrosAdicionales1"
+                                                            label=""
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled={!showMotos || !incluirMoto1 || !adicionalesMoto1.otros}
+                                                        />
+                                                    </div>
+
+                                                </div>
+                                            </div>
+
                                             {/* RESUMEN MOTO 1 */}
                                             <div className="bg-base-100 shadow-xl rounded-2xl p-6 border border-base-300">
                                                 {/* Encabezado */}
@@ -1180,6 +1477,15 @@ const CotizacionFormulario: React.FC = () => {
                                                         <span className="font-semibold text-gray-800">Documentos (M+I+S):</span>
                                                         <span className="font-semibold">{fmt(documentos1)}</span>
                                                     </div>
+
+                                                    {/* 🔹 Costos adicionales */}
+                                                    <div className="flex justify-between bg-purple-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-gray-700">
+                                                            Costos adicionales (RUNT, licencias, defensas, etc.):
+                                                        </span>
+                                                        <span>{fmt(extrasMoto1)}</span>
+                                                    </div>
+
 
                                                     {/* Descuento */}
                                                     <div className="flex justify-between bg-error/5 px-4 py-2 rounded-md shadow-sm">
@@ -1221,6 +1527,8 @@ const CotizacionFormulario: React.FC = () => {
                                                     )}
                                                 </div>
 
+
+
                                                 {/* Totales */}
                                                 <div className="space-y-2">
                                                     <div className="flex justify-between items-center bg-warning/10 px-4 py-2 rounded-md border border-warning/30 shadow-sm">
@@ -1232,6 +1540,36 @@ const CotizacionFormulario: React.FC = () => {
                                                         <span className="font-bold text-success">TOTAL CON SEGUROS:</span>
                                                         <span className="text-success font-extrabold text-lg">{fmt(totalConSeguros1)}</span>
                                                     </div>
+
+                                                    {esCreditoDirecto && (
+                                                        <div className="flex justify-between items-center bg-info/10 px-4 py-2 rounded-md border border-info/30 shadow-sm">
+                                                            <span className="font-semibold text-info">SALDO A FINANCIAR:</span>
+                                                            <span className="font-bold">{fmt(saldoFinanciar1)}</span>
+                                                        </div>
+
+
+                                                    )}
+
+                                                    {metodo === "credibike" && incluirMoto1 && saldoFinanciar1 > 0 && (
+                                                        <div className="mt-3 bg-base-100 border border-base-300 rounded-lg p-3 space-y-1">
+                                                            <p className="font-semibold text-sm">Cuotas proyectadas</p>
+                                                            <div className="flex justify-between text-sm">
+                                                                <span>12 meses:</span>
+                                                                <span>{fmt(cuota12_a_auto)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-sm">
+                                                                <span>24 meses:</span>
+                                                                <span>{fmt(cuota24_a_auto)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-sm">
+                                                                <span>36 meses:</span>
+                                                                <span>{fmt(cuota36_a_auto)}</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+
+
                                                 </div>
                                             </div>
 
@@ -1448,6 +1786,142 @@ const CotizacionFormulario: React.FC = () => {
                                                 Máximo permitido: {fmt(precioBase2 + accesorios2Val + documentos2)}
                                             </p>
 
+                                            {/* PRODUCTOS / SERVICIOS ADICIONALES MOTO 2 */}
+                                            <div className="rounded-xl border border-base-200 p-3 space-y-3 bg-base-100">
+                                                <p className="font-semibold text-sm">Productos y servicios adicionales (Moto 2)</p>
+
+                                                <div className="grid grid-cols-2 gap-4">
+
+                                                    {/* RUNT */}
+                                                    <div className="flex flex-col">
+                                                        <label className="flex items-center gap-2 mb-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="checkbox checkbox-success checkbox-sm"
+                                                                checked={adicionalesMoto2.runt}
+                                                                onChange={(e) =>
+                                                                    setAdicionalesMoto2((prev) => ({ ...prev, runt: e.target.checked }))
+                                                                }
+                                                                disabled={!showMotos || !incluirMoto2}
+                                                            />
+                                                            <span>Inscripción RUNT</span>
+                                                        </label>
+                                                        <FormInput<FormValues>
+                                                            name="valorRunt2"
+                                                            label=""
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled={!showMotos || !incluirMoto2 || !adicionalesMoto2.runt}
+                                                        />
+                                                    </div>
+
+                                                    {/* Licencias */}
+                                                    <div className="flex flex-col">
+                                                        <label className="flex items-center gap-2 mb-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="checkbox checkbox-success checkbox-sm"
+                                                                checked={adicionalesMoto2.licencia}
+                                                                onChange={(e) =>
+                                                                    setAdicionalesMoto2((prev) => ({ ...prev, licencia: e.target.checked }))
+                                                                }
+                                                                disabled={!showMotos || !incluirMoto2}
+                                                            />
+                                                            <span>Licencias</span>
+                                                        </label>
+                                                        <FormInput<FormValues>
+                                                            name="valorLicencia2"
+                                                            label=""
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled={!showMotos || !incluirMoto2 || !adicionalesMoto2.licencia}
+                                                        />
+                                                    </div>
+
+                                                    {/* Defensas */}
+                                                    <div className="flex flex-col">
+                                                        <label className="flex items-center gap-2 mb-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="checkbox checkbox-success checkbox-sm"
+                                                                checked={adicionalesMoto2.defensas}
+                                                                onChange={(e) =>
+                                                                    setAdicionalesMoto2((prev) => ({ ...prev, defensas: e.target.checked }))
+                                                                }
+                                                                disabled={!showMotos || !incluirMoto2}
+                                                            />
+                                                            <span>Defensas</span>
+                                                        </label>
+                                                        <FormInput<FormValues>
+                                                            name="valorDefensas2"
+                                                            label=""
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled={!showMotos || !incluirMoto2 || !adicionalesMoto2.defensas}
+                                                        />
+                                                    </div>
+
+                                                    {/* Hand savers */}
+                                                    <div className="flex flex-col">
+                                                        <label className="flex items-center gap-2 mb-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="checkbox checkbox-success checkbox-sm"
+                                                                checked={adicionalesMoto2.hand}
+                                                                onChange={(e) =>
+                                                                    setAdicionalesMoto2((prev) => ({ ...prev, hand: e.target.checked }))
+                                                                }
+                                                                disabled={!showMotos || !incluirMoto2}
+                                                            />
+                                                            <span>Hand savers</span>
+                                                        </label>
+                                                        <FormInput<FormValues>
+                                                            name="valorHandSavers2"
+                                                            label=""
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled={!showMotos || !incluirMoto2 || !adicionalesMoto2.hand}
+                                                        />
+                                                    </div>
+
+                                                    {/* Otros */}
+                                                    <div className="flex flex-col">
+                                                        <label className="flex items-center gap-2 mb-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="checkbox checkbox-success checkbox-sm"
+                                                                checked={adicionalesMoto2.otros}
+                                                                onChange={(e) =>
+                                                                    setAdicionalesMoto2((prev) => ({ ...prev, otros: e.target.checked }))
+                                                                }
+                                                                disabled={!showMotos || !incluirMoto2}
+                                                            />
+                                                            <span>Otros adicionales</span>
+                                                        </label>
+                                                        <FormInput<FormValues>
+                                                            name="valorOtrosAdicionales2"
+                                                            label=""
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled={!showMotos || !incluirMoto2 || !adicionalesMoto2.otros}
+                                                        />
+                                                    </div>
+
+                                                </div>
+                                            </div>
+
+
+
                                             {/* RESUMEN MOTO 2 */}
                                             <div className="bg-base-100 shadow-xl rounded-2xl p-6 border border-base-300">
                                                 {/* Encabezado */}
@@ -1481,6 +1955,14 @@ const CotizacionFormulario: React.FC = () => {
                                                     <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm border-t pt-2">
                                                         <span className="font-semibold text-gray-800">Documentos (M+I+S):</span>
                                                         <span className="font-semibold">{fmt(documentos2)}</span>
+                                                    </div>
+
+                                                    {/* 🔹 Costos adicionales */}
+                                                    <div className="flex justify-between bg-purple-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-gray-700">
+                                                            Costos adicionales (RUNT, licencias, defensas, etc.):
+                                                        </span>
+                                                        <span>{fmt(extrasMoto2)}</span>
                                                     </div>
 
                                                     {/* Descuento */}
@@ -1524,6 +2006,8 @@ const CotizacionFormulario: React.FC = () => {
                                                     )}
                                                 </div>
 
+
+
                                                 {/* Totales */}
                                                 <div className="space-y-2">
                                                     <div className="flex justify-between items-center bg-warning/10 px-4 py-2 rounded-md border border-warning/30 shadow-sm">
@@ -1535,6 +2019,33 @@ const CotizacionFormulario: React.FC = () => {
                                                         <span className="font-bold text-success">TOTAL CON SEGUROS:</span>
                                                         <span className="text-success font-extrabold text-lg">{fmt(totalConSeguros2)}</span>
                                                     </div>
+
+
+                                                    {esCreditoDirecto && (
+                                                        <div className="flex justify-between items-center bg-info/10 px-4 py-2 rounded-md border border-info/30 shadow-sm">
+                                                            <span className="font-semibold text-info">SALDO A FINANCIAR:</span>
+                                                            <span className="font-bold">{fmt(saldoFinanciar2)}</span>
+                                                        </div>
+                                                    )}
+
+                                                    {metodo === "credibike" && incluirMoto2 && saldoFinanciar2 > 0 && (
+                                                        <div className="mt-3 bg-base-100 border border-base-300 rounded-lg p-3 space-y-1">
+                                                            <p className="font-semibold text-sm">Cuotas proyectadas</p>
+                                                            <div className="flex justify-between text-sm">
+                                                                <span>12 meses:</span>
+                                                                <span>{fmt(cuota12_b_auto)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-sm">
+                                                                <span>24 meses:</span>
+                                                                <span>{fmt(cuota24_b_auto)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-sm">
+                                                                <span>36 meses:</span>
+                                                                <span>{fmt(cuota36_b_auto)}</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
                                                 </div>
                                             </div>
 
