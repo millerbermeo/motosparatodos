@@ -20,8 +20,9 @@ import { useLoaderStore } from '../../store/loader.store';
 import { Image, FileText } from 'lucide-react';
 import ButtonLink from '../../shared/components/ButtonLink';
 
-
-
+// 🔹 IMPORTS PARA EL PDF
+import { pdf } from '@react-pdf/renderer';
+import { SolicitudCreditoPDFDoc } from './pdf/SolicitudCreditoPDF';
 
 const fmtCOP = (v: number) =>
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
@@ -139,9 +140,6 @@ const CreditoDetalle: React.FC = () => {
     };
 
 
-    // Descargas: si hay "firmas" o "soportes", habilitar enlaces; de lo contrario, botones simulados
-    const firmasHref: string | undefined = typeof credito?.firmas === 'string' && credito.firmas.length > 0 ? `/${credito.firmas}` : undefined;
-
     const idCot = credito?.cotizacion_id ?? null;
 
 
@@ -161,6 +159,33 @@ const CreditoDetalle: React.FC = () => {
         );
     };
 
+    // 🔹 USAR COMPONENTE DE PDF DESDE UNA FUNCIÓN
+    const handleDownloadSolicitud = async () => {
+        try {
+            if (!codigo_credito || !datos) {
+                alert('No hay información de crédito para generar la solicitud.');
+                return;
+            }
+
+            const creditoActual: any = (datos as any)?.creditos?.[0] ?? (datos as any);
+            const deudorActual: any = deudorData;
+
+            const blob = await pdf(
+                <SolicitudCreditoPDFDoc
+                    codigo_credito={codigo_credito}
+                    credito={creditoActual}
+                    deudorData={deudorActual}
+                />
+            ).toBlob();
+
+            const url = URL.createObjectURL(blob);
+            // abrir en nueva pestaña
+            window.open(url, '_blank');
+        } catch (err) {
+            console.error(err);
+            alert('No fue posible generar la solicitud de crédito.');
+        }
+    };
 
 
     const handleEliminar = async () => {
@@ -215,15 +240,50 @@ const CreditoDetalle: React.FC = () => {
         moto?.numeroMotor || moto?.numeroChasis || moto?.placa
     );
 
-
+    // 👉 Soportes: solo los 3 documentos del JSON (firmas, formato_referencia, formato_datacredito)
     const soportes: string[] = [
-        ...(credito?.soportes ? JSON.parse(credito.soportes) : []),
         ...(credito?.firmas ? [credito.firmas] : []),
-        ...(credito?.formato_referencia ? [`docs_creditos/${credito.formato_referencia}`] : []),
-        ...(credito?.formato_datacredito ? [`docs_creditos/${credito.formato_datacredito}`] : []),
+        ...(credito?.formato_referencia
+            ? [
+                credito.formato_referencia.startsWith('docs_creditos/')
+                    ? credito.formato_referencia
+                    : `docs_creditos/${credito.formato_referencia}`,
+            ]
+            : []),
+        ...(credito?.formato_datacredito
+            ? [
+                credito.formato_datacredito.startsWith('docs_creditos/')
+                    ? credito.formato_datacredito
+                    : `docs_creditos/${credito.formato_datacredito}`,
+            ]
+            : []),
     ];
 
     const BaseUrl = import.meta.env.VITE_API_URL ?? "http://tuclick.vozipcolombia.net.co/motos/back";
+
+    // URLs completas para abrir en nueva pestaña
+    const firmasHref: string | undefined =
+        typeof credito?.firmas === 'string' && credito.firmas.length > 0
+            ? `${BaseUrl}/${credito.firmas}`
+            : undefined;
+
+    const formatoReferenciaHref: string | undefined =
+        typeof credito?.formato_referencia === 'string' && credito.formato_referencia.length > 0
+            ? `${BaseUrl}/${
+                credito.formato_referencia.startsWith('docs_creditos/')
+                    ? credito.formato_referencia
+                    : `docs_creditos/${credito.formato_referencia}`
+            }`
+            : undefined;
+
+    const formatoDatacreditoHref: string | undefined =
+        typeof credito?.formato_datacredito === 'string' && credito.formato_datacredito.length > 0
+            ? `${BaseUrl}/${
+                credito.formato_datacredito.startsWith('docs_creditos/')
+                    ? credito.formato_datacredito
+                    : `docs_creditos/${credito.formato_datacredito}`
+            }`
+            : undefined;
 
     const { show, hide } = useLoaderStore();
 
@@ -317,7 +377,7 @@ const CreditoDetalle: React.FC = () => {
                                         <ChipButton
                                             label="Descargar solicitud"
                                             icon={<ClipboardCheck className="w-4 h-4" />}
-                                            onClick={fakeDownload('Solicitud de crédito')}
+                                            onClick={handleDownloadSolicitud}
                                             color="bg-blue-500 hover:bg-blue-600"
                                         />
                                     </div>
@@ -327,13 +387,17 @@ const CreditoDetalle: React.FC = () => {
                                         <ChipButton
                                             label="Descargar solicitud"
                                             icon={<ClipboardCheck className="w-4 h-4" />}
-                                            onClick={fakeDownload('Solicitud de crédito')}
+                                            onClick={handleDownloadSolicitud}
                                             color="bg-blue-500 hover:bg-blue-600"
                                         />
                                         <ChipButton
                                             label="Descargar formato"
                                             icon={<FileSignature className="w-4 h-4" />}
-                                            onClick={fakeDownload('Formato de referenciación')}
+                                            onClick={
+                                                formatoReferenciaHref
+                                                    ? () => window.open(formatoReferenciaHref, '_blank')
+                                                    : fakeDownload('Formato de referenciación')
+                                            }
                                             color="bg-green-500 hover:bg-green-600"
                                         />
                                         <ChipButton
@@ -366,7 +430,11 @@ const CreditoDetalle: React.FC = () => {
                                         <ChipButton
                                             label="Descargar firmas de solicitud"
                                             icon={<FileDown className="w-4 h-4" />}
-                                            onClick={!firmasHref ? fakeDownload('Firmas de solicitud') : undefined}
+                                            onClick={
+                                                firmasHref
+                                                    ? () => window.open(firmasHref, '_blank')
+                                                    : fakeDownload('Firmas de solicitud')
+                                            }
                                             color="bg-pink-500 hover:bg-pink-600"
                                         />
                                     </div>
@@ -377,7 +445,11 @@ const CreditoDetalle: React.FC = () => {
                                         <ChipButton
                                             label="Descargar firmas de solicitud"
                                             icon={<FileDown className="w-4 h-4" />}
-                                            onClick={!firmasHref ? fakeDownload('Firmas de solicitud') : undefined}
+                                            onClick={
+                                                firmasHref
+                                                    ? () => window.open(firmasHref, '_blank')
+                                                    : fakeDownload('Firmas de solicitud')
+                                            }
                                             color="bg-pink-500 hover:bg-pink-600"
                                         />
                                         <ChipButton
@@ -440,7 +512,15 @@ const CreditoDetalle: React.FC = () => {
                             </div>
                         </div>
                         <div className="mt-4">
-                            <ChipButton label="Descargar Datacrédito" icon={<Download className="w-4 h-4" />} onClick={fakeDownload('Datacrédito')} />
+                            <ChipButton
+                                label="Descargar Datacrédito"
+                                icon={<Download className="w-4 h-4" />}
+                                onClick={
+                                    formatoDatacreditoHref
+                                        ? () => window.open(formatoDatacreditoHref, '_blank')
+                                        : fakeDownload('Datacrédito')
+                                }
+                            />
                         </div>
                     </div>
                 </section>
