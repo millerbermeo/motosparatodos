@@ -72,7 +72,7 @@ export const useActaById = (id_acta: number | undefined) => {
     enabled: !!id_acta && id_acta > 0,
     queryFn: async () => {
       const { data } = await api.get<ItemResponse<ActaEntrega>>("/acta.php", {
-        params: { id: id_acta },
+        params: { id_factura : id_acta },
       });
       return data.data;
     },

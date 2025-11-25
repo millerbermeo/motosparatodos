@@ -841,7 +841,7 @@ const SolicitarFacturacionPage: React.FC = () => {
                         </div>
 
                         {/* Acciones */}
-                        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pt-2 border-t border-slate-100 mt-2 pt-4">
+                        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 border-t border-slate-100 mt-2 pt-4">
                             <button
                                 type="button"
                                 className="btn btn-ghost md:btn-outline order-2 md:order-1"

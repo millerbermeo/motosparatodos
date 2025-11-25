@@ -96,12 +96,15 @@ const Navbar: React.FC = () => {
               </a>
             </li>
 
-            <li>
-              <a onClick={() => navigate("/configuracion")}>
-                <Settings className="w-4 h-4" />
-                Configuración
-              </a>
-            </li>
+            {user?.rol === "Administrador" && (
+              <li>
+                <a onClick={() => navigate("/configuraciones")}>
+                  <Settings className="w-4 h-4" />
+                  Configuración
+                </a>
+              </li>
+            )}
+
 
             <li><hr className="my-1" /></li>
 

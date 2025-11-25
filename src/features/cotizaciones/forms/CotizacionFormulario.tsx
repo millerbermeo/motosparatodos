@@ -9,6 +9,7 @@ import { useAuthStore } from "../../../store/auth.store";
 import ButtonLink from "../../../shared/components/ButtonLink";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
+import { useConfigPlazoByCodigo } from "../../../services/configuracionPlazoService";
 
 type MetodoPago = "contado" | "credibike" | "terceros";
 
@@ -138,7 +139,6 @@ const garantiaExtendidaOptions: SelectOption[] = [
     { value: "12", label: "12 meses" },
     { value: "24", label: "24 meses" },
     { value: "36", label: "36 meses" },
-    { value: "48", label: "48 meses" },
 ];
 
 
@@ -483,10 +483,10 @@ const CotizacionFormulario: React.FC = () => {
     }
     const fmt = (n: number) => n.toLocaleString("es-CO") + " COP";
 
-    const calcCuotaPlano = (saldo: number, meses: number): number => {
-        if (saldo <= 0 || meses <= 0) return 0;
-        return Math.round(saldo / meses);
-    };
+    // const calcCuotaPlano = (saldo: number, meses: number): number => {
+    //     if (saldo <= 0 || meses <= 0) return 0;
+    //     return Math.round(saldo / meses);
+    // };
 
     const getMatricula = (m: any, metodo: "contado" | "credibike" | "terceros") =>
         metodo === "contado" ? Number(m.matricula_contado) : Number(m.matricula_credito);
@@ -567,6 +567,74 @@ const CotizacionFormulario: React.FC = () => {
     // ===== CÁLCULOS MOTO 2 =====
     const garantiaExt2Sel = watch("garantiaExtendida2") ?? "no";
     const garantiaExtVal2 = N(watch("valor_garantia_extendida_b"));
+
+    const codigoMarcacion1 =
+  garantiaExt1Sel !== "no" ? `MARC_${garantiaExt1Sel}` : "";
+
+const { data: configMarcacion1 } = useConfigPlazoByCodigo(
+  codigoMarcacion1,
+  Boolean(codigoMarcacion1) // enabled
+);
+
+// Para MOTO 2
+const codigoMarcacion2 =
+  garantiaExt2Sel !== "no" ? `MARC_${garantiaExt2Sel}` : "";
+
+const { data: configMarcacion2 } = useConfigPlazoByCodigo(
+  codigoMarcacion2,
+  Boolean(codigoMarcacion2)
+);
+
+const { data: tasaFinanciacion } = useConfigPlazoByCodigo("TASA_FIN");
+
+const tasaDecimal = tasaFinanciacion ? Number(tasaFinanciacion.valor) / 100 : 0.0188;
+
+
+
+// Cuando cambia la garantía extendida de la MOTO 1 o llega la tarifa, actualizar marcación1
+React.useEffect(() => {
+  if (!incluirMoto1) {
+    // si se desmarca la moto, dejamos en 0
+    setValue("marcacion1", "0");
+    return;
+  }
+
+  if (garantiaExt1Sel === "no") {
+    // sin garantía extendida → marcación 0
+    setValue("marcacion1", "0");
+    return;
+  }
+
+  if (configMarcacion1) {
+    // usamos el valor del servicio MARC_12 / 24 / 36
+    setValue("marcacion1", String(configMarcacion1.valor ?? 0), {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  }
+}, [garantiaExt1Sel, configMarcacion1, incluirMoto1, setValue]);
+
+// Cuando cambia la garantía extendida de la MOTO 2 o llega la tarifa, actualizar marcación2
+React.useEffect(() => {
+  if (!incluirMoto2) {
+    setValue("marcacion2", "0");
+    return;
+  }
+
+  if (garantiaExt2Sel === "no") {
+    setValue("marcacion2", "0");
+    return;
+  }
+
+  if (configMarcacion2) {
+    setValue("marcacion2", String(configMarcacion2.valor ?? 0), {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  }
+}, [garantiaExt2Sel, configMarcacion2, incluirMoto2, setValue]);
+
+
 
     // const totalSeguros1 = (showMotos && incluirMoto1)
     //     ? (segurosIds1 as string[]).reduce((acc, id) => acc + findSeguroValor(id), 0) + otros1
@@ -929,17 +997,45 @@ const CotizacionFormulario: React.FC = () => {
             ? Math.max(totalConSeguros2 - inicial2, 0)
             : 0;
 
-// Cuotas automáticas para MOTO 1
-const cuota12_a_auto = metodo === "credibike" && incluirMoto1 ? calcCuotaPlano(saldoFinanciar1, 12) : 0;
-const cuota24_a_auto = metodo === "credibike" && incluirMoto1 ? calcCuotaPlano(saldoFinanciar1, 24) : 0;
-const cuota36_a_auto = metodo === "credibike" && incluirMoto1 ? calcCuotaPlano(saldoFinanciar1, 36) : 0;
+const calcCuotaConInteres = (
+  saldo: number,
+  meses: number,
+  tasaMes: number
+): number => {
+  if (saldo <= 0 || meses <= 0 || tasaMes <= 0) return 0;
 
-// Cuotas automáticas para MOTO 2
-const cuota12_b_auto = metodo === "credibike" && incluirMoto2 ? calcCuotaPlano(saldoFinanciar2, 12) : 0;
-const cuota24_b_auto = metodo === "credibike" && incluirMoto2 ? calcCuotaPlano(saldoFinanciar2, 24) : 0;
-const cuota36_b_auto = metodo === "credibike" && incluirMoto2 ? calcCuotaPlano(saldoFinanciar2, 36) : 0;
+  const r = tasaMes;
+  const pow = Math.pow(1 + r, meses);
+  const factor = (r * pow) / (pow - 1);
+
+  return Math.round(saldo * factor);
+};
 
 
+const cuota12_a_auto = metodo === "credibike" && incluirMoto1
+  ? calcCuotaConInteres(saldoFinanciar1, 12, tasaDecimal)
+  : 0;
+
+const cuota24_a_auto = metodo === "credibike" && incluirMoto1
+  ? calcCuotaConInteres(saldoFinanciar1, 24, tasaDecimal)
+  : 0;
+
+const cuota36_a_auto = metodo === "credibike" && incluirMoto1
+  ? calcCuotaConInteres(saldoFinanciar1, 36, tasaDecimal)
+  : 0;
+
+// Moto 2 (si aplica)
+const cuota12_b_auto = metodo === "credibike" && incluirMoto2
+  ? calcCuotaConInteres(saldoFinanciar2, 12, tasaDecimal)
+  : 0;
+
+const cuota24_b_auto = metodo === "credibike" && incluirMoto2
+  ? calcCuotaConInteres(saldoFinanciar2, 24, tasaDecimal)
+  : 0;
+
+const cuota36_b_auto = metodo === "credibike" && incluirMoto2
+  ? calcCuotaConInteres(saldoFinanciar2, 36, tasaDecimal)
+  : 0;
 
             
     return (
@@ -2127,6 +2223,14 @@ const cuota36_b_auto = metodo === "credibike" && incluirMoto2 ? calcCuotaPlano(s
                     </div>
                 </div>
             )}
+            
+       {metodo === "credibike" && (
+         <p className="text-xs text-base-content/70">
+  Tasa de financiación: <strong>{tasaFinanciacion?.valor ?? "1.88"}% M.V.</strong>
+</p>
+
+            )}
+
 
             {/* COMENTARIO */}
             <div className="form-control w-full">

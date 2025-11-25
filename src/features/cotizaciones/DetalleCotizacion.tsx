@@ -20,10 +20,10 @@ import {
 } from 'lucide-react';
 import ButtonLink from '../../shared/components/ButtonLink';
 import { PDFDownloadLink } from "@react-pdf/renderer";
-import { CotizacionPDFDoc, type QuotePayload } from "./CotizacionPDFDoc";
 import { useAuthStore } from '../../store/auth.store';
 import { useLoaderStore } from '../../store/loader.store';
 import { useGarantiaExtByCotizacionId } from '../../services/garantiaExtServices';
+import { CotizacionDetalladaPDFDoc } from './CotizacionDetalladaPDFDoc';
 
 const BaseUrl = import.meta.env.VITE_API_URL ?? "http://tuclick.vozipcolombia.net.co/motos/back";
 
@@ -48,7 +48,7 @@ type Motocicleta = {
   accesoriosYMarcacion: number;    // accesorios + marcación
   seguros: number;                 // suma de seguros
   garantia: boolean;               // si/no
-  garantiaExtendidaMeses?: number; // 👈 NUEVO: meses de garantía extendida
+  garantiaExtendidaMeses?: number; // meses de garantía extendida
   totalSinSeguros: number;         // backend o calculado
   total: number;
   cuotas: Cuotas;
@@ -58,13 +58,16 @@ type Motocicleta = {
   matricula?: number;
   impuestos?: number;
 
-    // 👇 NUEVOS CAMPOS DE ADICIONALES
+  // Adicionales
   adicionalesRunt?: number;
   adicionalesLicencia?: number;
   adicionalesDefensas?: number;
   adicionalesHandSavers?: number;
   adicionalesOtros?: number;
   adicionalesTotal?: number;
+
+  // 👇 NUEVO: saldo a financiar
+  saldoFinanciar: number;
 };
 
 type Evento = {
@@ -313,8 +316,7 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
   const matricula = Number(data?.[`matricula${suffix}`]) || 0;
   const impuestos = Number(data?.[`impuestos${suffix}`]) || 0;
 
-
-    // 👇 Adicionales (RUNT, licencias, defensas, etc.) vienen como _1 o _2
+  // Adicionales (RUNT, licencias, defensas, etc.) vienen como _1 o _2
   const isA = lado === 'A';
 
   const adicionalesRunt = Number(data?.[isA ? 'runt_1' : 'runt_2']) || 0;
@@ -331,7 +333,6 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
       adicionalesHandSavers +
       adicionalesOtros);
 
-
   const seguros =
     typeof segurosFromJson === 'number'
       ? segurosFromJson
@@ -347,7 +348,7 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
     .replace(/\p{Diacritic}/gu, '');
   const garantia = garantiaStr === 'si' || garantiaStr === 'sí' || garantiaStr === 'true' || garantiaStr === '1';
 
-  // 👇 Garantía extendida (meses)
+  // Garantía extendida (meses)
   const geRaw = data?.[`garantia_extendida${suffix}`];
   const garantiaExtendidaMeses = (() => {
     const num = Number(geRaw);
@@ -359,7 +360,7 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
     (precioBase +
       precioDocumentos +
       accesoriosYMarcacion +
-      adicionalesTotal - // 👈 suma adicionales
+      adicionalesTotal -
       descuentos);
 
   const total =
@@ -377,6 +378,19 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
     meses36: numOrUndef(data?.[`cuota_36${suffix}`]),
   };
 
+  // 👇 SALDO A FINANCIAR
+  // 1) Valor base del backend: saldo_financiar_a / saldo_financiar_b
+  const saldoFinanciarBase = Number(data?.[`saldo_financiar${suffix}`]) || 0;
+
+  // 2) Alternativa calculada si el base no existe / es 0: total - cuota inicial
+  const saldoFinanciarCalculado = Math.max(total - (cuotas.inicial || 0), 0);
+
+  // 3) Regla:
+  //    - Si el valor del backend existe y es > 0 => usar ese.
+  //    - Si no, usar el calculado.
+  const saldoFinanciar =
+    saldoFinanciarBase > 0 ? saldoFinanciarBase : saldoFinanciarCalculado;
+
   return {
     modelo: modeloLabel,
     precioBase,
@@ -385,25 +399,23 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
     accesoriosYMarcacion,
     seguros,
     garantia,
-    garantiaExtendidaMeses, // 👈 NUEVO
+    garantiaExtendidaMeses,
     totalSinSeguros,
     total,
     cuotas,
     lado,
-    soat,         // 👈 nuevo
-    matricula,    // 👈 nuevo
-    impuestos,    // 👈 nuevo
-
-      adicionalesRunt,
+    soat,
+    matricula,
+    impuestos,
+    adicionalesRunt,
     adicionalesLicencia,
     adicionalesDefensas,
     adicionalesHandSavers,
     adicionalesOtros,
     adicionalesTotal,
+    saldoFinanciar, // 👈 NUEVO
   };
 };
-
-
 
 const mapApiToCotizacion = (data: any): Cotizacion => {
   // Cliente
@@ -472,7 +484,6 @@ const DetalleCotizacion: React.FC = () => {
   // Garantía extendida por cotizacion_id (toma prioridad sobre lo que venga en la cotización)
   const { data: geResp, isLoading: geLoading } = useGarantiaExtByCotizacionId(id);
   const ge = geResp?.data; // { meses_a, valor_a, meses_b, valor_b, ... }
-
 
   type ActividadItem = { fecha: string; titulo: string; etiqueta?: string; color?: string };
 
@@ -651,33 +662,36 @@ const DetalleCotizacion: React.FC = () => {
                 <div className="space-y-2">
                   <DataRow label="Precio base" value={fmtCOP(moto.precioBase)} />
                   <DataRow label="Descuentos" value={fmtCOP(moto.descuentos)} valueClass="text-error font-semibold" />
-                  <DataRow label="SOAT" value={fmtCOP(moto.soat || 0)} />       {/* 👈 NUEVO */}
-                  <DataRow label="Matrícula" value={fmtCOP(moto.matricula || 0)} /> {/* 👈 NUEVO */}
-                  <DataRow label="Impuestos" value={fmtCOP(moto.impuestos || 0)} /> {/* 👈 NUEVO */}
+                  <DataRow label="SOAT" value={fmtCOP(moto.soat || 0)} />
+                  <DataRow label="Matrícula" value={fmtCOP(moto.matricula || 0)} />
+                  <DataRow label="Impuestos" value={fmtCOP(moto.impuestos || 0)} />
                   <DataRow label="Seguro todo riesgo" value={fmtCOP(moto.seguros)} />
 
-      {(moto.adicionalesTotal ?? 0) > 0 && (
-        <div className="mt-2 space-y-1">
-          <div className="text-xs font-semibold uppercase tracking-wide opacity-80">
-            Adicionales (RUNT / licencias / defensas / hand savers / otros)
-          </div>
-          <DataRow2 label="RUNT" value={fmtCOP(moto.adicionalesRunt || 0)} />
-          <DataRow2 label="Licencias" value={fmtCOP(moto.adicionalesLicencia || 0)} />
-          <DataRow2 label="Defensas" value={fmtCOP(moto.adicionalesDefensas || 0)} />
-          <DataRow2 label="Hand savers" value={fmtCOP(moto.adicionalesHandSavers || 0)} />
-          <DataRow2 label="Otros adicionales" value={fmtCOP(moto.adicionalesOtros || 0)} />
-          <DataRow2
-            label="TOTAL adicionales"
-            value={fmtCOP(moto.adicionalesTotal || 0)}
-            strong
-          />
-        </div>
-      )}
+                  {(moto.adicionalesTotal ?? 0) > 0 && (
+                    <div className="mt-2 space-y-1">
+                      <div className="text-xs font-semibold uppercase tracking-wide opacity-80">
+                        Adicionales (RUNT / licencias / defensas / hand savers / otros)
+                      </div>
+                      <DataRow2 label="RUNT" value={fmtCOP(moto.adicionalesRunt || 0)} />
+                      <DataRow2 label="Licencias" value={fmtCOP(moto.adicionalesLicencia || 0)} />
+                      <DataRow2 label="Defensas" value={fmtCOP(moto.adicionalesDefensas || 0)} />
+                      <DataRow2 label="Hand savers" value={fmtCOP(moto.adicionalesHandSavers || 0)} />
+                      <DataRow2
+                        label="Otros adicionales"
+                        value={fmtCOP(moto.adicionalesOtros || 0)}
+                      />
+                      <DataRow2
+                        label="TOTAL adicionales"
+                        value={fmtCOP(moto.adicionalesTotal || 0)}
+                        strong
+                      />
+                    </div>
+                  )}
 
                 </div>
                 <div className="space-y-2">
                   <DataRowText label="Garantía" value={moto.garantia ? 'Sí' : 'No'} />
-                  {/* 👇 NUEVO: Garantía extendida */}
+                  {/* Garantía extendida */}
                   <DataRowText
                     label="Garantía extendida"
                     value={typeof moto.garantiaExtendidaMeses === 'number' ? `${moto.garantiaExtendidaMeses} meses` : ''}
@@ -686,10 +700,16 @@ const DetalleCotizacion: React.FC = () => {
                   <DataRow label="Accesorios / Marcación / Personalización" value={fmtCOP(moto.accesoriosYMarcacion)} />
                   <DataRow label="Total sin seguros" value={fmtCOP(moto.totalSinSeguros)} />
                   <DataRow label="Total" value={fmtCOP(moto.total)} strong />
+                  {/* 👇 NUEVO: muestra saldo a financiar */}
+                  <DataRow
+                    label="Saldo a financiar"
+                    value={fmtCOP(moto.saldoFinanciar)}
+                    strong
+                  />
                 </div>
 
                 <MotoImage
-                  src={getFotoUrl(payload, tab)}   // usa tu helper buildImageUrl/getFotoUrl
+                  src={getFotoUrl(payload, tab)}
                   alt={`Moto ${tab} – ${moto?.modelo || ""}`}
                   thumbClassName="w-40 h-28 md:w-64 md:h-40"
                 />
@@ -866,7 +886,50 @@ const DetalleCotizacion: React.FC = () => {
         </section>
       </div>
 
-      {/* Barra de acciones (inferior) */}
+      {/* Barra de acciones (inferior) – PDF detallado */}
+      <section className="sticky bottom-0 mt-4 bg-base-100/90 backdrop-blur border-t border-base-300 px-4 py-3">
+        <div className="max-w-full mx-auto flex flex-wrap items-center justify-end gap-2">
+          {/* PDF DETALLADO (JSON COTIZACIÓN + JSON GARANTÍA) */}
+          {payload && (
+            <PDFDownloadLink
+              document={
+                <CotizacionDetalladaPDFDoc
+                  cotizacion={{ success: true, data: payload }}
+                  garantiaExt={
+                    ge
+                      ? { success: true, data: ge }
+                      : undefined
+                  }
+                  logoUrl="/moto3.png"
+                  empresa={{
+                    nombre: "Feria de la Movilidad",
+                    ciudad: "Cali",
+                    almacen: "Feria de la Movilidad",
+                    nit: "123.456.789-0",
+                    telefono: "300 000 0000",
+                    direccion: "Dirección ejemplo 123",
+                  }}
+                />
+              }
+              fileName={`Cotizacion_detallada_${q?.id || id}.pdf`}
+            >
+              {({ loading }) => (
+                <button
+                  className="btn btn-success btn-sm"
+                  type="button"
+                  disabled={loading}
+                  title="Descargar PDF cotización"
+                >
+                  <FileDown className="w-4 h-4" />
+                  {loading ? "Generando PDF…" : "PDF Cotización"}
+                </button>
+              )}
+            </PDFDownloadLink>
+          )}
+        </div>
+      </section>
+
+      {/* Barra de acciones (inferior) – botones de gestión */}
       <section className="sticky bottom-0 mt-4 bg-base-100/90 backdrop-blur border-t border-base-300 px-4 py-3">
         <div className="max-w-full mx-auto flex flex-wrap items-center justify-end gap-2">
           {useAuthStore.getState().user?.rol === "Asesor" &&
@@ -914,30 +977,6 @@ const DetalleCotizacion: React.FC = () => {
               </button>
             </>
           )}
-
-          {(() => {
-            const pdfPayload: QuotePayload | undefined = payload ? { success: true, data: payload } : undefined;
-            const pdfName = `Cotizacion_${q?.id || id}.pdf`;
-            return pdfPayload ? (
-              <PDFDownloadLink
-                document={
-                  <CotizacionPDFDoc
-                    payload={pdfPayload}
-                    logoUrl="/moto3.png"
-                    empresa={{ ciudad: "Cali", almacen: "Feria de la Movilidad" }}
-                  />
-                }
-                fileName={pdfName}
-              >
-                {({ loading }) => (
-                  <button className="btn btn-success btn-sm" type="button" disabled={loading}>
-                    <FileDown className="w-4 h-4" />
-                    {loading ? "Generando PDF…" : "Descargar Cotización"}
-                  </button>
-                )}
-              </PDFDownloadLink>
-            ) : null;
-          })()}
 
           {useAuthStore.getState().user?.rol === "Administrador" && (
             <button
@@ -1009,7 +1048,6 @@ const DataRow2: React.FC<{ label: string; value: React.ReactNode; strong?: boole
     <span className={strong ? 'font-bold' : valueClass || ''}>{value}</span>
   </div>
 );
-
 
 // Para valores que no son dinero (p. ej., Sí/No)
 const DataRowText: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (

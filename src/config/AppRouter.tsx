@@ -6,6 +6,7 @@ import PrivateRoute from "./PrivateRoute";
 import RequireModule from "./RequireModule"; // 👈
 import { useLoaderStore } from "../store/loader.store";
 import Loader from "../utils/Loader";
+import Configuraciones from "../pages/Configuraciones";
 
 
 const Home = lazy(() => import("../pages/Home"));
@@ -49,7 +50,7 @@ const SolicitarFacturacionPage = lazy(() => import("../pages/SolicitarFacturacio
 const Dis = lazy(() => import("../pages/Dis"));
 
 const DetallesFacturacion = lazy(() => import("../pages/DetallesFacturacion"));
-
+const ActaFinal = lazy(() => import("../pages/ActaFinal"));
 const Fallback: React.FC = () => {
   const { show, hide } = useLoaderStore();
 
@@ -120,8 +121,14 @@ const AppRouter: React.FC = () => {
                 <Route path="/solicitudes/detalle/facturar-credito/:id" element={<FacturarCredito />} />
                 <Route path="/solicitudes/detalle/facturar-solicitud/:id" element={<FacturarCreditoSolicitud />} />
                 <Route path="/solicitudes/facturacion/:id" element={<DetallesFacturacion />} />
+<Route path="/solicitudes/actas/final/:id" element={<ActaFinal />} />
 
               </Route>
+
+                 <Route element={<RequireModule name="Configuraciones" />}>
+                <Route path="/configuraciones" element={<Configuraciones />} />
+              </Route>
+
 
 
 

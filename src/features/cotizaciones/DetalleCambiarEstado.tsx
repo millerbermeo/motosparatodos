@@ -205,6 +205,8 @@ type MotoCalc = {
     totalSinSeguros: number;
     total: number;
     cuotaInicial: number;
+    // 👇 NUEVO: saldo a financiar
+    saldoFinanciar: number;
 };
 
 const buildMotoCalc = (row: any, side: 'a' | 'b'): MotoCalc => {
@@ -243,6 +245,19 @@ const buildMotoCalc = (row: any, side: 'a' | 'b'): MotoCalc => {
 
     const cuotaInicial = Number(row?.[`cuota_inicial${sfx}`]) || 0;
 
+    // 👇 SALDO A FINANCIAR
+    // 1) Valor base del backend: saldo_financiar_a / saldo_financiar_b
+    const saldoFinanciarBase = Number(row?.[`saldo_financiar${sfx}`]) || 0;
+
+    // 2) Alternativa calculada si el base no existe / es 0: total - cuota inicial
+    const saldoFinanciarCalculado = Math.max(total - (cuotaInicial || 0), 0);
+
+    // 3) Regla:
+    //    - Si el valor del backend existe y es > 0 => usar ese.
+    //    - Si no, usar el calculado.
+    const saldoFinanciar =
+        saldoFinanciarBase > 0 ? saldoFinanciarBase : saldoFinanciarCalculado;
+
     return {
         precioBase,
         precioDocumentos,
@@ -253,6 +268,7 @@ const buildMotoCalc = (row: any, side: 'a' | 'b'): MotoCalc => {
         totalSinSeguros,
         total,
         cuotaInicial,
+        saldoFinanciar,
     };
 };
 
@@ -619,6 +635,8 @@ const DetalleCambiarEstado: React.FC = () => {
                                 <InfoKV label="Total sin seguros:" value={fmtCOP(motoA.totalSinSeguros)} />
                                 <InfoKV label="Total:" value={fmtCOP(motoA.total)} />
                                 <InfoKV label="Cuota inicial:" value={fmtCOP(motoA.cuotaInicial)} />
+                                {/* 👇 NUEVO: saldo a financiar */}
+                                <InfoKV label="Saldo a financiar:" value={fmtCOP(motoA.saldoFinanciar)} />
                             </div>
                         </article>
                     )}
@@ -637,6 +655,8 @@ const DetalleCambiarEstado: React.FC = () => {
                                 <InfoKV label="Total sin seguros:" value={fmtCOP(motoB.totalSinSeguros)} />
                                 <InfoKV label="Total:" value={fmtCOP(motoB.total)} />
                                 <InfoKV label="Cuota inicial:" value={fmtCOP(motoB.cuotaInicial)} />
+                                {/* 👇 NUEVO: saldo a financiar */}
+                                <InfoKV label="Saldo a financiar:" value={fmtCOP(motoB.saldoFinanciar)} />
                             </div>
                         </article>
                     )}

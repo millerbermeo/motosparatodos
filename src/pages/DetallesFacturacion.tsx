@@ -1,5 +1,6 @@
+// src/pages/DetallesFacturacion.tsx
 import React, { useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useCotizacionFullById } from "../services/fullServices";
 import DocumentosSolicitud from "../features/solicitudes/DocumentosSolicitud";
 import { PDFDownloadLink } from "@react-pdf/renderer";
@@ -215,7 +216,7 @@ const DetallesFacturacion: React.FC = () => {
   const saldoFinanciar =
     max0((totalGeneral ?? 0) - cuota_inicial) ?? 0;
 
-  // 👇 Construimos las URLs de documentos usando “de un lado o de otro”
+  // URLs de documentos
   const manifiesto_url =
     sol && (sol as any).manifiesto_url
       ? (sol as any).manifiesto_url
@@ -226,7 +227,6 @@ const DetallesFacturacion: React.FC = () => {
       ? (sol as any).cedula_url
       : cred?.formato_datacredito || null;
 
-  // Si algún día guardas factura en solicitar_estado_facturacion
   const factura_url =
     (sol as any)?.factura_url ||
     (cot as any)?.factura_url ||
@@ -308,7 +308,7 @@ const DetallesFacturacion: React.FC = () => {
                         Asesor: {asesor}
                       </div>
                       {estadoCotizacion && (
-                        <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border-emerald-200">
                           Estado: {estadoCotizacion}
                         </div>
                       )}
@@ -496,12 +496,20 @@ const DetallesFacturacion: React.FC = () => {
               }}
             />
 
-            {/* Botones superiores: recargar + PDF */}
+            {/* Botones: ir al acta, recargar, PDF */}
             <section className="border-t border-slate-200 pt-4 flex flex-wrap items-center justify-between gap-3">
               <div className="text-sm text-slate-500">
-                Revisa la información y descarga el soporte en PDF.
+                Revisa la información, descarga el soporte en PDF o consulta el acta de entrega.
               </div>
               <div className="flex items-center gap-2">
+                {/* 👇 Botón que abre la nueva página ActaFinal pasando el id en la URL */}
+                <Link
+                  to={`/solicitudes/actas/final/${id_cotizacion}`}
+                  className="btn btn-sm bg-violet-600 hover:bg-violet-700 text-white border-violet-600"
+                >
+                  Ver acta de entrega
+                </Link>
+
                 <button
                   onClick={() => refetch()}
                   className="btn btn-sm bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600"

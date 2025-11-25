@@ -42,4 +42,6 @@ export const MENU_ESTATICO: MenuItem[] = [
   { nombre: "Usuarios", ruta: "/usuarios", icono: "User", requireModule: "Usuarios", orden: 11 },
   { nombre: "Formatos", ruta: "/formatos", icono: "FileType", requireModule: "Formatos", orden: 12 },
   { nombre: "Ayuda", ruta: "/ayuda", icono: "HelpCircle", requireModule: "Ayuda", orden: 13 },
+    { nombre: "Configuraciones", ruta: "/configuraciones", icono: "Settings", requireModule: "Configuraciones", orden: 14 },
+
 ];
