@@ -23,6 +23,7 @@ import ButtonLink from '../../shared/components/ButtonLink';
 // 🔹 IMPORTS PARA EL PDF
 import { pdf } from '@react-pdf/renderer';
 import { SolicitudCreditoPDFDoc } from './pdf/SolicitudCreditoPDF';
+import TablaAmortizacionCredito from './TablaAmortizacionCredito';
 
 const fmtCOP = (v: number) =>
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
@@ -700,7 +701,9 @@ const CreditoDetalle: React.FC = () => {
 
                 </section>
 
-
+{credito && (
+  <TablaAmortizacionCredito credito={credito as any} />
+)}
 
 
 
