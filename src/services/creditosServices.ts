@@ -422,7 +422,6 @@ export const useCreditos = (
 };
 
 
-
 export interface CreditoLine {
   id: number;
   asesor: string;
@@ -431,15 +430,15 @@ export interface CreditoLine {
   producto: string;
   valor_producto: number;
   plazo_meses: number | null;
-  estado: string; // ej.: "Incompleto"
-  proaprobado: "Sí" | "No" | string; // permitir valores desconocidos
-  analista: string; // ej.: "Sin analista"
+  estado: string;
+  proaprobado: "Sí" | "No" | string;
+  analista: string;
   revisado: "Sí" | "No" | string;
-  entrega_autorizada: string; // ej.: "No hay factura"
-  entregado: string; // ej.: "No hay factura"
+  entrega_autorizada: string;
+  entregado: string;
   cambio_ci: "Sí" | "No" | string;
-  fecha_creacion: string; // ISO-like datetime string
-  actualizado: string; // ISO-like datetime string
+  fecha_creacion: string;
+  actualizado: string;
   deudor_id: number | null;
   codeudor_id: number | null;
   cotizacion_id: number | null;
@@ -450,13 +449,21 @@ export interface CreditoLine {
   fecha_entrega?: any;
   placa?: string | null;
 
+  // 👇 NUEVOS CAMPOS TOMADOS DEL JSON
+  soat?: string | number | null;                    // "0.00"
+  matricula?: string | number | null;               // "1205000.00"
+  impuestos?: string | number | null;               // "0.00"
+  accesorios_total?: string | number | null;        // "0.00"
+  precio_seguros?: string | number | null;          // "0.00"
+  garantia_extendida_valor?: string | number | null;// "0.00"
+  total?: string | number | null;                   // "58705000.00"
 
   firmas?: any;
   soportes?: any;
-  formato_referencia? : any
-  formato_datacredito: any
-
+  formato_referencia?: any;
+  formato_datacredito: any;
 }
+
 
 
 export interface ApiResponseCreditos {

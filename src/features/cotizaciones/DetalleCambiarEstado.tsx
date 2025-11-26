@@ -548,7 +548,7 @@ const DetalleCambiarEstado: React.FC = () => {
         <main className="w-full min-h-screen px-4 md:px-6 pb-6">
             <section className="w-full mb-6">
                 <div className="pt-4 mb-3">
-                    <ButtonLink to="/cotizaciones" label="Volver a cotizaciones" />
+                    <ButtonLink to="/cotizaciones" direction='back' label="Volver a cotizaciones" />
                 </div>
             </section>
 
