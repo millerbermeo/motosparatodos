@@ -26,10 +26,10 @@ const centsToPesosStr = (cents: unknown): string => {
 };
 
 /** String de pesos (con máscara) → número en centavos para DB */
-const pesosStrToCentsNumber = (value: unknown): number => {
-  const pesos = toNumberPesos(value); // "1.234.567" -> 1234567
-  return pesos * 100;
-};
+// const pesosStrToCentsNumber = (value: unknown): number => {
+//   const pesos = toNumberPesos(value); // "1.234.567" -> 1234567
+//   return pesos * 100;
+// };
 
 type ProductoValues = {
   /** Solo lectura, viene del backend como string "Marca - Línea - Modelo" o similar */
@@ -100,7 +100,8 @@ const InfoProductoFormulario: React.FC = () => {
 
     // cuota_inicial: seguimos manejando escala 2 (centavos) si tu backend lo requiere.
     // Si también viene en pesos, cambia esta línea por: String(c?.cuota_inicial ?? "0")
-    setValue("cuotaInicial", centsToPesosStr(c?.cuota_inicial ?? 0), { shouldDirty: false });
+// AHORA: cuota_inicial ya viene en pesos (ej: 1200000.00)
+setValue("cuotaInicial", String(c?.cuota_inicial ?? "0"), { shouldDirty: false });
 
     setValue("comentario", c?.comentario ?? "", { shouldDirty: false });
   }, [data, setValue]);
@@ -110,7 +111,7 @@ const InfoProductoFormulario: React.FC = () => {
     const payload = {
       plazo_meses: toNumber(v.plazoCuotas) || undefined,
       // UI (pesos con máscara) -> DB (centavos). Si tu backend quiere pesos, usa toNumberPesos(v.cuotaInicial)
-      cuota_inicial: pesosStrToCentsNumber(v.cuotaInicial) || 0,
+cuota_inicial: toNumberPesos(v.cuotaInicial) || 0,
       comentario: (v.comentario?.trim() ?? "") || null,
     };
     actualizarCredito.mutate(

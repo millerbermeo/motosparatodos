@@ -642,8 +642,9 @@ const CreditoDetalle: React.FC = () => {
                                     </div>
                                 )}
 
-                                {estado === 'Aprobado' && (
+                        
                                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                             {estado === 'Aprobado' && (
                                         <ChipButton
                                             label="Descargar firmas de solicitud"
                                             icon={<FileDown className="w-4 h-4" />}
@@ -654,6 +655,9 @@ const CreditoDetalle: React.FC = () => {
                                             }
                                             color="bg-pink-500 hover:bg-pink-600"
                                         />
+                                          )}
+
+                                          
                                         {/* 🔹 AQUÍ USAMOS EL NUEVO HANDLER DE PDF */}
                                         <ChipButton
                                             label="Descargar tabla"
@@ -661,6 +665,8 @@ const CreditoDetalle: React.FC = () => {
                                             onClick={handleDownloadTabla}
                                             color="bg-indigo-500 hover:bg-indigo-600"
                                         />
+                                          {estado === 'Aprobado' && (
+                                    <>
                                         <ChipButton
                                             label="Descargar paquete"
                                             icon={<ShieldCheck className="w-4 h-4" />}
@@ -674,8 +680,10 @@ const CreditoDetalle: React.FC = () => {
                                             onClick={fakeDownload('Garantía extendida')}
                                             color="bg-red-500 hover:bg-red-600"
                                         />
+                                    </>
+                                              )}
                                     </div>
-                                )}
+                              
                             </div>
                         </div>
                     </div>

@@ -4,7 +4,7 @@ import { useSubirFirma } from "../../../services/documentosServices";
 import { useParams } from "react-router-dom";
 import { useWizardStore } from "../../../store/wizardStore";
 import Swal from "sweetalert2";
-import SolicitudCreditoPDF from "../pdf/SolicitudCreditoPDF";
+import SolicitudCreditoPDFDoc from "../pdf/SolicitudCreditoPDF";
 
 const SolicitudFormulario: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -71,7 +71,7 @@ const SolicitudFormulario: React.FC = () => {
      <div className="space-y-2 w-full flex flex-col">
 <h2 className="text-lg font-semibold">1. Descargar solicitud</h2>
 {/* Usa el componente de PDF para generar y descargar la solicitud */}
-<SolicitudCreditoPDF />
+<SolicitudCreditoPDFDoc />
 </div>
 
       {/* Sección 2: Adjuntar firmas (opcional) */}

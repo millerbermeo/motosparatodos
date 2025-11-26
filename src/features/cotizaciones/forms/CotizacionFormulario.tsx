@@ -393,17 +393,22 @@ const CotizacionFormulario: React.FC = () => {
     React.useEffect(() => { setValue("moto1", ""); }, [selectedMarca1, setValue]);
     React.useEffect(() => { setValue("moto2", ""); }, [selectedMarca2, setValue]);
 
-    const precioBase1 = React.useMemo(() => {
-        const sel = watch("moto1");
-        const m = (motos1?.motos ?? []).find((x) => x.linea === sel);
-        return m ? Number(m.precio_base) : 0;
-    }, [motos1?.motos, watch("moto1")]);
+const precioBase1 = React.useMemo(() => {
+  const sel = watch("moto1");
+  const index = sel !== undefined && sel !== null && sel !== "" ? Number(sel) : NaN;
 
-    const precioBase2 = React.useMemo(() => {
-        const sel = watch("moto2");
-        const m = (motos2?.motos ?? []).find((x) => x.linea === sel);
-        return m ? Number(m.precio_base) : 0;
-    }, [motos2?.motos, watch("moto2")]);
+  const m = Number.isNaN(index) ? null : (motos1?.motos ?? [])[index];
+  return m ? Number(m.precio_base) : 0;
+}, [motos1?.motos, watch("moto1")]);
+
+const precioBase2 = React.useMemo(() => {
+  const sel = watch("moto2");
+  const index = sel !== undefined && sel !== null && sel !== "" ? Number(sel) : NaN;
+
+  const m = Number.isNaN(index) ? null : (motos2?.motos ?? [])[index];
+  return m ? Number(m.precio_base) : 0;
+}, [motos2?.motos, watch("moto2")]);
+
 
     // ===== NUEVO: documentos calculados (fuente única de la verdad) =====
     // const moto1Sel = watch("moto1");
