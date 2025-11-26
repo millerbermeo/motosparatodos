@@ -7,11 +7,20 @@ import { useMarcas } from "../../../services/marcasServices";
 
 type Props =
   | { initialValues?: undefined; mode?: "create" }
-  | { initialValues: { id: number; marca: string; linea: string }; mode: "edit" };
+  | {
+      initialValues: {
+        id: number;
+        marca: string;
+        linea: string;
+        cilindraje?: string | null;
+      };
+      mode: "edit";
+    };
 
 type LineaFormValues = {
   marca: string;
   linea: string;
+  cilindraje: string; // se maneja como string en el formulario
 };
 
 const FormularioLineas: React.FC<Props> = ({ initialValues, mode = "create" }) => {
@@ -23,6 +32,7 @@ const FormularioLineas: React.FC<Props> = ({ initialValues, mode = "create" }) =
     defaultValues: {
       marca: initialValues?.marca ?? "",
       linea: initialValues?.linea ?? "",
+      cilindraje: initialValues?.cilindraje ?? "",
     },
     mode: "onBlur",
   });
@@ -32,6 +42,7 @@ const FormularioLineas: React.FC<Props> = ({ initialValues, mode = "create" }) =
     reset({
       marca: initialValues?.marca ?? "",
       linea: initialValues?.linea ?? "",
+      cilindraje: initialValues?.cilindraje ?? "",
     });
   }, [initialValues, mode, reset]);
 
@@ -39,14 +50,19 @@ const FormularioLineas: React.FC<Props> = ({ initialValues, mode = "create" }) =
     marcas?.map((m: any) => ({ value: m.marca, label: m.marca })) ?? [];
 
   const onSubmit = (values: LineaFormValues) => {
-    const payload = { marca: values.marca, linea: values.linea };
+    const payload = {
+      marca: values.marca,
+      linea: values.linea,
+      // si viene vacío lo mandamos como null para respetar string | null
+      cilindraje: values.cilindraje || null,
+    };
 
     if (mode === "edit" && initialValues?.id != null) {
       update.mutate({ id: initialValues.id, ...payload });
     } else {
       create.mutate(payload);
       // Si quieres limpiar al crear:
-      // reset({ marca: "", linea: "" });
+      // reset({ marca: "", linea: "", cilindraje: "" });
     }
   };
 
@@ -70,13 +86,23 @@ const FormularioLineas: React.FC<Props> = ({ initialValues, mode = "create" }) =
         <FormInput<LineaFormValues>
           name="linea"
           label="Línea"
-            className="mt-6"
+          className="mt-6"
           control={control}
           placeholder="Ej. CBR 500R"
           rules={{
             required: "La línea es obligatoria",
             minLength: { value: 2, message: "Mínimo 2 caracteres" },
           }}
+        />
+
+        {/* Cilindraje (FormInput) */}
+        <FormInput<LineaFormValues>
+          name="cilindraje"
+          label="Cilindraje"
+          control={control}
+          placeholder="Ej. 500cc"
+          // Si quieres que sea obligatorio, descomenta:
+          // rules={{ required: "El cilindraje es obligatorio" }}
         />
       </div>
 

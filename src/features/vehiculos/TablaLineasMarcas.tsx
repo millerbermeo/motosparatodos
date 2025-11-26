@@ -98,7 +98,10 @@ const TablaLineas: React.FC = () => {
 
   // 👉 key para remount y evitar “datos pegados”
   const openCrear = () =>
-    open(<FormularioLineas key="create" />, "Crear línea", { size: "lg", position: "center" });
+    open(<FormularioLineas key="create" />, "Crear línea", {
+      size: "lg",
+      position: "center",
+    });
 
   const openEditar = (l: any) =>
     open(
@@ -120,14 +123,13 @@ const TablaLineas: React.FC = () => {
     if (res.isConfirmed) deleteLinea.mutate(id);
   };
 
-
   const { show, hide } = useLoaderStore();
 
   React.useEffect(() => {
     if (isPending) {
-      show();   // 👈 muestra el overlay global
+      show(); // 👈 muestra el overlay global
     } else {
-      hide();   // 👈 lo quita
+      hide(); // 👈 lo quita
     }
   }, [isPending, show, hide]);
 
@@ -151,7 +153,6 @@ const TablaLineas: React.FC = () => {
         </button>
       </div>
 
-
       <div className="relative overflow-x-auto max-w-full px-4">
         <table className="table table-zebra table-pin-rows">
           <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
@@ -159,6 +160,7 @@ const TablaLineas: React.FC = () => {
               <th className="w-12">#</th>
               <th className="py-4">Marca</th>
               <th className="py-4">Línea</th>
+              <th className="py-4">Cilindraje</th>
               <th className="py-4 text-right pr-6">Acciones</th>
             </tr>
           </thead>
@@ -169,6 +171,7 @@ const TablaLineas: React.FC = () => {
                 <th className="text-base-content/50">{l.id}</th>
                 <td className="font-medium">{l.marca ?? "—"}</td>
                 <td className="font-medium">{l.linea ?? "—"}</td>
+                <td className="font-medium">{l.cilindraje ?? "—"}</td>
                 <td className="text-right">
                   <div className="flex justify-end gap-2">
                     <button
@@ -180,7 +183,12 @@ const TablaLineas: React.FC = () => {
                     </button>
                     <button
                       className="btn btn-sm bg-white btn-circle"
-                      onClick={() => confirmarEliminar(Number(l.id), `${l.marca} ${l.linea}`)}
+                      onClick={() =>
+                        confirmarEliminar(
+                          Number(l.id),
+                          `${l.marca} ${l.linea}`
+                        )
+                      }
                       title="Eliminar"
                     >
                       <Trash2 size="18px" color="#ef4444" />
@@ -196,6 +204,7 @@ const TablaLineas: React.FC = () => {
               <th></th>
               <th>Marca</th>
               <th>Línea</th>
+              <th>Cilindraje</th>
               <th className="text-right pr-6">Acciones</th>
             </tr>
           </tfoot>
@@ -209,13 +218,20 @@ const TablaLineas: React.FC = () => {
         </span>
 
         <div className="flex items-center gap-2">
-          <button className={btnGhost} onClick={goPrev} disabled={page === 1} aria-label="Página anterior">
+          <button
+            className={btnGhost}
+            onClick={goPrev}
+            disabled={page === 1}
+            aria-label="Página anterior"
+          >
             «
           </button>
 
           {items.map((it, idx) =>
             it === "..." ? (
-              <span key={`e-${idx}`} className={btnEllipsis}>…</span>
+              <span key={`e-${idx}`} className={btnEllipsis}>
+                …
+              </span>
             ) : (
               <button
                 key={`p-${it}`}

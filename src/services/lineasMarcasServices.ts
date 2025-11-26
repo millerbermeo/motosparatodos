@@ -10,6 +10,7 @@ export interface Linea {
   id: number;
   marca: string; // nombre de la marca (texto)
   linea: string; // nombre de la línea/modelo
+  cilindraje?: string | null; // nueva propiedad
 }
 
 export type NewLinea = Omit<Linea, "id">;
@@ -41,7 +42,7 @@ export const useCreateLinea = () => {
 
   return useMutation({
     mutationFn: async (payload: NewLinea) => {
-      // POST → { marca, linea }
+      // POST → { marca, linea, cilindraje }
       const { data } = await api.post("/create_linea.php", payload);
       return data;
     },
@@ -70,7 +71,7 @@ export const useUpdateLinea = () => {
 
   return useMutation({
     mutationFn: async (payload: Linea) => {
-      // PUT → { id, marca, linea }
+      // PUT → { id, marca, linea, cilindraje }
       const { data } = await api.put("/create_linea.php", payload);
       return data;
     },
