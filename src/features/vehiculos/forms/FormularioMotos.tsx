@@ -9,6 +9,13 @@ import { useLineas } from "../../../services/lineasMarcasServices";
 import { useEmpresasSelect } from "../../../services/empresasServices";
 import { useSubDistribucion } from "../../../services/distribucionesServices";
 
+// 🔹 hooks de rango
+import {
+  useRangoPorCilindraje,
+  useRangoMotocarro,
+  type RangoCilindraje,
+} from "../../../services/useRangosCilindraje";
+
 type Base = {
   id?: number;
   marca: string;
@@ -20,8 +27,6 @@ type Base = {
   imagen?: string;
   empresa?: string;          // nombre
   subdistribucion?: string;  // nombre
-
-
 };
 
 type Props =
@@ -33,10 +38,10 @@ type MotoFormValues = {
   linea: string;
   modelo: string;
   estado: "Nueva" | "Usada";
-  precio_base: number | string; // RHF trabaja con string en inputs number, lo normalizamos en submit
+  precio_base: number | string;
   descrip: string;
-  empresa: string;          // nombre
-  subdistribucion?: string;  // nombre
+  empresa: string;
+  subdistribucion?: string;
 };
 
 const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) => {
@@ -44,14 +49,16 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
   const update = useUpdateMoto();
   const { data: marcas, isPending: loadingMarcas } = useMarcas();
   const { data: lineas, isPending: loadingLineas } = useLineas();
-  // Datos para los nuevos selects
   const { data: empresas, isPending: loadingEmpresas } = useEmpresasSelect();
   const { data: subdistribs, isPending: loadingSubd } = useSubDistribucion();
-
 
   // archivo y preview se manejan fuera de RHF (file inputs no controlados)
   const [file, setFile] = React.useState<File | null>(null);
   const [preview, setPreview] = React.useState<string | null>(initialValues?.imagen ?? null);
+
+  // 🔹 para cálculo de rango SOLO en create
+  const [cilindrajeBusqueda, setCilindrajeBusqueda] = React.useState<number | null>(null);
+  const [esMotocarro, setEsMotocarro] = React.useState(false);
 
   const {
     control,
@@ -90,6 +97,7 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
   }, [initialValues, mode, reset]);
 
   const selectedMarca = watch("marca");
+  const selectedLineaNombre = watch("linea");
 
   // filtra líneas según marca seleccionada
   const lineasFiltradas = React.useMemo(() => {
@@ -111,7 +119,114 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
+  // 🔹 calcular cilindraje / motocarro al seleccionar línea (solo create)
+  React.useEffect(() => {
+    if (mode !== "create") {
+      setCilindrajeBusqueda(null);
+      setEsMotocarro(false);
+      return;
+    }
+
+    if (!selectedLineaNombre || !lineas) {
+      setCilindrajeBusqueda(null);
+      setEsMotocarro(false);
+      return;
+    }
+
+    const lineaObj = (lineas as any[]).find((l) => l.linea === selectedLineaNombre);
+    if (!lineaObj) {
+      setCilindrajeBusqueda(null);
+      setEsMotocarro(false);
+      return;
+    }
+
+    // detectar motocarro por nombre / campos
+    const lineaLower = String(lineaObj.linea ?? "").toLowerCase();
+    const descLower = String(lineaObj.descripcion ?? "").toLowerCase();
+    const isMotocarro =
+      lineaLower.includes("motocarro") ||
+      descLower.includes("motocarro") ||
+      lineaLower.includes("motocarros") ||
+      descLower.includes("motocarros") ||
+      lineaObj.tipo === "Motocarro" ||
+      Boolean(lineaObj.es_motocarro);
+
+    setEsMotocarro(isMotocarro);
+
+    if (isMotocarro) {
+      console.log("[MOTOS] Línea detectada como Motocarro:", lineaObj);
+      setCilindrajeBusqueda(null);
+      return;
+    }
+
+    const cilindraje =
+      lineaObj.cilindraje !== null &&
+      lineaObj.cilindraje !== undefined &&
+      lineaObj.cilindraje !== ""
+        ? Number(lineaObj.cilindraje)
+        : 124;
+
+    console.log("[MOTOS] Línea seleccionada:", lineaObj);
+    console.log("[MOTOS] Cilindraje calculado para búsqueda:", cilindraje);
+
+    setCilindrajeBusqueda(cilindraje);
+  }, [selectedLineaNombre, lineas, mode]);
+
+  // 🔹 hooks de rango (solo activos en create)
+  const rangoPorCilindrajeQuery = useRangoPorCilindraje(
+    cilindrajeBusqueda,
+    mode === "create" && !esMotocarro && cilindrajeBusqueda !== null
+  );
+
+  const rangoMotocarroQuery = useRangoMotocarro(
+    mode === "create" && esMotocarro
+  );
+
+  const rangoSeleccionado: RangoCilindraje | null =
+    mode === "create"
+      ? esMotocarro
+        ? rangoMotocarroQuery.data ?? null
+        : rangoPorCilindrajeQuery.data ?? null
+      : null;
+
+  // 🔹 LOG para ver siempre qué devuelve el hook
+  React.useEffect(() => {
+    if (mode !== "create") return;
+
+    console.log("[MOTOS] Estado búsqueda rango:", {
+      esMotocarro,
+      cilindrajeBusqueda,
+      rangoPorCilindraje: rangoPorCilindrajeQuery.data,
+      rangoMotocarro: rangoMotocarroQuery.data,
+      rangoSeleccionado,
+    });
+  }, [
+    mode,
+    esMotocarro,
+    cilindrajeBusqueda,
+    rangoPorCilindrajeQuery.data,
+    rangoMotocarroQuery.data,
+    rangoSeleccionado,
+  ]);
+
   const onSubmit = (values: MotoFormValues) => {
+    // 🔹 Armamos un objeto con los datos del rango SOLO en create
+    let rangoPayload: {
+      soat?: string;
+      matricula_contado?: string;
+      matricula_credito?: string;
+      impuestos?: string;
+    } = {};
+
+    if (mode === "create" && rangoSeleccionado) {
+      rangoPayload = {
+        soat: String(rangoSeleccionado.soat ?? 0),
+        matricula_contado: String(rangoSeleccionado.matricula_contado ?? 0),
+        matricula_credito: String(rangoSeleccionado.matricula_credito ?? 0),
+        impuestos: String(rangoSeleccionado.impuestos ?? 0),
+      };
+    }
+
     const payload = {
       marca: values.marca,
       linea: values.linea,
@@ -120,11 +235,15 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
       precio_base: Number(values.precio_base) || 0,
       descrip: values.descrip,
       imagen: file ?? null,
-
-      // 👇 ahora solo enviamos nombres
       empresa: values.empresa,
-      subdistribucion: values.subdistribucion || null, // si viene vacío lo mandas como null
+      subdistribucion: values.subdistribucion || null,
+
+      // 🔹 se fusionan aquí los campos del rango
+      ...(mode === "create" ? rangoPayload : {}),
     };
+
+    console.log("[MOTOS] onSubmit - rangoSeleccionado:", rangoSeleccionado);
+    console.log("[MOTOS] onSubmit - payload enviado:", payload);
 
     if (mode === "edit" && initialValues?.id != null) {
       update.mutate({ id: initialValues.id, ...payload, nuevaImagen: file ?? null } as any);
@@ -133,14 +252,17 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
     }
   };
 
-  const busy = create.isPending || update.isPending;
+  const busy =
+    create.isPending ||
+    update.isPending ||
+    (mode === "create" &&
+      (rangoPorCilindrajeQuery.isLoading || rangoMotocarroQuery.isLoading));
 
   const marcaOptions: SelectOption[] =
     marcas?.map((m: any) => ({ value: m.marca, label: m.marca })) ?? [];
 
   const lineaOptions: SelectOption[] =
     lineasFiltradas?.map((l: any) => ({ value: l.linea, label: l.linea })) ?? [];
-
 
   const empresaOptions: SelectOption[] =
     empresas?.map((e: any) => ({ value: e.nombre, label: e.nombre })) ?? [];
@@ -172,8 +294,8 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
             loadingLineas
               ? "Cargando líneas..."
               : selectedMarca
-                ? "Seleccione una línea"
-                : "Seleccione una marca primero"
+              ? "Seleccione una línea"
+              : "Seleccione una marca primero"
           }
           disabled={loadingLineas || !selectedMarca}
           rules={{ required: "La línea es obligatoria" }}
@@ -209,7 +331,7 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
           name="precio_base"
           label="Precio base"
           control={control}
-            className="mt-6"
+          className="mt-6"
           type="number"
           placeholder="15000"
           rules={{
@@ -218,7 +340,6 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
               Number(v) >= 0 || "El precio debe ser un número mayor o igual a 0",
           }}
         />
-
 
         {/* Empresa */}
         <FormSelect<MotoFormValues>
@@ -241,8 +362,7 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
           disabled={loadingSubd}
         />
 
-
-        {/* Imagen (NO se toca, igual que en tu código original) */}
+        {/* Imagen */}
         <label className="form-control w-full">
           <span className="label-text">Imagen</span>
           <input
@@ -262,17 +382,13 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
           )}
         </label>
 
-        {/* Descripción (ocupa 2 columnas) */}
+        {/* Descripción */}
         <div className="md:col-span-2">
           <FormInput<MotoFormValues>
             name="descrip"
             label="Descripción"
             control={control}
-            // Usamos un textarea nativo para multi-línea: tu FormInput renderiza <input/>.
-            // Si prefieres textarea estilado, puedes crear un FormTextarea similar a FormInput.
             placeholder="Motocicleta deportiva"
-            // rules={{ required: "La descripción es obligatoria" }}
-            // Hack simple: usa type=text y dale espacio; para mejor UX, crea FormTextarea.
             className="min-h-24"
           />
         </div>

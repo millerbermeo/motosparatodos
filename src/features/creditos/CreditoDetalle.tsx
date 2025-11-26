@@ -31,6 +31,9 @@ import TablaAmortizacionPDFDoc from './pdf/TablaAmortizacionPDFDoc';
 // 🔹 NUEVO: hook para la tasa de financiación
 import { useConfigPlazoByCodigo } from '../../services/configuracionPlazoService';
 
+// 🔹 NUEVO: Paquete de crédito (25 páginas)
+import { PaqueteCreditoPDFDoc } from './pdf/PaqueteCreditoPDF';
+
 const fmtCOP = (v: number) =>
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
 
@@ -241,8 +244,8 @@ const CreditoDetalle: React.FC = () => {
                         direccion: informacion_personal?.direccion_residencia,
                         telefono: informacion_personal?.celular,
                     }}
-                    // si tienes logo en /public, por ejemplo:
-                    // logoUrl="/logo-verificarte.png"
+                // si tienes logo en /public, por ejemplo:
+                // logoUrl="/logo-verificarte.png"
                 />
             ).toBlob();
 
@@ -336,19 +339,17 @@ const CreditoDetalle: React.FC = () => {
 
     const formatoReferenciaHref: string | undefined =
         typeof credito?.formato_referencia === 'string' && credito.formato_referencia.length > 0
-            ? `${BaseUrl}/${
-                credito.formato_referencia.startsWith('docs_creditos/')
-                    ? credito.formato_referencia
-                    : `docs_creditos/${credito.formato_referencia}`
+            ? `${BaseUrl}/${credito.formato_referencia.startsWith('docs_creditos/')
+                ? credito.formato_referencia
+                : `docs_creditos/${credito.formato_referencia}`
             }`
             : undefined;
 
     const formatoDatacreditoHref: string | undefined =
         typeof credito?.formato_datacredito === 'string' && credito.formato_datacredito.length > 0
-            ? `${BaseUrl}/${
-                credito.formato_datacredito.startsWith('docs_creditos/')
-                    ? credito.formato_datacredito
-                    : `docs_creditos/${credito.formato_datacredito}`
+            ? `${BaseUrl}/${credito.formato_datacredito.startsWith('docs_creditos/')
+                ? credito.formato_datacredito
+                : `docs_creditos/${credito.formato_datacredito}`
             }`
             : undefined;
 
@@ -361,6 +362,66 @@ const CreditoDetalle: React.FC = () => {
             hide();   // 🔵 lo oculta
         }
     }, [isLoading, show, hide]);
+
+
+    const handleDownloadPaquete = async () => {
+        try {
+            if (!credito) {
+                alert('No hay información de crédito para generar el paquete.');
+                return;
+            }
+
+            // construir nombre del cliente (igual que hicimos para la tabla)
+            const nombreCliente = [
+                informacion_personal?.primer_nombre,
+                informacion_personal?.segundo_nombre,
+                informacion_personal?.primer_apellido,
+                informacion_personal?.segundo_apellido,
+            ]
+                .filter(Boolean)
+                .join(' ') || undefined;
+
+            // 🔵 datos base que reutilizan todas tus páginas
+            const dataBase = {
+                codigo: String(codigo_credito),
+                fecha: credito.fecha_creacion,
+                ciudad: 'Cali', // o de donde la saques
+                logoSrc: '/verificarte.jpg',
+
+                // datos del titular
+                nombre: nombreCliente,
+                cc: informacion_personal?.numero_documento,
+
+                // datos de moto
+                marca: moto.modelo ?? 'HERO',
+                linea: moto.modelo ?? 'XOOM 110',
+                modelo: moto.modelo ?? '2026',
+                color: moto.valorMotocicleta ? 'negro' : 'negro',
+                motor: moto.numeroMotor ?? '00',
+                chasis: moto.numeroChasis ?? '00',
+                placa: moto.placa ?? '00',
+                valorMoto: moto.valorMotocicleta != null ? fmtCOP(moto.valorMotocicleta) : '',
+                cuotaInicial: moto.cuotaInicial != null ? fmtCOP(moto.cuotaInicial) : '',
+                cuotas: moto.numeroCuotas ?? 36,
+                valorCuota: moto.valorCuota != null ? fmtCOP(moto.valorCuota) : '',
+
+                // alias que algunas páginas esperan (ejemplo Pagina1: nombreTitular1)
+                nombreTitular1: nombreCliente,
+                ccTitular1: informacion_personal?.numero_documento,
+            };
+
+            const blob = await pdf(
+                <PaqueteCreditoPDFDoc data={dataBase} />
+            ).toBlob();
+
+            const url = URL.createObjectURL(blob);
+            window.open(url, "_blank"); // abrir en nueva pestaña
+        } catch (err) {
+            console.error(err);
+            alert('No fue posible generar el paquete de crédito.');
+        }
+    };
+
 
 
     return (
@@ -529,9 +590,10 @@ const CreditoDetalle: React.FC = () => {
                                         <ChipButton
                                             label="Descargar paquete"
                                             icon={<ShieldCheck className="w-4 h-4" />}
-                                            onClick={fakeDownload('Paquete de crédito')}
+                                            onClick={handleDownloadPaquete}
                                             color="bg-teal-500 hover:bg-teal-600"
                                         />
+
                                         <ChipButton
                                             label="Descargar Garantía"
                                             icon={<BadgeCheck className="w-4 h-4" />}

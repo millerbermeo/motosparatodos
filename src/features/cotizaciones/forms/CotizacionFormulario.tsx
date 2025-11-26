@@ -272,15 +272,16 @@ const CotizacionFormulario: React.FC = () => {
     const { data: motos1 } = useMotosPorMarca(selectedMarca1 || undefined);
     const { data: motos2 } = useMotosPorMarca(selectedMarca2 || undefined);
 
-    const motoOptions1: SelectOption[] = (motos1?.motos ?? []).map((m) => ({
-        value: m.linea,
-        label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP - Modelo ${m.modelo ?? ""}`,
-    }));
+const motoOptions1: SelectOption[] = (motos1?.motos ?? []).map((m, index) => ({
+  value: String(index), // 👈 valor único
+  label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP - Modelo ${m.modelo ?? ""}`,
+}));
 
-    const motoOptions2: SelectOption[] = (motos2?.motos ?? []).map((m) => ({
-        value: m.linea,
-        label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP Modelo ${m.modelo ?? ""}`,
-    }));
+const motoOptions2: SelectOption[] = (motos2?.motos ?? []).map((m, index) => ({
+  value: String(index),
+  label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP Modelo ${m.modelo ?? ""}`,
+}));
+
 
 
     // Checkboxes solo para habilitar inputs de adicionales (NO van al backend)
@@ -316,51 +317,49 @@ const CotizacionFormulario: React.FC = () => {
 
 
 
-    // MOTO 1
-    React.useEffect(() => {
-        const sel = watch("moto1");
-        const m = (motos1?.motos ?? []).find((x) => x.linea === sel);
-        if (m) {
-            setValue("modelo_a", m.modelo?.trim() || "");
-            const descuento = Number(m.descuento_empresa) + Number(m.descuento_ensambladora);
-            setValue("descuento1", descuento.toString());
+// MOTO 1
+React.useEffect(() => {
+  const sel = watch("moto1");
+  const index = sel !== undefined && sel !== null && sel !== "" ? Number(sel) : NaN;
 
-            // NUEVO: separar
-            setValue("soat_a", String(Number(m.soat) || 0));
-            setValue("impuestos_a", String(Number(m.impuestos) || 0));
-            setValue("matricula_a", String(getMatricula(m, metodo)));
+  const m = Number.isNaN(index) ? null : (motos1?.motos ?? [])[index];
+  if (m) {
+    setValue("modelo_a", m.modelo?.trim() || "");
+    const descuento = Number(m.descuento_empresa) + Number(m.descuento_ensambladora);
+    setValue("descuento1", descuento.toString());
 
-            // Compatibilidad: documentos visibles (M+I+S)
-            const documentos = getMatricula(m, metodo) + Number(m.impuestos) + Number(m.soat);
-            setValue("precioDocumentos1", documentos.toString());
+    setValue("soat_a", String(Number(m.soat) || 0));
+    setValue("impuestos_a", String(Number(m.impuestos) || 0));
+    setValue("matricula_a", String(getMatricula(m, metodo)));
 
-            // Foto
-            setValue("foto_a", m.foto ?? null);
-        }
-    }, [watch("moto1"), motos1, metodo, setValue]);
+    const documentos = getMatricula(m, metodo) + Number(m.impuestos) + Number(m.soat);
+    setValue("precioDocumentos1", documentos.toString());
 
-    // MOTO 2
-    React.useEffect(() => {
-        const sel = watch("moto2");
-        const m = (motos2?.motos ?? []).find((x) => x.linea === sel);
-        if (m) {
-            setValue("modelo_b", m.modelo?.trim() || "");
-            const descuento = Number(m.descuento_empresa) + Number(m.descuento_ensambladora);
-            setValue("descuento2", descuento.toString());
+    setValue("foto_a", m.foto ?? null);
+  }
+}, [watch("moto1"), motos1, metodo, setValue]);
 
-            // NUEVO: separar
-            setValue("soat_b", String(Number(m.soat) || 0));
-            setValue("impuestos_b", String(Number(m.impuestos) || 0));
-            setValue("matricula_b", String(getMatricula(m, metodo)));
+// MOTO 2
+React.useEffect(() => {
+  const sel = watch("moto2");
+  const index = sel !== undefined && sel !== null && sel !== "" ? Number(sel) : NaN;
 
-            // Compatibilidad: documentos visibles (M+I+S)
-            const documentos = getMatricula(m, metodo) + Number(m.impuestos) + Number(m.soat);
-            setValue("precioDocumentos2", documentos.toString());
+  const m = Number.isNaN(index) ? null : (motos2?.motos ?? [])[index];
+  if (m) {
+    setValue("modelo_b", m.modelo?.trim() || "");
+    const descuento = Number(m.descuento_empresa) + Number(m.descuento_ensambladora);
+    setValue("descuento2", descuento.toString());
 
-            // Foto
-            setValue("foto_b", m.foto ?? null);
-        }
-    }, [watch("moto2"), motos2, metodo, setValue]);
+    setValue("soat_b", String(Number(m.soat) || 0));
+    setValue("impuestos_b", String(Number(m.impuestos) || 0));
+    setValue("matricula_b", String(getMatricula(m, metodo)));
+
+    const documentos = getMatricula(m, metodo) + Number(m.impuestos) + Number(m.soat);
+    setValue("precioDocumentos2", documentos.toString());
+
+    setValue("foto_b", m.foto ?? null);
+  }
+}, [watch("moto2"), motos2, metodo, setValue]);
 
 
     React.useEffect(() => {

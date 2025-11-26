@@ -53,27 +53,19 @@ const TablaConfiguracion: React.FC = () => {
           <thead className="bg-base-200">
             <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider bg-[#3498DB] [&>th]:text-white">
               <th>ID</th>
+              <th className="text-right pr-4">Editar</th>
+
               <th>Código</th> {/* 👈 NUEVA COLUMNA */}
               <th>Servicio</th>
               <th>Plazo (meses)</th>
               <th>Tipo valor</th>
               <th className="text-right pr-4">Valor</th>
-              <th className="text-right pr-4">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {tarifas.map((t) => (
               <tr key={t.id}>
                 <td>{t.id}</td>
-                <td className="font-mono text-xs">{t.codigo}</td>
-                <td className="font-medium">{t.servicio}</td>
-                <td>{t.plazo_meses}</td>
-                <td>{t.tipo_valor}</td>
-                <td className="text-right pr-4">
-                  {t.tipo_valor === "%"
-                    ? `${Number(t.valor).toFixed(2)} %`
-                    : Number(t.valor).toLocaleString()}
-                </td>
                 <td className="text-right pr-4">
                   <button
                     className="btn btn-sm bg-white btn-circle"
@@ -83,6 +75,16 @@ const TablaConfiguracion: React.FC = () => {
                     <Pen size={18} color="green" />
                   </button>
                 </td>
+                <td className="font-mono text-xs">{t.codigo}</td>
+                <td className="font-medium">{t.servicio}</td>
+                <td>{t.plazo_meses}</td>
+                <td>{t.tipo_valor}</td>
+                <td className="text-right pr-4">
+                  {t.tipo_valor === "%"
+                    ? `${Number(t.valor).toFixed(2)} %`
+                    : Number(t.valor).toLocaleString()}
+                </td>
+
               </tr>
             ))}
 
