@@ -25,6 +25,12 @@ import { pdf } from '@react-pdf/renderer';
 import { SolicitudCreditoPDFDoc } from './pdf/SolicitudCreditoPDF';
 import TablaAmortizacionCredito from './TablaAmortizacionCredito';
 
+// 🔹 NUEVO: PDF de tabla de amortización
+import TablaAmortizacionPDFDoc from './pdf/TablaAmortizacionPDFDoc';
+
+// 🔹 NUEVO: hook para la tasa de financiación
+import { useConfigPlazoByCodigo } from '../../services/configuracionPlazoService';
+
 const fmtCOP = (v: number) =>
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
 
@@ -68,6 +74,10 @@ const CreditoDetalle: React.FC = () => {
         error: errorDeudor,
     } = useDeudor(codigo_credito);
 
+    // 🔹 NUEVO: obtener configuración de tasa (TASA_FIN)
+    const {
+        data: tasaFinConfig,
+    } = useConfigPlazoByCodigo('TASA_FIN', true);
 
     const warnedMissingDeudor = React.useRef(false);
     const rol = useAuthStore((s) => s.user?.rol);
@@ -149,8 +159,6 @@ const CreditoDetalle: React.FC = () => {
 
     const open = useModalStore((s) => s.open);
 
-    // ...
-
     const abrirFormularioComentario = () => {
         if (!codigo_credito) return;
         open(
@@ -160,7 +168,7 @@ const CreditoDetalle: React.FC = () => {
         );
     };
 
-    // 🔹 USAR COMPONENTE DE PDF DESDE UNA FUNCIÓN
+    // 🔹 USAR COMPONENTE DE PDF DESDE UNA FUNCIÓN (SOLICITUD)
     const handleDownloadSolicitud = async () => {
         try {
             if (!codigo_credito || !datos) {
@@ -185,6 +193,64 @@ const CreditoDetalle: React.FC = () => {
         } catch (err) {
             console.error(err);
             alert('No fue posible generar la solicitud de crédito.');
+        }
+    };
+
+    // 🔹 NUEVO: generar PDF de TABLA DE AMORTIZACIÓN
+    const handleDownloadTabla = async () => {
+        try {
+            if (!credito) {
+                alert('No hay información de crédito para generar la tabla.');
+                return;
+            }
+            if (!tasaFinConfig) {
+                alert('No se encontró configuración de la tasa de financiación.');
+                return;
+            }
+
+            // Convertir a porcentaje mensual
+            const tasaMensualPorcentaje =
+                tasaFinConfig.tipo_valor === '%'
+                    ? tasaFinConfig.valor
+                    : tasaFinConfig.valor * 100;
+
+            // Construir nombre del cliente desde informacion_personal
+            const nombreCliente = [
+                informacion_personal?.primer_nombre,
+                informacion_personal?.segundo_nombre,
+                informacion_personal?.primer_apellido,
+                informacion_personal?.segundo_apellido,
+            ]
+                .filter(Boolean)
+                .join(' ') || undefined;
+
+            const blob = await pdf(
+                <TablaAmortizacionPDFDoc
+                    credito={credito as any}
+                    tasaMensualPorcentaje={tasaMensualPorcentaje}
+                    codigoPlan={String(codigo_credito)}
+                    fechaPlan={credito.fecha_creacion}
+                    empresa={{
+                        nombre: 'VERIFICARTE AAA S.A.S',
+                        ciudad: 'Cali',
+                        nit: '901155548-8',
+                    }}
+                    cliente={{
+                        nombre: nombreCliente,
+                        documento: informacion_personal?.numero_documento,
+                        direccion: informacion_personal?.direccion_residencia,
+                        telefono: informacion_personal?.celular,
+                    }}
+                    // si tienes logo en /public, por ejemplo:
+                    // logoUrl="/logo-verificarte.png"
+                />
+            ).toBlob();
+
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        } catch (err) {
+            console.error(err);
+            alert('No fue posible generar la tabla de amortización.');
         }
     };
 
@@ -453,10 +519,11 @@ const CreditoDetalle: React.FC = () => {
                                             }
                                             color="bg-pink-500 hover:bg-pink-600"
                                         />
+                                        {/* 🔹 AQUÍ USAMOS EL NUEVO HANDLER DE PDF */}
                                         <ChipButton
                                             label="Descargar tabla"
                                             icon={<History className="w-4 h-4" />}
-                                            onClick={fakeDownload('Tabla de amortización')}
+                                            onClick={handleDownloadTabla}
                                             color="bg-indigo-500 hover:bg-indigo-600"
                                         />
                                         <ChipButton
@@ -477,9 +544,6 @@ const CreditoDetalle: React.FC = () => {
                         </div>
                     </div>
                 </section>
-
-
-
 
                 {/* Información personal */}
                 <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -528,7 +592,6 @@ const CreditoDetalle: React.FC = () => {
 
 
                 {/* Información laboral */}
-                {/* Información laboral */}
                 <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <div className="p-4 sm:p-6">
                         <h2 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2 text-slate-800">
@@ -549,8 +612,6 @@ const CreditoDetalle: React.FC = () => {
                         </div>
                     </div>
                 </section>
-
-
 
 
                 {/* Referencias */}
@@ -576,7 +637,7 @@ const CreditoDetalle: React.FC = () => {
                     </div>
                 </section>
 
-
+                {/* Soportes */}
                 <section>
                     <details className="collapse bg-base-100 border-base-300 border">
                         <summary className="collapse-title font-semibold">
@@ -674,10 +735,26 @@ const CreditoDetalle: React.FC = () => {
                     </details>
                 </section>
 
+                {/* Tabla de amortización (DaisyUI collapse) */}
+                {credito && (
+                    <section>
+                        <details className="collapse bg-base-100 border-base-300 border">
+                            <summary className="collapse-title font-semibold">
+                                <h2 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2 text-slate-800">
+                                    <History className="w-5 h-5" /> Tabla de amortización del crédito
+                                </h2>
+                            </summary>
+                            <div className="collapse-content text-sm">
+                                <TablaAmortizacionCredito
+                                    credito={credito as any}
+                                    fechaCreacion={credito.fecha_creacion}
+                                />
+                            </div>
+                        </details>
+                    </section>
+                )}
 
-
-
-
+                {/* Comentarios */}
                 <section >
                     <details className="collapse bg-base-100 border-base-300 border">
                         <summary className="collapse-title font-semibold">
@@ -701,12 +778,7 @@ const CreditoDetalle: React.FC = () => {
 
                 </section>
 
-{credito && (
-  <TablaAmortizacionCredito credito={credito as any} />
-)}
-
-
-
+                {/* Acciones */}
                 <section className="rounded-2xl flex gap-5 p-6 border border-slate-200 bg-white shadow-sm">
                     <button
                         className="btn bg-success hover:bg-green-500 text-white flex items-center gap-2"
@@ -757,7 +829,6 @@ const CreditoDetalle: React.FC = () => {
                             {useAuthStore.getState().user?.rol === "Administrador" && estado != 'Aprobado' && (
                                 <Link to={`/creditos/detalle/cambiar-estado/${codigo_credito}`}>
 
-
                                     <button
                                         className="btn btn-warning text-white flex items-center gap-2"
                                     >
@@ -774,7 +845,6 @@ const CreditoDetalle: React.FC = () => {
                     {useAuthStore.getState().user?.rol === "Asesor" && estado === 'Aprobado' && tieneDatosMoto && (
 
                         <>
-
 
                             <Link to={`/creditos/detalle/facturar-credito/${codigo_credito}/${encodeURIComponent(idCot ?? '')}`}>
 

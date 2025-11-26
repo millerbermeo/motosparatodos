@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { History } from 'lucide-react';
 import { useConfigPlazoByCodigo } from '../../services/configuracionPlazoService'; // 👈 ajusta la ruta del import
 
 // Ajusta este tipo a lo que realmente devuelve tu backend/hook
@@ -26,6 +25,7 @@ interface CreditoApi {
 
 interface TablaAmortizacionCreditoProps {
   credito: CreditoApi;
+  fechaCreacion?: string;   // 👈 nueva prop
 }
 
 const fmtCOP = (v: number) =>
@@ -52,13 +52,28 @@ type AmortRow = {
   interes: number;
   capital: number;
   saldo: number;
+  fechaCuota?: Date;   // 👈 nueva propiedad
+};
+
+const addMonths = (date: Date, months: number): Date => {
+  const d = new Date(date);
+  const day = d.getDate();
+  d.setMonth(d.getMonth() + months);
+
+  // Pequeño ajuste por si el mes no tiene ese día (p.ej. 31)
+  if (d.getDate() < day) {
+    d.setDate(0);
+  }
+
+  return d;
 };
 
 const buildSchedule = (
   principal: number,
   tasaMensual: number,
   meses: number,
-  seguroMensual: number
+  seguroMensual: number,
+  fechaInicio?: Date       // 👈 nueva param opcional
 ): { cuotaBase: number; schedule: AmortRow[] } => {
   if (principal <= 0 || tasaMensual <= 0 || meses <= 0) {
     return { cuotaBase: 0, schedule: [] };
@@ -79,11 +94,15 @@ const buildSchedule = (
     let capital = cuotaBase - interes;
     let nuevoSaldo = saldo - capital;
 
-    // Ajuste en la última cuota para que el saldo quede exactamente en 0
     if (i === n) {
       capital = saldo;
       nuevoSaldo = 0;
     }
+
+    // 👇 calcular fecha de la cuota (i-ésima) a partir de fechaInicio
+    const fechaCuota = fechaInicio
+      ? addMonths(fechaInicio, i - 1)  // cuota 1 => +0 meses, cuota 2 => +1, etc.
+      : undefined;
 
     schedule.push({
       periodo: i,
@@ -93,6 +112,7 @@ const buildSchedule = (
       interes,
       capital,
       saldo: nuevoSaldo < 1 ? 0 : nuevoSaldo,
+      fechaCuota,               // 👈 la guardamos en el row
     });
 
     saldo = nuevoSaldo;
@@ -103,6 +123,7 @@ const buildSchedule = (
 
 export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> = ({
   credito,
+  fechaCreacion,
 }) => {
   const plazo = credito.plazo_meses ?? 0;
 
@@ -152,11 +173,15 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
         ? tasaFinConfig.valor / 100
         : tasaFinConfig.valor;
 
+    // 👇 fecha inicial tomada de la fecha de creación del crédito
+    const fechaInicio = fechaCreacion ? new Date(fechaCreacion) : undefined;
+
     const { cuotaBase, schedule } = buildSchedule(
       principal,
       tasaMensual,
       plazo,
-      seguroMensual
+      seguroMensual,
+      fechaInicio          // 👈 ahora sí se pasa a la función
     );
 
     return {
@@ -170,7 +195,7 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
       cuotaInicial,
       valorProducto,
     };
-  }, [credito, tasaFinConfig, garantiaConfig, plazo]);
+  }, [credito, tasaFinConfig, garantiaConfig, plazo, fechaCreacion]);
 
   if (!plazo) {
     return (
@@ -217,12 +242,7 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
   return (
     <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="p-4 sm:p-6 space-y-4">
-        <div className="flex items-center gap-2 text-slate-800 mb-2">
-          <History className="w-5 h-5" />
-          <h2 className="text-base sm:text-lg font-semibold">
-            Tabla de amortización del crédito
-          </h2>
-        </div>
+  
 
         {/* Resumen superior */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
@@ -269,6 +289,8 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
             <thead className="bg-slate-100 text-slate-700">
               <tr>
                 <th className="px-3 py-2 text-left font-semibold">#</th>
+                <th className="px-3 py-2 text-left font-semibold">Mes</th>
+                <th className="px-3 py-2 text-left font-semibold">Año</th>
                 <th className="px-3 py-2 text-right font-semibold">
                   Cuota base
                 </th>
@@ -290,29 +312,40 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {schedule.map((row) => (
-                <tr key={row.periodo} className="hover:bg-slate-50">
-                  <td className="px-3 py-1.5">{row.periodo}</td>
-                  <td className="px-3 py-1.5 text-right">
-                    {fmtCOP(Math.round(row.cuotaBase))}
-                  </td>
-                  <td className="px-3 py-1.5 text-right">
-                    {fmtCOP(Math.round(row.seguroMensual))}
-                  </td>
-                  <td className="px-3 py-1.5 text-right">
-                    {fmtCOP(Math.round(row.cuotaTotal))}
-                  </td>
-                  <td className="px-3 py-1.5 text-right">
-                    {fmtCOP(Math.round(row.interes))}
-                  </td>
-                  <td className="px-3 py-1.5 text-right">
-                    {fmtCOP(Math.round(row.capital))}
-                  </td>
-                  <td className="px-3 py-1.5 text-right">
-                    {fmtCOP(Math.round(row.saldo))}
-                  </td>
-                </tr>
-              ))}
+              {schedule.map((row) => {
+                const mes = row.fechaCuota
+                  ? row.fechaCuota.toLocaleDateString('es-CO', { month: 'long' })
+                  : '—';
+                const anio = row.fechaCuota
+                  ? row.fechaCuota.getFullYear()
+                  : '—';
+
+                return (
+                  <tr key={row.periodo} className="hover:bg-slate-50">
+                    <td className="px-3 py-1.5">{row.periodo}</td>
+                    <td className="px-3 py-1.5 capitalize">{mes}</td>
+                    <td className="px-3 py-1.5">{anio}</td>
+                    <td className="px-3 py-1.5 text-right">
+                      {fmtCOP(Math.round(row.cuotaBase))}
+                    </td>
+                    <td className="px-3 py-1.5 text-right">
+                      {fmtCOP(Math.round(row.seguroMensual))}
+                    </td>
+                    <td className="px-3 py-1.5 text-right">
+                      {fmtCOP(Math.round(row.cuotaTotal))}
+                    </td>
+                    <td className="px-3 py-1.5 text-right">
+                      {fmtCOP(Math.round(row.interes))}
+                    </td>
+                    <td className="px-3 py-1.5 text-right">
+                      {fmtCOP(Math.round(row.capital))}
+                    </td>
+                    <td className="px-3 py-1.5 text-right">
+                      {fmtCOP(Math.round(row.saldo))}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
