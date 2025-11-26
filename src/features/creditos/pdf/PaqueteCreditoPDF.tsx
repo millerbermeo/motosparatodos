@@ -63,15 +63,131 @@ export interface PaqueteCreditoPDFDocProps {
   data: any; // luego lo tipeamos bonito, por ahora “mientras”
 }
 
+/**
+ * Adaptador: toma tu objeto `data` y crea alias para que coincida con
+ * los nombres de props que usan las páginas (nombreTitular1, numeroMotor, etc).
+ */
+const adaptData = (data: any) => {
+  // normalizar algunas fechas (por si vienen con hora)
+  const safeFecha = (data.fecha ?? "").toString().split(" ")[0] || data.fecha;
+  const safeFechaNac = (data.fechaNacimiento ?? "").toString().split("T")[0];
+  const safeFechaExp = (data.fechaExpedicion ?? "").toString().split("T")[0];
+
+  // nombre completo
+  const nombreCompleto =
+    data.nombre ||
+    data.nombreTitular1 ||
+    [
+      data.primerNombre,
+      data.segundoNombre,
+      data.primerApellido,
+      data.segundoApellido,
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+  return {
+    ...data,
+
+    // ======== GENERALES / ENCABEZADO =========
+    codigo: data.codigo,
+    fecha: safeFecha,
+    ciudad: data.ciudad ?? data.ciudadResidencia ?? "Cali",
+    logoSrc: data.logoSrc ?? "/verificarte.jpg",
+    estadoCredito: data.estadoCredito,
+    agencia: data.agencia,
+    asesor: data.asesor,
+
+    // ======== TITULAR / DEUDOR =========
+    nombre: nombreCompleto,
+    nombreTitular1: data.nombreTitular1 ?? nombreCompleto,
+    nombreCompleto: nombreCompleto,
+
+    tipoDocumento: data.tipoDocumento,
+    numeroDocumento: data.numeroDocumento,
+    tipoDocumentoTitular1:
+      data.tipoDocumentoTitular1 ?? data.tipoDocumento ?? "Cédula de ciudadanía",
+    numeroDocumentoTitular1:
+      data.numeroDocumentoTitular1 ?? data.numeroDocumento,
+    cc: data.cc ?? data.numeroDocumento,
+    ccTitular1: data.ccTitular1 ?? data.cc ?? data.numeroDocumento,
+
+    fechaExpedicion: safeFechaExp,
+    lugarExpedicion: data.lugarExpedicion,
+    fechaExpedicionTitular1: safeFechaExp,
+    lugarExpedicionTitular1: data.lugarExpedicion,
+
+    fechaNacimiento: safeFechaNac,
+    fechaNacimientoTitular1: safeFechaNac,
+
+    ciudadResidencia: data.ciudadResidencia ?? data.ciudad,
+    barrioResidencia: data.barrioResidencia ?? "",
+    direccionResidencia: data.direccionResidencia,
+    telefonoFijo: data.telefonoFijo ?? "",
+    celular: data.celular,
+    email: data.email,
+    estadoCivil: data.estadoCivil,
+    personasACargo: data.personasACargo,
+    tipoVivienda: data.tipoVivienda,
+    costoArriendo: data.costoArriendo,
+    fincaRaiz: data.fincaRaiz,
+
+    ciudadTitular1: data.ciudadTitular1 ?? data.ciudadResidencia ?? data.ciudad,
+    barrioTitular1: data.barrioTitular1 ?? data.barrioResidencia ?? "",
+    direccionTitular1:
+      data.direccionTitular1 ?? data.direccionResidencia ?? "",
+    telefonoTitular1: data.telefonoTitular1 ?? data.celular,
+    telefonoFijoTitular1: data.telefonoFijoTitular1 ?? data.telefonoFijo,
+    emailTitular1: data.emailTitular1 ?? data.email,
+    estadoCivilTitular1: data.estadoCivilTitular1 ?? data.estadoCivil,
+
+    // ======== LABORAL TITULAR =========
+    empresaTitular1: data.empresaTitular1 ?? "",
+    direccionEmpresaTitular1: data.direccionEmpresaTitular1 ?? "",
+    telefonoEmpresaTitular1: data.telefonoEmpresaTitular1 ?? "",
+    cargoTitular1: data.cargoTitular1 ?? "",
+    tipoContratoTitular1: data.tipoContratoTitular1 ?? "",
+    tiempoServicioTitular1: data.tiempoServicioTitular1 ?? "",
+    salarioTitular1: data.salarioTitular1 ?? "0.00",
+
+    // ======== MOTO / CRÉDITO =========
+    marca: data.marca,
+    linea: data.linea ?? data.modeloMoto ?? data.modelo,
+    modeloMoto: data.modeloMoto ?? data.modelo,
+    modelo: data.modeloMoto ?? data.modelo,
+    color: data.color ?? "negro",
+    motor: data.motor,
+    numeroMotor: data.numeroMotor ?? data.motor,
+    chasis: data.chasis,
+    numeroChasis: data.numeroChasis ?? data.chasis,
+    placa: data.placa,
+    valorMoto: data.valorMoto,
+    cuotaInicial: data.cuotaInicial,
+    cuotas: data.cuotas,
+    valorCuota: data.valorCuota,
+    fechaEntrega: data.fechaEntrega,
+
+    // ====== otros alias típicos por si alguna página los pide ======
+    nombreCliente: nombreCompleto,
+    documentoCliente: data.numeroDocumento,
+    ciudadCliente: data.ciudadResidencia ?? data.ciudad,
+    direccionCliente: data.direccionResidencia,
+    telefonoCliente: data.celular,
+  };
+};
+
 export const PaqueteCreditoPDFDoc: React.FC<PaqueteCreditoPDFDocProps> = ({
   data,
 }) => {
+  const datosAdaptados = adaptData(data);
 
-    console.log("Generando PDF con data:", data);
+  console.log("Generando PDF con data original:", data);
+  console.log("Generando PDF con data adaptada:", datosAdaptados);
+
   return (
     <Document>
       {paginas.map((Pagina, index) => (
-        <Pagina key={index} {...data} />
+        <Pagina key={index} {...datosAdaptados} />
       ))}
     </Document>
   );

@@ -11,6 +11,9 @@ import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { useConfigPlazoByCodigo } from "../../../services/configuracionPlazoService";
 
+const BaseUrl = import.meta.env.VITE_API_URL ?? "http://tuclick.vozipcolombia.net.co/motos/back";
+
+
 type MetodoPago = "contado" | "credibike" | "terceros";
 
 const METODO_PAGO_LABEL: Record<MetodoPago, string> = {
@@ -142,7 +145,7 @@ const garantiaExtendidaOptions: SelectOption[] = [
 ];
 
 
-const CotizacionFormulario: React.FC = () => {
+const CotizacionFormulario2: React.FC = () => {
 
     const {
         register,
@@ -272,15 +275,15 @@ const CotizacionFormulario: React.FC = () => {
     const { data: motos1 } = useMotosPorMarca(selectedMarca1 || undefined);
     const { data: motos2 } = useMotosPorMarca(selectedMarca2 || undefined);
 
-const motoOptions1: SelectOption[] = (motos1?.motos ?? []).map((m, index) => ({
-  value: String(index), // 👈 valor único
-  label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP - Modelo ${m.modelo ?? ""}`,
-}));
+    const motoOptions1: SelectOption[] = (motos1?.motos ?? []).map((m, index) => ({
+        value: String(index), // 👈 valor único
+        label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP - Modelo ${m.modelo ?? ""}`,
+    }));
 
-const motoOptions2: SelectOption[] = (motos2?.motos ?? []).map((m, index) => ({
-  value: String(index),
-  label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP Modelo ${m.modelo ?? ""}`,
-}));
+    const motoOptions2: SelectOption[] = (motos2?.motos ?? []).map((m, index) => ({
+        value: String(index),
+        label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP Modelo ${m.modelo ?? ""}`,
+    }));
 
 
 
@@ -317,49 +320,49 @@ const motoOptions2: SelectOption[] = (motos2?.motos ?? []).map((m, index) => ({
 
 
 
-// MOTO 1
-React.useEffect(() => {
-  const sel = watch("moto1");
-  const index = sel !== undefined && sel !== null && sel !== "" ? Number(sel) : NaN;
+    // MOTO 1
+    React.useEffect(() => {
+        const sel = watch("moto1");
+        const index = sel !== undefined && sel !== null && sel !== "" ? Number(sel) : NaN;
 
-  const m = Number.isNaN(index) ? null : (motos1?.motos ?? [])[index];
-  if (m) {
-    setValue("modelo_a", m.modelo?.trim() || "");
-    const descuento = Number(m.descuento_empresa) + Number(m.descuento_ensambladora);
-    setValue("descuento1", descuento.toString());
+        const m = Number.isNaN(index) ? null : (motos1?.motos ?? [])[index];
+        if (m) {
+            setValue("modelo_a", m.modelo?.trim() || "");
+            const descuento = Number(m.descuento_empresa) + Number(m.descuento_ensambladora);
+            setValue("descuento1", descuento.toString());
 
-    setValue("soat_a", String(Number(m.soat) || 0));
-    setValue("impuestos_a", String(Number(m.impuestos) || 0));
-    setValue("matricula_a", String(getMatricula(m, metodo)));
+            setValue("soat_a", String(Number(m.soat) || 0));
+            setValue("impuestos_a", String(Number(m.impuestos) || 0));
+            setValue("matricula_a", String(getMatricula(m, metodo)));
 
-    const documentos = getMatricula(m, metodo) + Number(m.impuestos) + Number(m.soat);
-    setValue("precioDocumentos1", documentos.toString());
+            const documentos = getMatricula(m, metodo) + Number(m.impuestos) + Number(m.soat);
+            setValue("precioDocumentos1", documentos.toString());
 
-    setValue("foto_a", m.foto ?? null);
-  }
-}, [watch("moto1"), motos1, metodo, setValue]);
+            setValue("foto_a", m.foto ?? null);
+        }
+    }, [watch("moto1"), motos1, metodo, setValue]);
 
-// MOTO 2
-React.useEffect(() => {
-  const sel = watch("moto2");
-  const index = sel !== undefined && sel !== null && sel !== "" ? Number(sel) : NaN;
+    // MOTO 2
+    React.useEffect(() => {
+        const sel = watch("moto2");
+        const index = sel !== undefined && sel !== null && sel !== "" ? Number(sel) : NaN;
 
-  const m = Number.isNaN(index) ? null : (motos2?.motos ?? [])[index];
-  if (m) {
-    setValue("modelo_b", m.modelo?.trim() || "");
-    const descuento = Number(m.descuento_empresa) + Number(m.descuento_ensambladora);
-    setValue("descuento2", descuento.toString());
+        const m = Number.isNaN(index) ? null : (motos2?.motos ?? [])[index];
+        if (m) {
+            setValue("modelo_b", m.modelo?.trim() || "");
+            const descuento = Number(m.descuento_empresa) + Number(m.descuento_ensambladora);
+            setValue("descuento2", descuento.toString());
 
-    setValue("soat_b", String(Number(m.soat) || 0));
-    setValue("impuestos_b", String(Number(m.impuestos) || 0));
-    setValue("matricula_b", String(getMatricula(m, metodo)));
+            setValue("soat_b", String(Number(m.soat) || 0));
+            setValue("impuestos_b", String(Number(m.impuestos) || 0));
+            setValue("matricula_b", String(getMatricula(m, metodo)));
 
-    const documentos = getMatricula(m, metodo) + Number(m.impuestos) + Number(m.soat);
-    setValue("precioDocumentos2", documentos.toString());
+            const documentos = getMatricula(m, metodo) + Number(m.impuestos) + Number(m.soat);
+            setValue("precioDocumentos2", documentos.toString());
 
-    setValue("foto_b", m.foto ?? null);
-  }
-}, [watch("moto2"), motos2, metodo, setValue]);
+            setValue("foto_b", m.foto ?? null);
+        }
+    }, [watch("moto2"), motos2, metodo, setValue]);
 
 
     React.useEffect(() => {
@@ -568,70 +571,70 @@ React.useEffect(() => {
     const garantiaExtVal2 = N(watch("valor_garantia_extendida_b"));
 
     const codigoMarcacion1 =
-  garantiaExt1Sel !== "no" ? `MARC_${garantiaExt1Sel}` : "";
+        garantiaExt1Sel !== "no" ? `MARC_${garantiaExt1Sel}` : "";
 
-const { data: configMarcacion1 } = useConfigPlazoByCodigo(
-  codigoMarcacion1,
-  Boolean(codigoMarcacion1) // enabled
-);
+    const { data: configMarcacion1 } = useConfigPlazoByCodigo(
+        codigoMarcacion1,
+        Boolean(codigoMarcacion1) // enabled
+    );
 
-// Para MOTO 2
-const codigoMarcacion2 =
-  garantiaExt2Sel !== "no" ? `MARC_${garantiaExt2Sel}` : "";
+    // Para MOTO 2
+    const codigoMarcacion2 =
+        garantiaExt2Sel !== "no" ? `MARC_${garantiaExt2Sel}` : "";
 
-const { data: configMarcacion2 } = useConfigPlazoByCodigo(
-  codigoMarcacion2,
-  Boolean(codigoMarcacion2)
-);
+    const { data: configMarcacion2 } = useConfigPlazoByCodigo(
+        codigoMarcacion2,
+        Boolean(codigoMarcacion2)
+    );
 
-const { data: tasaFinanciacion } = useConfigPlazoByCodigo("TASA_FIN");
+    const { data: tasaFinanciacion } = useConfigPlazoByCodigo("TASA_FIN");
 
-const tasaDecimal = tasaFinanciacion ? Number(tasaFinanciacion.valor) / 100 : 0.0188;
+    const tasaDecimal = tasaFinanciacion ? Number(tasaFinanciacion.valor) / 100 : 0.0188;
 
 
 
-// Cuando cambia la garantía extendida de la MOTO 1 o llega la tarifa, actualizar marcación1
-React.useEffect(() => {
-  if (!incluirMoto1) {
-    // si se desmarca la moto, dejamos en 0
-    setValue("marcacion1", "0");
-    return;
-  }
+    // Cuando cambia la garantía extendida de la MOTO 1 o llega la tarifa, actualizar marcación1
+    React.useEffect(() => {
+        if (!incluirMoto1) {
+            // si se desmarca la moto, dejamos en 0
+            setValue("marcacion1", "0");
+            return;
+        }
 
-  if (garantiaExt1Sel === "no") {
-    // sin garantía extendida → marcación 0
-    setValue("marcacion1", "0");
-    return;
-  }
+        if (garantiaExt1Sel === "no") {
+            // sin garantía extendida → marcación 0
+            setValue("marcacion1", "0");
+            return;
+        }
 
-  if (configMarcacion1) {
-    // usamos el valor del servicio MARC_12 / 24 / 36
-    setValue("marcacion1", String(configMarcacion1.valor ?? 0), {
-      shouldDirty: true,
-      shouldValidate: true,
-    });
-  }
-}, [garantiaExt1Sel, configMarcacion1, incluirMoto1, setValue]);
+        if (configMarcacion1) {
+            // usamos el valor del servicio MARC_12 / 24 / 36
+            setValue("marcacion1", String(configMarcacion1.valor ?? 0), {
+                shouldDirty: true,
+                shouldValidate: true,
+            });
+        }
+    }, [garantiaExt1Sel, configMarcacion1, incluirMoto1, setValue]);
 
-// Cuando cambia la garantía extendida de la MOTO 2 o llega la tarifa, actualizar marcación2
-React.useEffect(() => {
-  if (!incluirMoto2) {
-    setValue("marcacion2", "0");
-    return;
-  }
+    // Cuando cambia la garantía extendida de la MOTO 2 o llega la tarifa, actualizar marcación2
+    React.useEffect(() => {
+        if (!incluirMoto2) {
+            setValue("marcacion2", "0");
+            return;
+        }
 
-  if (garantiaExt2Sel === "no") {
-    setValue("marcacion2", "0");
-    return;
-  }
+        if (garantiaExt2Sel === "no") {
+            setValue("marcacion2", "0");
+            return;
+        }
 
-  if (configMarcacion2) {
-    setValue("marcacion2", String(configMarcacion2.valor ?? 0), {
-      shouldDirty: true,
-      shouldValidate: true,
-    });
-  }
-}, [garantiaExt2Sel, configMarcacion2, incluirMoto2, setValue]);
+        if (configMarcacion2) {
+            setValue("marcacion2", String(configMarcacion2.valor ?? 0), {
+                shouldDirty: true,
+                shouldValidate: true,
+            });
+        }
+    }, [garantiaExt2Sel, configMarcacion2, incluirMoto2, setValue]);
 
 
 
@@ -996,47 +999,50 @@ React.useEffect(() => {
             ? Math.max(totalConSeguros2 - inicial2, 0)
             : 0;
 
-const calcCuotaConInteres = (
-  saldo: number,
-  meses: number,
-  tasaMes: number
-): number => {
-  if (saldo <= 0 || meses <= 0 || tasaMes <= 0) return 0;
+    const calcCuotaConInteres = (
+        saldo: number,
+        meses: number,
+        tasaMes: number
+    ): number => {
+        if (saldo <= 0 || meses <= 0 || tasaMes <= 0) return 0;
 
-  const r = tasaMes;
-  const pow = Math.pow(1 + r, meses);
-  const factor = (r * pow) / (pow - 1);
+        const r = tasaMes;
+        const pow = Math.pow(1 + r, meses);
+        const factor = (r * pow) / (pow - 1);
 
-  return Math.round(saldo * factor);
-};
+        return Math.round(saldo * factor);
+    };
 
 
-const cuota12_a_auto = metodo === "credibike" && incluirMoto1
-  ? calcCuotaConInteres(saldoFinanciar1, 12, tasaDecimal)
-  : 0;
+    const cuota12_a_auto = metodo === "credibike" && incluirMoto1
+        ? calcCuotaConInteres(saldoFinanciar1, 12, tasaDecimal)
+        : 0;
 
-const cuota24_a_auto = metodo === "credibike" && incluirMoto1
-  ? calcCuotaConInteres(saldoFinanciar1, 24, tasaDecimal)
-  : 0;
+    const cuota24_a_auto = metodo === "credibike" && incluirMoto1
+        ? calcCuotaConInteres(saldoFinanciar1, 24, tasaDecimal)
+        : 0;
 
-const cuota36_a_auto = metodo === "credibike" && incluirMoto1
-  ? calcCuotaConInteres(saldoFinanciar1, 36, tasaDecimal)
-  : 0;
+    const cuota36_a_auto = metodo === "credibike" && incluirMoto1
+        ? calcCuotaConInteres(saldoFinanciar1, 36, tasaDecimal)
+        : 0;
 
-// Moto 2 (si aplica)
-const cuota12_b_auto = metodo === "credibike" && incluirMoto2
-  ? calcCuotaConInteres(saldoFinanciar2, 12, tasaDecimal)
-  : 0;
+    // Moto 2 (si aplica)
+    const cuota12_b_auto = metodo === "credibike" && incluirMoto2
+        ? calcCuotaConInteres(saldoFinanciar2, 12, tasaDecimal)
+        : 0;
 
-const cuota24_b_auto = metodo === "credibike" && incluirMoto2
-  ? calcCuotaConInteres(saldoFinanciar2, 24, tasaDecimal)
-  : 0;
+    const cuota24_b_auto = metodo === "credibike" && incluirMoto2
+        ? calcCuotaConInteres(saldoFinanciar2, 24, tasaDecimal)
+        : 0;
 
-const cuota36_b_auto = metodo === "credibike" && incluirMoto2
-  ? calcCuotaConInteres(saldoFinanciar2, 36, tasaDecimal)
-  : 0;
+    const cuota36_b_auto = metodo === "credibike" && incluirMoto2
+        ? calcCuotaConInteres(saldoFinanciar2, 36, tasaDecimal)
+        : 0;
 
-            
+    const fotoMoto1 = watch("foto_a");
+    const fotoMoto2 = watch("foto_b");
+
+
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
 
@@ -1243,6 +1249,17 @@ const cuota36_b_auto = metodo === "credibike" && incluirMoto2
 
                                     {moto1Seleccionada && (
                                         <>
+                                            {/* Imagen Moto 1 */}
+                                            {incluirMoto1 && (
+                                                <div className="mt-2 flex justify-center">
+                                                    <MotoImage
+                                                        src={fotoMoto1 ? `${BaseUrl}/${fotoMoto1}` : undefined}
+
+                                                        thumbClassName="w-32 h-32"
+                                                    />
+                                                </div>
+                                            )}
+
                                             <FormSelect<FormValues>
                                                 name="garantia1"
                                                 label="¿Incluye garantía?"
@@ -1714,6 +1731,19 @@ const cuota36_b_auto = metodo === "credibike" && incluirMoto2
 
                                     {moto2Seleccionada && (
                                         <>
+                                            {/* Imagen Moto 2 */}
+                                            {incluirMoto2 && (
+                                                <div className="mt-2 flex justify-center">
+                                                    <MotoImage
+                                                        src={fotoMoto2 ? `${BaseUrl}/${fotoMoto2}` : undefined}
+
+                                                        thumbClassName="w-32 h-32"
+                                                    />
+                                                </div>
+                                            )}
+
+
+
                                             <FormSelect<FormValues>
                                                 name="garantia2"
                                                 label="¿Incluye garantía?"
@@ -2222,11 +2252,11 @@ const cuota36_b_auto = metodo === "credibike" && incluirMoto2
                     </div>
                 </div>
             )}
-            
-       {metodo === "credibike" && (
-         <p className="text-xs text-base-content/70">
-  Tasa de financiación: <strong>{tasaFinanciacion?.valor ?? "1.88"}% M.V.</strong>
-</p>
+
+            {metodo === "credibike" && (
+                <p className="text-xs text-base-content/70">
+                    Tasa de financiación: <strong>{tasaFinanciacion?.valor ?? "1.88"}% M.V.</strong>
+                </p>
 
             )}
 
@@ -2255,4 +2285,103 @@ const cuota36_b_auto = metodo === "credibike" && incluirMoto2
     );
 };
 
-export default CotizacionFormulario;
+export default CotizacionFormulario2;
+
+
+
+import { Bike, X } from "lucide-react";
+
+type MotoImageProps = {
+    src?: string;
+    alt?: string;
+    thumbClassName?: string; // ej: "w-24 h-24" (default)
+};
+
+const MotoImage: React.FC<MotoImageProps> = ({
+    src,
+    alt = "Imagen de la moto",
+    thumbClassName = "w-24 h-24",
+}) => {
+    const [error, setError] = React.useState(false);
+    const dialogRef = React.useRef<HTMLDialogElement>(null);
+    const uid = React.useId();
+
+    const showPlaceholder = !src || error;
+
+    const openModal = () => {
+        if (!showPlaceholder) {
+            dialogRef.current?.showModal();
+        }
+    };
+
+    const closeModal = () => dialogRef.current?.close();
+
+    React.useEffect(() => {
+        const handler = (e: KeyboardEvent) => {
+            if (e.key === "Escape") closeModal();
+        };
+        window.addEventListener("keydown", handler);
+        return () => window.removeEventListener("keydown", handler);
+    }, []);
+
+    return (
+        <>
+            {/* Thumb / disparador */}
+            <button
+                type="button"
+                onClick={openModal}
+                className={`hover:opacity-90 transition ${showPlaceholder ? "cursor-not-allowed" : "cursor-zoom-in"}`}
+                aria-haspopup="dialog"
+                aria-controls={`moto-modal-${uid}`}
+                aria-disabled={showPlaceholder}
+                title={showPlaceholder ? "Sin imagen" : "Ver imagen"}
+            >
+                <div className="rounded-xl border border-base-300/60 overflow-hidden bg-base-200 flex items-center justify-center p-2">
+                    {showPlaceholder ? (
+                        <div className="text-center p-4">
+                            <Bike className="w-10 h-10 opacity-40 mx-auto mb-2" />
+                            <p className="text-xs opacity-60">Aquí va la imagen de la moto</p>
+                        </div>
+                    ) : (
+                        <img
+                            src={src}
+                            alt={alt}
+                            className={`${thumbClassName} object-contain size-44`}
+                            onError={() => setError(true)}
+                            loading="lazy"
+                        />
+                    )}
+                </div>
+            </button>
+
+            {/* Modal daisyUI */}
+            <dialog ref={dialogRef} id={`moto-modal-${uid}`} className="modal">
+                <div className="modal-box max-w-4xl p-0">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-base-300">
+                        <h3 className="font-semibold text-base">{alt}</h3>
+                        <button onClick={closeModal} className="btn btn-ghost btn-sm" aria-label="Cerrar">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    <div className="p-0">
+                        {!showPlaceholder && (
+                            <img
+                                src={src}
+                                alt={alt}
+                                className="w-full h-auto max-h-[75vh] object-contain bg-base-200"
+                                onError={() => setError(true)}
+                            />
+                        )}
+                        {showPlaceholder && (
+                            <div className="w-full h-[60vh] bg-base-200 flex flex-col items-center justify-center">
+                                <Bike className="w-16 h-16 opacity-40 mb-3" />
+                                <p className="opacity-70">No hay imagen disponible</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </dialog>
+        </>
+    );
+};

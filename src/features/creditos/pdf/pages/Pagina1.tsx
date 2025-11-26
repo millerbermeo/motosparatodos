@@ -136,11 +136,14 @@ export const Pagina1: React.FC<Pagina1Props> = ({
 
       {/* CUERPO DEL DOCUMENTO */}
       <Text style={styles.paragraph}>
-        Yo ___________________________ en mi calidad de titular de la
-        información, actuando de manera previa, libre, espontánea, específica e
-        inequívoca, autorizo de manera expresa e irrevocable a{" "}
-        <Text style={styles.strong}>VERIFICARTE AAA S.A.S.</Text> para que,
-        quienes representen sus derechos, puedan consultar, solicitar,
+        Yo{" "}
+        <Text style={styles.strong}>
+          {nombreTitular1 || "___________________________"}
+        </Text>{" "}
+        en mi calidad de titular de la información, actuando de manera previa,
+        libre, espontánea, específica e inequívoca, autorizo de manera expresa e
+        irrevocable a <Text style={styles.strong}>VERIFICARTE AAA S.A.S.</Text>{" "}
+        para que, quienes representen sus derechos, puedan consultar, solicitar,
         suministrar, reportar, procesar y divulgar la información que se refiera
         a mi comportamiento crediticio, financiero y comercial, a las centrales
         de información y a cualquier otra entidad pública o privada que

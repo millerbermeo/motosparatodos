@@ -1,7 +1,7 @@
 import React from 'react';
 import {
     BadgeCheck, Building2, CalendarDays, Check, CheckCircle2, CheckSquare, ClipboardCheck, Download,
-    FileDown, FileMinusIcon, FileSignature, Fingerprint, History, Info, LibraryBig, Mail,
+    FileDown, FileMinusIcon, FileSignature, History, Info, LibraryBig,
     MessageCircle,
     MessageSquarePlus,
     Pencil,
@@ -602,7 +602,7 @@ const CreditoDetalle: React.FC = () => {
                                             }
                                             color="bg-green-500 hover:bg-green-600"
                                         />
-                                        <ChipButton
+                                        {/* <ChipButton
                                             label="Descargar carta"
                                             icon={<Mail className="w-4 h-4" />}
                                             onClick={fakeDownload('Carta de aprobación')}
@@ -613,7 +613,7 @@ const CreditoDetalle: React.FC = () => {
                                             icon={<Fingerprint className="w-4 h-4" />}
                                             onClick={fakeDownload('RUNT')}
                                             color="bg-orange-500 hover:bg-orange-600"
-                                        />
+                                        /> */}
                                     </div>
                                 )}
                             </div>
