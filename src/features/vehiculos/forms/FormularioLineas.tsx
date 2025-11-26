@@ -101,6 +101,7 @@ const FormularioLineas: React.FC<Props> = ({ initialValues, mode = "create" }) =
           label="Cilindraje"
           control={control}
           placeholder="Ej. 500cc"
+          type="number"
           // Si quieres que sea obligatorio, descomenta:
           // rules={{ required: "El cilindraje es obligatorio" }}
         />
