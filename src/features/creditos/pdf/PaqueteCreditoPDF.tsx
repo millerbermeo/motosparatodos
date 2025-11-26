@@ -66,6 +66,8 @@ export interface PaqueteCreditoPDFDocProps {
 export const PaqueteCreditoPDFDoc: React.FC<PaqueteCreditoPDFDocProps> = ({
   data,
 }) => {
+
+    console.log("Generando PDF con data:", data);
   return (
     <Document>
       {paginas.map((Pagina, index) => (

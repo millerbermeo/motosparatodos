@@ -364,63 +364,137 @@ const CreditoDetalle: React.FC = () => {
     }, [isLoading, show, hide]);
 
 
-    const handleDownloadPaquete = async () => {
-        try {
-            if (!credito) {
-                alert('No hay información de crédito para generar el paquete.');
-                return;
-            }
+  const handleDownloadPaquete = async () => {
+  try {
+    if (!credito) {
+      alert('No hay información de crédito para generar el paquete.');
+      return;
+    }
 
-            // construir nombre del cliente (igual que hicimos para la tabla)
-            const nombreCliente = [
-                informacion_personal?.primer_nombre,
-                informacion_personal?.segundo_nombre,
-                informacion_personal?.primer_apellido,
-                informacion_personal?.segundo_apellido,
-            ]
-                .filter(Boolean)
-                .join(' ') || undefined;
+    // Nombre completo del cliente
+    const nombreCliente =
+      [
+        informacion_personal?.primer_nombre,
+        informacion_personal?.segundo_nombre,
+        informacion_personal?.primer_apellido,
+        informacion_personal?.segundo_apellido,
+      ]
+        .filter(Boolean)
+        .join(' ') || '';
 
-            // 🔵 datos base que reutilizan todas tus páginas
-            const dataBase = {
-                codigo: String(codigo_credito),
-                fecha: credito.fecha_creacion,
-                ciudad: 'Cali', // o de donde la saques
-                logoSrc: '/verificarte.jpg',
+    // REFERENCIAS (peticiones)
+    const ref1 = referencias[0] ?? {};
+    const ref2 = referencias[1] ?? {};
+    const ref3 = referencias[2] ?? {};
 
-                // datos del titular
-                nombre: nombreCliente,
-                cc: informacion_personal?.numero_documento,
+    // 🔵 datos base que reutilizan TODAS tus páginas
+    const dataBase: any = {
+      // ---- Datos generales del crédito ----
+      codigo: String(codigo_credito),
+      fecha: credito.fecha_creacion,
+      ciudad: informacion_personal?.ciudad_residencia ?? 'Cali',
+      logoSrc: '/verificarte.jpg',
+      estadoCredito: credito.estado,
+      agencia: 'Agencia',
+      asesor: credito.asesor,
 
-                // datos de moto
-                marca: moto.modelo ?? 'HERO',
-                linea: moto.modelo ?? 'XOOM 110',
-                modelo: moto.modelo ?? '2026',
-                color: moto.valorMotocicleta ? 'negro' : 'negro',
-                motor: moto.numeroMotor ?? '00',
-                chasis: moto.numeroChasis ?? '00',
-                placa: moto.placa ?? '00',
-                valorMoto: moto.valorMotocicleta != null ? fmtCOP(moto.valorMotocicleta) : '',
-                cuotaInicial: moto.cuotaInicial != null ? fmtCOP(moto.cuotaInicial) : '',
-                cuotas: moto.numeroCuotas ?? 36,
-                valorCuota: moto.valorCuota != null ? fmtCOP(moto.valorCuota) : '',
+      // ---- Titular / Deudor (todo lo que muestras en la vista) ----
+      nombre: nombreCliente,
+      nombreTitular1: nombreCliente,
 
-                // alias que algunas páginas esperan (ejemplo Pagina1: nombreTitular1)
-                nombreTitular1: nombreCliente,
-                ccTitular1: informacion_personal?.numero_documento,
-            };
+      tipoDocumento: informacion_personal?.tipo_documento,
+      numeroDocumento: informacion_personal?.numero_documento,
+      tipoDocumentoTitular1: informacion_personal?.tipo_documento,
+      numeroDocumentoTitular1: informacion_personal?.numero_documento,
+      cc: informacion_personal?.numero_documento,
+      ccTitular1: informacion_personal?.numero_documento,
 
-            const blob = await pdf(
-                <PaqueteCreditoPDFDoc data={dataBase} />
-            ).toBlob();
+      fechaExpedicion: informacion_personal?.fecha_expedicion,
+      lugarExpedicion: informacion_personal?.lugar_expedicion,
+      fechaExpedicionTitular1: informacion_personal?.fecha_expedicion,
+      lugarExpedicionTitular1: informacion_personal?.lugar_expedicion,
 
-            const url = URL.createObjectURL(blob);
-            window.open(url, "_blank"); // abrir en nueva pestaña
-        } catch (err) {
-            console.error(err);
-            alert('No fue posible generar el paquete de crédito.');
-        }
+      fechaNacimiento: informacion_personal?.fecha_nacimiento,
+      fechaNacimientoTitular1: informacion_personal?.fecha_nacimiento,
+
+      ciudadResidencia: informacion_personal?.ciudad_residencia,
+      barrioResidencia: informacion_personal?.barrio_residencia,
+      direccionResidencia: informacion_personal?.direccion_residencia,
+      telefonoFijo: informacion_personal?.telefono_fijo,
+      celular: informacion_personal?.celular,
+      email: informacion_personal?.email,
+      estadoCivil: informacion_personal?.estado_civil,
+      personasACargo: informacion_personal?.personas_a_cargo,
+      tipoVivienda: informacion_personal?.tipo_vivienda,
+      costoArriendo: informacion_personal?.costo_arriendo,
+      fincaRaiz: informacion_personal?.finca_raiz,
+
+      // aliases típicos que suelen usar las páginas
+      ciudadTitular1: informacion_personal?.ciudad_residencia,
+      barrioTitular1: informacion_personal?.barrio_residencia,
+      direccionTitular1: informacion_personal?.direccion_residencia,
+      telefonoTitular1: informacion_personal?.celular,
+      telefonoFijoTitular1: informacion_personal?.telefono_fijo,
+      emailTitular1: informacion_personal?.email,
+      estadoCivilTitular1: informacion_personal?.estado_civil,
+
+      // ---- Información laboral (lo que ya ves en la vista) ----
+      empresaTitular1: informacion_laboral?.empresa,
+      direccionEmpresaTitular1: informacion_laboral?.direccion_empleador,
+      telefonoEmpresaTitular1: informacion_laboral?.telefono_empleador,
+      cargoTitular1: informacion_laboral?.cargo,
+      tipoContratoTitular1: informacion_laboral?.tipo_contrato,
+      tiempoServicioTitular1: informacion_laboral?.tiempo_servicio,
+      salarioTitular1: informacion_laboral?.salario,
+
+      // ---- Datos de la moto / crédito ----
+      marca: moto.modelo ?? 'HERO',
+      linea: moto.modelo ?? moto.modelo ?? 'XOOM 110',
+      modeloMoto: moto.modelo,
+      modelo: moto.modelo ?? '2026',
+      color: 'negro',
+      motor: moto.numeroMotor ?? '00',
+      chasis: moto.numeroChasis ?? '00',
+      placa: moto.placa ?? '00',
+      valorMoto:
+        moto.valorMotocicleta != null ? fmtCOP(moto.valorMotocicleta) : '',
+      cuotaInicial:
+        moto.cuotaInicial != null ? fmtCOP(moto.cuotaInicial) : '',
+      cuotas: moto.numeroCuotas ?? 36,
+      valorCuota:
+        moto.valorCuota != null ? fmtCOP(moto.valorCuota) : '',
+      fechaEntrega: moto.fechaEntrega,
+
+      // ---- Referencias personales (peticiones) ----
+      // Referencia 1
+      ref1Nombre: ref1.nombre_completo,
+      ref1Direccion: ref1.direccion,
+      ref1Telefono: ref1.telefono,
+      ref1Tipo: ref1.tipo_referencia,
+
+      // Referencia 2
+      ref2Nombre: ref2.nombre_completo,
+      ref2Direccion: ref2.direccion,
+      ref2Telefono: ref2.telefono,
+      ref2Tipo: ref2.tipo_referencia,
+
+      // Referencia 3
+      ref3Nombre: ref3.nombre_completo,
+      ref3Direccion: ref3.direccion,
+      ref3Telefono: ref3.telefono,
+      ref3Tipo: ref3.tipo_referencia,
     };
+
+    const blob = await pdf(<PaqueteCreditoPDFDoc data={dataBase} />).toBlob();
+
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank'); // abrir en nueva pestaña
+  } catch (err) {
+    console.error(err);
+    alert('No fue posible generar el paquete de crédito.');
+  }
+};
+
 
 
 

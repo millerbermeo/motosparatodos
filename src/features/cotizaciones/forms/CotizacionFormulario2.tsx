@@ -9,6 +9,7 @@ import { useAuthStore } from "../../../store/auth.store";
 import ButtonLink from "../../../shared/components/ButtonLink";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
+import { useConfigPlazoByCodigo } from "../../../services/configuracionPlazoService";
 
 type MetodoPago = "contado" | "credibike" | "terceros";
 
@@ -138,11 +139,10 @@ const garantiaExtendidaOptions: SelectOption[] = [
     { value: "12", label: "12 meses" },
     { value: "24", label: "24 meses" },
     { value: "36", label: "36 meses" },
-    { value: "48", label: "48 meses" },
 ];
 
 
-const CotizacionFormulario2: React.FC = () => {
+const CotizacionFormulario: React.FC = () => {
 
     const {
         register,
@@ -272,15 +272,16 @@ const CotizacionFormulario2: React.FC = () => {
     const { data: motos1 } = useMotosPorMarca(selectedMarca1 || undefined);
     const { data: motos2 } = useMotosPorMarca(selectedMarca2 || undefined);
 
-    const motoOptions1: SelectOption[] = (motos1?.motos ?? []).map((m) => ({
-        value: m.linea,
-        label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP - Modelo ${m.modelo ?? ""}`,
-    }));
+const motoOptions1: SelectOption[] = (motos1?.motos ?? []).map((m, index) => ({
+  value: String(index), // 👈 valor único
+  label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP - Modelo ${m.modelo ?? ""}`,
+}));
 
-    const motoOptions2: SelectOption[] = (motos2?.motos ?? []).map((m) => ({
-        value: m.linea,
-        label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP Modelo ${m.modelo ?? ""}`,
-    }));
+const motoOptions2: SelectOption[] = (motos2?.motos ?? []).map((m, index) => ({
+  value: String(index),
+  label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP Modelo ${m.modelo ?? ""}`,
+}));
+
 
 
     // Checkboxes solo para habilitar inputs de adicionales (NO van al backend)
@@ -316,51 +317,49 @@ const CotizacionFormulario2: React.FC = () => {
 
 
 
-    // MOTO 1
-    React.useEffect(() => {
-        const sel = watch("moto1");
-        const m = (motos1?.motos ?? []).find((x) => x.linea === sel);
-        if (m) {
-            setValue("modelo_a", m.modelo?.trim() || "");
-            const descuento = Number(m.descuento_empresa) + Number(m.descuento_ensambladora);
-            setValue("descuento1", descuento.toString());
+// MOTO 1
+React.useEffect(() => {
+  const sel = watch("moto1");
+  const index = sel !== undefined && sel !== null && sel !== "" ? Number(sel) : NaN;
 
-            // NUEVO: separar
-            setValue("soat_a", String(Number(m.soat) || 0));
-            setValue("impuestos_a", String(Number(m.impuestos) || 0));
-            setValue("matricula_a", String(getMatricula(m, metodo)));
+  const m = Number.isNaN(index) ? null : (motos1?.motos ?? [])[index];
+  if (m) {
+    setValue("modelo_a", m.modelo?.trim() || "");
+    const descuento = Number(m.descuento_empresa) + Number(m.descuento_ensambladora);
+    setValue("descuento1", descuento.toString());
 
-            // Compatibilidad: documentos visibles (M+I+S)
-            const documentos = getMatricula(m, metodo) + Number(m.impuestos) + Number(m.soat);
-            setValue("precioDocumentos1", documentos.toString());
+    setValue("soat_a", String(Number(m.soat) || 0));
+    setValue("impuestos_a", String(Number(m.impuestos) || 0));
+    setValue("matricula_a", String(getMatricula(m, metodo)));
 
-            // Foto
-            setValue("foto_a", m.foto ?? null);
-        }
-    }, [watch("moto1"), motos1, metodo, setValue]);
+    const documentos = getMatricula(m, metodo) + Number(m.impuestos) + Number(m.soat);
+    setValue("precioDocumentos1", documentos.toString());
 
-    // MOTO 2
-    React.useEffect(() => {
-        const sel = watch("moto2");
-        const m = (motos2?.motos ?? []).find((x) => x.linea === sel);
-        if (m) {
-            setValue("modelo_b", m.modelo?.trim() || "");
-            const descuento = Number(m.descuento_empresa) + Number(m.descuento_ensambladora);
-            setValue("descuento2", descuento.toString());
+    setValue("foto_a", m.foto ?? null);
+  }
+}, [watch("moto1"), motos1, metodo, setValue]);
 
-            // NUEVO: separar
-            setValue("soat_b", String(Number(m.soat) || 0));
-            setValue("impuestos_b", String(Number(m.impuestos) || 0));
-            setValue("matricula_b", String(getMatricula(m, metodo)));
+// MOTO 2
+React.useEffect(() => {
+  const sel = watch("moto2");
+  const index = sel !== undefined && sel !== null && sel !== "" ? Number(sel) : NaN;
 
-            // Compatibilidad: documentos visibles (M+I+S)
-            const documentos = getMatricula(m, metodo) + Number(m.impuestos) + Number(m.soat);
-            setValue("precioDocumentos2", documentos.toString());
+  const m = Number.isNaN(index) ? null : (motos2?.motos ?? [])[index];
+  if (m) {
+    setValue("modelo_b", m.modelo?.trim() || "");
+    const descuento = Number(m.descuento_empresa) + Number(m.descuento_ensambladora);
+    setValue("descuento2", descuento.toString());
 
-            // Foto
-            setValue("foto_b", m.foto ?? null);
-        }
-    }, [watch("moto2"), motos2, metodo, setValue]);
+    setValue("soat_b", String(Number(m.soat) || 0));
+    setValue("impuestos_b", String(Number(m.impuestos) || 0));
+    setValue("matricula_b", String(getMatricula(m, metodo)));
+
+    const documentos = getMatricula(m, metodo) + Number(m.impuestos) + Number(m.soat);
+    setValue("precioDocumentos2", documentos.toString());
+
+    setValue("foto_b", m.foto ?? null);
+  }
+}, [watch("moto2"), motos2, metodo, setValue]);
 
 
     React.useEffect(() => {
@@ -483,6 +482,11 @@ const CotizacionFormulario2: React.FC = () => {
     }
     const fmt = (n: number) => n.toLocaleString("es-CO") + " COP";
 
+    // const calcCuotaPlano = (saldo: number, meses: number): number => {
+    //     if (saldo <= 0 || meses <= 0) return 0;
+    //     return Math.round(saldo / meses);
+    // };
+
     const getMatricula = (m: any, metodo: "contado" | "credibike" | "terceros") =>
         metodo === "contado" ? Number(m.matricula_contado) : Number(m.matricula_credito);
 
@@ -563,6 +567,74 @@ const CotizacionFormulario2: React.FC = () => {
     const garantiaExt2Sel = watch("garantiaExtendida2") ?? "no";
     const garantiaExtVal2 = N(watch("valor_garantia_extendida_b"));
 
+    const codigoMarcacion1 =
+  garantiaExt1Sel !== "no" ? `MARC_${garantiaExt1Sel}` : "";
+
+const { data: configMarcacion1 } = useConfigPlazoByCodigo(
+  codigoMarcacion1,
+  Boolean(codigoMarcacion1) // enabled
+);
+
+// Para MOTO 2
+const codigoMarcacion2 =
+  garantiaExt2Sel !== "no" ? `MARC_${garantiaExt2Sel}` : "";
+
+const { data: configMarcacion2 } = useConfigPlazoByCodigo(
+  codigoMarcacion2,
+  Boolean(codigoMarcacion2)
+);
+
+const { data: tasaFinanciacion } = useConfigPlazoByCodigo("TASA_FIN");
+
+const tasaDecimal = tasaFinanciacion ? Number(tasaFinanciacion.valor) / 100 : 0.0188;
+
+
+
+// Cuando cambia la garantía extendida de la MOTO 1 o llega la tarifa, actualizar marcación1
+React.useEffect(() => {
+  if (!incluirMoto1) {
+    // si se desmarca la moto, dejamos en 0
+    setValue("marcacion1", "0");
+    return;
+  }
+
+  if (garantiaExt1Sel === "no") {
+    // sin garantía extendida → marcación 0
+    setValue("marcacion1", "0");
+    return;
+  }
+
+  if (configMarcacion1) {
+    // usamos el valor del servicio MARC_12 / 24 / 36
+    setValue("marcacion1", String(configMarcacion1.valor ?? 0), {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  }
+}, [garantiaExt1Sel, configMarcacion1, incluirMoto1, setValue]);
+
+// Cuando cambia la garantía extendida de la MOTO 2 o llega la tarifa, actualizar marcación2
+React.useEffect(() => {
+  if (!incluirMoto2) {
+    setValue("marcacion2", "0");
+    return;
+  }
+
+  if (garantiaExt2Sel === "no") {
+    setValue("marcacion2", "0");
+    return;
+  }
+
+  if (configMarcacion2) {
+    setValue("marcacion2", String(configMarcacion2.valor ?? 0), {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  }
+}, [garantiaExt2Sel, configMarcacion2, incluirMoto2, setValue]);
+
+
+
     // const totalSeguros1 = (showMotos && incluirMoto1)
     //     ? (segurosIds1 as string[]).reduce((acc, id) => acc + findSeguroValor(id), 0) + otros1
     //     : 0;
@@ -604,6 +676,9 @@ const CotizacionFormulario2: React.FC = () => {
 
     const moto1Seleccionada = Boolean(watch("moto1"));
     const moto2Seleccionada = Boolean(watch("moto2"));
+
+
+
 
     const onSubmit = (data: FormValues) => {
 
@@ -749,12 +824,25 @@ const CotizacionFormulario2: React.FC = () => {
             financiera: esFinanciado ? (data.financiera || null) : null,
             cant_cuotas: esFinanciado ? (data.cuotas ? Number(data.cuotas) : null) : null,
 
-            cuota_6_a, cuota_6_b,
-            cuota_12_a, cuota_12_b,
-            cuota_18_a, cuota_18_b,
-            cuota_24_a, cuota_24_b,
-            cuota_30_a, cuota_30_b,
-            cuota_36_a, cuota_36_b,
+            // Para terceros, usa las ingresadas manualmente.
+            // Para credibike, usa las automáticas en 12, 24 y 36 meses.
+            cuota_6_a,
+            cuota_6_b,
+
+            cuota_12_a: data.metodoPago === "credibike" ? cuota12_a_auto : cuota_12_a,
+            cuota_12_b: data.metodoPago === "credibike" ? cuota12_b_auto : cuota_12_b,
+
+            cuota_18_a,
+            cuota_18_b,
+
+            cuota_24_a: data.metodoPago === "credibike" ? cuota24_a_auto : cuota_24_a,
+            cuota_24_b: data.metodoPago === "credibike" ? cuota24_b_auto : cuota_24_b,
+
+            cuota_30_a,
+            cuota_30_b,
+
+            cuota_36_a: data.metodoPago === "credibike" ? cuota36_a_auto : cuota_36_a,
+            cuota_36_b: data.metodoPago === "credibike" ? cuota36_b_auto : cuota_36_b,
 
             comentario: data.comentario?.trim(),
 
@@ -792,38 +880,42 @@ const CotizacionFormulario2: React.FC = () => {
             matricula_b: incluirMoto2 ? N(data.matricula_b) : null,
 
 
-             // 👇 NUEVOS CAMPOS QUE VAN AL PHP
-  valorRunt1: incluirMoto1 && adicionalesMoto1.runt
-    ? toNumberSafe(data.valorRunt1)
-    : 0,
-  valorLicencia1: incluirMoto1 && adicionalesMoto1.licencia
-    ? toNumberSafe(data.valorLicencia1)
-    : 0,
-  valorDefensas1: incluirMoto1 && adicionalesMoto1.defensas
-    ? toNumberSafe(data.valorDefensas1)
-    : 0,
-  valorHandSavers1: incluirMoto1 && adicionalesMoto1.hand
-    ? toNumberSafe(data.valorHandSavers1)
-    : 0,
-  valorOtrosAdicionales1: incluirMoto1 && adicionalesMoto1.otros
-    ? toNumberSafe(data.valorOtrosAdicionales1)
-    : 0,
+            // 👇 NUEVOS CAMPOS QUE VAN AL PHP
+            valorRunt1: incluirMoto1 && adicionalesMoto1.runt
+                ? toNumberSafe(data.valorRunt1)
+                : 0,
+            valorLicencia1: incluirMoto1 && adicionalesMoto1.licencia
+                ? toNumberSafe(data.valorLicencia1)
+                : 0,
+            valorDefensas1: incluirMoto1 && adicionalesMoto1.defensas
+                ? toNumberSafe(data.valorDefensas1)
+                : 0,
+            valorHandSavers1: incluirMoto1 && adicionalesMoto1.hand
+                ? toNumberSafe(data.valorHandSavers1)
+                : 0,
+            valorOtrosAdicionales1: incluirMoto1 && adicionalesMoto1.otros
+                ? toNumberSafe(data.valorOtrosAdicionales1)
+                : 0,
 
-  valorRunt2: incluirMoto2 && adicionalesMoto2.runt
-    ? toNumberSafe(data.valorRunt2)
-    : 0,
-  valorLicencia2: incluirMoto2 && adicionalesMoto2.licencia
-    ? toNumberSafe(data.valorLicencia2)
-    : 0,
-  valorDefensas2: incluirMoto2 && adicionalesMoto2.defensas
-    ? toNumberSafe(data.valorDefensas2)
-    : 0,
-  valorHandSavers2: incluirMoto2 && adicionalesMoto2.hand
-    ? toNumberSafe(data.valorHandSavers2)
-    : 0,
-  valorOtrosAdicionales2: incluirMoto2 && adicionalesMoto2.otros
-    ? toNumberSafe(data.valorOtrosAdicionales2)
-    : 0,
+            valorRunt2: incluirMoto2 && adicionalesMoto2.runt
+                ? toNumberSafe(data.valorRunt2)
+                : 0,
+            valorLicencia2: incluirMoto2 && adicionalesMoto2.licencia
+                ? toNumberSafe(data.valorLicencia2)
+                : 0,
+            valorDefensas2: incluirMoto2 && adicionalesMoto2.defensas
+                ? toNumberSafe(data.valorDefensas2)
+                : 0,
+            valorHandSavers2: incluirMoto2 && adicionalesMoto2.hand
+                ? toNumberSafe(data.valorHandSavers2)
+                : 0,
+            valorOtrosAdicionales2: incluirMoto2 && adicionalesMoto2.otros
+                ? toNumberSafe(data.valorOtrosAdicionales2)
+                : 0,
+
+            saldo_financiar_a: saldoFinanciar1,
+            saldo_financiar_b: saldoFinanciar2,
+
 
         };
 
@@ -893,6 +985,58 @@ const CotizacionFormulario2: React.FC = () => {
         }
     }, [watch("moto2"), motos2, metodo, setValue]);
 
+
+    const saldoFinanciar1 =
+        esCreditoDirecto && incluirMoto1
+            ? Math.max(totalConSeguros1 - inicial1, 0)
+            : 0;
+
+    const saldoFinanciar2 =
+        esCreditoDirecto && incluirMoto2
+            ? Math.max(totalConSeguros2 - inicial2, 0)
+            : 0;
+
+const calcCuotaConInteres = (
+  saldo: number,
+  meses: number,
+  tasaMes: number
+): number => {
+  if (saldo <= 0 || meses <= 0 || tasaMes <= 0) return 0;
+
+  const r = tasaMes;
+  const pow = Math.pow(1 + r, meses);
+  const factor = (r * pow) / (pow - 1);
+
+  return Math.round(saldo * factor);
+};
+
+
+const cuota12_a_auto = metodo === "credibike" && incluirMoto1
+  ? calcCuotaConInteres(saldoFinanciar1, 12, tasaDecimal)
+  : 0;
+
+const cuota24_a_auto = metodo === "credibike" && incluirMoto1
+  ? calcCuotaConInteres(saldoFinanciar1, 24, tasaDecimal)
+  : 0;
+
+const cuota36_a_auto = metodo === "credibike" && incluirMoto1
+  ? calcCuotaConInteres(saldoFinanciar1, 36, tasaDecimal)
+  : 0;
+
+// Moto 2 (si aplica)
+const cuota12_b_auto = metodo === "credibike" && incluirMoto2
+  ? calcCuotaConInteres(saldoFinanciar2, 12, tasaDecimal)
+  : 0;
+
+const cuota24_b_auto = metodo === "credibike" && incluirMoto2
+  ? calcCuotaConInteres(saldoFinanciar2, 24, tasaDecimal)
+  : 0;
+
+const cuota36_b_auto = metodo === "credibike" && incluirMoto2
+  ? calcCuotaConInteres(saldoFinanciar2, 36, tasaDecimal)
+  : 0;
+
+            
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
 
@@ -1429,13 +1573,13 @@ const CotizacionFormulario2: React.FC = () => {
                                                         <span className="font-semibold">{fmt(documentos1)}</span>
                                                     </div>
 
-    {/* 🔹 Costos adicionales */}
-    <div className="flex justify-between bg-purple-50/70 px-4 py-2 rounded-md shadow-sm">
-      <span className="font-medium text-gray-700">
-        Costos adicionales (RUNT, licencias, defensas, etc.):
-      </span>
-      <span>{fmt(extrasMoto1)}</span>
-    </div>
+                                                    {/* 🔹 Costos adicionales */}
+                                                    <div className="flex justify-between bg-purple-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-gray-700">
+                                                            Costos adicionales (RUNT, licencias, defensas, etc.):
+                                                        </span>
+                                                        <span>{fmt(extrasMoto1)}</span>
+                                                    </div>
 
 
                                                     {/* Descuento */}
@@ -1478,6 +1622,8 @@ const CotizacionFormulario2: React.FC = () => {
                                                     )}
                                                 </div>
 
+
+
                                                 {/* Totales */}
                                                 <div className="space-y-2">
                                                     <div className="flex justify-between items-center bg-warning/10 px-4 py-2 rounded-md border border-warning/30 shadow-sm">
@@ -1489,6 +1635,36 @@ const CotizacionFormulario2: React.FC = () => {
                                                         <span className="font-bold text-success">TOTAL CON SEGUROS:</span>
                                                         <span className="text-success font-extrabold text-lg">{fmt(totalConSeguros1)}</span>
                                                     </div>
+
+                                                    {esCreditoDirecto && (
+                                                        <div className="flex justify-between items-center bg-info/10 px-4 py-2 rounded-md border border-info/30 shadow-sm">
+                                                            <span className="font-semibold text-info">SALDO A FINANCIAR:</span>
+                                                            <span className="font-bold">{fmt(saldoFinanciar1)}</span>
+                                                        </div>
+
+
+                                                    )}
+
+                                                    {metodo === "credibike" && incluirMoto1 && saldoFinanciar1 > 0 && (
+                                                        <div className="mt-3 bg-base-100 border border-base-300 rounded-lg p-3 space-y-1">
+                                                            <p className="font-semibold text-sm">Cuotas proyectadas</p>
+                                                            <div className="flex justify-between text-sm">
+                                                                <span>12 meses:</span>
+                                                                <span>{fmt(cuota12_a_auto)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-sm">
+                                                                <span>24 meses:</span>
+                                                                <span>{fmt(cuota24_a_auto)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-sm">
+                                                                <span>36 meses:</span>
+                                                                <span>{fmt(cuota36_a_auto)}</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+
+
                                                 </div>
                                             </div>
 
@@ -1876,13 +2052,13 @@ const CotizacionFormulario2: React.FC = () => {
                                                         <span className="font-semibold">{fmt(documentos2)}</span>
                                                     </div>
 
-                                                        {/* 🔹 Costos adicionales */}
-    <div className="flex justify-between bg-purple-50/70 px-4 py-2 rounded-md shadow-sm">
-      <span className="font-medium text-gray-700">
-        Costos adicionales (RUNT, licencias, defensas, etc.):
-      </span>
-      <span>{fmt(extrasMoto2)}</span>
-    </div>
+                                                    {/* 🔹 Costos adicionales */}
+                                                    <div className="flex justify-between bg-purple-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-gray-700">
+                                                            Costos adicionales (RUNT, licencias, defensas, etc.):
+                                                        </span>
+                                                        <span>{fmt(extrasMoto2)}</span>
+                                                    </div>
 
                                                     {/* Descuento */}
                                                     <div className="flex justify-between bg-error/5 px-4 py-2 rounded-md shadow-sm">
@@ -1925,6 +2101,8 @@ const CotizacionFormulario2: React.FC = () => {
                                                     )}
                                                 </div>
 
+
+
                                                 {/* Totales */}
                                                 <div className="space-y-2">
                                                     <div className="flex justify-between items-center bg-warning/10 px-4 py-2 rounded-md border border-warning/30 shadow-sm">
@@ -1936,6 +2114,33 @@ const CotizacionFormulario2: React.FC = () => {
                                                         <span className="font-bold text-success">TOTAL CON SEGUROS:</span>
                                                         <span className="text-success font-extrabold text-lg">{fmt(totalConSeguros2)}</span>
                                                     </div>
+
+
+                                                    {esCreditoDirecto && (
+                                                        <div className="flex justify-between items-center bg-info/10 px-4 py-2 rounded-md border border-info/30 shadow-sm">
+                                                            <span className="font-semibold text-info">SALDO A FINANCIAR:</span>
+                                                            <span className="font-bold">{fmt(saldoFinanciar2)}</span>
+                                                        </div>
+                                                    )}
+
+                                                    {metodo === "credibike" && incluirMoto2 && saldoFinanciar2 > 0 && (
+                                                        <div className="mt-3 bg-base-100 border border-base-300 rounded-lg p-3 space-y-1">
+                                                            <p className="font-semibold text-sm">Cuotas proyectadas</p>
+                                                            <div className="flex justify-between text-sm">
+                                                                <span>12 meses:</span>
+                                                                <span>{fmt(cuota12_b_auto)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-sm">
+                                                                <span>24 meses:</span>
+                                                                <span>{fmt(cuota24_b_auto)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-sm">
+                                                                <span>36 meses:</span>
+                                                                <span>{fmt(cuota36_b_auto)}</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
                                                 </div>
                                             </div>
 
@@ -2017,6 +2222,14 @@ const CotizacionFormulario2: React.FC = () => {
                     </div>
                 </div>
             )}
+            
+       {metodo === "credibike" && (
+         <p className="text-xs text-base-content/70">
+  Tasa de financiación: <strong>{tasaFinanciacion?.valor ?? "1.88"}% M.V.</strong>
+</p>
+
+            )}
+
 
             {/* COMENTARIO */}
             <div className="form-control w-full">
@@ -2042,4 +2255,4 @@ const CotizacionFormulario2: React.FC = () => {
     );
 };
 
-export default CotizacionFormulario2;
+export default CotizacionFormulario;
