@@ -121,11 +121,11 @@ const AppRouter: React.FC = () => {
                 <Route path="/solicitudes/detalle/facturar-credito/:id" element={<FacturarCredito />} />
                 <Route path="/solicitudes/detalle/facturar-solicitud/:id" element={<FacturarCreditoSolicitud />} />
                 <Route path="/solicitudes/facturacion/:id" element={<DetallesFacturacion />} />
-<Route path="/solicitudes/actas/final/:id" element={<ActaFinal />} />
+                <Route path="/solicitudes/actas/final/:id" element={<ActaFinal />} />
 
               </Route>
 
-                 <Route element={<RequireModule name="Configuraciones" />}>
+              <Route element={<RequireModule name="Configuraciones" />}>
                 <Route path="/configuraciones" element={<Configuraciones />} />
               </Route>
 
@@ -142,7 +142,7 @@ const AppRouter: React.FC = () => {
                 <Route path="/agencias" element={<Agencias />} />
               </Route>
 
-              
+
               <Route element={<RequireModule name="Puntos" />}>
                 <Route path="/distribuidoras" element={<Dis />} />
               </Route>

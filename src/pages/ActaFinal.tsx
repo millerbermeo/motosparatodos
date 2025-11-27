@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   AlertCircle,
   PenLine,
+  Download, // ⬅️ NUEVO ICONO
 } from "lucide-react";
 import { useLoaderStore } from "../store/loader.store";
 
@@ -59,58 +60,127 @@ const estadoBadgeClass = (estado: ActaEntrega["estado"]) => {
 const FirmaView: React.FC<{ firma_url: string | null }> = ({ firma_url }) => {
   const url = buildImageUrl(firma_url || undefined);
   if (!url) {
-    return <span className="text-sm opacity-70">Sin firma registrada</span>;
+    return (
+      <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-500">
+        <PenLine className="w-4 h-4 opacity-70" />
+        <span>Sin firma registrada</span>
+      </div>
+    );
   }
   return (
-    <div className="border rounded-xl p-3 bg-base-100 inline-flex flex-col items-center gap-2">
-      <span className="text-xs uppercase opacity-60">Firma</span>
-      <img
-        src={url}
-        alt="Firma del cliente"
-        className="max-h-32 object-contain"
-      />
+    <div className="inline-flex flex-col items-center gap-2 px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 shadow-sm">
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+        Firma del cliente
+      </span>
+      <div className="bg-white rounded-xl border border-slate-200 p-2 relative">
+        {/* Botón de descarga de la firma */}
+        <a
+          href={url}
+            target="_blank"
+  rel="noopener noreferrer"
+          download="firma-cliente.png"
+          className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-white/90 border border-slate-200 px-2 py-1 text-[11px] text-slate-700 shadow-sm hover:bg-slate-50"
+        >
+          <Download className="w-3 h-3" />
+          <span>Descargar</span>
+        </a>
+
+        <img
+          src={url}
+          alt="Firma del cliente"
+          className="max-h-32 object-contain"
+        />
+      </div>
     </div>
   );
 };
 
 /* Grid de fotos en forma de tarjetas */
 const FotosGrid: React.FC<{ fotos: string[] }> = ({ fotos }) => {
+  // 👉 Función para descargar todas las fotos
+const handleDownloadAll = () => {
+  fotos.forEach((f) => {
+    const url = buildImageUrl(f);
+    if (!url) return;
+
+    // Abrir cada foto en una nueva pestaña
+    window.open(url, "_blank", "noopener,noreferrer");
+  });
+};
+
+
   if (!fotos || fotos.length === 0) {
     return (
-      <div className="text-sm opacity-70">
-        No hay fotos registradas para este acta.
+      <div className="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 border border-dashed border-slate-200 rounded-xl px-4 py-3">
+        <FileImage className="w-4 h-4 opacity-70" />
+        <span>No hay fotos registradas para este acta.</span>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      {fotos.map((f, i) => {
-        const url = buildImageUrl(f);
-        return (
-          <article
-            key={`${f}-${i}`}
-            className="card bg-base-100 border border-base-300/60 shadow-sm overflow-hidden"
-          >
-            {url ? (
-              <figure className="w-full h-40 bg-base-200">
-                <img
-                  src={url}
-                  alt={`Foto ${i + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              </figure>
-            ) : (
-              <div className="w-full h-40 flex items-center justify-center text-xs opacity-60">
-                Foto no disponible
+    <div className="space-y-3">
+      {/* Botón para descargar todas las fotos */}
+      <div className="flex justify-between items-center">
+        <p className="text-xs text-slate-500">
+          Total de fotos:{" "}
+          <span className="font-semibold text-slate-700">{fotos.length}</span>
+        </p>
+        <button
+          type="button"
+          onClick={handleDownloadAll}
+          className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 text-xs font-medium hover:bg-emerald-100 transition-colors"
+        >
+          <Download className="w-3 h-3" />
+          <span>Descargar todas</span>
+        </button>
+      </div>
+
+      {/* Grid de tarjetas */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {fotos.map((f, i) => {
+          const url = buildImageUrl(f);
+          return (
+            <article
+              key={`${f}-${i}`}
+              className="group relative rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+            >
+              {url ? (
+                <>
+                  {/* Botón de descarga individual */}
+                  <a
+                    href={url}
+                      target="_blank"
+  rel="noopener noreferrer"
+                    download={`foto-${i + 1}.jpg`}
+                    className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-white/90 border border-slate-200 px-2 py-1 text-[11px] text-slate-700 shadow-sm hover:bg-slate-50 z-10"
+                  >
+                    <Download className="w-3 h-3" />
+                    <span>Descargar</span>
+                  </a>
+
+                  <figure className="w-full h-40 bg-slate-100 overflow-hidden">
+                    <img
+                      src={url}
+                      alt={`Foto ${i + 1}`}
+                      className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform"
+                    />
+                  </figure>
+                </>
+              ) : (
+                <div className="w-full h-40 flex items-center justify-center text-xs text-slate-400 bg-slate-50">
+                  Foto no disponible
+                </div>
+              )}
+              <div className="px-3 py-2">
+                <p className="text-[11px] font-medium text-slate-500">
+                  Foto #{i + 1}
+                </p>
               </div>
-            )}
-            <div className="card-body py-2 px-3">
-              <p className="text-xs opacity-70">Foto #{i + 1}</p>
-            </div>
-          </article>
-        );
-      })}
+            </article>
+          );
+        })}
+      </div>
     </div>
   );
 };
@@ -145,13 +215,23 @@ const ActaFinal: React.FC = () => {
 
   if (!id_factura || id_factura <= 0) {
     return (
-      <main className="w-full min-h-screen flex items-center justify-center">
-        <div className="alert alert-error max-w-lg">
-          <span>
-            Falta el parámetro <code>id</code> en la URL. Debe ser{" "}
-            <code>/actas/final/:id</code> donde <code>id</code> es el{" "}
-            <strong>id_factura</strong>.
-          </span>
+      <main className="w-full min-h-screen flex items-center justify-center bg-slate-50 px-4">
+        <div className="max-w-lg w-full rounded-2xl border border-rose-200 bg-white shadow-sm px-5 py-4 flex gap-3">
+          <AlertCircle className="w-5 h-5 text-rose-500 mt-1" />
+          <div className="space-y-1">
+            <h2 className="text-sm font-semibold text-rose-600">
+              Parámetro de factura inválido
+            </h2>
+            <p className="text-sm text-slate-600">
+              Falta el parámetro{" "}
+              <code className="bg-slate-100 px-1.5 rounded">id</code> en la
+              URL. Debe ser{" "}
+              <code className="bg-slate-100 px-1.5 rounded">
+                /actas/final/:id
+              </code>{" "}
+              donde <strong>id</strong> es el <strong>id_factura</strong>.
+            </p>
+          </div>
         </div>
       </main>
     );
@@ -159,11 +239,18 @@ const ActaFinal: React.FC = () => {
 
   if (error) {
     return (
-      <main className="w-full min-h-screen flex items-center justify-center">
-        <div className="alert alert-warning max-w-lg">
-          <span>
-            Hubo un problema cargando las actas para la factura #{id_factura}.
-          </span>
+      <main className="w-full min-h-screen flex items-center justify-center bg-slate-50 px-4">
+        <div className="max-w-lg w-full rounded-2xl border border-amber-200 bg-amber-50 shadow-sm px-5 py-4 flex gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-500 mt-1" />
+          <div className="space-y-1">
+            <h2 className="text-sm font-semibold text-amber-700">
+              Error al cargar actas
+            </h2>
+            <p className="text-sm text-amber-800">
+              Hubo un problema cargando las actas de entrega para la factura{" "}
+              <span className="font-semibold">#{id_factura}</span>.
+            </p>
+          </div>
         </div>
       </main>
     );
@@ -171,156 +258,228 @@ const ActaFinal: React.FC = () => {
 
   if (!isLoading && actas.length === 0) {
     return (
-      <main className="w-full min-h-screen flex items-center justify-center">
-        <div className="alert alert-info max-w-lg">
-          <span>
-            No se encontraron actas de entrega para la factura #{id_factura}.
-          </span>
+      <main className="w-full min-h-screen flex items-center justify-center bg-slate-50 px-4">
+        <div className="max-w-lg w-full rounded-2xl border border-sky-200 bg-white shadow-sm px-5 py-4 flex gap-3">
+          <FileText className="w-5 h-5 text-sky-500 mt-1" />
+          <div className="space-y-1">
+            <h2 className="text-sm font-semibold text-sky-700">
+              Sin actas registradas
+            </h2>
+            <p className="text-sm text-slate-600">
+              No se encontraron actas de entrega para la factura{" "}
+              <span className="font-semibold">#{id_factura}</span>.
+            </p>
+          </div>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="w-full min-h-screen px-4 md:px-6 pb-6">
+    <main className="w-full min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
       {/* Header / volver */}
-      <section className="w-full mb-4 pt-4 flex items-center justify-between gap-2">
-        <ButtonLink to={`/solicitudes/facturacion/${id}`} label="Volver a actas" direction="back" />
-        <div className="text-sm opacity-70">
-          Factura asociada:{" "}
-          <span className="font-semibold">#{id_factura}</span>
-        </div>
-      </section>
-
-      {/* Listado de actas en forma de tarjetas */}
-      <section className="space-y-6">
-        {isLoading && (
-          <div className="card bg-white border border-base-300/60 shadow-sm rounded-2xl">
-            <div className="card-body">
-              <span className="loading loading-spinner loading-sm mr-2" />
-              Cargando actas de entrega…
+      <header className="sticky top-0 z-10 bg-white/70 backdrop-blur border-b border-slate-200">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-50 border border-emerald-100">
+              <FileText className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div className="flex flex-col">
+              <h1 className="text-base md:text-lg font-semibold text-slate-900 leading-tight">
+                Actas de entrega
+              </h1>
+              <p className="text-xs text-slate-500">
+                Factura asociada:{" "}
+                <span className="font-semibold text-slate-700">
+                  #{id_factura}
+                </span>
+              </p>
             </div>
           </div>
-        )}
 
-        {!isLoading &&
-          actas.map((acta) => (
-            <article
-              key={acta.id_acta}
-              className="card bg-white border border-base-300/60 shadow-sm rounded-2xl"
-            >
-              <div className="card-body">
-                {/* Encabezado del acta */}
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-6 h-6 text-primary" />
-                    <div>
-                      <h1 className="text-lg md:text-xl font-bold tracking-tight">
-                        Acta de entrega #{acta.id_acta}
-                      </h1>
-                      <p className="text-xs opacity-70">
-                        id_factura:{" "}
-                        <span className="font-semibold">
-                          #{acta.id_factura || "—"}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
+          <div className="flex items-center gap-2">
+            <ButtonLink
+              to={`/solicitudes/facturacion/${id}`}
+              label="Volver a facturación"
+              direction="back"
+            />
+          </div>
+        </div>
+      </header>
 
-                  <div className="flex flex-col items-start md:items-end gap-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <CalendarDays className="w-4 h-4 opacity-70" />
-                      <span className="opacity-70">Fecha de entrega:</span>
-                      <span className="font-medium">
-                        {fmtFecha(acta.fecha_entrega)}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {acta.estado === "cerrada" ? (
-                        <CheckCircle2 className="w-4 h-4 text-success" />
-                      ) : (
-                        <AlertCircle className="w-4 h-4 text-warning" />
-                      )}
-                      <span className="opacity-70">Estado:</span>
-                      <span
-                        className={`badge ${estadoBadgeClass(acta.estado)}`}
-                      >
-                        {acta.estado === "borrador" ? "Borrador" : "Cerrada"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+      {/* Contenido principal */}
+      <div className="max-w-full mx-auto px-4 md:px-6 py-6">
+        {/* Listado de actas en forma de tarjetas */}
+        <section className="space-y-5">
+          {isLoading && (
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm px-5 py-4 flex items-center gap-3">
+              <span className="loading loading-spinner loading-sm text-emerald-600" />
+              <span className="text-sm text-slate-600">
+                Cargando actas de entrega…
+              </span>
+            </div>
+          )}
 
-                {/* Responsables / observaciones en tarjetas */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
-                  {/* Responsable */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <UserRound className="w-5 h-5" />
-                      <h2 className="text-base font-semibold">Responsable</h2>
-                    </div>
-
-                    <div className="card bg-base-100 border border-base-300/60 rounded-xl shadow-sm">
-                      <div className="card-body py-3 px-4">
-                        <div className="text-xs opacity-70 mb-1">Nombre</div>
-                        <div className="font-medium text-sm">
-                          {acta.responsable || "—"}
+          {!isLoading &&
+            actas.map((acta, idx) => (
+              <article
+                key={acta.id_acta}
+                className="relative rounded-3xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+              >
+                {/* Pequeña barra lateral de estado */}
+                <div
+                  className={`absolute inset-y-0 left-0 w-1.5 ${
+                    acta.estado === "cerrada"
+                      ? "bg-emerald-500"
+                      : "bg-amber-400"
+                  }`}
+                />
+                <div className="pl-4 pr-4 sm:pl-6 sm:pr-6 py-5">
+                  {/* Encabezado del acta */}
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5 h-9 w-9 rounded-2xl bg-slate-100 flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-slate-700" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h2 className="text-base md:text-lg font-semibold tracking-tight text-slate-900">
+                            Acta de entrega #{acta.id_acta}
+                          </h2>
+                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
+                            #{idx + 1} de {actas.length}
+                          </span>
                         </div>
+                        <p className="text-xs text-slate-500 mt-1">
+                          Factura vinculada:{" "}
+                          <span className="font-semibold">
+                            #{acta.id_factura || "—"}
+                          </span>
+                        </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 mt-1 text-xs opacity-70">
-                      <PenLine className="w-4 h-4" />
-                      <span>
-                        Confirma la entrega del vehículo/equipos según los
-                        términos acordados.
-                      </span>
+                    <div className="flex flex-col items-start md:items-end gap-2 text-sm">
+                      <div className="flex items-center gap-2 text-slate-600">
+                        <CalendarDays className="w-4 h-4 opacity-70" />
+                        <span className="text-xs sm:text-sm">
+                          Fecha de entrega:{" "}
+                          <span className="font-medium text-slate-800">
+                            {fmtFecha(acta.fecha_entrega)}
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        {acta.estado === "cerrada" ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-amber-500" />
+                        )}
+                        <span className="text-xs text-slate-500">Estado:</span>
+                        <span
+                          className={`badge ${estadoBadgeClass(
+                            acta.estado
+                          )} text-xs px-3 py-1 border`}
+                        >
+                          {acta.estado === "borrador" ? "Borrador" : "Cerrada"}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Observaciones */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="w-5 h-5" />
-                      <h2 className="text-base font-semibold">Observaciones</h2>
+                  {/* Separador suave */}
+                  <div className="border-t border-dashed border-slate-200 my-3" />
+
+                  {/* Responsables / observaciones en tarjetas */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+                    {/* Responsable */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-xl bg-emerald-50 flex items-center justify-center">
+                          <UserRound className="w-4 h-4 text-emerald-700" />
+                        </div>
+                        <h3 className="text-sm font-semibold text-slate-900">
+                          Responsable de la entrega
+                        </h3>
+                      </div>
+
+                      <div className="rounded-2xl bg-slate-50 border border-slate-200 px-4 py-3 shadow-sm">
+                        <div className="text-[11px] uppercase font-semibold tracking-wide text-slate-500 mb-1">
+                          Nombre del responsable
+                        </div>
+                        <div className="text-sm font-medium text-slate-900">
+                          {acta.responsable || "—"}
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2 mt-1 text-xs text-slate-500">
+                        <PenLine className="w-4 h-4 mt-0.5 opacity-70" />
+                        <span>
+                          Esta persona certifica la entrega del vehículo y/o
+                          equipos, de acuerdo con las condiciones pactadas.
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="card bg-base-100 border border-base-300/60 rounded-xl shadow-sm">
-                      <div className="card-body py-3 px-4 min-h-[80px]">
+                    {/* Observaciones */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-xl bg-sky-50 flex items-center justify-center">
+                          <AlertCircle className="w-4 h-4 text-sky-700" />
+                        </div>
+                        <h3 className="text-sm font-semibold text-slate-900">
+                          Observaciones de la entrega
+                        </h3>
+                      </div>
+
+                      <div className="rounded-2xl bg-slate-50 border border-slate-200 px-4 py-3 shadow-sm min-h-[80px]">
                         {acta.observaciones &&
                         acta.observaciones.trim() !== "" ? (
-                          <p className="whitespace-pre-wrap text-sm">
+                          <p className="whitespace-pre-wrap text-sm text-slate-800">
                             {acta.observaciones}
                           </p>
                         ) : (
-                          <p className="text-sm opacity-70">
-                            Sin observaciones.
+                          <p className="text-sm text-slate-500">
+                            Sin observaciones registradas.
                           </p>
                         )}
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Firma */}
-                <div className="mt-6">
-                  <h2 className="text-base font-semibold mb-2">Firma</h2>
-                  <FirmaView firma_url={acta.firma_url} />
-                </div>
-
-                {/* Fotos */}
-                <div className="mt-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <FileImage className="w-5 h-5" />
-                    <h2 className="card-title text-lg">Registro fotográfico</h2>
+                  {/* Firma */}
+                  <div className="mt-6 bg-[#70B6E5] p-3 rounded-2xl">
+                    <h3 className="text-sm font-semibold text-slate-900 mb-2 flex items-center gap-2">
+                      <PenLine className="w-4 h-4 text-slate-500" />
+                      Firma del cliente
+                    </h3>
+                    <FirmaView firma_url={acta.firma_url} />
                   </div>
 
-                  <FotosGrid fotos={acta.fotos || []} />
+                  {/* Fotos */}
+                  <div className="mt-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="h-8 w-8 rounded-xl bg-slate-900 flex items-center justify-center">
+                        <FileImage className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-900">
+                          Registro fotográfico
+                        </h3>
+                        <p className="text-[11px] text-slate-500">
+                          Evidencia visual del estado del vehículo/equipos al
+                          momento de la entrega.
+                        </p>
+                      </div>
+                    </div>
+
+                    <FotosGrid fotos={acta.fotos || []} />
+                  </div>
                 </div>
-              </div>
-            </article>
-          ))}
-      </section>
+              </article>
+            ))}
+        </section>
+      </div>
     </main>
   );
 };
