@@ -5,6 +5,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { FormInput } from "../../shared/components/FormInput";
 import { useRegistrarProcesoContado } from "../../services/procesoContadoServices";
 import { useGetProcesoContadoPorCotizacionYMoto } from "../../services/procesoContadoHooks";
+import { ClipboardList, UserRound, Bike, BadgeInfo } from "lucide-react";
 
 /* ============================ Tipos (solo lo que pide la UI) ============================ */
 type SolicitudFormValues = {
@@ -97,7 +98,7 @@ const SolicitudForm: React.FC = () => {
   const location = useLocation();
   const incoming = (location.state as IncomingCotizacionState) || {};
 
-  console.log(incoming)
+  console.log(incoming);
   const clienteForForm = incoming?.clienteForForm;
 
   // "semilla" de moto desde location para poder consultar proceso_contado
@@ -176,12 +177,7 @@ const SolicitudForm: React.FC = () => {
       cotizacion_id: cotizacionId,
     });
 
-
   console.log("sss", pcData);
-
-
-
-
 
   // Aplicar autocompletado UNA sola vez cuando pcData llega
   const didAutofillRef = React.useRef(false);
@@ -305,22 +301,22 @@ const SolicitudForm: React.FC = () => {
 
       const A_enriched = A
         ? {
-          ...A,
-          soat: docsA.soat,
-          impuestos: docsA.impuestos,
-          matricula: docsA.matricula,
-          precioDocumentos: docsA.precio_documentos,
-        }
+            ...A,
+            soat: docsA.soat,
+            impuestos: docsA.impuestos,
+            matricula: docsA.matricula,
+            precioDocumentos: docsA.precio_documentos,
+          }
         : A;
 
       const B_enriched = B
         ? {
-          ...B,
-          soat: docsB.soat,
-          impuestos: docsB.impuestos,
-          matricula: docsB.matricula,
-          precioDocumentos: docsB.precio_documentos,
-        }
+            ...B,
+            soat: docsB.soat,
+            impuestos: docsB.impuestos,
+            matricula: docsB.matricula,
+            precioDocumentos: docsB.precio_documentos,
+          }
         : B;
 
       return {
@@ -380,179 +376,251 @@ const SolicitudForm: React.FC = () => {
     });
   };
 
-  const grid = "grid grid-cols-1 md:grid-cols-2 gap-4";
+  const grid = "grid grid-cols-1 gap-4 md:grid-cols-2 lg:gap-6";
+
+  const motoResumen =
+    incoming?.motos?.seleccionada ||
+    incoming?.motos?.A ||
+    incoming?.motos?.B ||
+    null;
 
   return (
-    <div className="p-4 md:p-6 lg:p-8">
-      <div className="mb-4 flex items-center gap-2">
-        <span className="text-xl">🌐</span>
-        <h2 className="text-xl md:text-2xl font-semibold">Diligencie la siguiente información</h2>
-      </div>
-
-      {/* Puedes mostrar un pequeño estado mientras busca en proceso_contado */}
-      {pcLoading && (
-        <div className="alert alert-info mb-3">Buscando datos previos del cliente y la moto…</div>
-      )}
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-        {/* ================== Información del cliente ================== */}
-        <section className="rounded-xl border border-gray-300 bg-base-100 shadow-sm">
-          <div className="border-b bg-sky-500 overflow-hidden rounded-t-2xl border-gray-300 px-4 py-3 md:px-6">
-            <h3 className="text-lg md:text-xl font-semibold text-center text-white">
-              Información del cliente
-            </h3>
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 px-4 py-6 md:py-10">
+      <div className="max-w-9xl mx-auto space-y-6">
+        {/* Encabezado / contexto de la solicitud */}
+        <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-11 w-11 rounded-2xl bg-sky-500/10 flex items-center justify-center border border-sky-500/30">
+              <ClipboardList className="w-5 h-5 text-sky-600" />
+            </div>
+            <div>
+              <h1 className="text-xl md:text-2xl font-semibold text-slate-900">
+                Registro de solicitud al contado
+              </h1>
+              <p className="text-sm text-slate-500 mt-0.5">
+                Diligencia la información del cliente y del vehículo para continuar con la facturación.
+              </p>
+            </div>
           </div>
 
-          <div className={`p-4 md:p-6 ${grid}`}>
-            <FormInput
-              name="primerNombre"
-              label="Primer nombre*"
-              control={control}
-              placeholder="Ingrese primer nombre"
-              rules={{
-                required: "Requerido",
-                minLength: { value: 2, message: "Mínimo 2 caracteres" },
-                pattern: { value: soloLetras, message: "Solo letras y espacios" },
-              }}
-            />
-            <FormInput
-              name="segundoNombre"
-              label="Segundo nombre"
-              control={control}
-              placeholder="Ingrese segundo nombre"
-              rules={{ pattern: { value: soloLetras, message: "Solo letras y espacios" } }}
-            />
-            <FormInput
-              name="primerApellido"
-              label="Primer apellido*"
-              control={control}
-              placeholder="Ingrese primer apellido"
-              rules={{ required: "Requerido", pattern: { value: soloLetras, message: "Solo letras y espacios" } }}
-            />
-            <FormInput
-              name="segundoApellido"
-              label="Segundo apellido"
-              control={control}
-              placeholder="Ingrese segundo apellido"
-              rules={{ pattern: { value: soloLetras, message: "Solo letras y espacios" } }}
-            />
-            <FormInput
-              name="numeroDocumento"
-              label="Número de documento*"
-              control={control}
-              placeholder="Ingrese número de documento"
-              rules={{
-                required: "Requerido",
-                minLength: { value: 5, message: "Mínimo 5 dígitos" },
-                maxLength: { value: 15, message: "Máximo 15 dígitos" },
-                pattern: { value: soloDigitos, message: "Solo dígitos" },
-              }}
-            />
-            <FormInput
-              name="numeroCelular"
-              label="Número de celular*"
-              control={control}
-              placeholder="Ingrese número de celular"
-              rules={{
-                required: "Requerido",
-                pattern: { value: celularRegex, message: "Debe tener 7 a 10 dígitos" },
-              }}
-            />
-            <FormInput
-              name="fechaNacimiento"
-              label="Fecha de nacimiento*"
-              type="date"
-              control={control}
-              rules={{ required: "Requerido" }}
-            />
-            <FormInput
-              name="ciudadResidencia"
-              label="Ciudad de residencia*"
-              control={control}
-              placeholder="Ingrese ciudad de residencia"
-              rules={{
-                required: "Requerido",
-                minLength: { value: 2, message: "Mínimo 2 caracteres" },
-                pattern: { value: soloLetras, message: "Solo letras y espacios" },
-              }}
-            />
-            <FormInput
-              name="direccionResidencia"
-              label="Dirección de residencia*"
-              control={control}
-              placeholder="Ingrese dirección de residencia"
-              rules={{ required: "Requerido", minLength: { value: 3, message: "Mínimo 3 caracteres" } }}
-            />
+          {cotizacionId && (
+            <div className="flex flex-col items-start md:items-end text-sm">
+              <span className="px-3 py-1 rounded-full bg-slate-900 text-slate-50 text-xs font-medium tracking-wide shadow-sm">
+                COTIZACIÓN #{cotizacionId}
+              </span>
+              {motoResumen?.modelo && (
+                <span className="mt-1 inline-flex items-center gap-1 text-slate-600 text-xs md:text-sm">
+                  <Bike className="w-4 h-4 text-sky-600" />
+                  {motoResumen.modelo}
+                </span>
+              )}
+            </div>
+          )}
+        </header>
+
+        {/* Mensaje mientras se consulta proceso_contado */}
+        {pcLoading && (
+          <div className="alert alert-info bg-sky-50 border border-sky-200 text-sky-800 flex items-center gap-2 shadow-sm">
+            <BadgeInfo className="w-4 h-4" />
+            <span className="text-sm">
+              Buscando datos previos del cliente y la motocicleta para autocompletar el formulario…
+            </span>
           </div>
-        </section>
+        )}
 
-        {/* ================== Información del producto ================== */}
-        <section className="rounded-2xl border border-gray-300 bg-base-100 shadow-sm">
-          <div className="border-b bg-sky-500 overflow-hidden rounded-t-2xl border-gray-300 px-4 py-3 md:px-6">
-            <h3 className="text-lg md:text-xl font-semibold text-center text-white">
-              Información del producto
-            </h3>
-          </div>
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-8 bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-slate-200/70 px-4 py-5 md:px-8 md:py-8"
+        >
+          {/* ================== Información del cliente ================== */}
+          <section className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-sm overflow-hidden">
+            <div className="flex items-center gap-2 border-b border-slate-200 bg-sky-500 text-white px-4 py-3 md:px-6">
+              <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
+                <UserRound className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-base md:text-lg font-semibold leading-tight">
+                  Información del cliente
+                </h3>
+                <p className="text-xs md:text-sm text-sky-50/80">
+                  Estos datos deben coincidir con el documento de identidad del comprador.
+                </p>
+              </div>
+            </div>
 
-          <div className={`p-4 md:p-6 ${grid}`}>
-            <FormInput
-              name="numeroChasis"
-              label="Número de chasis*"
-              control={control}
-              placeholder="Ingrese número de chasis"
-              rules={{ required: "Requerido" }}
-            />
-            <FormInput
-              name="numeroMotor"
-              label="Número de motor*"
-              control={control}
-              placeholder="Ingrese número de motor"
-              rules={{ required: "Requerido" }}
-            />
-            <FormInput
-              name="color"
-              label="Color"
-              control={control}
-              placeholder="Ingrese color"
-              rules={{ pattern: { value: soloLetras, message: "Solo letras y espacios" } }}
-            />
-            <FormInput
-              name="placa"
-              label="Placa"
-              control={control}
-              placeholder="Ingrese placa"
-              rules={{ setValueAs: (v: any) => (v ? String(v).toUpperCase() : v) }}
-            />
-          </div>
-        </section>
+            <div className={`p-4 md:p-6 ${grid}`}>
+              <FormInput
+                name="primerNombre"
+                label="Primer nombre*"
+                control={control}
+                placeholder="Ingrese primer nombre"
+                rules={{
+                  required: "Requerido",
+                  minLength: { value: 2, message: "Mínimo 2 caracteres" },
+                  pattern: { value: soloLetras, message: "Solo letras y espacios" },
+                }}
+              />
+              <FormInput
+                name="segundoNombre"
+                label="Segundo nombre"
+                control={control}
+                placeholder="Ingrese segundo nombre"
+                rules={{ pattern: { value: soloLetras, message: "Solo letras y espacios" } }}
+              />
+              <FormInput
+                name="primerApellido"
+                label="Primer apellido*"
+                control={control}
+                placeholder="Ingrese primer apellido"
+                rules={{
+                  required: "Requerido",
+                  pattern: { value: soloLetras, message: "Solo letras y espacios" },
+                }}
+              />
+              <FormInput
+                name="segundoApellido"
+                label="Segundo apellido"
+                control={control}
+                placeholder="Ingrese segundo apellido"
+                rules={{ pattern: { value: soloLetras, message: "Solo letras y espacios" } }}
+              />
+              <FormInput
+                name="numeroDocumento"
+                label="Número de documento*"
+                control={control}
+                placeholder="Ingrese número de documento"
+                rules={{
+                  required: "Requerido",
+                  minLength: { value: 5, message: "Mínimo 5 dígitos" },
+                  maxLength: { value: 15, message: "Máximo 15 dígitos" },
+                  pattern: { value: soloDigitos, message: "Solo dígitos" },
+                }}
+              />
+              <FormInput
+                name="numeroCelular"
+                label="Número de celular*"
+                control={control}
+                placeholder="Ingrese número de celular"
+                rules={{
+                  required: "Requerido",
+                  pattern: { value: celularRegex, message: "Debe tener 7 a 10 dígitos" },
+                }}
+              />
+              <FormInput
+                name="fechaNacimiento"
+                label="Fecha de nacimiento*"
+                type="date"
+                control={control}
+                rules={{ required: "Requerido" }}
+              />
+              <FormInput
+                name="ciudadResidencia"
+                label="Ciudad de residencia*"
+                control={control}
+                placeholder="Ingrese ciudad de residencia"
+                rules={{
+                  required: "Requerido",
+                  minLength: { value: 2, message: "Mínimo 2 caracteres" },
+                  pattern: { value: soloLetras, message: "Solo letras y espacios" },
+                }}
+              />
+              <FormInput
+                name="direccionResidencia"
+                label="Dirección de residencia*"
+                control={control}
+                placeholder="Ingrese dirección de residencia"
+                rules={{
+                  required: "Requerido",
+                  minLength: { value: 3, message: "Mínimo 3 caracteres" },
+                }}
+              />
+            </div>
+          </section>
 
-        {/* ================== Acciones ================== */}
-        <div className="flex justify-between">
-          <button type="button" className="btn" onClick={() => history.back()}>
-            ← Volver
-          </button>
+          {/* ================== Información del producto ================== */}
+          <section className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-sm overflow-hidden">
+            <div className="flex items-center gap-2 border-b border-slate-200 bg-emerald-500 text-white px-4 py-3 md:px-6">
+              <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
+                <Bike className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-base md:text-lg font-semibold leading-tight">
+                  Información del producto
+                </h3>
+                <p className="text-xs md:text-sm text-emerald-50/80">
+                  Verifica chasis, motor y placa exactamente como aparecen en la tarjeta de propiedad o factura.
+                </p>
+              </div>
+            </div>
 
-          <div className="flex gap-2">
+            <div className={`p-4 md:p-6 ${grid}`}>
+              <FormInput
+                name="numeroChasis"
+                label="Número de chasis*"
+                control={control}
+                placeholder="Ingrese número de chasis"
+                rules={{ required: "Requerido" }}
+              />
+              <FormInput
+                name="numeroMotor"
+                label="Número de motor*"
+                control={control}
+                placeholder="Ingrese número de motor"
+                rules={{ required: "Requerido" }}
+              />
+              <FormInput
+                name="color"
+                label="Color"
+                control={control}
+                placeholder="Ingrese color"
+                rules={{
+                  pattern: { value: soloLetras, message: "Solo letras y espacios" },
+                }}
+              />
+              <FormInput
+                name="placa"
+                label="Placa"
+                control={control}
+                placeholder="Ingrese placa"
+                rules={{
+                  setValueAs: (v: any) => (v ? String(v).toUpperCase() : v),
+                }}
+              />
+            </div>
+          </section>
+
+          {/* ================== Acciones ================== */}
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between pt-2 border-t border-slate-200 mt-4">
             <button
               type="button"
-              className="btn btn-ghost"
-              onClick={() => reset()}
-              disabled={isSubmitting || isPending}
+              className="btn btn-ghost gap-1 text-slate-600 hover:text-slate-900"
+              onClick={() => history.back()}
             >
-              Limpiar
+              ← Volver
             </button>
-            <button
-              type="submit"
-              className="btn btn-success"
-              disabled={!isValid || isSubmitting || isPending}
-              onClick={handleSubmit(onSubmit)}
-            >
-              Aceptar
-            </button>
+
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
+              <button
+                type="button"
+                className="btn btn-ghost border border-slate-200 hover:border-slate-300 text-slate-700"
+                onClick={() => reset()}
+                disabled={isSubmitting || isPending}
+              >
+                Limpiar
+              </button>
+              <button
+                type="submit"
+                className="btn btn-success shadow-md shadow-emerald-500/30 px-6"
+                disabled={!isValid || isSubmitting || isPending}
+                onClick={handleSubmit(onSubmit)}
+              >
+                {isSubmitting || isPending ? "Procesando..." : "Aceptar"}
+              </button>
+            </div>
           </div>
-        </div>
-      </form>
-    </div>
+        </form>
+      </div>
+    </main>
   );
 };
 

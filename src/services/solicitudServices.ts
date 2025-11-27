@@ -388,3 +388,327 @@ export const useRegistrarActaEntrega = (opts?: {
     },
   });
 };
+
+
+// Hook sencillo: trae la ÚLTIMA solicitud por id_cotizacion, tipado como `any`
+export const useUltimaSolicitudPorIdCotizacion = (
+  idCotizacion?: string | number,
+  opts?: {
+    endpoint?: string; // por defecto "/obtener_solicitud_por_id_cotizacion.php"
+    token?: string;
+    enabled?: boolean;
+  }
+) => {
+  return useQuery<any, AxiosError>({
+    queryKey: ["solicitud-facturacion", "ultima-por-id-cotizacion", idCotizacion],
+    enabled: (opts?.enabled ?? true) && !!idCotizacion,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
+      try {
+        const { data } = await api.get<any>(
+          opts?.endpoint ?? "/obtener_solicitud_por_id_cotizacion.php",
+          {
+            params: { id_cotizacion: idCotizacion },
+            headers: opts?.token
+              ? { Authorization: `Bearer ${opts.token}` }
+              : undefined,
+          }
+        );
+
+        // aquí simplemente devolvemos tal cual lo que mande el backend
+        return data;
+      } catch (err) {
+        const e = err as AxiosError;
+        // Si el back devuelve 404 cuando no hay registros, retornamos null en vez de romper
+        if (e.response?.status === 404) {
+          return null;
+        }
+        throw e;
+      }
+    },
+  });
+};
+
+
+// ========================= ACTUALIZAR FACTURA DE SOLICITUD =========================
+
+export interface ActualizarFacturaResponse {
+  success: boolean;
+  id?: number | string;
+  factura_path?: string;
+  message?: string | string[];
+}
+
+export const useActualizarFacturaSolicitud = (opts?: {
+  endpoint?: string; // por defecto "/actualizar_factura_solicitud.php"
+}) => {
+  const qc = useQueryClient();
+
+  return useMutation<
+    ActualizarFacturaResponse,
+    AxiosError<ServerError>,
+    FormData
+  >({
+    mutationFn: async (formData) => {
+      const { data } = await api.post<ActualizarFacturaResponse>(
+        opts?.endpoint ?? "/actualizar_factura_solicitud.php",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+      return data;
+    },
+    onSuccess: async (resp, formData) => {
+      // Podemos intentar sacar el id o id_cotizacion del formData
+      // const id = formData.get("id")?.toString();
+      const idCot = formData.get("id_cotizacion")?.toString();
+
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["solicitudes-facturacion"] }),
+        idCot
+          ? qc.invalidateQueries({
+              queryKey: ["solicitud-facturacion", "ultima-por-id-cotizacion", idCot],
+            })
+          : Promise.resolve(),
+      ]);
+
+      const texto =
+        Array.isArray(resp?.message)
+          ? resp.message.join("\n")
+          : resp?.message ?? "Factura actualizada correctamente";
+
+      Swal.fire({
+        icon: "success",
+        title: "Factura actualizada",
+        text: texto,
+        timer: 1600,
+        showConfirmButton: false,
+      });
+    },
+    onError: (error) => {
+      const raw =
+        error.response?.data?.message ??
+        "No se pudo actualizar la factura de la solicitud";
+      const arr = Array.isArray(raw) ? raw : [raw];
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        html: arr.join("<br/>"),
+      });
+    },
+  });
+};
+
+
+
+
+// ========================= DESCUENTOS / SALDO CONTRAENTREGA =========================
+
+// Lo que devuelve el PHP de descuentos_contraentrega.php (GET)
+export interface DescuentosContraentregaApi {
+  id: number | string;
+  descuento_solicitado_a: string | number | null;
+  saldo_contraentrega_a: string | number | null;
+  descuento_autorizado_b: string | number | null;
+  saldo_contraentrega_b: string | number | null;
+  observacion2?: string | null;
+  is_final: string | number | null;
+}
+
+// Estructura normalizada para tu app
+export interface DescuentosContraentrega {
+  id: number;
+  descuentoSolicitadoA: number | null;
+  saldoContraentregaA: number | null;
+  descuentoAutorizadoB: number | null;
+  saldoContraentregaB: number | null;
+  observacion2: string | null;
+  isFinal: boolean; // true si 1, false si 0
+}
+
+interface DescuentosContraentregaResponse {
+  success: boolean;
+  data?: DescuentosContraentregaApi;
+  error?: string;
+}
+
+/** Normaliza lo que viene del back a números / boolean */
+const normalizeDescuentos = (
+  api: DescuentosContraentregaApi
+): DescuentosContraentrega => {
+  const toNumOrNull = (v: any): number | null => {
+    if (v === null || v === undefined || v === "") return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const toBoolFinal = (v: any): boolean => {
+    if (v === null || v === undefined || v === "") return false;
+    const n = Number(v);
+    return n === 1;
+  };
+
+  return {
+    id: Number(api.id),
+    descuentoSolicitadoA: toNumOrNull(api.descuento_solicitado_a),
+    saldoContraentregaA: toNumOrNull(api.saldo_contraentrega_a),
+    descuentoAutorizadoB: toNumOrNull(api.descuento_autorizado_b),
+    saldoContraentregaB: toNumOrNull(api.saldo_contraentrega_b),
+    observacion2: api.observacion2 ?? null,
+    isFinal: toBoolFinal(api.is_final),
+  };
+};
+
+/**
+ * Hook GET:
+ *   GET /descuentos_contraentrega.php?id=ID
+ *
+ * Uso:
+ *   const { data, isLoading } = useDescuentosContraentrega(idSolicitud);
+ */
+export const useDescuentosContraentrega = (
+  id?: number | string,
+  opts?: {
+    endpoint?: string; // por defecto "/descuentos_contraentrega.php"
+    enabled?: boolean;
+  }
+) => {
+  return useQuery<DescuentosContraentrega | null, AxiosError>({
+    queryKey: ["descuentos-contraentrega", id],
+    enabled: (opts?.enabled ?? true) && !!id,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
+      try {
+        const { data } = await api.get<DescuentosContraentregaResponse>(
+          opts?.endpoint ?? "/descuentos_contraentrega.php",
+          { params: { id } }
+        );
+
+        if (!data?.success || !data.data) {
+          return null;
+        }
+
+        return normalizeDescuentos(data.data);
+      } catch (err) {
+        const e = err as AxiosError;
+        if (e.response?.status === 404) {
+          // No hay registro con ese ID
+          return null;
+        }
+        throw e;
+      }
+    },
+  });
+};
+
+// ------------------------- MUTATION: ACTUALIZAR B + observacion2 + is_final -------------------------
+
+export interface ActualizarDescuentosContraentregaPayload {
+  id: number | string;               // id (PRIMARY KEY) de solicitudes_facturacion
+  descuento_autorizado_b: number;    // valor autorizado
+  saldo_contraentrega_b: number;     // saldo B
+  observacion2?: string | null;      // texto libre (puede ser null o vacío)
+  is_final?: number | boolean;       // 1 / 0 o true / false
+}
+
+export interface ActualizarDescuentosContraentregaResponse {
+  success: boolean;
+  message?: string | string[];
+  updated_id?: number | string;
+  affected_rows?: number;
+}
+
+/**
+ * Hook POST:
+ *   POST /descuentos_contraentrega.php
+ *   Campos: id, descuento_autorizado_b, saldo_contraentrega_b, observacion2, is_final
+ *
+ * Uso:
+ *   const { mutate: actualizarDescuentos, isPending } = useActualizarDescuentosContraentrega();
+ *   actualizarDescuentos({
+ *     id: 123,
+ *     descuento_autorizado_b: 100000,
+ *     saldo_contraentrega_b: 50000,
+ *     observacion2: "Obs. del área de cartera",
+ *     is_final: 1,
+ *   });
+ */
+export const useActualizarDescuentosContraentrega = (opts?: {
+  endpoint?: string; // por defecto "/descuentos_contraentrega.php"
+}) => {
+  const qc = useQueryClient();
+
+  return useMutation<
+    ActualizarDescuentosContraentregaResponse,
+    AxiosError<ServerError>,
+    ActualizarDescuentosContraentregaPayload
+  >({
+    mutationFn: async (payload) => {
+      const fd = new FormData();
+      fd.append("id", String(payload.id));
+      fd.append(
+        "descuento_autorizado_b",
+        String(payload.descuento_autorizado_b)
+      );
+      fd.append(
+        "saldo_contraentrega_b",
+        String(payload.saldo_contraentrega_b)
+      );
+
+      // observacion2 opcional; si viene null/undefined, mandamos cadena vacía
+      if (payload.observacion2 !== undefined && payload.observacion2 !== null) {
+        fd.append("observacion2", payload.observacion2);
+      } else {
+        fd.append("observacion2", "");
+      }
+
+      const isFinalValue =
+        payload.is_final === true || payload.is_final === 1 ? "1" : "0";
+      fd.append("is_final", isFinalValue);
+
+      const { data } =
+        await api.post<ActualizarDescuentosContraentregaResponse>(
+          opts?.endpoint ?? "/descuentos_contraentrega.php",
+          fd,
+          { headers: { "Content-Type": "multipart/form-data" } }
+        );
+
+      return data;
+    },
+    onSuccess: async (resp, payload) => {
+      await Promise.all([
+        // refrescar listados de solicitudes
+        qc.invalidateQueries({ queryKey: ["solicitudes-facturacion"] }),
+        // refrescar el descuento de este id puntual
+        qc.invalidateQueries({
+          queryKey: ["descuentos-contraentrega", payload.id],
+        }),
+      ]);
+
+      const texto = Array.isArray(resp?.message)
+        ? resp.message.join("\n")
+        : resp?.message ?? "Descuentos / saldo y observación actualizados correctamente";
+
+      Swal.fire({
+        icon: "success",
+        title: "Actualización exitosa",
+        text: texto,
+        timer: 1600,
+        showConfirmButton: false,
+      });
+    },
+    onError: (error) => {
+      const raw =
+        error.response?.data?.message ??
+        "No se pudieron actualizar los descuentos / saldo / observación";
+      const arr = Array.isArray(raw) ? raw : [raw];
+
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        html: arr.join("<br/>"),
+      });
+    },
+  });
+};

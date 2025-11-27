@@ -177,6 +177,47 @@ const modeloMoto = (row: any, side: 'a' | 'b') =>
         .join(' ')
         .trim() || '—';
 
+const marcaMoto = (row: any, side: 'a' | 'b') =>
+    safeText(row?.[`marca_${side}`]) || '—';
+
+const lineaMoto = (row: any, side: 'a' | 'b') =>
+    safeText(row?.[`linea_${side}`]) || '—';
+
+const anioModeloMoto = (row: any, side: 'a' | 'b') =>
+    safeText(row?.[`modelo_${side}`]) || '—';
+
+const garantiaTexto = (row: any, side: 'a' | 'b') => {
+    const base = String(row?.[`garantia_${side}`] ?? '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '');
+    const ext = String(row?.[`garantia_extendida_${side}`] ?? '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '');
+
+    const baseSi = base === 'si' || base === 'sí' || base === 'true' || base === '1';
+    const extSi = ext === 'si' || ext === 'sí' || ext === 'true' || ext === '1';
+
+    if (baseSi && extSi) return 'Garantía de fábrica + extendida';
+    if (baseSi) return 'Garantía de fábrica';
+    if (extSi) return 'Garantía extendida';
+    return 'Sin garantía adicional';
+};
+
+const adicionalesMoto = (row: any, side: 'a' | 'b') => {
+    const suf = side === 'a' ? '_1' : '_2';
+
+    const runt = Number(row?.[`runt${suf}`]) || 0;
+    const licencia = Number(row?.[`licencia${suf}`]) || 0;
+    const defensas = Number(row?.[`defensas${suf}`]) || 0;
+    const handSavers = Number(row?.[`hand_savers${suf}`]) || 0;
+    const otros = Number(row?.[`otros_adicionales${suf}`]) || 0;
+    const total = Number(row?.[`total_adicionales${suf}`]) || runt + licencia + defensas + handSavers + otros;
+
+    return { runt, licencia, defensas, handSavers, otros, total };
+};
+
 // suma valores del JSON de seguros (string o array)
 const sumSegurosFromJson = (raw: unknown): number | undefined => {
     try {
@@ -624,18 +665,60 @@ const DetalleCambiarEstado: React.FC = () => {
                     {/* Moto A */}
                     {showMotoA && motoA && (
                         <article className="overflow-hidden rounded-xl shadow-sm mb-4">
-                            <header className="px-4 py-2 font-semibold bg-[#3498DB]/70 text-white">{modeloMoto(row, 'a')}</header>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+                            <header className="px-4 py-2 font-semibold bg-[#3498DB]/70 text-white flex flex-col md:flex-row md:items-center md:justify-between gap-1">
+                                <span>{modeloMoto(row, 'a')}</span>
+                                <span className="text-xs md:text-sm opacity-90">
+                                    {marcaMoto(row, 'a')} · {lineaMoto(row, 'a')} · Modelo {anioModeloMoto(row, 'a')}
+                                </span>
+                            </header>
+
+                            {/* Ficha básica de la moto */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border-b border-base-300/60">
+                                <InfoKV label="Marca" value={marcaMoto(row, 'a')} />
+                                <InfoKV label="Línea" value={lineaMoto(row, 'a')} />
+                                <InfoKV label="Modelo (año)" value={anioModeloMoto(row, 'a')} />
+                                <InfoKV label="Garantía" value={garantiaTexto(row, 'a')} />
+                            </div>
+
+                            {/* Costos principales */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border-b border-base-300/40">
                                 <InfoKV label="Precio base:" value={fmtCOP(motoA.precioBase)} />
                                 <InfoKV label="Precio documentos:" value={fmtCOP(motoA.precioDocumentos)} />
                                 <InfoKV label="Accesorios + Marcación:" value={fmtCOP(motoA.accesoriosYMarcacion)} />
-                                <InfoKV label="Descuentos:" value={motoA.descuentos > 0 ? `-${fmtCOP(motoA.descuentos)}` : fmtCOP(0)} />
+                                <InfoKV
+                                    label="Descuentos:"
+                                    value={motoA.descuentos > 0 ? `-${fmtCOP(motoA.descuentos)}` : fmtCOP(0)}
+                                />
                                 <InfoKV label="Seguros:" value={fmtCOP(motoA.seguros)} />
-                                <InfoKV label="Garantía:" value={motoA.garantia ? 'Sí' : 'No'} />
                                 <InfoKV label="Total sin seguros:" value={fmtCOP(motoA.totalSinSeguros)} />
                                 <InfoKV label="Total:" value={fmtCOP(motoA.total)} />
+                            </div>
+
+                            {/* Adicionales / trámites */}
+                            {(() => {
+                                const ad = adicionalesMoto(row, 'a');
+                                const hayAdicionales = ad.total > 0;
+                                if (!hayAdicionales) return null;
+
+                                return (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border-b border-base-300/40">
+                                        <InfoKV label="RUNT:" value={fmtCOP(ad.runt)} />
+                                        <InfoKV label="Licencia:" value={fmtCOP(ad.licencia)} />
+                                        <InfoKV label="Defensas:" value={fmtCOP(ad.defensas)} />
+                                        <InfoKV label="Hand savers:" value={fmtCOP(ad.handSavers)} />
+                                        <InfoKV label="Otros adicionales:" value={fmtCOP(ad.otros)} />
+                                        <InfoKV label="Total adicionales:" value={fmtCOP(ad.total)} />
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Forma de pago / cuotas */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+                                <InfoKV
+                                    label="Tipo de pago"
+                                    value={safeText(row?.tipo_pago) || safeText(row?.metodo_pago) || '—'}
+                                />
                                 <InfoKV label="Cuota inicial:" value={fmtCOP(motoA.cuotaInicial)} />
-                                {/* 👇 NUEVO: saldo a financiar */}
                                 <InfoKV label="Saldo a financiar:" value={fmtCOP(motoA.saldoFinanciar)} />
                             </div>
                         </article>
@@ -644,18 +727,60 @@ const DetalleCambiarEstado: React.FC = () => {
                     {/* Moto B */}
                     {showMotoB && motoB && (
                         <article className="overflow-hidden rounded-xl shadow-sm">
-                            <header className="px-4 py-2 font-semibold bg-[#3498DB]/70 text-white">{modeloMoto(row, 'b')}</header>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+                            <header className="px-4 py-2 font-semibold bg-[#3498DB]/70 text-white flex flex-col md:flex-row md:items-center md:justify-between gap-1">
+                                <span>{modeloMoto(row, 'b')}</span>
+                                <span className="text-xs md:text-sm opacity-90">
+                                    {marcaMoto(row, 'b')} · {lineaMoto(row, 'b')} · Modelo {anioModeloMoto(row, 'b')}
+                                </span>
+                            </header>
+
+                            {/* Ficha básica de la moto */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border-b border-base-300/60">
+                                <InfoKV label="Marca" value={marcaMoto(row, 'b')} />
+                                <InfoKV label="Línea" value={lineaMoto(row, 'b')} />
+                                <InfoKV label="Modelo (año)" value={anioModeloMoto(row, 'b')} />
+                                <InfoKV label="Garantía" value={garantiaTexto(row, 'b')} />
+                            </div>
+
+                            {/* Costos principales */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border-b border-base-300/40">
                                 <InfoKV label="Precio base:" value={fmtCOP(motoB.precioBase)} />
                                 <InfoKV label="Precio documentos:" value={fmtCOP(motoB.precioDocumentos)} />
                                 <InfoKV label="Accesorios + Marcación:" value={fmtCOP(motoB.accesoriosYMarcacion)} />
-                                <InfoKV label="Descuentos:" value={motoB.descuentos > 0 ? `-${fmtCOP(motoB.descuentos)}` : fmtCOP(0)} />
+                                <InfoKV
+                                    label="Descuentos:"
+                                    value={motoB.descuentos > 0 ? `-${fmtCOP(motoB.descuentos)}` : fmtCOP(0)}
+                                />
                                 <InfoKV label="Seguros:" value={fmtCOP(motoB.seguros)} />
-                                <InfoKV label="Garantía:" value={motoB.garantia ? 'Sí' : 'No'} />
                                 <InfoKV label="Total sin seguros:" value={fmtCOP(motoB.totalSinSeguros)} />
                                 <InfoKV label="Total:" value={fmtCOP(motoB.total)} />
+                            </div>
+
+                            {/* Adicionales / trámites */}
+                            {(() => {
+                                const ad = adicionalesMoto(row, 'b');
+                                const hayAdicionales = ad.total > 0;
+                                if (!hayAdicionales) return null;
+
+                                return (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border-b border-base-300/40">
+                                        <InfoKV label="RUNT:" value={fmtCOP(ad.runt)} />
+                                        <InfoKV label="Licencia:" value={fmtCOP(ad.licencia)} />
+                                        <InfoKV label="Defensas:" value={fmtCOP(ad.defensas)} />
+                                        <InfoKV label="Hand savers:" value={fmtCOP(ad.handSavers)} />
+                                        <InfoKV label="Otros adicionales:" value={fmtCOP(ad.otros)} />
+                                        <InfoKV label="Total adicionales:" value={fmtCOP(ad.total)} />
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Forma de pago / cuotas */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+                                <InfoKV
+                                    label="Tipo de pago"
+                                    value={safeText(row?.tipo_pago) || safeText(row?.metodo_pago) || '—'}
+                                />
                                 <InfoKV label="Cuota inicial:" value={fmtCOP(motoB.cuotaInicial)} />
-                                {/* 👇 NUEVO: saldo a financiar */}
                                 <InfoKV label="Saldo a financiar:" value={fmtCOP(motoB.saldoFinanciar)} />
                             </div>
                         </article>

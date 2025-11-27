@@ -3,10 +3,13 @@ import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import Swal from "sweetalert2";
-import { useGetFacturacionPorCodigo } from "../services/procesoContadoServices"; // <- mismo servicio
+import { useGetFacturacionPorCodigo } from "../services/procesoContadoServices";
 import { useRegistrarSolicitudFacturacion2 } from "../services/solicitudServices";
 import { useAuthStore } from "../store/auth.store";
-import { useDistribuidoras } from "../services/distribuidoraServices"; // 👈 NUEVO: hook catálogo
+import { useDistribuidoras } from "../services/distribuidoraServices";
+import { useIvaDecimal } from "../services/ivaServices"; // 👈 ajusta la ruta si es necesario
+import { FormInput } from "../shared/components/FormInput";
+import { FormSelect } from "../shared/components/FormSelect"; // 👈 NUEVO
 
 type FormValues = {
     documentos: "Si" | "No";
@@ -27,11 +30,38 @@ const fmtCOP = (v?: string | number | null) => {
         maximumFractionDigits: 0,
     }).format(Number.isNaN(n) ? 0 : n);
 };
+
 const safe = (v?: string | null) => (v ? String(v) : "—");
 
 const fmtOptCOP = (v?: string | number | null) => {
     if (v === null || v === undefined || v === "") return "—";
     return fmtCOP(v);
+};
+
+const fmtFechaLarga = (iso?: string | null) => {
+    if (!iso) return "—";
+    const d = new Date(iso.replace(" ", "T"));
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleString("es-CO", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+    });
+};
+
+const fmtSoloFecha = (iso?: string | null) => {
+    if (!iso) return "—";
+    const d = new Date(iso.replace(" ", "T"));
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString("es-CO", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    });
 };
 
 // helper para value (slug) del select
@@ -42,6 +72,12 @@ const slugify = (s: string) =>
         .trim()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-+|-+$/g, "");
+
+// opciones para el select de Documentos
+const DOC_OPTS = [
+    { value: "Si", label: "Si" },
+    { value: "No", label: "No" },
+];
 
 const Box = ({
     title,
@@ -72,11 +108,7 @@ const HeadRow = ({ cols }: { cols: React.ReactNode[] }) => (
         {cols.map((c, i) => (
             <div
                 key={i}
-                className={`px-3 py-2 border-r border-sky-500 last:border-r-0
-                ${
-                    ["col-span-4", "col-span-2", "col-span-2", "col-span-2", "col-span-2"].at(i) ||
-                    "col-span-2"
-                }`}
+                className={`px-3 py-2 border-r border-sky-500 last:border-r-0 col-span-2`}
             >
                 {c}
             </div>
@@ -107,8 +139,16 @@ const SolicitarFacturacionPage: React.FC = () => {
     const { codigo } = useParams<{ codigo: string }>();
     const navigate = useNavigate();
 
-    // Datos origen
+    // Datos origen de la solicitud/cotización
     const { data, isLoading, error } = useGetFacturacionPorCodigo(codigo);
+
+    // IVA vigente
+    const {
+        ivaDecimal,
+        porcentaje: ivaPorcentaje,
+        isLoading: ivaLoading,
+        error: ivaError,
+    } = useIvaDecimal();
 
     // Catálogo de distribuidoras desde backend
     const { data: distsResp, isLoading: loadingDists } = useDistribuidoras({
@@ -116,7 +156,6 @@ const SolicitarFacturacionPage: React.FC = () => {
         limit: 200,
     });
 
-    // Construimos opciones del select manteniendo tu shape { value, label }
     const DIST_OPTS = React.useMemo(
         () => [
             { value: "", label: "Seleccione…" },
@@ -128,14 +167,14 @@ const SolicitarFacturacionPage: React.FC = () => {
         [distsResp]
     );
 
-    // Mapa slug -> { id, nombre } para enviar ID real y nombre en el payload
     const distSlugMap = React.useMemo(() => {
         const m = new Map<string, { id: number; nombre: string }>();
-        (distsResp?.data ?? []).forEach((d) => m.set(slugify(d.nombre), { id: d.id, nombre: d.nombre }));
+        (distsResp?.data ?? []).forEach((d) =>
+            m.set(slugify(d.nombre), { id: d.id, nombre: d.nombre })
+        );
         return m;
     }, [distsResp]);
 
-    // Hook submit
     const { mutate: registrarSolicitud, isPending } =
         useRegistrarSolicitudFacturacion2({
             endpoint: "/crear_solicitud_facturacion.php",
@@ -143,6 +182,7 @@ const SolicitarFacturacionPage: React.FC = () => {
 
     const {
         register,
+        control,
         handleSubmit,
         watch,
         formState: { errors, isSubmitting },
@@ -159,15 +199,122 @@ const SolicitarFacturacionPage: React.FC = () => {
     });
 
     const docValue = watch("documentos");
-    const distSlugSelected = watch("distribuidora"); // ← slug seleccionado
+
+    // 👇 NUEVO: archivos seleccionados para preview
+    const cedulaFiles = watch("cedulaFile");
+    const manifiestoFiles = watch("manifiestoFile");
+
+    // 👇 NUEVO: URLs de previsualización (solo imágenes)
+    const cedulaPreviewUrl = React.useMemo(() => {
+        if (!cedulaFiles || cedulaFiles.length === 0) return undefined;
+        const f = cedulaFiles[0];
+        if (!f.type.startsWith("image/")) return undefined;
+        return URL.createObjectURL(f);
+    }, [cedulaFiles]);
+
+    const manifiestoPreviewUrl = React.useMemo(() => {
+        if (!manifiestoFiles || manifiestoFiles.length === 0) return undefined;
+        const f = manifiestoFiles[0];
+        if (!f.type.startsWith("image/")) return undefined;
+        return URL.createObjectURL(f);
+    }, [manifiestoFiles]);
+
+    // 👇 NUEVO: liberar URLs al cambiar / desmontar
+    React.useEffect(() => {
+        return () => {
+            if (cedulaPreviewUrl) URL.revokeObjectURL(cedulaPreviewUrl);
+        };
+    }, [cedulaPreviewUrl]);
+
+    React.useEffect(() => {
+        return () => {
+            if (manifiestoPreviewUrl) URL.revokeObjectURL(manifiestoPreviewUrl);
+        };
+    }, [manifiestoPreviewUrl]);
 
     const user = useAuthStore((state) => state.user);
 
+    if (isLoading) {
+        return (
+            <main className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+                <div className="max-w-md w-full rounded-2xl bg-white border border-slate-200 shadow-md p-6 text-center space-y-3">
+                    <div className="loader mx-auto mb-2" />
+                    <h2 className="font-semibold text-slate-800 text-lg">
+                        Cargando solicitud…
+                    </h2>
+                    <p className="text-sm text-slate-500">
+                        Estamos obteniendo la información de la cotización.
+                    </p>
+                </div>
+            </main>
+        );
+    }
+
+    if (error || !data) {
+        return (
+            <main className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+                <div className="max-w-md w-full rounded-2xl bg-white border border-rose-200 shadow-md p-6">
+                    <h2 className="font-semibold text-rose-700 text-lg mb-2">
+                        No se encontró la solicitud
+                    </h2>
+                    <p className="text-sm text-slate-600 mb-4">
+                        {error?.message || "Verifica el código e intenta nuevamente."}
+                    </p>
+                    <button
+                        className="btn btn-outline w-full"
+                        onClick={() => navigate(-1)}
+                    >
+                        ← Volver
+                    </button>
+                </div>
+            </main>
+        );
+    }
+
+    // ========= Cálculos de IVA (si backend no lo envía) =========
+    const cnValorBrutoNum = Number(data.cn_valor_bruto ?? data.cn_valor_moto ?? 0);
+    const accValorBrutoNum = Number(data.acc_valor_bruto ?? 0);
+
+    const backendCnIvaNum =
+        data.cn_iva !== null && data.cn_iva !== undefined
+            ? Number(data.cn_iva)
+            : null;
+    const backendAccIvaNum =
+        data.acc_iva !== null && data.acc_iva !== undefined
+            ? Number(data.acc_iva)
+            : null;
+
+    const cnIvaNum =
+        backendCnIvaNum !== null
+            ? backendCnIvaNum
+            : ivaPorcentaje > 0
+            ? Math.round(cnValorBrutoNum * ivaDecimal)
+            : 0;
+
+    const accIvaNum =
+        backendAccIvaNum !== null
+            ? backendAccIvaNum
+            : ivaPorcentaje > 0
+            ? Math.round(accValorBrutoNum * ivaDecimal)
+            : 0;
+
+    const cnTotalNum =
+        data.cn_total !== null && data.cn_total !== undefined
+            ? Number(data.cn_total)
+            : cnValorBrutoNum + cnIvaNum;
+    const accTotalNum =
+        data.acc_total !== null && data.acc_total !== undefined
+            ? Number(data.acc_total)
+            : accValorBrutoNum + accIvaNum;
+
+    // ========= Submit =========
     const onSubmit = async (values: FormValues) => {
         if (!data) return;
 
         // Resolver nombre e ID reales desde el slug seleccionado
-        const dist = values.distribuidora ? distSlugMap.get(values.distribuidora) : undefined;
+        const dist = values.distribuidora
+            ? distSlugMap.get(values.distribuidora)
+            : undefined;
         const distNombre = dist?.nombre ?? "";
         const distId = dist?.id ?? "";
 
@@ -176,8 +323,8 @@ const SolicitarFacturacionPage: React.FC = () => {
         // ===== Backend payload (manteniendo tu estructura) =====
         fd.append("id_cotizacion", String(data.cotizacion_id ?? ""));
         fd.append("agencia", "Motos");
-        fd.append("distribuidora", distNombre); // 👈 nombre desde catálogo
-        fd.append("distribuidora_id", String(distId)); // 👈 id real
+        fd.append("distribuidora", distNombre);
+        fd.append("distribuidora_id", String(distId));
         fd.append("codigo_solicitud", codigo || "");
         fd.append("codigo_credito", "");
         fd.append("nombre_cliente", data.nombre_cliente || "");
@@ -194,7 +341,7 @@ const SolicitarFacturacionPage: React.FC = () => {
         if (values.cedulaFile?.[0]) fd.append("cedula", values.cedulaFile[0]);
         if (values.manifiestoFile?.[0]) fd.append("manifiesto", values.manifiestoFile[0]);
 
-        // Extras (no rompen si backend los ignora)
+        // Extras de la solicitud/cotización
         fd.append("codigo_origen_facturacion", codigo || "");
         fd.append("numero_documento", data.numero_documento || "");
         fd.append("telefono", data.telefono || "");
@@ -206,24 +353,28 @@ const SolicitarFacturacionPage: React.FC = () => {
         fd.append("color", data.color || "");
         fd.append("placa", data.placa || "");
         fd.append("cn_valor_moto", String(data.cn_valor_moto ?? ""));
-        fd.append("cn_valor_bruto", String(data.cn_valor_bruto ?? ""));
-        fd.append("cn_iva", String(data.cn_iva ?? ""));
-        fd.append("cn_total", String(data.cn_total ?? ""));
-        fd.append("acc_valor_bruto", String(data.acc_valor_bruto ?? ""));
-        fd.append("acc_iva", String(data.acc_iva ?? ""));
-        fd.append("acc_total", String(data.acc_total ?? ""));
+        fd.append("cn_valor_bruto", String(cnValorBrutoNum));
+        fd.append("cn_iva", String(cnIvaNum));              // 👈 IVA real
+        fd.append("cn_total", String(cnTotalNum));
+        fd.append("acc_valor_bruto", String(accValorBrutoNum));
+        fd.append("acc_iva", String(accIvaNum));            // 👈 IVA real
+        fd.append("acc_total", String(accTotalNum));
         fd.append("tot_valor_moto", String(data.tot_valor_moto ?? ""));
         fd.append("tot_soat", String(data.tot_soat ?? ""));
         fd.append("tot_matricula", String(data.tot_matricula ?? ""));
         fd.append("tot_impuestos", String(data.tot_impuestos ?? ""));
-        fd.append("tot_seguros_accesorios", String(data.tot_seguros_accesorios ?? ""));
+        fd.append(
+            "tot_seguros_accesorios",
+            String(data.tot_seguros_accesorios ?? "")
+        );
         fd.append("tot_general", String(data.tot_general ?? ""));
 
         registrarSolicitud(fd, {
             onSuccess: (resp) => {
                 const texto = Array.isArray(resp?.message)
                     ? resp.message.join("\n")
-                    : resp?.message ?? "Solicitud de facturación registrada correctamente";
+                    : resp?.message ||
+                      "Solicitud de facturación registrada correctamente";
                 Swal.fire({
                     icon: "success",
                     title: "Solicitud registrada",
@@ -248,48 +399,28 @@ const SolicitarFacturacionPage: React.FC = () => {
         });
     };
 
-    if (isLoading) {
-        return (
-            <main className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-                <div className="max-w-md w-full rounded-2xl bg-white border border-slate-200 shadow-md p-6 text-center space-y-3">
-                    <div className="loader mx-auto mb-2" />
-                    <h2 className="font-semibold text-slate-800 text-lg">
-                        Cargando solicitud…
-                    </h2>
-                    <p className="text-sm text-slate-500">
-                        Estamos obteniendo la información de la cotización.
-                    </p>
-                </div>
-            </main>
-        );
-    }
-    if (error || !data) {
-        return (
-            <main className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-                <div className="max-w-md w-full rounded-2xl bg-white border border-rose-200 shadow-md p-6">
-                    <h2 className="font-semibold text-rose-700 text-lg mb-2">
-                        No se encontró la solicitud
-                    </h2>
-                    <p className="text-sm text-slate-600 mb-4">
-                        {error?.message || "Verifica el código e intenta nuevamente."}
-                    </p>
-                    <button
-                        className="btn btn-outline w-full"
-                        onClick={() => navigate(-1)}
-                    >
-                        ← Volver
-                    </button>
-                </div>
-            </main>
-        );
-    }
-
     const encabezadoCliente = (
         <>
             <div className="flex items-center gap-2 mb-1">
                 <span className="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 px-3 py-1 text-xs font-semibold border border-emerald-100">
                     Solicitud de facturación contado
                 </span>
+                {ivaLoading ? (
+                    <span className="text-[11px] text-slate-400">
+                        Cargando IVA…
+                    </span>
+                ) : ivaError ? (
+                    <span className="text-[11px] text-rose-500">
+                        Error al cargar IVA
+                    </span>
+                ) : (
+                    <span className="text-[11px] text-slate-500">
+                        IVA vigente:{" "}
+                        <span className="font-semibold">
+                            {ivaPorcentaje.toFixed(2)}%
+                        </span>
+                    </span>
+                )}
             </div>
             <div className="text-lg md:text-xl font-semibold mb-1 text-slate-900">
                 {safe(data.nombre_cliente)}
@@ -326,11 +457,17 @@ const SolicitarFacturacionPage: React.FC = () => {
                             <div className="text-lg font-semibold text-slate-900">
                                 Cotización #{data.cotizacion_id ?? "—"}
                             </div>
-                            <div className="inline-flex items-center gap-2 text-xs mt-1">
+                            <div className="inline-flex flex-wrap items-center gap-2 text-xs mt-1">
                                 <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                                    Código:{" "}
+                                    Código solicitud:{" "}
                                     <span className="font-medium">
                                         {data.codigo}
+                                    </span>
+                                </span>
+                                <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                                    ID solicitud:{" "}
+                                    <span className="font-medium">
+                                        {data.idPrimaria}
                                     </span>
                                 </span>
                             </div>
@@ -338,7 +475,54 @@ const SolicitarFacturacionPage: React.FC = () => {
                     </div>
                 </section>
 
-                {/* Tabla Moto */}
+                {/* Datos del cliente / solicitud */}
+                <section className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                    <Box title="Datos del cliente">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-slate-700">
+                            <div>
+                                <span className="font-semibold">
+                                    Fecha de nacimiento:
+                                </span>{" "}
+                                {fmtSoloFecha(data.fecha_nacimiento)}
+                            </div>
+                            <div>
+                                <span className="font-semibold">Ciudad:</span>{" "}
+                                {safe(data.ciudad_residencia)}
+                            </div>
+                            <div className="md:col-span-2">
+                                <span className="font-semibold">
+                                    Dirección:
+                                </span>{" "}
+                                {safe(data.direccion_residencia)}
+                            </div>
+                        </div>
+                    </Box>
+
+                    <Box title="Información de la solicitud">
+                        <div className="space-y-1 text-sm text-slate-700">
+                            <div>
+                                <span className="font-semibold">Creada:</span>{" "}
+                                {fmtFechaLarga(data.creado_en)}
+                            </div>
+                            <div>
+                                <span className="font-semibold">
+                                    Actualizada:
+                                </span>{" "}
+                                {fmtFechaLarga(data.actualizado_en)}
+                            </div>
+                            {data.observaciones && (
+                                <div className="mt-2 text-xs text-slate-500 bg-slate-50 rounded-lg p-2 border border-slate-100">
+                                    <span className="font-semibold text-slate-700">
+                                        Observaciones de la solicitud:{" "}
+                                    </span>
+                                    {data.observaciones}
+                                </div>
+                            )}
+                        </div>
+                    </Box>
+                </section>
+
+                {/* Detalle de la moto */}
                 <section className="rounded-2xl border border-slate-200 bg-white shadow-md overflow-hidden">
                     <div className="px-4 pt-4 pb-2 flex items-center justify-between">
                         <h3 className="text-sm md:text-base font-semibold text-slate-800">
@@ -346,6 +530,7 @@ const SolicitarFacturacionPage: React.FC = () => {
                         </h3>
                         <span className="text-xs text-slate-500">
                             Verifique que los datos coincidan con la cotización
+                            y la moto a facturar
                         </span>
                     </div>
                     <div className="border-t border-slate-100">
@@ -356,10 +541,11 @@ const SolicitarFacturacionPage: React.FC = () => {
                                 "# Motor",
                                 "# Chasis",
                                 "Color",
+                                "Placa",
                             ]}
                         />
                         <div className="grid grid-cols-12 text-xs md:text-sm">
-                            <div className="col-span-12 md:col-span-4 px-3 py-2 border-r border-slate-100">
+                            <div className="col-span-12 md:col-span-2 px-3 py-2 border-r border-slate-100">
                                 {safe(data.motocicleta)}
                             </div>
                             <div className="col-span-6 md:col-span-2 px-3 py-2 border-r border-slate-100">
@@ -371,8 +557,11 @@ const SolicitarFacturacionPage: React.FC = () => {
                             <div className="col-span-6 md:col-span-2 px-3 py-2 border-r border-slate-100">
                                 {safe(data.numero_chasis)}
                             </div>
-                            <div className="col-span-6 md:col-span-2 px-3 py-2">
+                            <div className="col-span-6 md:col-span-2 px-3 py-2 border-r border-slate-100">
                                 {safe(data.color)}
+                            </div>
+                            <div className="col-span-12 md:col-span-2 px-3 py-2">
+                                {safe(data.placa)}
                             </div>
                         </div>
                     </div>
@@ -387,8 +576,8 @@ const SolicitarFacturacionPage: React.FC = () => {
                         <div className="md:col-span-8 flex items-center justify-center">
                             <p className="text-xs md:text-sm text-slate-500 text-center px-4 py-6">
                                 Esta sección resume los valores de la negociación
-                                base del vehículo. Revise que el valor bruto, IVA y
-                                total coincidan con el acuerdo con el cliente.
+                                base del vehículo. Revise que el valor bruto, IVA
+                                y total coincidan con el acuerdo con el cliente.
                             </p>
                         </div>
                         <div className="md:col-span-4 border-t md:border-t-0 md:border-l border-slate-200 rounded-b-2xl md:rounded-b-none md:rounded-r-2xl overflow-hidden">
@@ -404,15 +593,19 @@ const SolicitarFacturacionPage: React.FC = () => {
                                 cols={[
                                     "Valor bruto:",
                                     <span className="font-semibold">
-                                        {fmtCOP(data.cn_valor_bruto)}
+                                        {fmtCOP(cnValorBrutoNum)}
                                     </span>,
                                 ]}
                             />
                             <Row
                                 cols={[
-                                    "IVA:",
+                                    `IVA${
+                                        ivaPorcentaje > 0
+                                            ? ` (${ivaPorcentaje.toFixed(2)}%)`
+                                            : ""
+                                    }:`,
                                     <span className="font-semibold">
-                                        {fmtCOP(data.cn_iva)}
+                                        {fmtCOP(cnIvaNum)}
                                     </span>,
                                 ]}
                             />
@@ -420,7 +613,7 @@ const SolicitarFacturacionPage: React.FC = () => {
                                 cols={[
                                     "Total:",
                                     <span className="font-semibold text-emerald-600">
-                                        {fmtCOP(data.cn_total)}
+                                        {fmtCOP(cnTotalNum)}
                                     </span>,
                                 ]}
                             />
@@ -435,7 +628,7 @@ const SolicitarFacturacionPage: React.FC = () => {
                             <div className="flex items-center justify-between text-xs text-slate-500">
                                 <span>Valor accesorios (bruto)</span>
                                 <span className="font-semibold text-slate-800">
-                                    {fmtCOP(data.acc_valor_bruto)} COP
+                                    {fmtCOP(accValorBrutoNum)} COP
                                 </span>
                             </div>
                             <div className="mt-2 rounded-lg border border-slate-200 overflow-hidden">
@@ -443,15 +636,21 @@ const SolicitarFacturacionPage: React.FC = () => {
                                     cols={[
                                         "Valor bruto:",
                                         <span className="font-semibold">
-                                            {fmtCOP(data.acc_valor_bruto)}
+                                            {fmtCOP(accValorBrutoNum)}
                                         </span>,
                                     ]}
                                 />
                                 <Row
                                     cols={[
-                                        "IVA:",
+                                        `IVA${
+                                            ivaPorcentaje > 0
+                                                ? ` (${ivaPorcentaje.toFixed(
+                                                      2
+                                                  )}%)`
+                                                : ""
+                                        }:`,
                                         <span className="font-semibold">
-                                            {fmtCOP(data.acc_iva)}
+                                            {fmtCOP(accIvaNum)}
                                         </span>,
                                     ]}
                                 />
@@ -459,7 +658,7 @@ const SolicitarFacturacionPage: React.FC = () => {
                                     cols={[
                                         "Total:",
                                         <span className="font-semibold text-emerald-600">
-                                            {fmtCOP(data.acc_total)}
+                                            {fmtCOP(accTotalNum)}
                                         </span>,
                                     ]}
                                 />
@@ -506,7 +705,9 @@ const SolicitarFacturacionPage: React.FC = () => {
                                     cols={[
                                         "Seguros y accesorios:",
                                         <span className="font-semibold">
-                                            {fmtCOP(data.tot_seguros_accesorios)}
+                                            {fmtCOP(
+                                                data.tot_seguros_accesorios
+                                            )}
                                         </span>,
                                     ]}
                                 />
@@ -528,7 +729,7 @@ const SolicitarFacturacionPage: React.FC = () => {
                     </Box>
                 </div>
 
-                {/* Formulario (alineado y responsive) */}
+                {/* Formulario */}
                 <section className="rounded-2xl border border-slate-200 bg-white shadow-md p-4 md:p-6 lg:p-7">
                     <div className="mb-6 text-center space-y-1">
                         <h3 className="text-lg md:text-xl font-semibold text-slate-900">
@@ -544,112 +745,73 @@ const SolicitarFacturacionPage: React.FC = () => {
                     </div>
 
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                        {/* Dos columnas en md+ */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                             {/* Columna izquierda */}
                             <div className="space-y-4">
-                                {/* Documentos */}
-                                <div className="form-control flex flex-col">
-                                    <label className="label">
-                                        <span className="label-text font-medium text-slate-700">
-                                            Documentos{" "}
-                                            <span className="text-error">*</span>
-                                        </span>
-                                    </label>
-                                    <select
-                                        className={`select select-bordered bg-slate-50 ${
-                                            errors.documentos
-                                                ? "select-error"
-                                                : ""
-                                        }`}
-                                        {...register("documentos", {
-                                            required: "Requerido",
-                                        })}
-                                    >
-                                        <option value="Si">Si</option>
-                                        <option value="No">No</option>
-                                    </select>
-                                    {errors.documentos && (
-                                        <p className="text-xs text-error mt-1">
-                                            {errors.documentos.message}
-                                        </p>
-                                    )}
-                                    <p className="text-[11px] text-slate-500 mt-1">
+                                {/* Documentos con FormSelect */}
+                                <div className="space-y-1">
+                                    <FormSelect<FormValues>
+                                        name="documentos"
+                                        label="Documentos"
+                                        control={control}
+                                        options={DOC_OPTS}
+                                        rules={{ required: "Requerido" }}
+                                    />
+                                    <p className="text-[11px] text-slate-500">
                                         Indica si se entregan todos los
                                         documentos requeridos para la
                                         facturación.
                                     </p>
                                 </div>
 
-                                {/* Recibo de pago */}
-                                <div className="form-control flex flex-col">
-                                    <label className="label">
-                                        <span className="label-text font-medium text-slate-700">
-                                            Recibo de pago Nº{" "}
-                                            <span className="text-error">*</span>
-                                        </span>
-                                    </label>
-                                    <input
-                                        className={`input input-bordered bg-slate-50 ${
-                                            errors.reciboPago
-                                                ? "input-error"
-                                                : ""
-                                        }`}
-                                        placeholder="Digite el número de recibo de pago"
-                                        {...register("reciboPago", {
-                                            required: "Requerido",
-                                            minLength: {
-                                                value: 3,
-                                                message:
-                                                    "Mínimo 3 caracteres",
-                                            },
-                                            maxLength: {
-                                                value: 40,
-                                                message:
-                                                    "Máximo 40 caracteres",
-                                            },
-                                        })}
-                                    />
-                                    {errors.reciboPago && (
-                                        <p className="text-xs text-error mt-1">
-                                            {errors.reciboPago.message}
-                                        </p>
-                                    )}
-                                </div>
+                                {/* Recibo de pago (FormInput) */}
+                                <FormInput
+                                    name="reciboPago"
+                                    label="Recibo de pago"
+                                    control={control}
+                                    placeholder="Digite el número de recibo de pago"
+                                    rules={{
+                                        required: "Requerido",
+                                        minLength: {
+                                            value: 3,
+                                            message: "Mínimo 3 caracteres",
+                                        },
+                                        maxLength: {
+                                            value: 40,
+                                            message: "Máximo 40 caracteres",
+                                        },
+                                    }}
+                                />
 
-                                {/* Saldo contraentrega */}
-                                <div className="form-control flex flex-col">
-                                    <label className="label">
-                                        <span className="label-text font-medium text-slate-700">
-                                            Saldo contraentrega
-                                        </span>
-                                    </label>
-                                    <input
-                                        className="input input-bordered bg-slate-50"
+                                {/* Saldo contraentrega (FormInput + texto debajo) */}
+                                <div className="space-y-1">
+                                    <FormInput
+                                        name="saldoContraentrega"
+                                        label="Saldo contraentrega"
+                                        control={control}
                                         placeholder="0"
-                                        {...register("saldoContraentrega", {
-                                            validate: (v) =>
-                                                !v ||
-                                                /^\d+$/.test(v.trim()) ||
-                                                "Solo números enteros",
-                                        })}
+                                        rules={{
+                                            validate: (v) => {
+                                                const str =
+                                                    typeof v === "string"
+                                                        ? v
+                                                        : "";
+                                                return (
+                                                    !str ||
+                                                    /^\d+$/.test(str.trim()) ||
+                                                    "Solo números enteros"
+                                                );
+                                            },
+                                        }}
                                     />
-                                    {errors.saldoContraentrega && (
-                                        <p className="text-xs text-error mt-1">
-                                            {
-                                                errors.saldoContraentrega
-                                                    .message as string
-                                            }
-                                        </p>
-                                    )}
-                                    <p className="text-[11px] text-slate-500 mt-1">
+                                    <p className="text-[11px] text-slate-500">
                                         Si aplica, indica el valor pendiente que
                                         el cliente cancelará al momento de la
                                         entrega.
                                     </p>
                                 </div>
 
-                                {/* Manifiesto (requerido si Documentos = Si) */}
+                                {/* Manifiesto (file) */}
                                 <div className="form-control flex flex-col">
                                     <label className="label">
                                         <span className="label-text font-medium text-slate-700">
@@ -685,9 +847,34 @@ const SolicitarFacturacionPage: React.FC = () => {
                                             }
                                         </p>
                                     )}
+
+                                    {/* 👇 NUEVO: previsualización Manifiesto */}
+                                    {manifiestoFiles?.[0] && (
+                                        <div className="mt-2 text-xs text-slate-600">
+                                            <p className="font-medium">
+                                                Archivo seleccionado:{" "}
+                                                {manifiestoFiles[0].name}
+                                            </p>
+                                            {manifiestoPreviewUrl ? (
+                                                <div className="mt-2 border rounded-lg overflow-hidden max-h-64 bg-slate-50">
+                                                    <img
+                                                        src={manifiestoPreviewUrl}
+                                                        alt="Vista previa del manifiesto"
+                                                        className="w-full object-contain max-h-64"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <p className="text-[11px] text-slate-500 mt-1">
+                                                    Vista previa disponible solo para imágenes
+                                                    (JPG, JPEG, PNG). Para PDF se mostrará
+                                                    únicamente el nombre del archivo.
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
-                                {/* Observaciones */}
+                                {/* Observaciones (textarea, sin FormInput) */}
                                 <div className="form-control flex flex-col">
                                     <label className="label">
                                         <span className="label-text font-medium text-slate-700">
@@ -696,7 +883,7 @@ const SolicitarFacturacionPage: React.FC = () => {
                                         </span>
                                     </label>
                                     <textarea
-                                        className={`textarea textarea-bordered bg-slate-50 min-h-28 ${
+                                        className={`textarea w-full textarea-bordered bg-slate-50 min-h-28 ${
                                             errors.observaciones
                                                 ? "textarea-error"
                                                 : ""
@@ -721,89 +908,56 @@ const SolicitarFacturacionPage: React.FC = () => {
 
                             {/* Columna derecha */}
                             <div className="space-y-4">
-                                {/* Distribuidora (dinámico con hook) */}
-                                <div className="form-control flex flex-col">
-                                    <label className="label">
-                                        <span className="label-text font-medium text-slate-700">
-                                            Distribuidora
-                                        </span>
-                                    </label>
-                                    <select
-                                        className="select select-bordered bg-slate-50"
+                                {/* Distribuidora (ahora con FormSelect) */}
+                                <div className="space-y-1">
+                                    <FormSelect<FormValues>
+                                        name="distribuidora"
+                                        label="Distribuidora"
+                                        control={control}
+                                        options={DIST_OPTS}
                                         disabled={loadingDists}
-                                        {...register("distribuidora")}
-                                        value={distSlugSelected ?? ""}
-                                        onChange={(e) => {
-                                            // mantener integración con react-hook-form
-                                            const event = {
-                                                target: {
-                                                    name: "distribuidora",
-                                                    value: e.target.value,
-                                                },
-                                            } as any;
-                                            // @ts-ignore
-                                            register("distribuidora").onChange(
-                                                event
-                                            );
-                                        }}
-                                    >
-                                        {DIST_OPTS.map((opt) => (
-                                            <option
-                                                key={opt.value || "default"}
-                                                value={opt.value}
-                                            >
-                                                {opt.label}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        loading={loadingDists}
+                                    />
                                     {loadingDists && (
-                                        <p className="text-xs text-slate-500 mt-1">
+                                        <p className="text-xs text-slate-500">
                                             Cargando distribuidoras…
                                         </p>
                                     )}
-                                    <p className="text-[11px] text-slate-500 mt-1">
+                                    <p className="text-[11px] text-slate-500">
                                         Selecciona la distribuidora asociada a
                                         esta venta, si aplica.
                                     </p>
                                 </div>
 
-                                {/* Descuento a autorizar */}
-                                <div className="form-control flex flex-col">
-                                    <label className="label">
-                                        <span className="label-text font-medium text-slate-700">
-                                            Descuento a autorizar
-                                        </span>
-                                    </label>
-                                    <input
-                                        className={`input input-bordered bg-slate-50 ${
-                                            errors.descuentoAut
-                                                ? "input-error"
-                                                : ""
-                                        }`}
+                                {/* Descuento a autorizar (FormInput + texto debajo) */}
+                                <div className="space-y-1">
+                                    <FormInput
+                                        name="descuentoAut"
+                                        label="Descuento a autorizar"
+                                        control={control}
                                         placeholder="0"
-                                        {...register("descuentoAut", {
-                                            validate: (v) =>
-                                                !v ||
-                                                /^\d+$/.test(v.trim()) ||
-                                                "Solo números enteros",
-                                        })}
+                                        rules={{
+                                            validate: (v) => {
+                                                const str =
+                                                    typeof v === "string"
+                                                        ? v
+                                                        : "";
+                                                return (
+                                                    !str ||
+                                                    /^\d+$/.test(str.trim()) ||
+                                                    "Solo números enteros"
+                                                );
+                                            },
+                                        }}
                                     />
-                                    {errors.descuentoAut && (
-                                        <p className="text-xs text-error mt-1">
-                                            {
-                                                errors.descuentoAut
-                                                    .message as string
-                                            }
-                                        </p>
-                                    )}
-                                    <p className="text-[11px] text-slate-500 mt-1">
+                                    <p className="text-[11px] text-slate-500">
                                         Si existe un descuento especial,
                                         especifícalo aquí para registro de
                                         facturación.
                                     </p>
                                 </div>
 
-                                {/* Copia de la cédula (requerido si Documentos = Si) */}
+                                {/* Copia de la cédula (file) */}
                                 <div className="form-control flex flex-col ">
                                     <label className="label">
                                         <span className="label-text font-medium text-slate-700">
@@ -836,6 +990,31 @@ const SolicitarFacturacionPage: React.FC = () => {
                                             {errors.cedulaFile.message as string}
                                         </p>
                                     )}
+
+                                    {/* 👇 NUEVO: previsualización Cédula */}
+                                    {cedulaFiles?.[0] && (
+                                        <div className="mt-2 text-xs text-slate-600">
+                                            <p className="font-medium">
+                                                Archivo seleccionado:{" "}
+                                                {cedulaFiles[0].name}
+                                            </p>
+                                            {cedulaPreviewUrl ? (
+                                                <div className="mt-2 border rounded-lg overflow-hidden max-h-64 bg-slate-50">
+                                                    <img
+                                                        src={cedulaPreviewUrl}
+                                                        alt="Vista previa de la cédula"
+                                                        className="w-full object-contain max-h-64"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <p className="text-[11px] text-slate-500 mt-1">
+                                                    Vista previa disponible solo para imágenes
+                                                    (JPG, JPEG, PNG). Para PDF se mostrará
+                                                    únicamente el nombre del archivo.
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -852,7 +1031,9 @@ const SolicitarFacturacionPage: React.FC = () => {
                             <button
                                 type="submit"
                                 className="btn btn-success bg-emerald-600 hover:bg-emerald-700 border-none text-white px-6 order-1 md:order-2"
-                                disabled={isSubmitting || isPending || loadingDists}
+                                disabled={
+                                    isSubmitting || isPending || loadingDists
+                                }
                             >
                                 {isSubmitting || isPending
                                     ? "Procesando…"
