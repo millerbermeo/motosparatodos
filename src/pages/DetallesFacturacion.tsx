@@ -4,7 +4,6 @@ import { useParams, Link } from "react-router-dom";
 import { useCotizacionFullById } from "../services/fullServices";
 import DocumentosSolicitud from "../features/solicitudes/DocumentosSolicitud";
 import { PDFDownloadLink } from "@react-pdf/renderer";
-import SolicitudFacturaPDF from "../features/creditos/pdf/SolicitudFacturaPDF";
 import { useIvaDecimal } from "../services/ivaServices";
 
 // Hooks del servicio de solicitudes
@@ -17,6 +16,7 @@ import Swal from "sweetalert2";
 
 // 🔹 NUEVO: panel de descuentos / contraentrega
 import DescuentosContraentregaPanel from "../shared/components/DescuentosContraentregaPanel";
+import SolicitudFacturaPDF2 from "../features/creditos/pdf/SolicitudFacturaPDF2";
 
 type Num = number | undefined | null;
 
@@ -30,17 +30,17 @@ const toNum = (v: unknown): number | undefined => {
 const fmtCOP = (v?: Num) =>
   typeof v === "number" && Number.isFinite(v)
     ? new Intl.NumberFormat("es-CO", {
-        style: "currency",
-        currency: "COP",
-        maximumFractionDigits: 0,
-      }).format(v)
+      style: "currency",
+      currency: "COP",
+      maximumFractionDigits: 0,
+    }).format(v)
     : v === 0
-    ? new Intl.NumberFormat("es-CO", {
+      ? new Intl.NumberFormat("es-CO", {
         style: "currency",
         currency: "COP",
         maximumFractionDigits: 0,
       }).format(0)
-    : "—";
+      : "—";
 
 const pick = <T,>(...vals: (T | undefined | null | "")[]): T | undefined => {
   for (const v of vals) {
@@ -71,9 +71,8 @@ const RowRight: React.FC<{
   <div className="px-5 py-3 grid grid-cols-12 items-center text-sm">
     <div className="col-span-8 sm:col-span-10 text-slate-700">{label}</div>
     <div
-      className={`col-span-4 sm:col-span-2 text-right ${
-        bold ? "font-semibold text-slate-900" : "font-medium text-slate-800"
-      }`}
+      className={`col-span-4 sm:col-span-2 text-right ${bold ? "font-semibold text-slate-900" : "font-medium text-slate-800"
+        }`}
     >
       {badge ? <span className={badge}>{value}</span> : value}
     </div>
@@ -278,7 +277,7 @@ const DetallesFacturacion: React.FC = () => {
   const acc_total_accesorios =
     toNum(sol?.acc_total) ??
     (typeof accesorios_bruto === "number" &&
-    typeof acc_iva_accesorios === "number"
+      typeof acc_iva_accesorios === "number"
       ? accesorios_bruto + acc_iva_accesorios
       : accesorios_bruto);
 
@@ -705,11 +704,10 @@ const DetallesFacturacion: React.FC = () => {
                       href={cedulaUrlFinal ?? "#"}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`btn btn-xs border ${
-                        cedulaUrlFinal
-                          ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
-                          : "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed"
-                      }`}
+                      className={`btn btn-xs border ${cedulaUrlFinal
+                        ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+                        : "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed"
+                        }`}
                     >
                       Cédula {cedulaUrlFinal ? "" : "(no disponible)"}
                     </a>
@@ -717,11 +715,10 @@ const DetallesFacturacion: React.FC = () => {
                       href={manifiestoUrlFinal ?? "#"}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`btn btn-xs border ${
-                        manifiestoUrlFinal
-                          ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
-                          : "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed"
-                      }`}
+                      className={`btn btn-xs border ${manifiestoUrlFinal
+                        ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+                        : "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed"
+                        }`}
                     >
                       Manifiesto {manifiestoUrlFinal ? "" : "(no disponible)"}
                     </a>
@@ -729,11 +726,10 @@ const DetallesFacturacion: React.FC = () => {
                       href={facturaUrlFinal ?? "#"}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`btn btn-xs border ${
-                        facturaUrlFinal
-                          ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
-                          : "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed"
-                      }`}
+                      className={`btn btn-xs border ${facturaUrlFinal
+                        ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+                        : "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed"
+                        }`}
                     >
                       Factura {facturaUrlFinal ? "" : "(no disponible)"}
                     </a>
@@ -872,49 +868,56 @@ const DetallesFacturacion: React.FC = () => {
                 <PDFDownloadLink
                   fileName={`solicitud_factura_${codigoSolicitud}.pdf`}
                   document={
-                    <SolicitudFacturaPDF
-                      codigoFactura={codigoSolicitud}
-                      codigoCredito={cred?.codigo_credito ?? "NR"}
+                    <SolicitudFacturaPDF2
+                      // ENCABEZADO
+                      codigoFactura={codigoSolicitud || ""}
+                      codigoCredito={cred?.codigo_credito ?? ""}
                       fecha={fmtDate(fechaCreacion)}
-                      agencia={cot?.canal_contacto ?? "agencia"}
-                      cedula={clienteDocumento}
-                      nombre={clienteNombre}
-                      telefono={clienteTelefono}
+                      agencia={cot?.canal_contacto ?? ""}
+                      logoDataUrl="/motomax.png"
+                      // DEUDOR
+                      cedula={clienteDocumento || ""}
+                      nombre={clienteNombre || ""}
+                      telefono={clienteTelefono || ""}
                       direccion={
                         cot?.direccion_residencia ??
                         sol?.direccion_residencia ??
-                        null
+                        ""
                       }
-                      ciudad={
-                        cot?.ciudad_residencia ??
-                        sol?.ciudad_residencia ??
-                        null
+
+                      // DETALLE DE LA VENTA
+                      reciboPago={
+                        numeroReciboSolicitud ??
+                        (cot as any)?.numero_recibo ??
+                        ""
                       }
-                      estadoCivil={(cot as any)?.estado_civil ?? null}
-                      empresa={(cot as any)?.empresa ?? null}
-                      ocupacion={(cot as any)?.ocupacion ?? null}
-                      personasACargo={(cot as any)?.personas_a_cargo ?? null}
-                      valorArriendo={(cot as any)?.valor_arriendo ?? null}
-                      fincaRaiz={(cot as any)?.finca_raiz ?? null}
-                      inmueble={(cot as any)?.inmueble ?? null}
-                      tipoVivienda={(cot as any)?.vivienda ?? null}
-                      reciboPago={(cot as any)?.numero_recibo ?? null}
-                      motocicleta={marcaLinea}
-                      modelo={pick<string>(sol?.modelo, cot?.modelo_a) ?? "NR"}
-                      numeroMotor={numeroMotor}
-                      numeroChasis={numeroChasis}
-                      color={color}
+                      motocicleta={marcaLinea || ""}
+                      modelo={pick<string>(sol?.modelo, cot?.modelo_a) ?? ""}
+                      numeroMotor={numeroMotor || ""}
+                      numeroChasis={numeroChasis || ""}
+                      color={color || ""}
+
+                      // CONDICIONES DEL NEGOCIO
                       cn_valor_moto={cn_total}
+                      cn_descuento={0}            // si luego tienes el campo real, lo cambias aquí
+                      cn_desc_auto={0}           // idem: descuento autorizado por jefe de zona
+                      cn_valorMotoDesc={cn_total}
                       cn_valorBruto={cn_bruto}
                       cn_iva={cn_iva}
                       cn_total={cn_total}
+
+                      // DOCUMENTOS
                       soat={soat}
                       matricula={matricula}
                       impuestos={impuestos}
+
+                      // ACCESORIOS / SEGUROS
                       accesorios_bruto={accesorios_bruto}
                       accesorios_iva={acc_iva_accesorios}
                       accesorios_total={acc_total_accesorios}
                       seguros_total={seguros_total}
+
+                      // TOTAL GENERAL
                       totalGeneral={totalGeneral}
                     />
                   }
@@ -925,6 +928,7 @@ const DetallesFacturacion: React.FC = () => {
                     </button>
                   )}
                 </PDFDownloadLink>
+
               </div>
             </section>
           </>

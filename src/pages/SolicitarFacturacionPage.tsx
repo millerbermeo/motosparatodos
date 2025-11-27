@@ -337,6 +337,9 @@ const SolicitarFacturacionPage: React.FC = () => {
         fd.append("entrega_autorizada", "No");
         fd.append("observaciones", values.observaciones || "");
         fd.append("is_act", "2");
+        fd.append("descuento_solicitado_a", values.descuentoAut || "0");
+fd.append("saldo_contraentrega_a", values.saldoContraentrega || "0");
+
 
         if (values.cedulaFile?.[0]) fd.append("cedula", values.cedulaFile[0]);
         if (values.manifiestoFile?.[0]) fd.append("manifiesto", values.manifiestoFile[0]);
