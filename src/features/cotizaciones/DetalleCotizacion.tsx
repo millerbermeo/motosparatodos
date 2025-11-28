@@ -505,6 +505,21 @@ const DetalleCotizacion: React.FC = () => {
 
   const moto = tab === 'A' ? q?.motoA : q?.motoB;
 
+  // 👇 NUEVO: determinar si la moto seleccionada tiene cuotas
+  const hasCuotas = React.useMemo(() => {
+    if (!moto) return false;
+    const c = moto.cuotas || ({} as Cuotas);
+    return (
+      (c.inicial ?? 0) > 0 ||
+      typeof c.meses6 === 'number' ||
+      typeof c.meses12 === 'number' ||
+      typeof c.meses18 === 'number' ||
+      typeof c.meses24 === 'number' ||
+      typeof c.meses30 === 'number' ||
+      typeof c.meses36 === 'number'
+    );
+  }, [moto]);
+
   // Loader global
   const { show, hide } = useLoaderStore();
   React.useEffect(() => {
@@ -804,22 +819,26 @@ const DetalleCotizacion: React.FC = () => {
           </div>
         </section>
 
-        {/* Cuotas (opcional – oculto si no quieres) */}
+        {/* Cuotas – solo de la moto seleccionada en el tab */}
+        {moto && hasCuotas && (
+          <section className="card bg-base-100 border border-base-300/60 shadow-sm rounded-2xl">
+            <div className="card-body">
+              <div className="flex items-center gap-2 mb-2">
+                <Calculator className="w-5 h-5" />
+                <h2 className="card-title text-lg">
+                  Cuotas {q.motoB ? `(${tab})` : ''}
+                </h2>
+              </div>
 
-{moto && moto.cuotas.inicial > 0 && (
-
-          <>
-             <section className="card bg-base-100 border border-base-300/60  shadow-sm rounded-2xl">
-          <div className="card-body">
-            <div className="flex items-center gap-2 mb-2">
-              <Calculator className="w-5 h-5" />
-              <h2 className="card-title text-lg">Cuotas {q.motoB ? `(${tab})` : ''}</h2>
-            </div>
-
-            {moto ? (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-3">
-                  <StatTile label="Cuota inicial" value={fmtCOP(moto.cuotas.inicial)} badge="Inicial" />
+                  {typeof moto.cuotas.inicial === 'number' && moto.cuotas.inicial > 0 && (
+                    <StatTile
+                      label="Cuota inicial"
+                      value={fmtCOP(moto.cuotas.inicial)}
+                      badge="Inicial"
+                    />
+                  )}
                   {renderCuotaTile('6 cuotas', moto.cuotas.meses6)}
                   {renderCuotaTile('12 cuotas', moto.cuotas.meses12)}
                   {renderCuotaTile('18 cuotas', moto.cuotas.meses18)}
@@ -847,14 +866,9 @@ const DetalleCotizacion: React.FC = () => {
                   </table>
                 </div>
               </>
-            ) : (
-              <div className="text-sm opacity-70">No hay cuotas para la {tab === 'A' ? 'Moto A' : 'Moto B'}.</div>
-            )}
-          </div>
-        </section>
-          </>
+            </div>
+          </section>
         )}
-     
 
         {/* Actividad reciente */}
         <section className="card bg-base-100 border border-base-300/60 shadow-sm rounded-2xl">
@@ -1026,7 +1040,7 @@ const InfoPill: React.FC<{ icon: React.ReactNode; label: string; value: React.Re
   <div className="flex items-center gap-2 bg-[#F5F5F5] rounded-lg px-3 py-2">
     <span className="opacity-80">{icon}</span>
     <div>
-      <div className="text-xs opacity-60">{label}</div>
+      <div className="text-xs.opacity-60">{label}</div>
       <div className="text-sm font-medium">{value}</div>
     </div>
   </div>

@@ -422,7 +422,7 @@ const SolicitarFacturacionPage: React.FC = () => {
         <>
             <div className="flex items-center gap-2 mb-1">
                 <span className="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 px-3 py-1 text-xs font-semibold border border-emerald-100">
-                    Solicitud de facturación contado
+                    Solicitud de facturación
                 </span>
                 {ivaLoading ? (
                     <span className="text-[11px] text-slate-400">
@@ -452,10 +452,12 @@ const SolicitarFacturacionPage: React.FC = () => {
                     </span>
                 </div>
                 {data.email ? <div>{data.email}</div> : null}
+
+{/* 
                 <div>
                     <span className="font-semibold">Teléfono:</span>{" "}
                     {safe(data.telefono)}
-                </div>
+                </div> */}
             </div>
         </>
     );
