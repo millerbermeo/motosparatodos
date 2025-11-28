@@ -160,14 +160,14 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
     [data]
   );
 
-  const empresaInfo = useMemo(
-    () => ({
-      nombre: data?.empresa?.nombre ?? "Mi empresa",
-      ciudad: data?.empresa?.ciudad ?? "Cali",
-      nit: data?.empresa?.nit ?? "",
-    }),
-    [data]
-  );
+  // const empresaInfo = useMemo(
+  //   () => ({
+  //     nombre: data?.empresa?.nombre ?? "Mi empresa",
+  //     ciudad: data?.empresa?.ciudad ?? "Cali",
+  //     nit: data?.empresa?.nit ?? "",
+  //   }),
+  //   [data]
+  // );
 
   const tasaMensualPorcentaje = useMemo(() => {
     const raw =
@@ -285,7 +285,11 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
                       <TablaAmortizacionPDFDoc
                         credito={creditoTabla}
                         tasaMensualPorcentaje={tasaMensualPorcentaje}
-                        empresa={empresaInfo}
+                                   empresa={{
+                        nombre: 'VERIFICARTE AAA S.A.S',
+                        ciudad: 'Cali',
+                        nit: '901155548-8',
+                    }}
                         cliente={clienteInfo}
                         codigoPlan={String(codigo_credito)}
                         fechaPlan={fechaPlan}
