@@ -33,6 +33,37 @@ const btnGhost = `${btnBase} btn-ghost bg-base-200 text-base-content/70 hover:bg
 const btnActive = `${btnBase} btn-primary text-primary-content`;
 const btnEllipsis = "btn btn-xs rounded-xl min-w-8 h-8 px-3 bg-base-200 text-base-content/60 pointer-events-none";
 
+
+const normalizarTexto = (v: unknown): string =>
+  typeof v === "string" ? v.trim().toLowerCase() : "";
+
+const BadgeTipoPago: React.FC<{ v: unknown }> = ({ v }) => {
+  const t = normalizarTexto(v);
+
+  let classes = "badge badge-sm"; // base
+  let label = typeof v === "string" ? v : "—";
+
+  switch (t) {
+    case "contado":
+      classes += " badge-success";     // verde
+      break;
+    case "crédito de terceros":
+    case "credito de terceros":
+      classes += " badge-warning";     // amarillo
+      break;
+    case "crédito directo":
+    case "credito directo":
+      classes += " badge-info";        // azul
+      break;
+    default:
+      classes += " badge-ghost";       // gris para desconocidos
+      label = label || "Sin tipo";
+      break;
+  }
+
+  return <span className={classes}>{label}</span>;
+};
+
 /** Acepta boolean o 'Si'/'No' (case-insensitive) */
 const coerceBool = (v: unknown): boolean => {
   if (typeof v === "boolean") return v;
@@ -174,7 +205,9 @@ const TablaSolicitudes: React.FC = () => {
                 <td className="font-medium whitespace-nowrap">{(s as any).codigo ?? "—"}</td>
                 <td className="whitespace-nowrap">{(s as any).cliente ?? "—"}</td>
                 <td className="whitespace-nowrap">{(s as any).agencia ?? "—"}</td>
-                <td className="whitespace-nowrap">{(s as any).tipo ?? "—"}</td>
+<td className="whitespace-nowrap">
+  <BadgeTipoPago v={(s as any).tipo} />
+</td>
                 <td className="hidden lg:table-cell">{(s as any).numeroRecibo ?? "—"}</td>
                 <td className="hidden lg:table-cell">{(s as any).facturador ?? "—"}</td>
                 <td><BadgeSiNo v={(s as any).autorizado} /></td>

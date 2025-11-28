@@ -87,7 +87,7 @@ const DocumentosSolicitud: React.FC<Props> = ({
         </h3>
       </div>
 
-      <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-3 gap-4">
         <DownloadButton
           label="Descargar manifiesto"
           onClick={() => abrir(docs.manifiesto_url)}
@@ -100,12 +100,16 @@ const DocumentosSolicitud: React.FC<Props> = ({
           disabled={loading || !docs.cedula_url}
           hint={!docs.cedula_url ? "No disponible" : undefined}
         />
-             <DownloadButton
-          label="Descargar carta de aprobación"
-          onClick={() => abrir(docs.carta_url)}
-          disabled={loading || !docs.carta_url}
-          hint={!docs.carta_url ? "No disponible" : undefined}
-        />
+
+        {/* 👇 Carta: solo mostrar si SÍ hay documento */}
+        {docs.carta_url && (
+          <DownloadButton
+            label="Descargar carta de aprobación"
+            onClick={() => abrir(docs.carta_url)}
+            disabled={loading}
+          />
+        )}
+
         <DownloadButton
           label="Descargar factura"
           onClick={() => abrir(docs.factura_url)}

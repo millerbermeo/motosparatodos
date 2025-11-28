@@ -548,6 +548,15 @@ const DetallesFacturacion: React.FC = () => {
     });
   };
 
+    const metodoPagoTexto = (cot?.metodo_pago ?? "")
+    .toString()
+    .toLowerCase();
+
+  const esMetodoPagoCreditoTerceros =
+    metodoPagoTexto.includes("crédito de terceros") ||
+    metodoPagoTexto.includes("credito de terceros");
+
+
   return (
     <main className="min-h-screen w-full bg-slate-50">
       <header className="border-b border-slate-200 bg-white/70 backdrop-blur">
@@ -600,7 +609,7 @@ const DetallesFacturacion: React.FC = () => {
                       </span>
                     </div>
                     <div>
-                      <span className="font-semibold text-slate-700">
+                      <span className="font-semibold hidden text-slate-700">
                         Correo:
                       </span>{" "}
                       <span className="text-slate-600">
@@ -862,8 +871,8 @@ const DetallesFacturacion: React.FC = () => {
                       </a>
                     )}
 
-                    {/* Carta: mostramos botón solo si existe */}
-                    {cartaUrlFinal && (
+                         {/* Carta: SOLO si método de pago es Crédito de terceros */}
+                    {cartaUrlFinal && esMetodoPagoCreditoTerceros && (
                       <a
                         href={cartaUrlFinal}
                         target="_blank"
@@ -873,6 +882,7 @@ const DetallesFacturacion: React.FC = () => {
                         Carta
                       </a>
                     )}
+
                   </div>
                 </div>
 

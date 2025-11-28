@@ -126,10 +126,9 @@ const Row = ({ cols }: { cols: React.ReactNode[] }) => (
             <div
                 key={i}
                 className={`px-3 py-2 text-xs md:text-sm
-                    ${
-                        i === 0
-                            ? "col-span-6 md:col-span-6 font-medium text-slate-600"
-                            : "col-span-6 md:col-span-6 text-right text-slate-800"
+                    ${i === 0
+                        ? "col-span-6 md:col-span-6 font-medium text-slate-600"
+                        : "col-span-6 md:col-span-6 text-right text-slate-800"
                     }
                     border-r border-slate-100 last:border-r-0`}
             >
@@ -303,15 +302,15 @@ const SolicitarFacturacionPage: React.FC = () => {
         backendCnIvaNum !== null
             ? backendCnIvaNum
             : ivaPorcentaje > 0
-            ? Math.round(cnValorBrutoNum * ivaDecimal)
-            : 0;
+                ? Math.round(cnValorBrutoNum * ivaDecimal)
+                : 0;
 
     const accIvaNum =
         backendAccIvaNum !== null
             ? backendAccIvaNum
             : ivaPorcentaje > 0
-            ? Math.round(accValorBrutoNum * ivaDecimal)
-            : 0;
+                ? Math.round(accValorBrutoNum * ivaDecimal)
+                : 0;
 
     const cnTotalNum =
         data.cn_total !== null && data.cn_total !== undefined
@@ -325,6 +324,13 @@ const SolicitarFacturacionPage: React.FC = () => {
     // ========= Submit =========
     const onSubmit = async (values: FormValues) => {
         if (!data) return;
+
+        const esCreditoTerceros = values.esCreditoTerceros === true;
+
+        // según el switch, armamos el tipo de solicitud
+        const tipoSolicitud = esCreditoTerceros
+            ? "Credito de Terceros"
+            : "Contado";
 
         // Resolver nombre e ID reales desde el slug seleccionado
         const dist = values.distribuidora
@@ -343,7 +349,7 @@ const SolicitarFacturacionPage: React.FC = () => {
         fd.append("codigo_solicitud", codigo || "");
         fd.append("codigo_credito", "");
         fd.append("nombre_cliente", data.nombre_cliente || "");
-        fd.append("tipo_solicitud", "Contado");
+        fd.append("tipo_solicitud", tipoSolicitud);
         fd.append("numero_recibo", values.reciboPago || "");
         fd.append("resibo_pago", values.reciboPago || "");
         fd.append("facturador", "Sin facturador");
@@ -393,7 +399,7 @@ const SolicitarFacturacionPage: React.FC = () => {
                 const texto = Array.isArray(resp?.message)
                     ? resp.message.join("\n")
                     : resp?.message ||
-                      "Solicitud de facturación registrada correctamente";
+                    "Solicitud de facturación registrada correctamente";
                 Swal.fire({
                     icon: "success",
                     title: "Solicitud registrada",
@@ -453,7 +459,7 @@ const SolicitarFacturacionPage: React.FC = () => {
                 </div>
                 {data.email ? <div>{data.email}</div> : null}
 
-{/* 
+                {/* 
                 <div>
                     <span className="font-semibold">Teléfono:</span>{" "}
                     {safe(data.telefono)}
@@ -620,10 +626,9 @@ const SolicitarFacturacionPage: React.FC = () => {
                             />
                             <Row
                                 cols={[
-                                    `IVA${
-                                        ivaPorcentaje > 0
-                                            ? ` (${ivaPorcentaje.toFixed(2)}%)`
-                                            : ""
+                                    `IVA${ivaPorcentaje > 0
+                                        ? ` (${ivaPorcentaje.toFixed(2)}%)`
+                                        : ""
                                     }:`,
                                     <span className="font-semibold">
                                         {fmtCOP(cnIvaNum)}
@@ -663,12 +668,11 @@ const SolicitarFacturacionPage: React.FC = () => {
                                 />
                                 <Row
                                     cols={[
-                                        `IVA${
-                                            ivaPorcentaje > 0
-                                                ? ` (${ivaPorcentaje.toFixed(
-                                                      2
-                                                  )}%)`
-                                                : ""
+                                        `IVA${ivaPorcentaje > 0
+                                            ? ` (${ivaPorcentaje.toFixed(
+                                                2
+                                            )}%)`
+                                            : ""
                                         }:`,
                                         <span className="font-semibold">
                                             {fmtCOP(accIvaNum)}
@@ -860,11 +864,10 @@ const SolicitarFacturacionPage: React.FC = () => {
                                         </label>
                                         <input
                                             type="file"
-                                            className={`file-input file-input-bordered bg-slate-50 ${
-                                                errors.cartaFile
+                                            className={`file-input file-input-bordered bg-slate-50 ${errors.cartaFile
                                                     ? "file-input-error"
                                                     : ""
-                                            }`}
+                                                }`}
                                             accept=".pdf,.jpg,.jpeg,.png"
                                             {...register("cartaFile", {
                                                 validate: (files) =>
@@ -902,11 +905,10 @@ const SolicitarFacturacionPage: React.FC = () => {
                                     </label>
                                     <input
                                         type="file"
-                                        className={`file-input file-input-bordered bg-slate-50 ${
-                                            errors.manifiestoFile
+                                        className={`file-input file-input-bordered bg-slate-50 ${errors.manifiestoFile
                                                 ? "file-input-error"
                                                 : ""
-                                        }`}
+                                            }`}
                                         accept=".pdf,.jpg,.jpeg,.png"
                                         {...register("manifiestoFile", {
                                             validate: (files) =>
@@ -960,11 +962,10 @@ const SolicitarFacturacionPage: React.FC = () => {
                                         </span>
                                     </label>
                                     <textarea
-                                        className={`textarea w-full textarea-bordered bg-slate-50 min-h-28 ${
-                                            errors.observaciones
+                                        className={`textarea w-full textarea-bordered bg-slate-50 min-h-28 ${errors.observaciones
                                                 ? "textarea-error"
                                                 : ""
-                                        }`}
+                                            }`}
                                         placeholder="Incluye observaciones relevantes para el área de facturación"
                                         {...register("observaciones", {
                                             required: "Requerido",
@@ -1048,11 +1049,10 @@ const SolicitarFacturacionPage: React.FC = () => {
                                     </label>
                                     <input
                                         type="file"
-                                        className={`file-input file-input-bordered bg-slate-50 ${
-                                            errors.cedulaFile
+                                        className={`file-input file-input-bordered bg-slate-50 ${errors.cedulaFile
                                                 ? "file-input-error"
                                                 : ""
-                                        }`}
+                                            }`}
                                         accept=".pdf,.jpg,.jpeg,.png"
                                         {...register("cedulaFile", {
                                             validate: (files) =>
