@@ -805,7 +805,11 @@ const DetalleCotizacion: React.FC = () => {
         </section>
 
         {/* Cuotas (opcional – oculto si no quieres) */}
-        <section className="card bg-base-100 border border-base-300/60 hidden shadow-sm rounded-2xl">
+
+{moto && moto.cuotas.inicial > 0 && (
+
+          <>
+             <section className="card bg-base-100 border border-base-300/60  shadow-sm rounded-2xl">
           <div className="card-body">
             <div className="flex items-center gap-2 mb-2">
               <Calculator className="w-5 h-5" />
@@ -848,6 +852,9 @@ const DetalleCotizacion: React.FC = () => {
             )}
           </div>
         </section>
+          </>
+        )}
+     
 
         {/* Actividad reciente */}
         <section className="card bg-base-100 border border-base-300/60 shadow-sm rounded-2xl">

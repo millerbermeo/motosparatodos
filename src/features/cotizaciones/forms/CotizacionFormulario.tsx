@@ -18,8 +18,8 @@ type MetodoPago = "contado" | "credibike" | "terceros";
 
 const METODO_PAGO_LABEL: Record<MetodoPago, string> = {
     contado: "Contado",
-    credibike: "Crédito directo",
-    terceros: "Crédito de terceros",
+    credibike: "Credito directo",
+    terceros: "Credito de terceros",
 };
 
 const dateNotTodayOrFuture = (val: unknown): true | string => {
@@ -275,15 +275,15 @@ const CotizacionFormulario: React.FC = () => {
     const { data: motos1 } = useMotosPorMarca(selectedMarca1 || undefined);
     const { data: motos2 } = useMotosPorMarca(selectedMarca2 || undefined);
 
-    const motoOptions1: SelectOption[] = (motos1?.motos ?? []).map((m, index) => ({
-        value: String(index), // 👈 valor único
-        label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP - Modelo ${m.modelo ?? ""}`,
-    }));
+const motoOptions1: SelectOption[] = (motos1?.motos ?? []).map((m, index) => ({
+    value: String(index), // 👈 valor único
+    label: `${m.linea} - ${Number(m.precio_base).toLocaleString("es-CO")} COP - Modelo ${m.modelo ?? ""}`,
+}));
 
-    const motoOptions2: SelectOption[] = (motos2?.motos ?? []).map((m, index) => ({
-        value: String(index),
-        label: `${m.linea} – ${Number(m.precio_base).toLocaleString("es-CO")} COP Modelo ${m.modelo ?? ""}`,
-    }));
+const motoOptions2: SelectOption[] = (motos2?.motos ?? []).map((m, index) => ({
+    value: String(index),
+    label: `${m.linea} - ${Number(m.precio_base).toLocaleString("es-CO")} COP - Modelo ${m.modelo ?? ""}`,
+}));
 
 
 
@@ -688,258 +688,286 @@ const precioBase2 = React.useMemo(() => {
 
 
 
-    const onSubmit = (data: FormValues) => {
+ const onSubmit = (data: FormValues) => {
 
+  const unformatNumber = (v: string | number | null | undefined): string => {
+    if (v === null || v === undefined) return "";
+    return String(v).replace(/[^\d-]/g, "");
+  };
+  const toNumberSafe = (v: string | number | null | undefined): number => {
+    const raw = unformatNumber(v); return raw ? Number(raw) : 0;
+  };
+  const toNumberOrNullMoney = (v: string | number | null | undefined): number | null => {
+    const raw = unformatNumber(v); return raw ? Number(raw) : null;
+  };
 
-        const unformatNumber = (v: string | number | null | undefined): string => {
-            if (v === null || v === undefined) return "";
-            return String(v).replace(/[^\d-]/g, "");
-        };
-        const toNumberSafe = (v: string | number | null | undefined): number => {
-            const raw = unformatNumber(v); return raw ? Number(raw) : 0;
-        };
-        const toNumberOrNullMoney = (v: string | number | null | undefined): number | null => {
-            const raw = unformatNumber(v); return raw ? Number(raw) : null;
-        };
+  // Validaciones con SweetAlert2
+  const mustHaveMoto1 = showMotos && incluirMoto1;
+  const mustHaveMoto2 = showMotos && incluirMoto2;
 
-        // Validaciones con SweetAlert2 (moto A obligatoria; moto B opcional pero obligatoria si se selecciona)
-        const mustHaveMoto1 = showMotos && incluirMoto1; // Moto 1 es obligatoria si se está mostrando la sección de motos y está marcada
-        const mustHaveMoto2 = showMotos && incluirMoto2; // Moto 2 es opcional; si está marcada, se valida
+  if (mustHaveMoto1 && (!moto1Seleccionada || !Number.isFinite(precioBase1) || precioBase1 <= 0)) {
+    return warn(
+      "Falta información",
+      "La Moto 1 es obligatoria y debe tener un precio base válido; configúralo en el módulo de motos."
+    );
+  }
 
-        if (mustHaveMoto1 && (!moto1Seleccionada || !Number.isFinite(precioBase1) || precioBase1 <= 0)) {
-            return warn("Falta información", "La Moto 1 es obligatoria y debe tener un precio base válido; configúralo en el módulo de motos.");
-        }
+  if (mustHaveMoto2 && (!moto2Seleccionada || !Number.isFinite(precioBase2) || precioBase2 <= 0)) {
+    return warn(
+      "Falta información",
+      "Seleccionaste la Moto 2; también debe tener un precio base válido; configúralo en el módulo de motos."
+    );
+  }
 
-        if (mustHaveMoto2 && (!moto2Seleccionada || !Number.isFinite(precioBase2) || precioBase2 <= 0)) {
-            return warn("Falta información", "Seleccionaste la Moto 2; también debe tener un precio base válido; configúralo en el módulo de motos.");
-        }
+  if (!data.comentario || !data.comentario.trim()) {
+    return warn("Comentario obligatorio", "Debes ingresar un comentario.");
+  }
 
+  const accesorios1 = toNumberSafe(data.accesorios1);
+  const accesorios2 = toNumberSafe(data.accesorios2);
+  const otroSeguro1 = toNumberSafe(data.otroSeguro1);
+  const otroSeguro2 = toNumberSafe(data.otroSeguro2);
+  const descuento1 = toNumberSafe(data.descuento1);
+  const descuento2 = toNumberSafe(data.descuento2);
+  const cuotaInicial1Num = toNumberSafe(data.cuotaInicial1);
+  const cuotaInicial2Num = toNumberSafe(data.cuotaInicial2);
+  const marcacion1 = toNumberSafe(data.marcacion1);
+  const marcacion2 = toNumberSafe(data.marcacion2);
 
-        if (!data.comentario || !data.comentario.trim()) {
-            return warn("Comentario obligatorio", "Debes ingresar un comentario.");
-        }
+  const cuota_6_a = toNumberOrNullMoney(data.cuota_6_a);
+  const cuota_12_a = toNumberOrNullMoney(data.cuota_12_a);
+  const cuota_18_a = toNumberOrNullMoney(data.cuota_18_a);
+  const cuota_24_a = toNumberOrNullMoney(data.cuota_24_a);
+  const cuota_30_a = toNumberOrNullMoney(data.cuota_30_a);
+  const cuota_36_a = toNumberOrNullMoney(data.cuota_36_a);
 
+  const cuota_6_b = toNumberOrNullMoney(data.cuota_6_b);
+  const cuota_12_b = toNumberOrNullMoney(data.cuota_12_b);
+  const cuota_18_b = toNumberOrNullMoney(data.cuota_18_b);
+  const cuota_24_b = toNumberOrNullMoney(data.cuota_24_b);
+  const cuota_30_b = toNumberOrNullMoney(data.cuota_30_b);
+  const cuota_36_b = toNumberOrNullMoney(data.cuota_36_b);
 
-        const accesorios1 = toNumberSafe(data.accesorios1);
-        const accesorios2 = toNumberSafe(data.accesorios2);
-        const otroSeguro1 = toNumberSafe(data.otroSeguro1);
-        const otroSeguro2 = toNumberSafe(data.otroSeguro2);
-        // Mantengo estas dos líneas, aunque ya no se usan para el cálculo final:
-        // const precioDocumentos1 = toNumberSafe(data.precioDocumentos1);
-        // const precioDocumentos2 = toNumberSafe(data.precioDocumentos2);
-        const descuento1 = toNumberSafe(data.descuento1);
-        const descuento2 = toNumberSafe(data.descuento2);
-        const cuotaInicial1Num = toNumberSafe(data.cuotaInicial1);
-        const cuotaInicial2Num = toNumberSafe(data.cuotaInicial2);
-        const marcacion1 = toNumberSafe(data.marcacion1);
-        const marcacion2 = toNumberSafe(data.marcacion2);
+  const producto1Precio = toNumberSafe(data.producto1Precio);
+  const producto1CuotaInicial = toNumberSafe(data.producto1CuotaInicial);
+  const producto2Precio = toNumberSafe(data.producto2Precio);
+  const producto2CuotaInicial = toNumberSafe(data.producto2CuotaInicial);
 
-        const cuota_6_a = toNumberOrNullMoney(data.cuota_6_a);
-        const cuota_12_a = toNumberOrNullMoney(data.cuota_12_a);
-        const cuota_18_a = toNumberOrNullMoney(data.cuota_18_a);
-        const cuota_24_a = toNumberOrNullMoney(data.cuota_24_a);
-        const cuota_30_a = toNumberOrNullMoney(data.cuota_30_a);
-        const cuota_36_a = toNumberOrNullMoney(data.cuota_36_a);
+  const valorGarantiaA = toNumberSafe(data.valor_garantia_extendida_a);
+  const valorGarantiaB = toNumberSafe(data.valor_garantia_extendida_b);
 
-        const cuota_6_b = toNumberOrNullMoney(data.cuota_6_b);
-        const cuota_12_b = toNumberOrNullMoney(data.cuota_12_b);
-        const cuota_18_b = toNumberOrNullMoney(data.cuota_18_b);
-        const cuota_24_b = toNumberOrNullMoney(data.cuota_24_b);
-        const cuota_30_b = toNumberOrNullMoney(data.cuota_30_b);
-        const cuota_36_b = toNumberOrNullMoney(data.cuota_36_b);
+  const seg1 = (data.segurosIds1 ?? []).reduce(
+    (acc, id) => acc + findSeguroValor(String(id)),
+    0
+  );
+  const seg2 = (data.segurosIds2 ?? []).reduce(
+    (acc, id) => acc + findSeguroValor(String(id)),
+    0
+  );
 
-        const producto1Precio = toNumberSafe(data.producto1Precio);
-        const producto1CuotaInicial = toNumberSafe(data.producto1CuotaInicial);
-        const producto2Precio = toNumberSafe(data.producto2Precio);
-        const producto2CuotaInicial = toNumberSafe(data.producto2CuotaInicial);
+  // 🔴 AQUÍ EL CAMBIO: ahora incluye garantía extendida + extrasMoto1/2,
+  // igual que el cálculo visual de totalSinSeguros1/2.
+  const totalSinSeg1 = incluirMoto1
+    ? (
+        precioBase1 +
+        accesorios1 +
+        documentos1 +
+        marcacion1 -
+        descuento1 +
+        (data.garantiaExtendida1 !== "no" ? valorGarantiaA : 0) +
+        extrasMoto1
+      )
+    : 0;
 
-        const valorGarantiaA = toNumberSafe(data.valor_garantia_extendida_a);
-        const valorGarantiaB = toNumberSafe(data.valor_garantia_extendida_b);
+  const totalSinSeg2 = incluirMoto2
+    ? (
+        precioBase2 +
+        accesorios2 +
+        documentos2 +
+        marcacion2 -
+        descuento2 +
+        (data.garantiaExtendida2 !== "no" ? valorGarantiaB : 0) +
+        extrasMoto2
+      )
+    : 0;
 
+  const precioTotalA = incluirMoto1 ? (totalSinSeg1 + seg1 + otroSeguro1) : 0;
+  const precioTotalB = incluirMoto2 ? (totalSinSeg2 + seg2 + otroSeguro2) : 0;
 
-        const seg1 = (data.segurosIds1 ?? []).reduce((acc, id) => acc + findSeguroValor(String(id)), 0);
-        const seg2 = (data.segurosIds2 ?? []).reduce((acc, id) => acc + findSeguroValor(String(id)), 0);
+  const esFinanciado = data.metodoPago !== "contado";
 
-        const totalSinSeg1 = incluirMoto1
-            ? (precioBase1 + accesorios1 + documentos1 + marcacion1 - descuento1)
-            : 0;
+const lineaA_final = incluirMoto1
+  ? [
+      motos1?.motos?.[Number(data.moto1)]?.linea ?? "",  // 👈 usa la línea real
+      data.modelo_a?.trim(),
+    ].filter(Boolean).join(" - ")
+  : "";
 
-        const totalSinSeg2 = incluirMoto2
-            ? (precioBase2 + accesorios2 + documentos2 + marcacion2 - descuento2)
-            : 0;
+const lineaB_final = incluirMoto2
+  ? [
+      motos2?.motos?.[Number(data.moto2)]?.linea ?? "",
+      data.modelo_b?.trim(),
+    ].filter(Boolean).join(" - ")
+  : null;
 
-        const precioTotalA = incluirMoto1 ? (totalSinSeg1 + seg1 + otroSeguro1) : 0;
-        const precioTotalB = incluirMoto2 ? (totalSinSeg2 + seg2 + otroSeguro2) : 0;
+  const segurosA = incluirMoto1 ? mapSeguros(data.segurosIds1 as string[], otroSeguro1) : [];
+  const segurosB = incluirMoto2 ? mapSeguros(data.segurosIds2 as string[], otroSeguro2) : [];
 
-        const esFinanciado = data.metodoPago !== "contado";
+  const payload: Record<string, any> = {
+    name: data.primer_nombre?.trim(),
+    s_name: data.segundo_nombre?.trim(),
+    last_name: data.primer_apellido?.trim(),
+    s_last_name: data.segundo_apellido?.trim() || null,
+    cedula: data.cedula?.trim(),
+    email: data.email?.trim().toLowerCase(),
+    canal_contacto: data.canal,
+    pregunta: data.pregunta,
 
-        const lineaA_final = incluirMoto1 ? [data.moto1?.trim(), data.modelo_a?.trim()].filter(Boolean).join(" – ") : "";
-        const lineaB_final = incluirMoto2 ? [data.moto2?.trim(), data.modelo_b?.trim()].filter(Boolean).join(" – ") : null;
+    celular: data.celular?.replace(/\D/g, "").trim(),
+    fecha_nacimiento: data.fecha_nac,
 
-        const segurosA = incluirMoto1 ? mapSeguros(data.segurosIds1 as string[], otroSeguro1) : [];
-        const segurosB = incluirMoto2 ? mapSeguros(data.segurosIds2 as string[], otroSeguro2) : [];
+    marca_a: incluirMoto1 ? data.marca1 : "",
+    linea_a: lineaA_final,
+    garantia_a: incluirMoto1 ? (data.garantia1 || "") : "",
+    garantia_extendida_a: incluirMoto1 ? (data.garantiaExtendida1 || "no") : "no",
 
-        const payload: Record<string, any> = {
-            name: data.primer_nombre?.trim(),
-            s_name: data.segundo_nombre?.trim(),
-            last_name: data.primer_apellido?.trim(),
-            s_last_name: data.segundo_apellido?.trim() || null,
-            cedula: data.cedula?.trim(),
-            email: data.email?.trim().toLowerCase(),
-            canal_contacto: data.canal,
-            pregunta: data.pregunta,
+    accesorios_a: incluirMoto1 ? accesorios1 : 0,
+    seguro_vida_a: incluirMoto1 ? seg1 : 0,
+    seguro_mascota_s_a: 0,
+    seguro_mascota_a_a: 0,
+    otro_seguro_a: incluirMoto1 ? otroSeguro1 : 0,
+    precio_base_a: incluirMoto1 ? precioBase1 : 0,
+    precio_documentos_a: incluirMoto1 ? documentos1 : 0,
+    precio_total_a: precioTotalA,
+    modelo_a: incluirMoto1 ? (data.modelo_a?.trim() || "") : "",
 
+    marca_b: incluirMoto2 ? data.marca2 : null,
+    linea_b: lineaB_final,
+    garantia_b: incluirMoto2 ? (data.garantia2 || "") : null,
+    garantia_extendida_b: incluirMoto2 ? (data.garantiaExtendida2 || "no") : null,
 
+    accesorios_b: incluirMoto2 ? accesorios2 : null,
+    seguro_vida_b: incluirMoto2 ? seg2 : null,
+    seguro_mascota_s_b: incluirMoto2 ? 0 : null,
+    seguro_mascota_a_b: incluirMoto2 ? 0 : null,
+    otro_seguro_b: incluirMoto2 ? otroSeguro2 : null,
+    precio_base_b: incluirMoto2 ? precioBase2 : null,
+    precio_documentos_b: incluirMoto2 ? documentos2 : null,
+    precio_total_b: incluirMoto2 ? precioTotalB : null,
+    modelo_b: incluirMoto2 ? (data.modelo_b?.trim() || "") : null,
 
-            celular: data.celular?.replace(/\D/g, "").trim(),
-            fecha_nacimiento: data.fecha_nac,
+    metodo_pago: METODO_PAGO_LABEL[data.metodoPago],
+    tipo_pago: METODO_PAGO_LABEL[data.metodoPago],
 
-            marca_a: incluirMoto1 ? data.marca1 : "",
-            linea_a: lineaA_final,
-            garantia_a: incluirMoto1 ? (data.garantia1 || "") : "",
-            garantia_extendida_a: incluirMoto1 ? (data.garantiaExtendida1 || "no") : "no", // NUEVO
+    cuota_inicial_a: incluirMoto1 ? cuotaInicial1Num : null,
+    cuota_inicial_b: incluirMoto2 ? cuotaInicial2Num : null,
+    financiera: esFinanciado ? (data.financiera || null) : null,
+    cant_cuotas: esFinanciado ? (data.cuotas ? Number(data.cuotas) : null) : null,
 
-            accesorios_a: incluirMoto1 ? accesorios1 : 0,
-            seguro_vida_a: incluirMoto1 ? seg1 : 0,
-            seguro_mascota_s_a: 0,
-            seguro_mascota_a_a: 0,
-            otro_seguro_a: incluirMoto1 ? otroSeguro1 : 0,
-            precio_base_a: incluirMoto1 ? precioBase1 : 0,
-            precio_documentos_a: incluirMoto1 ? documentos1 : 0,
-            precio_total_a: precioTotalA,
-            modelo_a: incluirMoto1 ? (data.modelo_a?.trim() || "") : "",
+    cuota_6_a,
+    cuota_6_b,
 
-            marca_b: incluirMoto2 ? data.marca2 : null,
-            linea_b: lineaB_final,
-            garantia_b: incluirMoto2 ? (data.garantia2 || "") : null,
-            garantia_extendida_b: incluirMoto2 ? (data.garantiaExtendida2 || "no") : null, // NUEVO
+    cuota_12_a: data.metodoPago === "credibike" ? cuota12_a_auto : cuota_12_a,
+    cuota_12_b: data.metodoPago === "credibike" ? cuota12_b_auto : cuota_12_b,
 
-            accesorios_b: incluirMoto2 ? accesorios2 : null,
-            seguro_vida_b: incluirMoto2 ? seg2 : null,
-            seguro_mascota_s_b: incluirMoto2 ? 0 : null,
-            seguro_mascota_a_b: incluirMoto2 ? 0 : null,
-            otro_seguro_b: incluirMoto2 ? otroSeguro2 : null,
-            precio_base_b: incluirMoto2 ? precioBase2 : null,
-            precio_documentos_b: incluirMoto2 ? documentos2 : null,
-            precio_total_b: incluirMoto2 ? precioTotalB : null,
-            modelo_b: incluirMoto2 ? (data.modelo_b?.trim() || "") : null,
+    cuota_18_a,
+    cuota_18_b,
 
-            metodo_pago: METODO_PAGO_LABEL[data.metodoPago],
-            tipo_pago: METODO_PAGO_LABEL[data.metodoPago],
+    cuota_24_a: data.metodoPago === "credibike" ? cuota24_a_auto : cuota_24_a,
+    cuota_24_b: data.metodoPago === "credibike" ? cuota24_b_auto : cuota_24_b,
 
-            cuota_inicial_a: incluirMoto1 ? cuotaInicial1Num : null,
-            cuota_inicial_b: incluirMoto2 ? cuotaInicial2Num : null,
-            financiera: esFinanciado ? (data.financiera || null) : null,
-            cant_cuotas: esFinanciado ? (data.cuotas ? Number(data.cuotas) : null) : null,
+    cuota_30_a,
+    cuota_30_b,
 
-            // Para terceros, usa las ingresadas manualmente.
-            // Para credibike, usa las automáticas en 12, 24 y 36 meses.
-            cuota_6_a,
-            cuota_6_b,
+    cuota_36_a: data.metodoPago === "credibike" ? cuota36_a_auto : cuota_36_a,
+    cuota_36_b: data.metodoPago === "credibike" ? cuota36_b_auto : cuota_36_b,
 
-            cuota_12_a: data.metodoPago === "credibike" ? cuota12_a_auto : cuota_12_a,
-            cuota_12_b: data.metodoPago === "credibike" ? cuota12_b_auto : cuota_12_b,
+    comentario: data.comentario?.trim(),
 
-            cuota_18_a,
-            cuota_18_b,
+    asesor: name,
+    nombre_usuario: nombre ?? "Usuario",
+    rol_usuario: rol ?? "Usuario",
 
-            cuota_24_a: data.metodoPago === "credibike" ? cuota24_a_auto : cuota_24_a,
-            cuota_24_b: data.metodoPago === "credibike" ? cuota24_b_auto : cuota_24_b,
+    seguros_a: incluirMoto1 ? segurosA : [],
+    seguros_b: incluirMoto2 ? segurosB : [],
+    total_sin_seguros_a: incluirMoto1 ? totalSinSeg1 : 0,
+    total_sin_seguros_b: incluirMoto2 ? totalSinSeg2 : 0,
 
-            cuota_30_a,
-            cuota_30_b,
+    producto1Precio,
+    producto1CuotaInicial,
+    producto2Precio,
+    producto2CuotaInicial,
+    marcacion_a: incluirMoto1 ? marcacion1 : 0,
+    marcacion_b: incluirMoto2 ? marcacion2 : null,
 
-            cuota_36_a: data.metodoPago === "credibike" ? cuota36_a_auto : cuota_36_a,
-            cuota_36_b: data.metodoPago === "credibike" ? cuota36_b_auto : cuota_36_b,
+    foto_a: incluirMoto1 ? (data.foto_a ?? null) : null,
+    foto_b: incluirMoto2 ? (data.foto_b ?? null) : null,
 
-            comentario: data.comentario?.trim(),
+    descuentos_a: incluirMoto1 ? descuento1 : 0,
+    descuentos_b: incluirMoto2 ? descuento2 : null,
 
-            asesor: name,
-            nombre_usuario: nombre ?? "Usuario",
-            rol_usuario: rol ?? "Usuario",
+    valor_garantia_extendida_a:
+      incluirMoto1 && data.garantiaExtendida1 !== "no" ? valorGarantiaA : 0,
+    valor_garantia_extendida_b:
+      incluirMoto2 && data.garantiaExtendida2 !== "no" ? valorGarantiaB : null,
 
-            seguros_a: incluirMoto1 ? segurosA : [],
-            seguros_b: incluirMoto2 ? segurosB : [],
-            total_sin_seguros_a: incluirMoto1 ? totalSinSeg1 : 0,
-            total_sin_seguros_b: incluirMoto2 ? totalSinSeg2 : 0,
+    soat_a: incluirMoto1 ? N(data.soat_a) : 0,
+    impuestos_a: incluirMoto1 ? N(data.impuestos_a) : 0,
+    matricula_a: incluirMoto1 ? N(data.matricula_a) : 0,
 
-            producto1Precio: producto1Precio,
-            producto1CuotaInicial: producto1CuotaInicial,
-            producto2Precio: producto2Precio,
-            producto2CuotaInicial: producto2CuotaInicial,
-            marcacion_a: incluirMoto1 ? marcacion1 : 0,
-            marcacion_b: incluirMoto2 ? marcacion2 : null,
+    soat_b: incluirMoto2 ? N(data.soat_b) : null,
+    impuestos_b: incluirMoto2 ? N(data.impuestos_b) : null,
+    matricula_b: incluirMoto2 ? N(data.matricula_b) : null,
 
-            foto_a: incluirMoto1 ? (data.foto_a ?? null) : null,
-            foto_b: incluirMoto2 ? (data.foto_b ?? null) : null,
+    valorRunt1: incluirMoto1 && adicionalesMoto1.runt
+      ? toNumberSafe(data.valorRunt1)
+      : 0,
+    valorLicencia1: incluirMoto1 && adicionalesMoto1.licencia
+      ? toNumberSafe(data.valorLicencia1)
+      : 0,
+    valorDefensas1: incluirMoto1 && adicionalesMoto1.defensas
+      ? toNumberSafe(data.valorDefensas1)
+      : 0,
+    valorHandSavers1: incluirMoto1 && adicionalesMoto1.hand
+      ? toNumberSafe(data.valorHandSavers1)
+      : 0,
+    valorOtrosAdicionales1: incluirMoto1 && adicionalesMoto1.otros
+      ? toNumberSafe(data.valorOtrosAdicionales1)
+      : 0,
 
+    valorRunt2: incluirMoto2 && adicionalesMoto2.runt
+      ? toNumberSafe(data.valorRunt2)
+      : 0,
+    valorLicencia2: incluirMoto2 && adicionalesMoto2.licencia
+      ? toNumberSafe(data.valorLicencia2)
+      : 0,
+    valorDefensas2: incluirMoto2 && adicionalesMoto2.defensas
+      ? toNumberSafe(data.valorDefensas2)
+      : 0,
+    valorHandSavers2: incluirMoto2 && adicionalesMoto2.hand
+      ? toNumberSafe(data.valorHandSavers2)
+      : 0,
+    valorOtrosAdicionales2: incluirMoto2 && adicionalesMoto2.otros
+      ? toNumberSafe(data.valorOtrosAdicionales2)
+      : 0,
 
-            descuentos_a: incluirMoto1 ? descuento1 : 0,
-            descuentos_b: incluirMoto2 ? descuento2 : null,
+    saldo_financiar_a: saldoFinanciar1,
+    saldo_financiar_b: saldoFinanciar2,
+  };
 
-            valor_garantia_extendida_a: incluirMoto1 && data.garantiaExtendida1 !== "no" ? valorGarantiaA : 0,
-            valor_garantia_extendida_b: incluirMoto2 && data.garantiaExtendida2 !== "no" ? valorGarantiaB : null,
-            soat_a: incluirMoto1 ? N(data.soat_a) : 0,
-            impuestos_a: incluirMoto1 ? N(data.impuestos_a) : 0,
-            matricula_a: incluirMoto1 ? N(data.matricula_a) : 0,
+  console.log("SUBMIT (payload EXACTO BD):", payload);
 
-            soat_b: incluirMoto2 ? N(data.soat_b) : null,
-            impuestos_b: incluirMoto2 ? N(data.impuestos_b) : null,
-            matricula_b: incluirMoto2 ? N(data.matricula_b) : null,
+  cotizacion(payload, {
+    onSuccess: () => {
+      reset();
+      navigate(`/cotizaciones`);
+    },
+    onError: (err) => {
+      console.error(err);
+    },
+  });
+};
 
-
-            // 👇 NUEVOS CAMPOS QUE VAN AL PHP
-            valorRunt1: incluirMoto1 && adicionalesMoto1.runt
-                ? toNumberSafe(data.valorRunt1)
-                : 0,
-            valorLicencia1: incluirMoto1 && adicionalesMoto1.licencia
-                ? toNumberSafe(data.valorLicencia1)
-                : 0,
-            valorDefensas1: incluirMoto1 && adicionalesMoto1.defensas
-                ? toNumberSafe(data.valorDefensas1)
-                : 0,
-            valorHandSavers1: incluirMoto1 && adicionalesMoto1.hand
-                ? toNumberSafe(data.valorHandSavers1)
-                : 0,
-            valorOtrosAdicionales1: incluirMoto1 && adicionalesMoto1.otros
-                ? toNumberSafe(data.valorOtrosAdicionales1)
-                : 0,
-
-            valorRunt2: incluirMoto2 && adicionalesMoto2.runt
-                ? toNumberSafe(data.valorRunt2)
-                : 0,
-            valorLicencia2: incluirMoto2 && adicionalesMoto2.licencia
-                ? toNumberSafe(data.valorLicencia2)
-                : 0,
-            valorDefensas2: incluirMoto2 && adicionalesMoto2.defensas
-                ? toNumberSafe(data.valorDefensas2)
-                : 0,
-            valorHandSavers2: incluirMoto2 && adicionalesMoto2.hand
-                ? toNumberSafe(data.valorHandSavers2)
-                : 0,
-            valorOtrosAdicionales2: incluirMoto2 && adicionalesMoto2.otros
-                ? toNumberSafe(data.valorOtrosAdicionales2)
-                : 0,
-
-            saldo_financiar_a: saldoFinanciar1,
-            saldo_financiar_b: saldoFinanciar2,
-
-
-        };
-
-        console.log("SUBMIT (payload EXACTO BD):", payload);
-
-        cotizacion(payload, {
-            onSuccess: () => {
-                reset(); // tu lógica de reseteo
-                // 👇 navegar a la ruta deseada
-                navigate(`/cotizaciones`);
-            },
-            onError: (err) => {
-                console.error(err);
-            },
-        });
-    };
 
     const esCreditoDirecto = metodo === "credibike" || metodo === "terceros";
 
@@ -1193,7 +1221,7 @@ const precioBase2 = React.useMemo(() => {
                         label="Celular"
                         control={control}
                         placeholder="3001234567"
-                        rules={{ required: "El celular es obligatorio.", pattern: { value: /^[0-9]{7,12}$/, message: "Solo números (7-12 dígitos)" } }}
+                        rules={{ required: "El celular es obligatorio.", pattern: { value: /^[0-9]{7,10}$/, message: "Solo números (7-10 dígitos)" } }}
                     />
                     <FormInput<FormValues>
                         name="email"

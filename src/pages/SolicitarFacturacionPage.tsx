@@ -20,6 +20,10 @@ type FormValues = {
     cedulaFile?: FileList;
     manifiestoFile?: FileList;
     observaciones: string;
+
+    // 👇 NUEVOS CAMPOS
+    esCreditoTerceros?: boolean;
+    cartaFile?: FileList;
 };
 
 const fmtCOP = (v?: string | number | null) => {
@@ -185,6 +189,7 @@ const SolicitarFacturacionPage: React.FC = () => {
         control,
         handleSubmit,
         watch,
+        setValue, // 👈 NUEVO
         formState: { errors, isSubmitting },
     } = useForm<FormValues>({
         mode: "onChange",
@@ -195,16 +200,19 @@ const SolicitarFacturacionPage: React.FC = () => {
             descuentoAut: "0",
             saldoContraentrega: "0",
             observaciones: "",
+            esCreditoTerceros: false, // 👈 checkbox apagado por defecto
         },
     });
 
     const docValue = watch("documentos");
 
-    // 👇 NUEVO: archivos seleccionados para preview
+    // Archivos seleccionados para preview
     const cedulaFiles = watch("cedulaFile");
     const manifiestoFiles = watch("manifiestoFile");
+    const esCreditoTerceros = watch("esCreditoTerceros");
+    const cartaFiles = watch("cartaFile");
 
-    // 👇 NUEVO: URLs de previsualización (solo imágenes)
+    // URLs de previsualización (solo imágenes)
     const cedulaPreviewUrl = React.useMemo(() => {
         if (!cedulaFiles || cedulaFiles.length === 0) return undefined;
         const f = cedulaFiles[0];
@@ -219,7 +227,7 @@ const SolicitarFacturacionPage: React.FC = () => {
         return URL.createObjectURL(f);
     }, [manifiestoFiles]);
 
-    // 👇 NUEVO: liberar URLs al cambiar / desmontar
+    // Liberar URLs al cambiar / desmontar
     React.useEffect(() => {
         return () => {
             if (cedulaPreviewUrl) URL.revokeObjectURL(cedulaPreviewUrl);
@@ -231,6 +239,13 @@ const SolicitarFacturacionPage: React.FC = () => {
             if (manifiestoPreviewUrl) URL.revokeObjectURL(manifiestoPreviewUrl);
         };
     }, [manifiestoPreviewUrl]);
+
+    // 👇 NUEVO: limpiar archivo de carta cuando se desactiva el checkbox
+    React.useEffect(() => {
+        if (!esCreditoTerceros) {
+            setValue("cartaFile", undefined as any);
+        }
+    }, [esCreditoTerceros, setValue]);
 
     const user = useAuthStore((state) => state.user);
 
@@ -338,11 +353,12 @@ const SolicitarFacturacionPage: React.FC = () => {
         fd.append("observaciones", values.observaciones || "");
         fd.append("is_act", "2");
         fd.append("descuento_solicitado_a", values.descuentoAut || "0");
-fd.append("saldo_contraentrega_a", values.saldoContraentrega || "0");
-
+        fd.append("saldo_contraentrega_a", values.saldoContraentrega || "0");
 
         if (values.cedulaFile?.[0]) fd.append("cedula", values.cedulaFile[0]);
         if (values.manifiestoFile?.[0]) fd.append("manifiesto", values.manifiestoFile[0]);
+        // 👇 NUEVO: enviar carta como en manifiesto
+        if (values.cartaFile?.[0]) fd.append("carta", values.cartaFile[0]);
 
         // Extras de la solicitud/cotización
         fd.append("codigo_origen_facturacion", codigo || "");
@@ -814,6 +830,62 @@ fd.append("saldo_contraentrega_a", values.saldoContraentrega || "0");
                                     </p>
                                 </div>
 
+                                {/* Checkbox crédito de terceros */}
+                                <div className="form-control">
+                                    <label className="label cursor-pointer">
+                                        <span className="label-text font-medium text-slate-700">
+                                            Es crédito de terceros
+                                        </span>
+                                        <input
+                                            type="checkbox"
+                                            className="toggle toggle-success"
+                                            {...register("esCreditoTerceros")}
+                                        />
+                                    </label>
+                                    <p className="text-[11px] text-slate-500">
+                                        Activa esta opción si la compra se realizó con crédito de un tercero.
+                                    </p>
+                                </div>
+
+                                {/* Input para subir carta – solo cuando el checkbox está activo */}
+                                {esCreditoTerceros && (
+                                    <div className="form-control flex flex-col mt-2">
+                                        <label className="label">
+                                            <span className="label-text font-medium text-slate-700">
+                                                Carta de Aprobación del credito{" "}
+                                                <span className="text-error">*</span>
+                                            </span>
+                                        </label>
+                                        <input
+                                            type="file"
+                                            className={`file-input file-input-bordered bg-slate-50 ${
+                                                errors.cartaFile
+                                                    ? "file-input-error"
+                                                    : ""
+                                            }`}
+                                            accept=".pdf,.jpg,.jpeg,.png"
+                                            {...register("cartaFile", {
+                                                validate: (files) =>
+                                                    !esCreditoTerceros ||
+                                                    (files &&
+                                                        files.length > 0) ||
+                                                    "Requerido cuando es crédito de terceros",
+                                            })}
+                                        />
+                                        {errors.cartaFile && (
+                                            <p className="text-xs text-error mt-1">
+                                                {errors.cartaFile.message as string}
+                                            </p>
+                                        )}
+
+                                        {cartaFiles?.[0] && (
+                                            <p className="mt-2 text-xs text-slate-600">
+                                                Archivo seleccionado: {cartaFiles[0].name}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+
                                 {/* Manifiesto (file) */}
                                 <div className="form-control flex flex-col">
                                     <label className="label">
@@ -851,7 +923,7 @@ fd.append("saldo_contraentrega_a", values.saldoContraentrega || "0");
                                         </p>
                                     )}
 
-                                    {/* 👇 NUEVO: previsualización Manifiesto */}
+                                    {/* previsualización Manifiesto */}
                                     {manifiestoFiles?.[0] && (
                                         <div className="mt-2 text-xs text-slate-600">
                                             <p className="font-medium">
@@ -994,7 +1066,7 @@ fd.append("saldo_contraentrega_a", values.saldoContraentrega || "0");
                                         </p>
                                     )}
 
-                                    {/* 👇 NUEVO: previsualización Cédula */}
+                                    {/* previsualización Cédula */}
                                     {cedulaFiles?.[0] && (
                                         <div className="mt-2 text-xs text-slate-600">
                                             <p className="font-medium">

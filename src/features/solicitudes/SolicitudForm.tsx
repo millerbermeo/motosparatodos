@@ -55,12 +55,15 @@ type IncomingCotizacionState = {
   comercial?: any;
   raw?: any; // payload completo original de la cotización (si lo envías)
   motoSeleccion?: "A" | "B" | ""; // en caso de que se haya elegido en la pantalla anterior
+  esCreditoTerceros?: boolean; // 👈 NUEVO
+
 };
 
 /* ============================ Reglas/regex ============================ */
 const soloLetras = /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s.'-]+$/;
 const soloDigitos = /^[0-9]+$/;
 const celularRegex = /^[0-9]{7,10}$/;
+const placaRegex = /^[A-Z0-9]{6}$/;
 
 // helper para serializar sin undefined
 const safeJSONString = (obj: any) => {
@@ -109,6 +112,8 @@ const SolicitudForm: React.FC = () => {
     handleSubmit,
     formState: { isSubmitting, isValid },
     reset,
+    watch,
+    setValue,
   } = useForm<SolicitudFormValues>({
     mode: "onChange",
     shouldUnregister: false,
@@ -128,6 +133,7 @@ const SolicitudForm: React.FC = () => {
       color: "",
     },
   });
+
 
   // Prefill SOLO datos de cliente si llegaron por state (no tocamos los campos de producto)
   React.useEffect(() => {
@@ -246,6 +252,9 @@ const SolicitudForm: React.FC = () => {
     };
     // =================================================
 
+    const esCreditoTerceros = incoming?.esCreditoTerceros === true;
+
+
     if (id) fd.append("id_cotizacion", String(id));
     fd.append("is_act", "2");
     fd.append("agencia", "Motos");
@@ -272,7 +281,7 @@ const SolicitudForm: React.FC = () => {
     fd.append("numero_motor", values.numeroMotor.trim());
     fd.append("placa", (values.placa ?? "").toUpperCase().trim());
     fd.append("color", (values.color ?? "").trim());
-    fd.append("tipo_solicitud", "Contado");
+    fd.append("tipo_solicitud", esCreditoTerceros ? "Credito de Terceros" : "Contado");
 
     // ==== NUEVO: enriquecer motos/seleccionada con SOAT/IMP/MAT/Docs ====
     const ladoInferido = inferLadoFromIncoming(incoming);
@@ -301,22 +310,22 @@ const SolicitudForm: React.FC = () => {
 
       const A_enriched = A
         ? {
-            ...A,
-            soat: docsA.soat,
-            impuestos: docsA.impuestos,
-            matricula: docsA.matricula,
-            precioDocumentos: docsA.precio_documentos,
-          }
+          ...A,
+          soat: docsA.soat,
+          impuestos: docsA.impuestos,
+          matricula: docsA.matricula,
+          precioDocumentos: docsA.precio_documentos,
+        }
         : A;
 
       const B_enriched = B
         ? {
-            ...B,
-            soat: docsB.soat,
-            impuestos: docsB.impuestos,
-            matricula: docsB.matricula,
-            precioDocumentos: docsB.precio_documentos,
-          }
+          ...B,
+          soat: docsB.soat,
+          impuestos: docsB.impuestos,
+          matricula: docsB.matricula,
+          precioDocumentos: docsB.precio_documentos,
+        }
         : B;
 
       return {
@@ -383,6 +392,18 @@ const SolicitudForm: React.FC = () => {
     incoming?.motos?.A ||
     incoming?.motos?.B ||
     null;
+
+  const placaValue = watch("placa");
+
+  React.useEffect(() => {
+    if (!placaValue) return;
+
+    const upper = placaValue.toUpperCase();
+    if (upper !== placaValue) {
+      setValue("placa", upper, { shouldValidate: true, shouldDirty: true });
+    }
+  }, [placaValue, setValue]);
+
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 px-4 py-6 md:py-10">
@@ -583,9 +604,14 @@ const SolicitudForm: React.FC = () => {
                 control={control}
                 placeholder="Ingrese placa"
                 rules={{
-                  setValueAs: (v: any) => (v ? String(v).toUpperCase() : v),
+                  required: "Requerido",
+                  pattern: {
+                    value: placaRegex, // /^[A-Z0-9]{6}$/
+                    message: "Debe tener exactamente 6 caracteres (letras y números en mayúscula)",
+                  },
                 }}
               />
+
             </div>
           </section>
 

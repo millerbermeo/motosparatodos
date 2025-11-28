@@ -9,6 +9,7 @@ type Docs = {
   manifiesto_url?: string | null;
   cedula_url?: string | null;
   factura_url?: string | null;
+  carta_url?: string | null;
 };
 
 type Props = {
@@ -98,6 +99,12 @@ const DocumentosSolicitud: React.FC<Props> = ({
           onClick={() => abrir(docs.cedula_url)}
           disabled={loading || !docs.cedula_url}
           hint={!docs.cedula_url ? "No disponible" : undefined}
+        />
+             <DownloadButton
+          label="Descargar carta de aprobación"
+          onClick={() => abrir(docs.carta_url)}
+          disabled={loading || !docs.carta_url}
+          hint={!docs.carta_url ? "No disponible" : undefined}
         />
         <DownloadButton
           label="Descargar factura"

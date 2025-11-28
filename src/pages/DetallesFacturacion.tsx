@@ -235,10 +235,7 @@ const DetallesFacturacion: React.FC = () => {
 
   // Tipo de pago unificado
   const tipoPagoTexto = (
-    cot?.tipo_pago ??
-    cred?.tipo_pago ??
-    sol?.tipo_solicitud ??
-    ""
+    cot?.tipo_pago ?? cred?.tipo_pago ?? sol?.tipo_solicitud ?? ""
   )
     .toString()
     .toLowerCase();
@@ -312,7 +309,8 @@ const DetallesFacturacion: React.FC = () => {
 
   // ===================== DOCUMENTOS & EXTRAS (BASE PARA TODOS LOS CÁLCULOS) =====================
 
-  // Documentos (preferimos la descomposición de la cotización)
+  // Documentos (preferimos la descomposición de la cotización,
+  // pero si la solicitud trae un total de documentos, lo tomamos como verdad)
   const soat = toNum(
     pick(sol?.tot_soat, pickMotoField("soat"), cot?.soat_a, cot?.soat_b, cred?.soat)
   );
@@ -337,7 +335,10 @@ const DetallesFacturacion: React.FC = () => {
       cred?.impuestos
     )
   );
-  const subtotalDocs = sum(soat, matricula, impuestos);
+
+  const subtotalDocs =
+    toNum((sol as any)?.tot_documentos) ??
+    sum(soat, matricula, impuestos);
 
   // Accesorios
   const rawAccTotal = toNum(pick(sol?.acc_total, cred?.accesorios_total));
@@ -360,8 +361,7 @@ const DetallesFacturacion: React.FC = () => {
   // ===================== VALOR DEL VEHÍCULO (SOLO MOTO) =====================
 
   const valorProducto =
-    toNum(cred?.valor_producto) ??
-    toNum(pickMotoField("precio_total"));
+    toNum(cred?.valor_producto) ?? toNum(pickMotoField("precio_total"));
 
   let valorMoto: number | undefined;
 
@@ -376,7 +376,7 @@ const DetallesFacturacion: React.FC = () => {
       (typeof seguros_total === "number" ? seguros_total : 0);
 
     const base = valorProducto - docs - extras;
-    valorMoto = base > 0 ? base : valorProducto;
+    valorMoto = base > 0 ? base : valorMoto;
   } else {
     // Fallback: precio_base de la cotización
     valorMoto = toNum(pickMotoField("precio_base"));
@@ -384,28 +384,28 @@ const DetallesFacturacion: React.FC = () => {
 
   // ===================== CONDICIONES DEL NEGOCIO (IVA) =====================
 
-  // Vehículo: solo la moto, sin documentos ni accesorios/seguros
-  const rawVehiculoTotal = toNum(
-    pick(
-      sol?.cn_total,
-      sol?.cn_valor_moto,
-      valorMoto,
-      pickMotoField("precio_base")
-    )
-  );
-  const rawVehiculoBruto = toNum(sol?.cn_valor_bruto);
-  const rawVehiculoIva = toNum(sol?.cn_iva);
+  // Tomamos un TOTAL que ya viene con IVA.
+  // Preferencia:
+  //  - sol.cn_total  (si viene desde la solicitud)
+  //  - sol.tot_general (total de la operación, en algunos casos solo vehículo)
+  //  - valorMoto (fallback)
+  //  - precio_base de la cotización (último fallback)
+  const rawVehiculoTotal =
+    toNum(sol?.cn_total) ??
+    toNum(sol?.tot_general) ??
+    valorMoto ??
+    toNum(pickMotoField("precio_base"));
 
+  // Desglosamos: total = bruto + iva  =>  bruto = total / (1 + IVA_DEC)
   const {
     total: cn_total,
     bruto: cn_bruto,
     iva: cn_iva,
-  } = desglosarConIva(rawVehiculoTotal, rawVehiculoBruto, rawVehiculoIva, IVA_DEC);
+  } = desglosarConIva(rawVehiculoTotal, undefined, undefined, IVA_DEC);
 
   // ===================== TOTAL GENERAL =====================
 
   const totalGeneral =
-    toNum(sol?.tot_general) ??
     sum(cn_total, subtotalDocs, acc_seg_total) ??
     sum(
       valorMoto,
@@ -414,13 +414,36 @@ const DetallesFacturacion: React.FC = () => {
       impuestos,
       accesorios_total,
       seguros_total
-    );
+    ) ??
+    toNum(sol?.tot_general);
 
   // ===================== CRÉDITO (POR SI APLICA) =====================
 
-  const financiador = pick<string>(cred?.producto) ?? "—";
-  const cuota_inicial = toNum(cred?.cuota_inicial) ?? 0;
-  const saldoFinanciar = max0((totalGeneral ?? 0) - cuota_inicial) ?? 0;
+  // 1) Cuota inicial desde el crédito (si existe registro en la tabla de créditos)
+  const cuotaInicialCredito = toNum(cred?.cuota_inicial);
+
+  // 2) Cuota inicial desde la cotización, según la moto seleccionada (A o B)
+  const cuotaInicialCotizacion =
+    motoSeleccionada === "b"
+      ? toNum((cot as any)?.cuota_inicial_b)
+      : toNum((cot as any)?.cuota_inicial_a);
+
+  // 3) Cuota inicial unificada:
+  //    - Primero usamos la de créditos (si hay),
+  //    - si no, usamos la de la cotización,
+  //    - si tampoco hay, queda en 0.
+  const cuota_inicial =
+    cuotaInicialCredito ??
+    cuotaInicialCotizacion ??
+    0;
+
+  // Financiador: primero lo que venga de créditos, si no, lo que trae la cotización
+  const financiador =
+    pick<string>(cred?.producto, cot?.financiera) ?? "—";
+
+  // 4) Saldo a financiar = TOTAL GENERAL - CUOTA INICIAL (siempre que haya totalGeneral)
+  const saldoFinanciar =
+    max0((totalGeneral ?? 0) - (cuota_inicial ?? 0)) ?? 0;
 
   // ===================== URLS DE DOCUMENTOS (BASE) =====================
 
@@ -435,21 +458,20 @@ const DetallesFacturacion: React.FC = () => {
       : cred?.formato_datacredito || null;
 
   const factura_url =
-    (sol as any)?.factura_url ||
-    (cot as any)?.factura_url ||
-    null;
+    (sol as any)?.factura_url || (cot as any)?.factura_url || null;
+
+  const carta_url =
+    (sol as any)?.carta_url || (cot as any)?.carta_url || null;
 
   const numeroReciboSolicitud: string | null =
     (ultimaSolRegistro &&
-      (ultimaSolRegistro.numero_recibo ??
-        ultimaSolRegistro.numeroRecibo)) ??
+      (ultimaSolRegistro.numero_recibo ?? ultimaSolRegistro.numeroRecibo)) ??
     sol?.numero_recibo ??
     null;
 
   const resiboPagoSolicitud: string | null =
     (ultimaSolRegistro &&
-      (ultimaSolRegistro.resibo_pago ??
-        ultimaSolRegistro.recibo_pago)) ??
+      (ultimaSolRegistro.resibo_pago ?? ultimaSolRegistro.recibo_pago)) ??
     sol?.resibo_pago ??
     null;
 
@@ -462,12 +484,17 @@ const DetallesFacturacion: React.FC = () => {
   const facturaPathUlt: string | null =
     (ultimaSolRegistro && ultimaSolRegistro.factura) ?? null;
 
+  const cartaPathUlt: string | null =
+    (ultimaSolRegistro && ultimaSolRegistro.carta) ?? null;
+
   const cedulaUrlFinal =
     buildUrlFromBase(cedulaPathUlt) || buildUrlFromBase(cedula_url);
   const manifiestoUrlFinal =
     buildUrlFromBase(manifiestoPathUlt) || buildUrlFromBase(manifiesto_url);
   const facturaUrlFinal =
     buildUrlFromBase(facturaPathUlt) || buildUrlFromBase(factura_url);
+  const cartaUrlFinal =
+    buildUrlFromBase(cartaPathUlt) || buildUrlFromBase(carta_url);
 
   const tieneFactura = !!facturaUrlFinal;
 
@@ -476,10 +503,7 @@ const DetallesFacturacion: React.FC = () => {
   // - Créditos normales → NO panel; van directo a DocumentosSolicitud cuando hay factura + idSolicitud
 
   const debeMostrarDescuentosPanel =
-    (esContado || esCreditoTerceros) &&
-    !!idSolicitud &&
-    tieneFactura &&
-    !isFinalAutorizacion;
+    (esContado || esCreditoTerceros) && !!idSolicitud && tieneFactura && !isFinalAutorizacion;
 
   const debeMostrarDocumentosSolicitud =
     ((esContado || esCreditoTerceros) && isFinalAutorizacion) ||
@@ -487,9 +511,7 @@ const DetallesFacturacion: React.FC = () => {
 
   // ===================== HANDLERS FACTURA =====================
 
-  const handleFacturaChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleFacturaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
     setFacturaFile(file || null);
   };
@@ -568,9 +590,7 @@ const DetallesFacturacion: React.FC = () => {
                     <div className="font-medium text-slate-900">
                       {clienteNombre}
                     </div>
-                    <div className="text-slate-600">
-                      {clienteDocumento}
-                    </div>
+                    <div className="text-slate-600">{clienteDocumento}</div>
                     <div>
                       <span className="font-semibold text-slate-700">
                         Teléfono:
@@ -659,21 +679,11 @@ const DetallesFacturacion: React.FC = () => {
               </div>
               <div className="px-5 py-3 text-sm text-slate-800">
                 <div className="grid grid-cols-12 items-center">
-                  <div className="col-span-5 truncate">
-                    {marcaLinea}
-                  </div>
-                  <div className="col-span-2 truncate">
-                    {numeroMotor}
-                  </div>
-                  <div className="col-span-3 truncate">
-                    {numeroChasis}
-                  </div>
-                  <div className="col-span-1 text-right">
-                    {color}
-                  </div>
-                  <div className="col-span-1 text-right">
-                    {placa}
-                  </div>
+                  <div className="col-span-5 truncate">{marcaLinea}</div>
+                  <div className="col-span-2 truncate">{numeroMotor}</div>
+                  <div className="col-span-3 truncate">{numeroChasis}</div>
+                  <div className="col-span-1 text-right">{color}</div>
+                  <div className="col-span-1 text-right">{placa}</div>
                 </div>
               </div>
             </section>
@@ -701,7 +711,8 @@ const DetallesFacturacion: React.FC = () => {
                 />
               </div>
               <div className="px-5 pb-3 pt-1 text-[11px] text-slate-500">
-                IVA calculado automáticamente a partir del total del vehículo cuando no viene informado en la solicitud.
+                IVA calculado automáticamente a partir del total del vehículo
+                cuando no viene informado en la solicitud.
               </div>
             </section>
 
@@ -712,14 +723,8 @@ const DetallesFacturacion: React.FC = () => {
               </div>
               <div className="divide-y divide-slate-200">
                 <RowRight label="SOAT:" value={fmtCOP(soat)} />
-                <RowRight
-                  label="Matrícula:"
-                  value={fmtCOP(matricula)}
-                />
-                <RowRight
-                  label="Impuestos:"
-                  value={fmtCOP(impuestos)}
-                />
+                <RowRight label="Matrícula:" value={fmtCOP(matricula)} />
+                <RowRight label="Impuestos:" value={fmtCOP(impuestos)} />
                 <RowRight
                   label="Subtotal documentos:"
                   value={fmtCOP(subtotalDocs)}
@@ -747,10 +752,7 @@ const DetallesFacturacion: React.FC = () => {
                     label="Accesorios (total):"
                     value={fmtCOP(accesorios_total)}
                   />
-                  <RowRight
-                    label="Seguros:"
-                    value={fmtCOP(seguros_total)}
-                  />
+                  <RowRight label="Seguros:" value={fmtCOP(seguros_total)} />
                   <RowRight
                     label="Total Seguros + Accesorios:"
                     value={fmtCOP(acc_seg_total)}
@@ -791,7 +793,9 @@ const DetallesFacturacion: React.FC = () => {
               <div className="bg-slate-800 text-white font-semibold px-5 py-2.5 text-sm flex items-center justify-between">
                 <span>Soportes de pago y documentos adjuntos</span>
                 {isUltimaSolLoading && (
-                  <span className="text-xs text-slate-200">Cargando adjuntos…</span>
+                  <span className="text-xs text-slate-200">
+                    Cargando adjuntos…
+                  </span>
                 )}
                 {isUltimaSolError && (
                   <span className="text-xs text-red-200">
@@ -842,20 +846,33 @@ const DetallesFacturacion: React.FC = () => {
                           : "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed"
                       }`}
                     >
-                      Manifiesto {manifiestoUrlFinal ? "" : "(no disponible)"}
+                      Manifiesto{" "}
+                      {manifiestoUrlFinal ? "" : "(no disponible)"}
                     </a>
-                    <a
-                      href={facturaUrlFinal ?? "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`btn btn-xs border ${
-                        facturaUrlFinal
-                          ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
-                          : "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed"
-                      }`}
-                    >
-                      Factura {facturaUrlFinal ? "" : "(no disponible)"}
-                    </a>
+
+                    {/* Factura: mostramos botón solo si existe */}
+                    {facturaUrlFinal && (
+                      <a
+                        href={facturaUrlFinal}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-xs border bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+                      >
+                        Factura
+                      </a>
+                    )}
+
+                    {/* Carta: mostramos botón solo si existe */}
+                    {cartaUrlFinal && (
+                      <a
+                        href={cartaUrlFinal}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-xs border bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+                      >
+                        Carta
+                      </a>
+                    )}
                   </div>
                 </div>
 
@@ -863,12 +880,14 @@ const DetallesFacturacion: React.FC = () => {
                 {!tieneFactura && (
                   <div className="mt-4 pt-3 bg-success p-3 rounded-2xl border-t border-dashed border-slate-200 space-y-2">
                     <div className="text-xs font-semibold text-slate-600">
-                      Cargar factura (obligatoria para poder aceptar, solo se puede adjuntar una vez):
+                      Cargar factura (obligatoria para poder aceptar, solo se
+                      puede adjuntar una vez):
                     </div>
                     {!idSolicitud && (
                       <div className="text-xs text-rose-600">
-                        No se encontró una solicitud de facturación asociada a esta cotización.
-                        Primero crea la solicitud para poder adjuntar la factura.
+                        No se encontró una solicitud de facturación asociada a
+                        esta cotización. Primero crea la solicitud para poder
+                        adjuntar la factura.
                       </div>
                     )}
                     {idSolicitud && (
@@ -888,7 +907,7 @@ const DetallesFacturacion: React.FC = () => {
                           type="button"
                           onClick={handleSubirFactura}
                           disabled={isSubiendoFactura || !facturaFile}
-                          className={`btn btn-sm border bg-white text-success`}
+                          className="btn btn-sm border bg-white text-success"
                         >
                           {isSubiendoFactura
                             ? "Subiendo factura…"
@@ -899,7 +918,9 @@ const DetallesFacturacion: React.FC = () => {
                     {facturaFile && (
                       <div className="text-xs text-slate-500">
                         Archivo seleccionado:{" "}
-                        <span className="font-medium">{facturaFile.name}</span>
+                        <span className="font-medium">
+                          {facturaFile.name}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -917,9 +938,7 @@ const DetallesFacturacion: React.FC = () => {
                   <ul className="list-disc pl-5 text-sm text-slate-800 space-y-1.5">
                     <li>
                       Crédito aprobado por{" "}
-                      <span className="font-semibold">
-                        {financiador}
-                      </span>
+                      <span className="font-semibold">{financiador}</span>
                     </li>
                     <li>
                       Cuota inicial:{" "}
@@ -929,7 +948,6 @@ const DetallesFacturacion: React.FC = () => {
                     </li>
                     <li>
                       Saldo a financiar:{" "}
-
                       <span className="font-semibold">
                         {fmtCOP(saldoFinanciar)}
                       </span>
@@ -955,6 +973,7 @@ const DetallesFacturacion: React.FC = () => {
                   manifiesto_url: manifiestoUrlFinal,
                   cedula_url: cedulaUrlFinal,
                   factura_url: facturaUrlFinal,
+                  carta_url: cartaUrlFinal,
                 }}
                 estadoCotizacion={estadoCotizacion}
                 onAprobado={() => {
@@ -974,7 +993,8 @@ const DetallesFacturacion: React.FC = () => {
             {/* Botones: ir al acta, recargar, PDF */}
             <section className="border-t border-slate-200 pt-4 flex flex-wrap items-center justify-between gap-3">
               <div className="text-sm text-slate-500">
-                Revisa la información, descarga el soporte en PDF o consulta el acta de entrega.
+                Revisa la información, descarga el soporte en PDF o consulta el
+                acta de entrega.
               </div>
               <div className="flex items-center gap-2">
                 <Link
