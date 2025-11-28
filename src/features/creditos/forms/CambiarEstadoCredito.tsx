@@ -1,21 +1,25 @@
 // src/components/creditos/CambiarEstadoCredito.tsx
-import React from "react";
+import React, { useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { FormInput } from "../../../shared/components/FormInput";
 import { FormSelect, type SelectOption } from "../../../shared/components/FormSelect";
 import Swal from "sweetalert2";
 import { useCambiarEstadoCredito } from "../../../services/creditosServices";
 import { useAuthStore } from "../../../store/auth.store";
-import type { PlanPagosInput } from "../pdf/PlanPagosPDF";
-import PlanPagosPDF from "../pdf/PlanPagosPDF";
 import { useNavigate } from "react-router-dom";
 
-type Props = { codigo_credito: string | number, data?: any; };
+// Tabla en pantalla
+import TablaAmortizacionCredito from "../TablaAmortizacionCredito";
+
+// PDF
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import TablaAmortizacionPDFDoc from "../pdf/TablaAmortizacionPDFDoc";
+
+type Props = { codigo_credito: string | number; data?: any };
 
 type CambiarEstadoValues = {
   estado: "Pendiente" | "Aprobado" | "No viable" | "";
   comentario: string;
-  // archivos locales del form
   formato_referenciacion?: File | null;
   datacredito_deudor1?: File | null;
 };
@@ -26,9 +30,19 @@ const optionsEstado: SelectOption[] = [
   { value: "No viable", label: "No viable" },
 ];
 
+const buildNombreCliente = (info?: any): string => {
+  if (!info) return "";
+  return `${info?.primer_nombre ?? ""} ${info?.segundo_nombre ?? ""} ${
+    info?.primer_apellido ?? ""
+  } ${info?.segundo_apellido ?? ""}`
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
 const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
   const cambiar = useCambiarEstadoCredito();
   const { user } = useAuthStore();
+  const navigate = useNavigate();
 
   const {
     control,
@@ -40,16 +54,12 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
     mode: "onBlur",
   });
 
-  const navigate = useNavigate();
-
-
   const isAprobado = watch("estado") === "Aprobado";
 
   const onSubmit = async (values: CambiarEstadoValues) => {
     const nombre_usuario = user?.name ?? "Usuario";
     const rol_usuario = user?.rol ?? "Usuario";
 
-    // Confirmación
     const res = await Swal.fire({
       title: "¿Confirmar cambio de estado?",
       html: `
@@ -74,7 +84,6 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
         comentario: values.comentario.trim(),
         nombre_usuario,
         rol_usuario,
-        // 👉 pasar archivos al hook (si no es Aprobado irán como null/undefined y no se adjuntan)
         formato_referenciacion: values.formato_referenciacion ?? null,
         datacredito_deudor1: values.datacredito_deudor1 ?? null,
       },
@@ -88,40 +97,96 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
       showConfirmButton: false,
     });
 
-    navigate("/creditos"); // 👈 Navegar a la ruta de Solicitud
-
+    navigate("/creditos");
   };
 
-  console.log("data del credito", data)
+  console.log("data del credito", data);
 
+  // ====== DATA PARA LA TABLA DE AMORTIZACIÓN (PANTALLA) ======
+  const creditoTabla = useMemo(() => {
+    if (!data) return null;
 
-  // ====== Armar input para el PDF ======
-  const inputPDF: PlanPagosInput = {
-    codigo: codigo_credito,
-    ciudad: "Cali",
-    cliente: {
-      nombre: `${data?.informacion_personal?.primer_nombre ?? ""
-        } ${data?.informacion_personal?.segundo_nombre ?? ""} ${data?.informacion_personal?.primer_apellido ?? ""
-        } ${data?.informacion_personal?.segundo_apellido ?? ""}`.replace(/\s+/g, " ").trim(),
+    return {
+      valor_producto: Number(
+        data?.credito?.valor_producto ??
+          data?.moto?.valorMotocicleta ??
+          0
+      ),
+      cuota_inicial: Number(
+        data?.credito?.cuota_inicial ??
+          data?.moto?.cuotaInicial ??
+          0
+      ),
+      plazo_meses: Number(
+        data?.credito?.plazo_meses ??
+          data?.moto?.numeroCuotas ??
+          0
+      ),
+      soat: data?.credito?.soat ?? data?.moto?.soat ?? 0,
+      matricula: data?.credito?.matricula ?? data?.moto?.matricula ?? 0,
+      impuestos: data?.credito?.impuestos ?? 0,
+      accesorios_total:
+        data?.credito?.accesorios_total ??
+        data?.moto?.accesorios_total ??
+        0,
+      precio_seguros:
+        data?.credito?.precio_seguros ??
+        data?.seguro?.total ??
+        0,
+      garantia_extendida_valor:
+        data?.credito?.garantia_extendida_valor ?? 0,
+    };
+  }, [data]);
+
+  // Fecha para la tabla (mes/año de las cuotas en la UI)
+  const fechaCreacionTabla = useMemo(() => {
+    const raw =
+      data?.credito?.fecha_entrega ??
+      data?.credito?.fecha_creacion ??
+      data?.credito?.fecha_solicitud ??
+      null;
+
+    return raw ? String(raw) : undefined;
+  }, [data]);
+
+  // ====== DATA PARA EL PDF (TablaAmortizacionPDFDoc) ======
+  const clienteInfo = useMemo(
+    () => ({
+      nombre: buildNombreCliente(data?.informacion_personal),
       documento: data?.informacion_personal?.numero_documento ?? "",
       direccion: data?.informacion_personal?.direccion_residencia ?? "",
       telefono: data?.informacion_personal?.celular ?? "",
-    },
-    producto: {
-      nombre: data?.credito?.producto ?? data?.moto?.modelo ?? "Motocicleta",
-      valor: Number(data?.credito?.valor_producto ?? data?.moto?.valorMotocicleta ?? 0),
-    },
-    credito: {
-      cuotaInicial: Number(data?.credito?.cuota_inicial ?? data?.moto?.cuotaInicial ?? 0),
-      plazoMeses: Number(data?.credito?.plazo_meses ?? data?.moto?.numeroCuotas ?? 1),
-      // Defaults si no viene la tasa:
-      tasaMensual: 0.0196,
-      tasaAnual: 0.2352,
-      fechaInicio: new Date(),
-      fechaEntrega: data?.credito?.fecha_entrega ?? null,
-    },
-  };
+    }),
+    [data]
+  );
 
+  const empresaInfo = useMemo(
+    () => ({
+      nombre: data?.empresa?.nombre ?? "Mi empresa",
+      ciudad: data?.empresa?.ciudad ?? "Cali",
+      nit: data?.empresa?.nit ?? "",
+    }),
+    [data]
+  );
+
+  const tasaMensualPorcentaje = useMemo(() => {
+    const raw =
+      data?.credito?.tasa_mensual ??
+      data?.credito?.tasaMensual ??
+      data?.credito?.tasa_mensual_porcentaje;
+    const n = Number(raw);
+    if (Number.isFinite(n) && n > 0) return n;
+    // fallback si no viene del backend
+    return 1.96;
+  }, [data]);
+
+  const fechaPlan = useMemo(() => {
+    return (
+      data?.credito?.fecha_creacion ??
+      data?.credito?.fecha_solicitud ??
+      undefined
+    );
+  }, [data]);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -173,7 +238,9 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
                   onChange={(e) => field.onChange(e.target.files?.[0] ?? null)}
                 />
                 {fieldState.error && (
-                  <span className="text-error text-xs mt-1">{fieldState.error.message}</span>
+                  <span className="text-error text-xs mt-1">
+                    {fieldState.error.message}
+                  </span>
                 )}
               </div>
             )}
@@ -194,20 +261,69 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
                   onChange={(e) => field.onChange(e.target.files?.[0] ?? null)}
                 />
                 {fieldState.error && (
-                  <span className="text-error text-xs mt-1">{fieldState.error.message}</span>
+                  <span className="text-error text-xs mt-1">
+                    {fieldState.error.message}
+                  </span>
                 )}
               </div>
             )}
           />
 
-          <div>
-            <PlanPagosPDF input={inputPDF} />
-          </div>
+          {/* 👇 COLLAPSE DAISYUI CON TABLA + BOTÓN DESCARGAR PDF */}
+          {creditoTabla && (
+            <div className="mt-4">
+              <div
+                tabIndex={0}
+                className="collapse bg-base-100 border-base-300 border rounded-box"
+              >
+                <div className="collapse-title font-semibold flex items-center justify-between">
+                  <span>Tabla de amortización del crédito</span>
+
+                  {/* Botón para descargar PDF */}
+                  <PDFDownloadLink
+                    document={
+                      <TablaAmortizacionPDFDoc
+                        credito={creditoTabla}
+                        tasaMensualPorcentaje={tasaMensualPorcentaje}
+                        empresa={empresaInfo}
+                        cliente={clienteInfo}
+                        codigoPlan={String(codigo_credito)}
+                        fechaPlan={fechaPlan}
+                        // logoUrl opcional si tienes una URL
+                        // logoUrl="https://tuservidor.com/logo.png"
+                      />
+                    }
+                    fileName={`tabla-amortizacion-${codigo_credito}.pdf`}
+                  >
+                    {({ loading }) => (
+                      <button
+                        type="button"
+                        className="btn btn-xs btn-outline btn-primary"
+                      >
+                        {loading ? "Generando PDF..." : "Descargar PDF"}
+                      </button>
+                    )}
+                  </PDFDownloadLink>
+                </div>
+
+                <div className="collapse-content text-sm">
+                  <TablaAmortizacionCredito
+                    credito={creditoTabla}
+                    fechaCreacion={fechaCreacionTabla}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       <div className="flex justify-end gap-2 pt-2">
-        <button className="btn btn-ghost" type="button" onClick={() => window.history.back()}>
+        <button
+          className="btn btn-ghost"
+          type="button"
+          onClick={() => window.history.back()}
+        >
           Cancelar
         </button>
         <button

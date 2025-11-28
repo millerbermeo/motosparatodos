@@ -7,7 +7,7 @@ import { useActualizarCredito, useCredito } from "../../../services/creditosServ
 import { useParams } from "react-router-dom";
 import { useWizardStore } from "../../../store/wizardStore";
 
-import { TablaAmortizacionCredito } from "../../../features/creditos/TablaAmortizacionCredito.tsx";
+import { TablaAmortizacionCredito } from "../../../features/creditos/TablaAmortizacionCredito"; // 👈 sin .tsx
 
 import { unformatNumber } from "../../../shared/components/moneyUtils";
 
@@ -21,17 +21,25 @@ const toNumberPesos = (v: unknown): number => {
 
 type ProductoValues = {
   producto: string;
+  // 👇 este tipo puede terminar siendo número, string o incluso un option object
+  plazoCuotas: any;
   valorMoto: number | string;
-  plazoCuotas: number | string;
   cuotaInicial: number | string;
   comentario?: string;
 };
 
-const toNumber = (v: unknown) => {
-  const n =
-    typeof v === "number"
-      ? v
-      : parseFloat(String(v ?? "").replace(/,/g, "."));
+
+
+// 🔧 NUEVO: función robusta para sacar el número de cuotas
+const getPlazoCuotasNumber = (v: unknown): number => {
+  // Si viene un option { value, label }
+  if (v && typeof v === "object" && "value" in (v as any)) {
+    const raw = (v as any).value;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : 0;
+  }
+  // Si viene string/number plano
+  const n = Number(v);
   return Number.isFinite(n) ? n : 0;
 };
 
@@ -64,7 +72,7 @@ const InfoProductoFormulario: React.FC = () => {
     defaultValues: {
       producto: "",
       valorMoto: "0",
-      plazoCuotas: 12,
+      plazoCuotas: 12, // 👈 valor por defecto como número
       cuotaInicial: "0",
       comentario: "",
     },
@@ -78,9 +86,8 @@ const InfoProductoFormulario: React.FC = () => {
     !!codigo_credito
   );
 
-  const creditoBackend = data?.success && data.creditos?.length
-    ? data.creditos[0]
-    : null;
+  const creditoBackend =
+    data?.success && data.creditos?.length ? data.creditos[0] : null;
 
   React.useEffect(() => {
     if (!creditoBackend) return;
@@ -90,7 +97,12 @@ const InfoProductoFormulario: React.FC = () => {
     setValue("valorMoto", String(c?.valor_producto ?? "0"), {
       shouldDirty: false,
     });
-    setValue("plazoCuotas", c?.plazo_meses ?? 12, { shouldDirty: false });
+
+    // 👇 Si el backend trae plazo, lo ponemos como número
+    setValue("plazoCuotas", Number(c?.plazo_meses ?? 12), {
+      shouldDirty: false,
+    });
+
     setValue("cuotaInicial", String(c?.cuota_inicial ?? "0"), {
       shouldDirty: false,
     });
@@ -98,8 +110,11 @@ const InfoProductoFormulario: React.FC = () => {
   }, [creditoBackend, setValue]);
 
   const onSubmit = (v: ProductoValues) => {
+    // 🔧 Usamos siempre la función robusta para sacar el número de meses
+    const plazo_meses = getPlazoCuotasNumber(v.plazoCuotas);
+
     const payload = {
-      plazo_meses: toNumber(v.plazoCuotas) || undefined,
+      plazo_meses: plazo_meses || undefined, // si queda 0, se manda undefined
       // Backend en PESOS
       cuota_inicial: toNumberPesos(v.cuotaInicial) || 0,
       comentario: (v.comentario?.trim() ?? "") || null,
@@ -112,7 +127,6 @@ const InfoProductoFormulario: React.FC = () => {
           setValue("plazoCuotas", payload.plazo_meses ?? 0, {
             shouldDirty: false,
           });
-          // 👇 dejamos la cuota inicial tal cual en PESOS
           setValue("cuotaInicial", String(payload.cuota_inicial ?? 0), {
             shouldDirty: false,
           });
@@ -125,13 +139,14 @@ const InfoProductoFormulario: React.FC = () => {
     );
   };
 
+  // 👇 Ojo: ahora usamos getPlazoCuotasNumber, no toNumber
   const plazoCuotasWatch = watch("plazoCuotas");
   const cuotaInicialWatch = watch("cuotaInicial");
 
-  const plazoParaTabla = toNumber(plazoCuotasWatch);
+  const plazoParaTabla = getPlazoCuotasNumber(plazoCuotasWatch);
   const cuotaInicialParaTabla = toNumberPesos(cuotaInicialWatch);
 
-  // 👇 Aquí normalizamos null -> "0" para que cumpla CreditoApi
+  // 👇 Aquí armamos el objeto que consume TablaAmortizacionCredito
   const creditoParaTabla =
     creditoBackend && plazoParaTabla > 0
       ? {
