@@ -101,6 +101,18 @@ const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito, id_cotizacio
     }
   };
 
+  // 🔵 Convertir la PLACA a MAYÚSCULAS mientras la escriben
+React.useEffect(() => {
+  const placa = watch("placa");
+  if (typeof placa === "string") {
+    const upper = placa.toUpperCase();
+    if (upper !== placa) {
+      setValue("placa", upper, { shouldValidate: true });
+    }
+  }
+}, [watch("placa")]);
+
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {/* Encabezado + checkbox habilitador */}
@@ -137,22 +149,22 @@ const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito, id_cotizacio
                 : undefined
             }
           />
+<FormInput<CerrarCreditoValues>
+  name="capacidad"
+  label="Capacidad*"
+  control={control}
+  placeholder="Solo números"
+  disabled={!enabled}
+  type="number"              // 👈 SOLO PERMITE NÚMEROS
+  rules={
+    enabled
+      ? {
+          required: "La capacidad es obligatoria",
+        }
+      : undefined
+  }
+/>
 
-          <FormInput<CerrarCreditoValues>
-            name="capacidad"
-            label="Capacidad*"
-            control={control}
-            placeholder="Capacidad (125 c.c., 99 c.c....)"
-            disabled={!enabled}
-            rules={
-              enabled
-                ? {
-                  required: "La capacidad es obligatoria",
-                  pattern: { value: /^\d{2,4}(\s*c\.?c\.?)?$/i, message: "Usa números y opcional 'c.c.' (ej: 125 c.c.)" },
-                }
-                : undefined
-            }
-          />
 
           <FormInput<CerrarCreditoValues>
             name="numero_motor"
@@ -193,17 +205,20 @@ const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito, id_cotizacio
               control={control}
               placeholder="Placa"
               disabled={!enabled}
-              rules={
-                enabled
-                  ? {
-                    validate: (value: string | boolean) => {
-                      const v = typeof value === "string" ? value.trim() : "";
-                      if (!v) return true;
-                      return /^[A-Z0-9-]{5,8}$/i.test(v) || "Formato de placa inválido";
-                    },
-                  }
-                  : undefined
-              }
+          rules={
+  enabled
+    ? {
+        required: "La placa es obligatoria",
+        pattern: {
+          value: /^[A-Z0-9]{6}$/i,
+          message: "La placa debe tener exactamente 6 caracteres (solo letras y números)",
+        },
+        minLength: { value: 6, message: "Debe tener exactamente 6 caracteres" },
+        maxLength: { value: 6, message: "Debe tener exactamente 6 caracteres" },
+      }
+    : undefined
+}
+
             />
           </div>
 

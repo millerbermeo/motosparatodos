@@ -1,12 +1,24 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useCredito, useDeudor } from '../../../services/creditosServices';
 import { CalendarDays, User2 } from 'lucide-react';
-import { useRegistrarSolicitudFacturacion, useSolicitudesPorCodigoCredito } from '../../../services/solicitudServices';
+import {
+  useRegistrarSolicitudFacturacion,
+  useSolicitudesPorCodigoCredito,
+} from '../../../services/solicitudServices';
 import FacturaFinalDownload from '../pdf/FacturaFinal';
 import ButtonLink from '../../../shared/components/ButtonLink';
+import { useDistribuidoras } from '../../../services/distribuidoraServices';
+import { useAuthStore } from '../../../store/auth.store';
+
+// 🔹 NUEVOS: endpoint full + IVA
+import { useCotizacionFullById } from '../../../services/fullServices';
+import { useIvaDecimal } from '../../../services/ivaServices';
 
 type MaybeNum = number | undefined | null;
+
+// -------------------- Constantes --------------------
+const AGENCIAS = ['Sucursal Norte', 'Sucursal Centro', 'Sucursal Sur'];
 
 // --- Helpers de formato / casting ---
 const toNum = (v: unknown): number | undefined => {
@@ -20,7 +32,8 @@ const toNum = (v: unknown): number | undefined => {
 
 const fmtCOP = (v?: MaybeNum | string) => {
   const num = typeof v === 'string' ? parseFloat(v) : v;
-  if (num === undefined || num === null || isNaN(Number(num)) || Number(num) === 0) return '';
+  if (num === undefined || num === null || isNaN(Number(num)) || Number(num) === 0)
+    return '';
   return new Intl.NumberFormat('es-CO', {
     style: 'currency',
     currency: 'COP',
@@ -33,11 +46,32 @@ const safeStr = (v?: unknown) => (typeof v === 'string' ? v : '');
 const FacturarCredito: React.FC = () => {
   const { id: codigoFromUrl, cot } = useParams<{ id: string; cot: string }>();
   const codigo_credito = String(codigoFromUrl ?? '');
+  const id_cotizacion = String(cot ?? '');
 
-const id_cotizacion = String(cot ?? "");
-
-  const { data: datos, isLoading, error } = useCredito({ codigo_credito }, !!codigo_credito);
+  const { data: datos, isLoading, error } = useCredito(
+    { codigo_credito },
+    !!codigo_credito
+  );
   const { data: deudor } = useDeudor(codigo_credito);
+
+  // 🔹 FULL (cotización + crédito + solicitud)
+  const {
+    data: fullData,
+    isLoading: loadingFull,
+    error: errorFull,
+  } = useCotizacionFullById(id_cotizacion);
+
+  const cotizacion: any = fullData?.data?.cotizacion ?? null;
+
+  // 🔹 IVA dinámico
+  const {
+    ivaDecimal,
+    isLoading: ivaLoading,
+    error: ivaError,
+  } = useIvaDecimal();
+  const IVA_DEC = ivaLoading || ivaError ? 0.19 : ivaDecimal ?? 0.19;
+
+  const navigate = useNavigate();
 
   // ➕ Consultar si ya hay solicitud para este crédito
   const { data: solicitudesCredito, isLoading: loadingSolic } =
@@ -46,26 +80,49 @@ const id_cotizacion = String(cot ?? "");
 
   // si hay solicitud -> ocultar formulario
   const [yaRegistrada, setYaRegistrada] = useState(false);
-  useEffect(() => { setYaRegistrada(!!solicitud); }, [solicitud]);
+  useEffect(() => {
+    setYaRegistrada(!!solicitud);
+  }, [solicitud]);
+
+  // -------------------- Distribuidoras (HOOK DINÁMICO) --------------------
+  const {
+    data: distribuidorasResponse,
+    isLoading: loadingDistribuidoras,
+    error: errorDistribuidoras,
+  } = useDistribuidoras({ page: 1, limit: 200 });
+
+  const distribuidorasActivas = useMemo(
+    () =>
+      distribuidorasResponse?.data?.filter(
+        (d: any) => d.estado === 1 // solo activas
+      ) ?? [],
+    [distribuidorasResponse]
+  );
 
   // -------------------- Estado del formulario --------------------
-  const [distribuidora, setDistribuidora] = useState<string>("");
-  const [numeroRecibo, setNumeroRecibo] = useState<string>("");
-  const [observaciones, setObservaciones] = useState<string>("");
+  const [distribuidoraId, setDistribuidoraId] = useState<string>('');
+  const [numeroRecibo, setNumeroRecibo] = useState<string>('');
+  const [observaciones, setObservaciones] = useState<string>('');
   const [cedulaFile, setCedulaFile] = useState<File | null>(null);
   const [manifiestoFile, setManifiestoFile] = useState<File | null>(null);
 
-  // Para el nombre del usuario logueado (ajusta según tu auth)
+  // Para el nombre del usuario logueado
   const loggedUserName =
-    (window as any)?.auth?.user?.name ||
-    (window as any)?.user?.name ||
-    'Usuario';
+    (window as any)?.auth?.user?.name || (window as any)?.user?.name || 'Usuario';
 
   const { mutate: registrarSolicitud, isPending } = useRegistrarSolicitudFacturacion();
+  const user = useAuthStore((state) => state.user);
 
-  // Hook/función para enviar al backend (reemplaza por tu hook real .mutate(fd))
   const submitFormData = (fd: FormData) => {
-    registrarSolicitud(fd);
+    registrarSolicitud(fd, {
+      onSuccess: () => {
+        if (user?.rol === 'Administrador') {
+          navigate('/solicitudes');
+        } else {
+          navigate(`/creditos/detalle/facturar-credito/${codigo_credito}`);
+        }
+      },
+    });
   };
 
   // Fuente de verdad (mismo criterio que usas en otras vistas)
@@ -73,46 +130,91 @@ const id_cotizacion = String(cot ?? "");
   const credito = datos?.creditos?.[0];
 
   // --- Cliente ---
-  const clienteNombre =
-    [deudorData?.informacion_personal?.primer_nombre, deudorData?.informacion_personal?.segundo_nombre, deudorData?.informacion_personal?.primer_apellido, deudorData?.informacion_personal?.segundo_apellido]
-      .filter(Boolean)
-      .join(' ');
-  const clienteDoc = `${safeStr(deudorData?.informacion_personal?.tipo_documento) ?? ''} ${safeStr(deudorData?.informacion_personal?.numero_documento) ?? ''}`.trim();
-  const clienteDireccion = [safeStr(deudorData?.informacion_personal?.ciudad_residencia), safeStr(deudorData?.informacion_personal?.direccion_residencia)]
+  const clienteNombre = [
+    deudorData?.informacion_personal?.primer_nombre,
+    deudorData?.informacion_personal?.segundo_nombre,
+    deudorData?.informacion_personal?.primer_apellido,
+    deudorData?.informacion_personal?.segundo_apellido,
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const clienteDoc = `${safeStr(
+    deudorData?.informacion_personal?.tipo_documento
+  )} ${safeStr(deudorData?.informacion_personal?.numero_documento)}`.trim();
+  const clienteDireccion = [
+    safeStr(deudorData?.informacion_personal?.ciudad_residencia),
+    safeStr(deudorData?.informacion_personal?.direccion_residencia),
+  ]
     .filter(Boolean)
     .join(', ');
-  const clienteTelefono = safeStr(deudorData?.informacion_personal?.celular) || safeStr(deudorData?.informacion_personal?.telefono_fijo);
+  const clienteTelefono =
+    safeStr(deudorData?.informacion_personal?.celular) ||
+    safeStr(deudorData?.informacion_personal?.telefono_fijo);
   const clienteCorreo = safeStr(deudorData?.informacion_personal?.email);
 
-  // --- Moto ---
-  const motoNombre = safeStr(credito?.producto);
+  // -------------------- SELECCIÓN MOTO A / B (usando full) --------------------
+  let motoSeleccionada: 'a' | 'b' | undefined;
+  if (cotizacion) {
+    const prod = safeStr(credito?.producto).toLowerCase();
+
+    const descA = `${safeStr(cotizacion.marca_a)} ${safeStr(
+      cotizacion.linea_a
+    )}`.toLowerCase();
+    const descB = `${safeStr(cotizacion.marca_b)} ${safeStr(
+      cotizacion.linea_b
+    )}`.toLowerCase();
+
+    const lineaA = safeStr(cotizacion.linea_a).toLowerCase();
+    const lineaB = safeStr(cotizacion.linea_b).toLowerCase();
+
+    if (prod && descA && prod.includes(descA)) motoSeleccionada = 'a';
+    else if (prod && descB && prod.includes(descB)) motoSeleccionada = 'b';
+    else if (prod && lineaA && prod.includes(lineaA)) motoSeleccionada = 'a';
+    else if (prod && lineaB && prod.includes(lineaB)) motoSeleccionada = 'b';
+  }
+
+  // helper para campos *_a / *_b
+  const pickMotoField = (base: string): any => {
+    if (!cotizacion) return undefined;
+    const anyCot: any = cotizacion;
+    const a = anyCot[`${base}_a`];
+    const b = anyCot[`${base}_b`];
+
+    if (motoSeleccionada === 'a') return a ?? b ?? anyCot[base];
+    if (motoSeleccionada === 'b') return b ?? a ?? anyCot[base];
+
+    // fallback si no se pudo detectar
+    if (a && !b) return a;
+    if (b && !a) return b;
+    return anyCot[base] ?? a ?? b;
+  };
+
+  // --- Moto (nombre, motor, chasis, color) ---
+  const motoNombre = safeStr(credito?.producto); // texto del crédito (ej: "YAMAHA 18 – 2024")
   const numMotor = safeStr(credito?.numero_motor);
   const numChasis = safeStr(credito?.numero_chasis);
   const color = safeStr((credito as any)?.color);
 
-  // --- Costos base ---
-  const valorMoto: number | undefined = toNum(credito?.valor_producto);
+  // ===================== COSTOS / IVA / TOTALES =====================
 
-  // Si hay valorMoto, calculamos bruto + IVA para la primera tabla "Condiciones del negocio".
-  const { valorBruto, ivaCalc } = useMemo(() => {
-    if (typeof valorMoto === 'number' && Number.isFinite(valorMoto) && valorMoto > 0) {
-      const bruto = Math.round(valorMoto / 1.19);
-      const iva = Math.max(valorMoto - bruto, 0);
-      return { valorBruto: bruto, ivaCalc: iva };
-    }
-    return { valorBruto: undefined, ivaCalc: undefined };
-  }, [valorMoto]);
+  // 1) Total general del crédito (valor del producto)
+  const valorProducto: number | undefined =
+    toNum(credito?.valor_producto) ?? toNum(pickMotoField('precio_total'));
 
-  // --- Documentos / extras del backend (vienen como string) ---
-  const soat: MaybeNum = toNum((credito as any)?.soat);
-  const matricula: MaybeNum = toNum((credito as any)?.matricula);
-  const impuestos: MaybeNum = toNum((credito as any)?.impuestos);
+  // 2) Documentos: preferimos la descomposición de la cotización (soat_b, matricula_b, impuestos_b)
+  const soat: MaybeNum =
+    toNum(pickMotoField('soat')) ?? toNum((credito as any)?.soat);
+  const matricula: MaybeNum =
+    toNum(pickMotoField('matricula')) ??
+    toNum(pickMotoField('precio_documentos')) ??
+    toNum((credito as any)?.matricula);
+  const impuestos: MaybeNum =
+    toNum(pickMotoField('impuestos')) ?? toNum((credito as any)?.impuestos);
 
-  // --- Seguros y accesorios (nuevos campos del backend) ---
-  const accesoriosTotal: MaybeNum = toNum((credito as any)?.accesorios_total);
-  const precioSeguros: MaybeNum = toNum((credito as any)?.precio_seguros);
+  // 3) Seguros y accesorios (desde el crédito)
+  const accesoriosTotal: MaybeNum = toNum((credito as any)?.accesorios_total); // ej: 70000
+  const precioSeguros: MaybeNum = toNum((credito as any)?.precio_seguros); // ej: 120000
 
-  // Usaremos "Seguros y accesorios" como la suma de accesorios + seguros (sin garantía extendida)
   const accesoriosYSeguros: MaybeNum = useMemo(() => {
     const a = typeof accesoriosTotal === 'number' ? accesoriosTotal : 0;
     const s = typeof precioSeguros === 'number' ? precioSeguros : 0;
@@ -120,7 +222,7 @@ const id_cotizacion = String(cot ?? "");
     return sum > 0 ? sum : undefined;
   }, [accesoriosTotal, precioSeguros]);
 
-  // Subtotal documentos (SOAT + Matrícula + Impuestos)
+  // 4) Subtotal documentos
   const subtotalDocumentos: MaybeNum = useMemo(() => {
     const parts = [soat, matricula, impuestos].filter(
       (n): n is number => typeof n === 'number' && Number.isFinite(n) && n > 0
@@ -128,13 +230,56 @@ const id_cotizacion = String(cot ?? "");
     return parts.length ? parts.reduce((a, b) => a + b, 0) : undefined;
   }, [soat, matricula, impuestos]);
 
-  // TOTAL general
-  const totalGeneral: number | undefined = useMemo(() => {
-    const parts = [valorMoto, soat, matricula, impuestos, accesoriosYSeguros].filter(
-      (n): n is number => typeof n === 'number' && Number.isFinite(n) && n > 0
-    );
-    return parts.length ? parts.reduce((a, b) => a + b, 0) : undefined;
-  }, [valorMoto, soat, matricula, impuestos, accesoriosYSeguros]);
+  // 5) Valor de la moto (sin documentos ni seguros ni accesorios)
+  let valorMoto: number | undefined;
+  if (typeof valorProducto === 'number' && Number.isFinite(valorProducto)) {
+    const docs =
+      (typeof soat === 'number' ? soat : 0) +
+      (typeof matricula === 'number' ? matricula : 0) +
+      (typeof impuestos === 'number' ? impuestos : 0);
+    const extras =
+      (typeof accesoriosTotal === 'number' ? accesoriosTotal : 0) +
+      (typeof precioSeguros === 'number' ? precioSeguros : 0);
+
+    const base = valorProducto - docs - extras;
+    valorMoto = base > 0 ? base : valorProducto;
+  } else {
+    // fallback: usa precio_base de la moto
+    valorMoto =
+      toNum(pickMotoField('precio_base')) ?? toNum(credito?.valor_producto);
+  }
+
+  // 6) Desglose de IVA de la moto (bruto + IVA)
+  let valorBruto: number | undefined;
+  let ivaCalc: number | undefined;
+  if (
+    typeof valorMoto === 'number' &&
+    Number.isFinite(valorMoto) &&
+    valorMoto > 0
+  ) {
+    const bruto = Math.round(valorMoto / (1 + IVA_DEC));
+    const iva = Math.max(valorMoto - bruto, 0);
+    valorBruto = bruto;
+    ivaCalc = iva;
+  }
+
+  // 7) TOTAL general (coherente con el crédito)
+  const totalGeneral: number | undefined =
+    typeof valorProducto === 'number' && Number.isFinite(valorProducto)
+      ? valorProducto
+      : (() => {
+          const parts = [
+            valorMoto,
+            soat,
+            matricula,
+            impuestos,
+            accesoriosYSeguros,
+          ].filter(
+            (n): n is number =>
+              typeof n === 'number' && Number.isFinite(n) && n > 0
+          );
+          return parts.length ? parts.reduce((a, b) => a + b, 0) : undefined;
+        })();
 
   const fechaCreacion = safeStr(credito?.fecha_creacion);
   const asesor = safeStr(credito?.asesor);
@@ -143,94 +288,107 @@ const id_cotizacion = String(cot ?? "");
   // Observaciones (cuota inicial y saldo)
   const cuotaInicial: MaybeNum = toNum((credito as any)?.cuota_inicial);
   const saldoFinanciar: number | undefined =
-    typeof valorMoto === 'number'
-      ? Math.max(valorMoto - (typeof cuotaInicial === 'number' ? cuotaInicial : 0), 0)
+    typeof totalGeneral === 'number' && typeof cuotaInicial === 'number'
+      ? Math.max(totalGeneral - cuotaInicial, 0)
       : undefined;
 
   // Garantía extendida (si existe)
-  const garantiaExtendida: MaybeNum = toNum((credito as any)?.garantia_extendida_valor);
-
-  // -------------------- Listas pedidas --------------------
-  const AGENCIAS = ["Sucursal Norte", "Sucursal Centro", "Sucursal Sur"];
-
-  const DISTRIBUIDORAS = [
-    { value: "", label: "Seleccione…" },
-    { value: "gente-motos", label: "Gente Motos" },
-    { value: "supermotos-mym", label: "Supermotos MyM" },
-    { value: "unymotos-sas", label: "Unymotos SAS" },
-    { value: "distrimotos-yamaha", label: "Distrimotos Yamaha" },
-    { value: "dismerca", label: "Dismerca" },
-    { value: "supermotos-honda", label: "Supermotos Honda" },
-    { value: "motored-hero", label: "Motored Hero" },
-    { value: "los-coches", label: "Los Coches" },
-    { value: "potenza", label: "Potenza" },
-    { value: "garcia-y-montoya", label: "Garcia y Montoya" },
-    { value: "motox-1-yamaha", label: "Motox 1 Yamaha" },
-    { value: "yamaha-del-cafe", label: "Yamaha del Cafe" },
-    { value: "ibiza-motos", label: "Ibiza Motos" },
-    { value: "sukipartes", label: "Sukipartes" },
-    { value: "tiendas-uma", label: "Tiendas UMA" },
-    { value: "zagamotos", label: "Zagamotos" },
-    { value: "simotos", label: "Simotos" },
-    { value: "megamotos-akt", label: "Megamotos AKT" },
-  ];
+  const garantiaExtendida: MaybeNum = toNum(
+    (credito as any)?.garantia_extendida_valor
+  );
 
   // -------------------- Submit --------------------
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
 
-    const agenciaRandom = AGENCIAS[Math.floor(Math.random() * AGENCIAS.length)];
-    const distLabel = DISTRIBUIDORAS.find(d => d.value === distribuidora)?.label ?? "";
-    const codigo4 = String(Math.floor(1000 + Math.random() * 9000)); // 1000..9999
+      // Buscar distribuidora seleccionada desde el hook
+      const distribuidoraSeleccionada = distribuidorasActivas.find(
+        (d: any) => String(d.id) === distribuidoraId
+      );
 
-    const fd = new FormData();
-    fd.append('agencia', agenciaRandom);
-    fd.append('distribuidora', distLabel);
-    fd.append('distribuidora_id', '1');
-    fd.append('codigo_solicitud', codigo4);
-    fd.append('codigo_credito', codigo_credito);
-    if (id_cotizacion) fd.append('id_cotizacion', id_cotizacion);  // 👈 aquí viaja la cotización
-    fd.append('nombre_cliente', clienteNombre);
-    fd.append('tipo_solicitud', 'Crédito directo');
-    fd.append('numero_recibo', numeroRecibo);
-    fd.append('resibo_pago', '');
-    fd.append('facturador', loggedUserName);
-    fd.append('autorizado', 'Si');
-    fd.append('facturado', 'No');
-    fd.append('entrega_autorizada', 'No');
-    fd.append('observaciones', observaciones);
+      if (!distribuidoraSeleccionada) {
+        alert('Debe seleccionar una distribuidora válida.');
+        return;
+      }
 
-    if (cedulaFile) fd.append('cedula', cedulaFile);
-    if (manifiestoFile) fd.append('manifiesto', manifiestoFile);
+      const agenciaRandom = AGENCIAS[Math.floor(Math.random() * AGENCIAS.length)];
+      const distLabel = distribuidoraSeleccionada.nombre;
+      const codigo4 = String(Math.floor(1000 + Math.random() * 9000)); // 1000..9999
 
-    submitFormData(fd);
-  }, [AGENCIAS, DISTRIBUIDORAS, distribuidora, numeroRecibo, observaciones, cedulaFile, manifiestoFile, codigo_credito, clienteNombre, loggedUserName]);
+      const fd = new FormData();
+      fd.append('agencia', agenciaRandom);
+      fd.append('distribuidora', distLabel);
+      fd.append('distribuidora_id', String(distribuidoraSeleccionada.id));
+      fd.append('codigo_solicitud', codigo4);
+      fd.append('codigo_credito', codigo_credito);
+      if (id_cotizacion) fd.append('id_cotizacion', id_cotizacion);
+      fd.append('nombre_cliente', clienteNombre);
+      fd.append('tipo_solicitud', 'Crédito directo');
+      fd.append('numero_recibo', numeroRecibo);
+      fd.append('resibo_pago', '');
+      fd.append('facturador', loggedUserName);
+      fd.append('autorizado', 'Si');
+      fd.append('facturado', 'No');
+      fd.append('entrega_autorizada', 'No');
+      fd.append('observaciones', observaciones);
 
-  const BaseUrl = import.meta.env.VITE_API_URL ?? "http://tuclick.vozipcolombia.net.co/motos/back";
+      if (cedulaFile) fd.append('cedula', cedulaFile);
+      if (manifiestoFile) fd.append('manifiesto', manifiestoFile);
+
+      submitFormData(fd);
+    },
+    [
+      distribuidorasActivas,
+      distribuidoraId,
+      numeroRecibo,
+      observaciones,
+      cedulaFile,
+      manifiestoFile,
+      codigo_credito,
+      id_cotizacion,
+      clienteNombre,
+      loggedUserName,
+      submitFormData,
+    ]
+  );
+
+  const BaseUrl =
+    import.meta.env.VITE_API_URL ??
+    'http://tuclick.vozipcolombia.net.co/motos/back';
 
   return (
     <main className="min-h-screen w-full bg-slate-50">
       {/* Header / Migas */}
       <div className="border-b border-slate-200 bg-white/70 backdrop-blur">
         <div className="max-w-full mx-auto px-6 py-4 flex items-center justify-start gap-5">
-          <div className='pt-4 mb-3'>
-            <ButtonLink to="/solicitudes" label="Volver a facturación" direction="back" />
+          <div className="pt-4 mb-3">
+            <ButtonLink
+              to="/solicitudes"
+              label="Volver a facturación"
+              direction="back"
+            />
           </div>
-          <h1 className="text-xl font-semibold tracking-tight badge badge-soft badge-success">Solicitudes de facturación</h1>
+          <h1 className="text-xl font-semibold tracking-tight badge badge-soft badge-success">
+            Solicitudes de facturación
+          </h1>
         </div>
       </div>
 
       <div className="max-w-full mx-auto px-6 py-8 space-y-6">
-        {(isLoading) && (
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">Cargando información…</div>
+        {(isLoading ||
+          loadingSolic ||
+          loadingDistribuidoras ||
+          loadingFull ||
+          ivaLoading) && (
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            Cargando información…
+          </div>
         )}
 
-        {(loadingSolic) && (
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">Cargando información…</div>
-        )}
-        {error && (
+        {(error || errorDistribuidoras || errorFull || ivaError) && (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800 shadow-sm">
-            Ocurrió un error al cargar el crédito.
+            Ocurrió un error al cargar la información del crédito o la cotización.
           </div>
         )}
 
@@ -238,19 +396,29 @@ const id_cotizacion = String(cot ?? "");
         <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2">
-              <h2 className="text-base font-semibold text-emerald-700 mb-3">Información del cliente</h2>
+              <h2 className="text-base font-semibold text-emerald-700 mb-3">
+                Información del cliente
+              </h2>
               <div className="text-sm leading-6 text-slate-700 space-y-1.5">
                 <div className="font-medium text-slate-900">{clienteNombre}</div>
                 <div className="text-slate-600">{clienteDoc}</div>
                 <div className="text-slate-600">{clienteDireccion}</div>
-                <div><span className="font-semibold text-slate-700">Teléfono:</span> <span className="text-slate-600">{clienteTelefono || ''}</span></div>
-                <div><span className="font-semibold text-slate-700">Correo:</span> <span className="text-slate-600">{clienteCorreo}</span></div>
+                <div>
+                  <span className="font-semibold text-slate-700">Teléfono:</span>{' '}
+                  <span className="text-slate-600">{clienteTelefono || ''}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-slate-700">Correo:</span>{' '}
+                  <span className="text-slate-600">{clienteCorreo}</span>
+                </div>
               </div>
             </div>
             <div className="md:col-span-1">
               <div className="h-full rounded-lg bg-[#F1FCF6] border border-success p-4 flex flex-col justify-center md:justify-end md:items-end">
                 <div className="text-right">
-                  <div className="text-lg font-semibold text-slate-900">Solicitud #{numeroSolicitud ?? ''}</div>
+                  <div className="text-lg font-semibold text-slate-900">
+                    Solicitud #{numeroSolicitud ?? ''}
+                  </div>
                   <div className="text-sm text-slate-600 inline-flex items-center gap-1 mt-1">
                     <CalendarDays className="w-4 h-4" />
                     <span>{fechaCreacion}</span>
@@ -295,11 +463,16 @@ const id_cotizacion = String(cot ?? "");
             <RowRight label="Valor Moto:" value={fmtCOP(valorMoto)} />
             <RowRight label="Valor bruto:" value={fmtCOP(valorBruto)} />
             <RowRight label="IVA:" value={fmtCOP(ivaCalc)} />
-            <RowRight label="Total:" value={fmtCOP(valorMoto)} bold badge="inline-block rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5" />
+            <RowRight
+              label="Total:"
+              value={fmtCOP(valorMoto)}
+              bold
+              badge="inline-block rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5"
+            />
           </div>
         </section>
 
-        {/* 🔹 NUEVO: Precio de documentos */}
+        {/* Precio de documentos */}
         <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
           <div className="bg-sky-700 text-white font-semibold px-5 py-2.5 text-sm">
             Precio de documentos
@@ -308,7 +481,11 @@ const id_cotizacion = String(cot ?? "");
             <RowRight label="SOAT:" value={fmtCOP(soat)} />
             <RowRight label="Matrícula:" value={fmtCOP(matricula)} />
             <RowRight label="Impuestos:" value={fmtCOP(impuestos)} />
-            <RowRight label="Subtotal documentos:" value={fmtCOP(subtotalDocumentos)} bold />
+            <RowRight
+              label="Subtotal documentos:"
+              value={fmtCOP(subtotalDocumentos)}
+              bold
+            />
           </div>
         </section>
 
@@ -322,9 +499,25 @@ const id_cotizacion = String(cot ?? "");
             <div className="divide-y divide-slate-200">
               <RowRight label="Accesorios:" value={fmtCOP(accesoriosTotal)} />
               <RowRight label="Seguros:" value={fmtCOP(precioSeguros)} />
-              {/* Desglose sobre el total de seguros+accesorios */}
-              <RowRight label="Valor bruto:" value={fmtCOP(accesoriosYSeguros ? Math.round((accesoriosYSeguros as number) / 1.19) : undefined)} />
-              <RowRight label="IVA:" value={fmtCOP(accesoriosYSeguros ? (accesoriosYSeguros as number) - Math.round((accesoriosYSeguros as number) / 1.19) : undefined)} />
+              <RowRight
+                label="Valor bruto:"
+                value={fmtCOP(
+                  accesoriosYSeguros
+                    ? Math.round((accesoriosYSeguros as number) / (1 + IVA_DEC))
+                    : undefined
+                )}
+              />
+              <RowRight
+                label="IVA:"
+                value={fmtCOP(
+                  accesoriosYSeguros
+                    ? (accesoriosYSeguros as number) -
+                        Math.round(
+                          (accesoriosYSeguros as number) / (1 + IVA_DEC)
+                        )
+                    : undefined
+                )}
+              />
               <RowRight label="Total:" value={fmtCOP(accesoriosYSeguros)} />
             </div>
           </div>
@@ -336,11 +529,19 @@ const id_cotizacion = String(cot ?? "");
             </div>
             <div className="divide-y divide-slate-200">
               <RowRight label="Valor Moto:" value={fmtCOP(valorMoto)} />
-              <RowRight label="SOAT:" value={fmtCOP(precioSeguros)} />
+              <RowRight label="SOAT:" value={fmtCOP(soat)} />
               <RowRight label="Matrícula:" value={fmtCOP(matricula)} />
               <RowRight label="Impuestos:" value={fmtCOP(impuestos)} />
-              <RowRight label="Seguros y accesorios:" value={fmtCOP(accesoriosYSeguros)} />
-              <RowRight label="TOTAL:" value={fmtCOP(totalGeneral)} bold badge="inline-block rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5" />
+              <RowRight
+                label="Seguros y accesorios:"
+                value={fmtCOP(accesoriosYSeguros)}
+              />
+              <RowRight
+                label="TOTAL:"
+                value={fmtCOP(totalGeneral)}
+                bold
+                badge="inline-block rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5"
+              />
             </div>
           </div>
         </section>
@@ -350,47 +551,72 @@ const id_cotizacion = String(cot ?? "");
           <h3 className="font-semibold text-slate-900 mb-4">Observaciones</h3>
           <ul className="list-disc pl-6 text-sm leading-7 text-slate-700 space-y-1">
             <li>
-              Crédito aprobado por <span className="font-semibold text-slate-900">Crédito directo</span>
+              Crédito aprobado por{' '}
+              <span className="font-semibold text-slate-900">
+                Crédito directo
+              </span>
             </li>
             <li>
-              El crédito tiene una cuota inicial de <span className="font-semibold text-slate-900">{fmtCOP(cuotaInicial)}</span>
+              El crédito tiene una cuota inicial de{' '}
+              <span className="font-semibold text-slate-900">
+                {fmtCOP(cuotaInicial)}
+              </span>
             </li>
             <li>
-              El saldo a financiar del producto es <span className="font-semibold text-slate-900">{fmtCOP(saldoFinanciar)}</span>
+              El saldo a financiar del producto es{' '}
+              <span className="font-semibold text-slate-900">
+                {fmtCOP(saldoFinanciar)}
+              </span>
             </li>
             <li>
-              La garantía extendida tiene un valor de <span className="font-semibold text-slate-900">{fmtCOP(garantiaExtendida)}</span>
+              La garantía extendida tiene un valor de{' '}
+              <span className="font-semibold text-slate-900">
+                {fmtCOP(garantiaExtendida)}
+              </span>
             </li>
-            {/* <li>
-              Incluye los siguientes seguros:
-            </li> */}
           </ul>
         </section>
 
         {/* Formulario inferior */}
         {!yaRegistrada ? (
           <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="text-center text-slate-900 font-semibold mb-6">Complete la siguiente información</h3>
+            <h3 className="text-center text-slate-900 font-semibold mb-6">
+              Complete la siguiente información
+            </h3>
 
-            <form className="grid grid-cols-1 md:grid-cols-2 gap-5" onSubmit={handleSubmit}>
+            <form
+              className="grid grid-cols-1 md:grid-cols-2 gap-5"
+              onSubmit={handleSubmit}
+            >
               <div className="flex flex-col gap-1">
-                <label className="text-sm text-slate-600">Distribuidora</label>
+                <label className="text-sm text-slate-600">
+                  Distribuidora <span className="text-rose-600">*</span>
+                </label>
                 <select
                   className="select select-bordered w-full focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500"
-                  value={distribuidora}
-                  onChange={(e) => setDistribuidora(e.target.value)}
+                  value={distribuidoraId}
+                  onChange={(e) => setDistribuidoraId(e.target.value)}
                   required
+                  disabled={loadingDistribuidoras || !!errorDistribuidoras}
                 >
-                  {DISTRIBUIDORAS.map((opt) => (
-                    <option key={opt.value || "default"} value={opt.value}>
-                      {opt.label}
+                  <option value="">Seleccione…</option>
+                  {distribuidorasActivas.map((d: any) => (
+                    <option key={d.id} value={d.id}>
+                      {d.nombre}
                     </option>
                   ))}
                 </select>
+                {loadingDistribuidoras && (
+                  <span className="text-xs text-slate-400 mt-1">
+                    Cargando distribuidoras…
+                  </span>
+                )}
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-sm text-slate-600">Recibo de pago N° <span className="text-rose-600">*</span></label>
+                <label className="text-sm text-slate-600">
+                  Recibo de pago N° <span className="text-rose-600">*</span>
+                </label>
                 <input
                   type="text"
                   className="input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500"
@@ -402,7 +628,9 @@ const id_cotizacion = String(cot ?? "");
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-sm text-slate-600">Copia de la cédula <span className="text-rose-600">*</span></label>
+                <label className="text-sm text-slate-600">
+                  Copia de la cédula <span className="text-rose-600">*</span>
+                </label>
                 <input
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
@@ -413,7 +641,9 @@ const id_cotizacion = String(cot ?? "");
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-sm text-slate-600">Manifiesto <span className="text-rose-600">*</span></label>
+                <label className="text-sm text-slate-600">
+                  Manifiesto <span className="text-rose-600">*</span>
+                </label>
                 <input
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
@@ -437,9 +667,20 @@ const id_cotizacion = String(cot ?? "");
 
               <div className="md:col-span-2 mt-2 flex items-center justify-between">
                 <Link to={`/creditos/detalle/${codigo_credito}`}>
-                  <button type="button" className="btn border-slate-300 bg-white hover:bg-slate-50 text-slate-700">⟵ Volver</button>
+                  <button
+                    type="button"
+                    className="btn border-slate-300 bg-white hover:bg-slate-50 text-slate-700"
+                  >
+                    ⟵ Volver
+                  </button>
                 </Link>
-                <button type="submit" disabled={isPending} className="btn bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600">
+                <button
+                  type="submit"
+                  disabled={
+                    isPending || loadingDistribuidoras || !!errorDistribuidoras
+                  }
+                  className="btn bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600"
+                >
                   {isPending ? 'Enviando…' : '✓ Aceptar'}
                 </button>
               </div>
@@ -450,7 +691,9 @@ const id_cotizacion = String(cot ?? "");
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             {/* Encabezado */}
             <div className="flex items-center justify-between gap-3 mb-6">
-              <h3 className="text-lg font-semibold text-slate-900">Solicitud registrada</h3>
+              <h3 className="text-lg font-semibold text-slate-900">
+                Solicitud registrada
+              </h3>
 
               {/* Badges de estado (DaisyUI) */}
               <div className="hidden md:flex flex-wrap items-center gap-2">
@@ -469,32 +712,44 @@ const id_cotizacion = String(cot ?? "");
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Datos de la solicitud */}
               <div className="rounded-xl border border-slate-200 p-4">
-                <h4 className="font-semibold text-slate-900 mb-3">Datos de la solicitud</h4>
+                <h4 className="font-semibold text-slate-900 mb-3">
+                  Datos de la solicitud
+                </h4>
 
                 <dl className="text-sm text-slate-700 grid grid-cols-1 gap-2">
                   <div className="flex justify-between gap-4">
                     <dt className="text-slate-500">Agencia</dt>
-                    <dd className="font-medium text-right">{solicitud?.agencia ?? '—'}</dd>
+                    <dd className="font-medium text-right">
+                      {solicitud?.agencia ?? '—'}
+                    </dd>
                   </div>
 
                   <div className="flex justify-between gap-4">
                     <dt className="text-slate-500">Distribuidora</dt>
-                    <dd className="font-medium text-right">{solicitud?.distribuidora ?? '—'}</dd>
+                    <dd className="font-medium text-right">
+                      {solicitud?.distribuidora ?? '—'}
+                    </dd>
                   </div>
 
                   <div className="flex justify-between gap-4">
                     <dt className="text-slate-500">Código</dt>
-                    <dd className="font-medium text-right">{solicitud?.codigo ?? '—'}</dd>
+                    <dd className="font-medium text-right">
+                      {solicitud?.codigo ?? '—'}
+                    </dd>
                   </div>
 
                   <div className="flex justify-between gap-4">
                     <dt className="text-slate-500">Código crédito</dt>
-                    <dd className="font-medium text-right">{solicitud?.codigoCredito ?? '—'}</dd>
+                    <dd className="font-medium text-right">
+                      {solicitud?.codigoCredito ?? '—'}
+                    </dd>
                   </div>
 
                   <div className="flex justify-between gap-4">
                     <dt className="text-slate-500">Cliente</dt>
-                    <dd className="font-medium text-right">{solicitud?.cliente ?? '—'}</dd>
+                    <dd className="font-medium text-right">
+                      {solicitud?.cliente ?? '—'}
+                    </dd>
                   </div>
 
                   <div className="flex justify-between gap-4">
@@ -508,7 +763,9 @@ const id_cotizacion = String(cot ?? "");
 
                   <div className="flex justify-between gap-4">
                     <dt className="text-slate-500">Recibo pago</dt>
-                    <dd className="font-medium text-right">{solicitud?.numeroRecibo ?? '—'}</dd>
+                    <dd className="font-medium text-right">
+                      {solicitud?.numeroRecibo ?? '—'}
+                    </dd>
                   </div>
 
                   {/* Badges en detalle también */}
@@ -533,7 +790,11 @@ const id_cotizacion = String(cot ?? "");
                   <div className="flex justify-between gap-4">
                     <dt className="text-slate-500">Entrega autorizada</dt>
                     <dd className="text-right">
-                      <span className={estadoBadge(solicitud?.entregaAutorizada).clase}>
+                      <span
+                        className={estadoBadge(
+                          solicitud?.entregaAutorizada
+                        ).clase}
+                      >
                         {estadoBadge(solicitud?.entregaAutorizada).texto}
                       </span>
                     </dd>
@@ -541,12 +802,16 @@ const id_cotizacion = String(cot ?? "");
 
                   <div className="flex justify-between gap-4">
                     <dt className="text-slate-500">Creado</dt>
-                    <dd className="font-medium text-right">{solicitud?.fechaCreacion ?? '—'}</dd>
+                    <dd className="font-medium text-right">
+                      {solicitud?.fechaCreacion ?? '—'}
+                    </dd>
                   </div>
 
                   <div className="flex justify-between gap-4">
                     <dt className="text-slate-500">Actualizado</dt>
-                    <dd className="font-medium text-right">{solicitud?.actualizado ?? '—'}</dd>
+                    <dd className="font-medium text-right">
+                      {solicitud?.actualizado ?? '—'}
+                    </dd>
                   </div>
                 </dl>
               </div>
@@ -560,7 +825,9 @@ const id_cotizacion = String(cot ?? "");
                   <li className="flex items-center justify-between gap-4">
                     <div className="min-w-0">
                       <span className="font-medium block">Cédula</span>
-                      <span className="text-xs text-slate-500">Documento de identidad</span>
+                      <span className="text-xs text-slate-500">
+                        Documento de identidad
+                      </span>
                     </div>
 
                     {solicitud?.cedulaPath ? (
@@ -584,7 +851,9 @@ const id_cotizacion = String(cot ?? "");
                   <li className="flex items-center justify-between gap-4">
                     <div className="min-w-0">
                       <span className="font-medium block">Manifiesto</span>
-                      <span className="text-xs text-slate-500">Soporte de manifiesto</span>
+                      <span className="text-xs text-slate-500">
+                        Soporte de manifiesto
+                      </span>
                     </div>
 
                     {solicitud?.manifiestoPath ? (
@@ -607,7 +876,9 @@ const id_cotizacion = String(cot ?? "");
                   <li className="flex items-center justify-between gap-4">
                     <div className="min-w-0">
                       <span className="font-medium block">Factura</span>
-                      <span className="text-xs text-slate-500">Factura electrónica (demo)</span>
+                      <span className="text-xs text-slate-500">
+                        Factura electrónica (demo)
+                      </span>
                     </div>
                     <FacturaFinalDownload />
                   </li>
@@ -635,10 +906,19 @@ const id_cotizacion = String(cot ?? "");
   );
 };
 
-const RowRight: React.FC<{ label: string; value?: string; bold?: boolean, badge?: string }> = ({ label, value = '', bold, badge = '' }) => (
+const RowRight: React.FC<{
+  label: string;
+  value?: string;
+  bold?: boolean;
+  badge?: string;
+}> = ({ label, value = '', bold, badge = '' }) => (
   <div className="px-5 py-3 grid grid-cols-12 items-center text-sm">
     <div className="col-span-8 sm:col-span-10 text-slate-700">{label}</div>
-    <div className={`col-span-4 sm:col-span-2 text-right ${bold ? 'font-semibold text-slate-900' : 'font-medium text-slate-800'}`}>
+    <div
+      className={`col-span-4 sm:col-span-2 text-right ${
+        bold ? 'font-semibold text-slate-900' : 'font-medium text-slate-800'
+      }`}
+    >
       {badge ? <span className={badge}>{value}</span> : value}
     </div>
   </div>

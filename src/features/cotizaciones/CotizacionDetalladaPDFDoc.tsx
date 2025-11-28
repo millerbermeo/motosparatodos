@@ -356,6 +356,11 @@ const fmtCOP = (v: any) =>
     maximumFractionDigits: 0,
   }).format(Number(v || 0));
 
+const num = (v: any): number => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
+
 const fmtDateTime = (raw?: string) => {
   if (!raw) return "";
   const d = new Date(raw.replace(" ", "T"));
@@ -509,6 +514,22 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
   const motoImgA = resolveMotoImg(d, "A", motoFotoAUrl);
   const motoImgB = hayMotoB ? resolveMotoImg(d, "B", motoFotoBUrl) : null;
 
+  // ===================== CÁLCULOS ECONÓMICOS (A / B) =====================
+
+  // Moto A
+  const totalSinSegurosA = num(d.total_sin_seguros_a);
+  const totalA =
+    num(d.precio_total_a) || totalSinSegurosA + num(d.otro_seguro_a);
+  const cuotaInicialA = num(d.cuota_inicial_a);
+  const saldoAFinanciarA = Math.max(totalA - cuotaInicialA, 0);
+
+  // Moto B
+  const totalSinSegurosB = num(d.total_sin_seguros_b);
+  const totalB =
+    num(d.precio_total_b) || totalSinSegurosB + num(d.otro_seguro_b);
+  const cuotaInicialB = num(d.cuota_inicial_b);
+  const saldoAFinanciarB = Math.max(totalB - cuotaInicialB, 0);
+
   return (
     <Document>
       <Page size="A4" style={styles.page} wrap>
@@ -604,11 +625,11 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
           <View style={styles.resumenCol}>
             <Text style={styles.resumenHeader}>Resumen económico</Text>
             <Text style={styles.resumenLine}>
-              Moto A: {safe(motoALabel)} · Total: {fmtCOP(d.precio_total_a)}
+              Moto A: {safe(motoALabel)} · Total: {fmtCOP(totalA)}
             </Text>
             {hayMotoB && (
               <Text style={styles.resumenLine}>
-                Moto B: {safe(motoBLabel)} · Total: {fmtCOP(d.precio_total_b)}
+                Moto B: {safe(motoBLabel)} · Total: {fmtCOP(totalB)}
               </Text>
             )}
             <Text style={styles.resumenLine}>
@@ -707,7 +728,7 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
             </Text>
           </View>
 
-          {/* Imagen moto A (usa URL calculada) */}
+          {/* Imagen moto A */}
           {motoImgA && (
             <View style={styles.motoImageWrapper}>
               <Image src={motoImgA} style={styles.motoImage} />
@@ -721,12 +742,12 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
           <View style={styles.row}>
             <View style={styles.col}>
               <Text style={styles.label}>Total sin seguros</Text>
-              <Text style={styles.value}>{fmtCOP(d.total_sin_seguros_a)}</Text>
+              <Text style={styles.value}>{fmtCOP(totalSinSegurosA)}</Text>
             </View>
             <View style={styles.col}>
               <Text style={[styles.label, { color: ACCENT }]}>Total Moto A</Text>
               <Text style={[styles.value, { fontWeight: "bold" }]}>
-                {fmtCOP(d.precio_total_a)}
+                {fmtCOP(totalA)}
               </Text>
             </View>
           </View>
@@ -756,8 +777,15 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
               ["Hand savers", d.hand_savers_1, ""],
               ["Otros adicionales", d.otros_adicionales_1, ""],
               ["TOTAL adicionales", d.total_adicionales_1, ""],
-              ["Total sin seguros", d.total_sin_seguros_a, ""],
-              ["Saldo a financiar", d.saldo_financiar_a, ""],
+              ["Total sin seguros", totalSinSegurosA, ""],
+              ["Total", totalA, ""],
+              [
+                "Saldo a financiar",
+                saldoAFinanciarA,
+                cuotaInicialA > 0
+                  ? `Total - cuota inicial (${fmtCOP(cuotaInicialA)})`
+                  : "Total (incluye seguros)",
+              ],
             ].map(([label, val, detail], idx) => (
               <View style={styles.tableRow} key={String(label) + idx}>
                 <Text style={styles.tableCell}>{label}</Text>
@@ -783,7 +811,7 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
                 </Text>
               </View>
 
-              {/* Imagen moto B (usa URL calculada) */}
+              {/* Imagen moto B */}
               {motoImgB && (
                 <View style={styles.motoImageWrapper}>
                   <Image src={motoImgB} style={styles.motoImage} />
@@ -798,7 +826,7 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
                 <View style={styles.col}>
                   <Text style={styles.label}>Total sin seguros</Text>
                   <Text style={styles.value}>
-                    {fmtCOP(d.total_sin_seguros_b)}
+                    {fmtCOP(totalSinSegurosB)}
                   </Text>
                 </View>
                 <View style={styles.col}>
@@ -806,7 +834,7 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
                     Total Moto B
                   </Text>
                   <Text style={[styles.value, { fontWeight: "bold" }]}>
-                    {fmtCOP(d.precio_total_b)}
+                    {fmtCOP(totalB)}
                   </Text>
                 </View>
               </View>
@@ -835,8 +863,15 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
                   ["Hand savers", d.hand_savers_2, ""],
                   ["Otros adicionales", d.otros_adicionales_2, ""],
                   ["TOTAL adicionales", d.total_adicionales_2, ""],
-                  ["Total sin seguros", d.total_sin_seguros_b, ""],
-                  ["Saldo a financiar", d.saldo_financiar_b, ""],
+                  ["Total sin seguros", totalSinSegurosB, ""],
+                  ["Total", totalB, ""],
+                  [
+                    "Saldo a financiar",
+                    saldoAFinanciarB,
+                    cuotaInicialB > 0
+                      ? `Total - cuota inicial (${fmtCOP(cuotaInicialB)})`
+                      : "Total (incluye seguros)",
+                  ],
                 ].map(([label, val, detail], idx) => (
                   <View style={styles.tableRow} key={String(label) + idx}>
                     <Text style={styles.tableCell}>{label}</Text>
@@ -924,11 +959,9 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
             value={safe(d.beneficios ?? "", "—")}
             colSpan={2}
           />
-       
         </View>
-        
-             <View style={styles.boxSoft}>
-        
+
+        <View style={styles.boxSoft}>
           <InfoRowPDF
             label="Observaciones"
             value={safe(d.comentario2 ?? d.comentario ?? "", "—")}
@@ -966,16 +999,6 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
             entenderá que la empresa queda autorizada para el uso de los datos a
             fin de suministrar, a través de documentos digitales y/o en físico
             la información comercial y de venta al consumidor de la siguiente
-            forma: identificación del titular para atención de solicitudes en
-            los canales de atención de la compañía; actualización de datos;
-            compartida con terceros relacionados; acompañamiento a compradores y
-            envío de productos; implementación de campañas; invitación a eventos
-            comerciales de mercadeo y de servicio posventa; respuesta y
-            seguimiento a la gestión de peticiones, quejas y reclamos de todo
-            tipo; investigaciones, estudios de mercado y evaluaciones de
-            satisfacción; envío de información comercial, educativa, de servicio
-            y de importancia para la industria o el sector; conocimiento del
-            consumidor; generación de estadísticas y reportes.
           </Text>
           <Text style={styles.habeasText}>
             También quedan facultadas la empresa y el consumidor para: a)

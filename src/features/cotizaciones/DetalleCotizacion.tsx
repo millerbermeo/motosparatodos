@@ -701,11 +701,11 @@ const DetalleCotizacion: React.FC = () => {
                   <DataRow label="Total sin seguros" value={fmtCOP(moto.totalSinSeguros)} />
                   <DataRow label="Total" value={fmtCOP(moto.total)} strong />
                   {/* 👇 NUEVO: muestra saldo a financiar */}
-                  <DataRow
+                  {/* <DataRow
                     label="Saldo a financiar"
                     value={fmtCOP(moto.saldoFinanciar)}
                     strong
-                  />
+                  /> */}
                 </div>
 
                 <MotoImage
