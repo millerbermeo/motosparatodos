@@ -233,17 +233,22 @@ const DetallesFacturacion: React.FC = () => {
     (sol as any)?.estado_facturacion ||
     undefined;
 
-  const esContado = (() => {
-    const tipo = (
-      cot?.tipo_pago ??
-      cred?.tipo_pago ??
-      sol?.tipo_solicitud ??
-      ""
-    )
-      .toString()
-      .toLowerCase();
-    return tipo.includes("contado");
-  })();
+  // Tipo de pago unificado
+  const tipoPagoTexto = (
+    cot?.tipo_pago ??
+    cred?.tipo_pago ??
+    sol?.tipo_solicitud ??
+    ""
+  )
+    .toString()
+    .toLowerCase();
+
+  const esContado = tipoPagoTexto.includes("contado");
+
+  // Crédito de terceros (con o sin tilde)
+  const esCreditoTerceros =
+    tipoPagoTexto.includes("crédito de terceros") ||
+    tipoPagoTexto.includes("credito de terceros");
 
   const ultimaSolRegistro: any =
     (ultimaSolData as any)?.registro ?? ultimaSolData ?? null;
@@ -466,15 +471,19 @@ const DetallesFacturacion: React.FC = () => {
 
   const tieneFactura = !!facturaUrlFinal;
 
-  // 🔹 LÓGICA PARA CONTADO vs CRÉDITO:
-  // - Contado: pasa por DescuentosContraentregaPanel y luego por DocumentosSolicitud (cuando is_final = 1)
-  // - Crédito: NO muestra DescuentosContraentregaPanel, va directo a DocumentosSolicitud cuando haya factura
+  // 🔹 LÓGICA PARA MOSTRAR PANEL / DOCUMENTOS
+  // - Contado y Crédito de terceros → pasan por DescuentosContraentregaPanel, luego DocumentosSolicitud cuando is_final = 1
+  // - Créditos normales → NO panel; van directo a DocumentosSolicitud cuando hay factura + idSolicitud
+
   const debeMostrarDescuentosPanel =
-    esContado && !!idSolicitud && tieneFactura && !isFinalAutorizacion;
+    (esContado || esCreditoTerceros) &&
+    !!idSolicitud &&
+    tieneFactura &&
+    !isFinalAutorizacion;
 
   const debeMostrarDocumentosSolicitud =
-    (esContado && isFinalAutorizacion) ||
-    (!esContado && !!idSolicitud && tieneFactura);
+    ((esContado || esCreditoTerceros) && isFinalAutorizacion) ||
+    (!esContado && !esCreditoTerceros && !!idSolicitud && tieneFactura);
 
   // ===================== HANDLERS FACTURA =====================
 
@@ -608,7 +617,6 @@ const DetallesFacturacion: React.FC = () => {
                           <span className="font-semibold">
                             Método de pago:
                           </span>{" "}
-
                           {cot.metodo_pago}
                         </div>
                       )}
@@ -899,7 +907,7 @@ const DetallesFacturacion: React.FC = () => {
               </div>
             </section>
 
-            {/* Observaciones crédito: SOLO si NO es contado */}
+            {/* Observaciones crédito: SOLO si NO es contado (incluye crédito normal y de terceros) */}
             {!esContado && (
               <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
                 <div className="p-6">
@@ -921,6 +929,7 @@ const DetallesFacturacion: React.FC = () => {
                     </li>
                     <li>
                       Saldo a financiar:{" "}
+
                       <span className="font-semibold">
                         {fmtCOP(saldoFinanciar)}
                       </span>
@@ -930,14 +939,14 @@ const DetallesFacturacion: React.FC = () => {
               </section>
             )}
 
-            {/* 🔹 Contado: si YA hay factura y aún NO es final -> panel de descuentos / contraentrega */}
+            {/* 🔹 Contado o Crédito de terceros: si YA hay factura y aún NO es final -> panel de descuentos / contraentrega */}
             {debeMostrarDescuentosPanel && (
               <DescuentosContraentregaPanel idSolicitud={idSolicitud!} />
             )}
 
             {/* 🔹 DocumentosSolicitud:
-                - Contado: cuando is_final = 1
-                - Crédito: cuando ya hay factura e idSolicitud (sin pasar por descuentos) */}
+                - Contado / Crédito de terceros: cuando is_final = 1
+                - Crédito normal: cuando ya hay factura e idSolicitud (sin pasar por descuentos) */}
             {debeMostrarDocumentosSolicitud && (
               <DocumentosSolicitud
                 id_factura={Number(id_cotizacion)}
