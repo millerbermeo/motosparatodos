@@ -1,10 +1,20 @@
 // src/components/solicitudes/SolicitudFormulario.tsx
 import React, { useState } from "react";
 import { useSubirFirma } from "../../../services/documentosServices";
+import { useCredito } from "../../../services/creditosServices";
 import { useParams } from "react-router-dom";
 import { useWizardStore } from "../../../store/wizardStore";
 import Swal from "sweetalert2";
 import SolicitudCreditoPDFDoc from "../pdf/SolicitudCreditoPDF";
+
+// 🔧 BASE URL PARA ARCHIVOS DEL BACK
+const BASE_URL_BACK = "https://tuclick.vozipcolombia.net.co/motos/back/";
+
+const buildFirmasUrl = (path?: string | null): string | null => {
+  if (!path) return null;
+  const cleanPath = path.replace(/^\/+/, ""); // quitar / inicial
+  return `${BASE_URL_BACK}${encodeURI(cleanPath)}`; // encode para espacios, paréntesis, etc.
+};
 
 const SolicitudFormulario: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -21,6 +31,22 @@ const SolicitudFormulario: React.FC = () => {
   // Mutación para subir firma
   const subirFirma = useSubirFirma();
   const isUploading = subirFirma.isPending;
+
+  // 👇 Traer información del crédito para saber si ya hay firma registrada
+  const { data, isLoading: isLoadingCredito, isError: isErrorCredito } =
+    useCredito(
+      { codigo_credito },
+      !!codigo_credito // solo si hay código
+    );
+
+  const creditoBackend =
+    data?.success && data.creditos?.length ? data.creditos[0] : null;
+
+  const firmasUrl = React.useMemo(
+    () =>
+      creditoBackend?.firmas ? buildFirmasUrl(creditoBackend.firmas) : null,
+    [creditoBackend]
+  );
 
   const handleUpload = () => {
     if (!file) {
@@ -68,11 +94,11 @@ const SolicitudFormulario: React.FC = () => {
   return (
     <div className="p-6 space-y-6 w-full flex flex-col">
       {/* Sección 1: Descargar PDF */}
-     <div className="space-y-2 w-full flex flex-col">
-<h2 className="text-lg font-semibold">1. Descargar solicitud</h2>
-{/* Usa el componente de PDF para generar y descargar la solicitud */}
-<SolicitudCreditoPDFDoc />
-</div>
+      <div className="space-y-2 w-full flex flex-col">
+        <h2 className="text-lg font-semibold">1. Descargar solicitud</h2>
+        {/* Usa el componente de PDF para generar y descargar la solicitud */}
+        <SolicitudCreditoPDFDoc />
+      </div>
 
       {/* Sección 2: Adjuntar firmas (opcional) */}
       <div className="space-y-2 w-full">
@@ -87,11 +113,57 @@ const SolicitudFormulario: React.FC = () => {
         />
         {file && (
           <div className="text-sm opacity-70">
-            Archivo seleccionado: <span className="font-medium">{file.name}</span>
+            Archivo seleccionado:{" "}
+            <span className="font-medium">{file.name}</span>
           </div>
         )}
 
+        {/* 👇 Mostrar firma registrada (si existe en el backend) */}
+        <div className="mt-4 space-y-2">
+          {isLoadingCredito && (
+            <div className="text-xs opacity-60">
+              Buscando firma registrada…
+            </div>
+          )}
 
+          {isErrorCredito && (
+            <div className="text-xs text-error">
+              No se pudo verificar si existe una firma registrada.
+            </div>
+          )}
+
+          {firmasUrl && (
+            <div className="space-y-3">
+              <h3 className="text-md font-semibold">Firma registrada</h3>
+
+              {/* Previsualización simple */}
+              {firmasUrl.toLowerCase().endsWith(".pdf") ? (
+                <iframe
+                  src={firmasUrl}
+                  title="Firma solicitud de crédito"
+                  className="w-full h-72 border rounded-lg"
+                />
+              ) : (
+                <img
+                  src={firmasUrl}
+                  alt="Firma registrada del cliente"
+                  className="max-h-72 border rounded-lg object-contain"
+                />
+              )}
+
+              {/* Botón para abrir/descargar en nueva pestaña */}
+              <a
+                href={firmasUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-outline btn-primary btn-sm"
+                download
+              >
+                Ver / descargar firma
+              </a>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Controles de paso */}
@@ -105,7 +177,6 @@ const SolicitudFormulario: React.FC = () => {
           >
             ← Anterior
           </button>
-
         </div>
         <div className="flex gap-4">
           <button
@@ -121,7 +192,6 @@ const SolicitudFormulario: React.FC = () => {
             type="button"
             className="btn btn-warning"
             onClick={() => {
-            
               next();
             }}
             disabled={isUploading}
