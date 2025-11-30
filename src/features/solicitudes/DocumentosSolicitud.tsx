@@ -122,7 +122,7 @@ const DocumentosSolicitud: React.FC<Props> = ({
         <button
           type="button"
           onClick={onVolver}
-          className="inline-flex items-center justify-center rounded-lg px-4 py-2
+          className="inline-flex cursor-pointer items-center justify-center rounded-lg px-4 py-2
                      bg-rose-100 text-rose-700 hover:bg-rose-200"
           disabled={loading}
         >
@@ -135,7 +135,7 @@ const DocumentosSolicitud: React.FC<Props> = ({
             type="button"
             onClick={onAceptar}
             disabled={loading}
-            className="inline-flex items-center gap-2 rounded-lg px-4 py-2
+            className="inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2
                        bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed"
             title="Aprobar entrega"
           >
@@ -158,10 +158,10 @@ const DownloadButton: React.FC<{
   hint?: string;
 }> = ({ label, disabled, onClick, hint }) => {
   const base =
-    "w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 " +
+    "w-full inline-flex items-center cursor-pointer justify-center gap-2 rounded-lg px-4 py-2 " +
     "bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed";
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1 cursor-pointer">
       <button
         type="button"
         className={base}

@@ -1,6 +1,6 @@
 // src/pages/DetallesFacturacion.tsx
 import React, { useMemo, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useCotizacionFullById } from "../services/fullServices";
 import DocumentosSolicitud from "../features/solicitudes/DocumentosSolicitud";
 import { PDFDownloadLink } from "@react-pdf/renderer";
@@ -30,17 +30,17 @@ const toNum = (v: unknown): number | undefined => {
 const fmtCOP = (v?: Num) =>
   typeof v === "number" && Number.isFinite(v)
     ? new Intl.NumberFormat("es-CO", {
-        style: "currency",
-        currency: "COP",
-        maximumFractionDigits: 0,
-      }).format(v)
+      style: "currency",
+      currency: "COP",
+      maximumFractionDigits: 0,
+    }).format(v)
     : v === 0
-    ? new Intl.NumberFormat("es-CO", {
+      ? new Intl.NumberFormat("es-CO", {
         style: "currency",
         currency: "COP",
         maximumFractionDigits: 0,
       }).format(0)
-    : "—";
+      : "—";
 
 const pick = <T,>(...vals: (T | undefined | null | "")[]): T | undefined => {
   for (const v of vals) {
@@ -71,9 +71,8 @@ const RowRight: React.FC<{
   <div className="px-5 py-3 grid grid-cols-12 items-center text-sm">
     <div className="col-span-8 sm:col-span-10 text-slate-700">{label}</div>
     <div
-      className={`col-span-4 sm:col-span-2 text-right ${
-        bold ? "font-semibold text-slate-900" : "font-medium text-slate-800"
-      }`}
+      className={`col-span-4 sm:col-span-2 text-right ${bold ? "font-semibold text-slate-900" : "font-medium text-slate-800"
+        }`}
     >
       {badge ? <span className={badge}>{value}</span> : value}
     </div>
@@ -152,6 +151,90 @@ const desglosarConIva = (
   };
 };
 
+// ===== NUEVO: estructura de moto calculada igual que en DetalleCotizacion =====
+type MotoCot = {
+  precioBase: number;
+  precioDocumentos: number;
+  descuentos: number;
+  accesoriosYMarcacion: number;
+  seguros: number;
+  soat: number;
+  matricula: number;
+  impuestos: number;
+  adicionalesTotal: number;
+  totalSinSeguros: number;
+  total: number;
+};
+
+const buildMotoFromCotizacion = (cot: any, lado: "A" | "B"): MotoCot | undefined => {
+  const suffix = lado === "A" ? "_a" : "_b";
+
+  const marca = cot?.[`marca${suffix}`];
+  const linea = cot?.[`linea${suffix}`];
+
+  const hasCore =
+    marca || linea || cot?.[`precio_base${suffix}`] || cot?.[`precio_total${suffix}`];
+
+  if (!hasCore) return undefined;
+
+  const precioBase = Number(cot?.[`precio_base${suffix}`]) || 0;
+  const precioDocumentos = Number(cot?.[`precio_documentos${suffix}`]) || 0;
+
+  const descuentos = Number(cot?.[`descuentos${suffix}`]) || 0;
+
+  const accesorios = Number(cot?.[`accesorios${suffix}`]) || 0;
+  const marcacion = Number(cot?.[`marcacion${suffix}`]) || 0;
+  const accesoriosYMarcacion = accesorios + marcacion;
+
+  const seguros = Number(cot?.[`seguros${suffix}`]) || 0;
+
+  const soat = Number(cot?.[`soat${suffix}`]) || 0;
+  const matricula = Number(cot?.[`matricula${suffix}`]) || 0;
+  const impuestos = Number(cot?.[`impuestos${suffix}`]) || 0;
+
+  const isA = lado === "A";
+  const adicionalesRunt = Number(cot?.[isA ? "runt_1" : "runt_2"]) || 0;
+  const adicionalesLicencia = Number(cot?.[isA ? "licencia_1" : "licencia_2"]) || 0;
+  const adicionalesDefensas = Number(cot?.[isA ? "defensas_1" : "defensas_2"]) || 0;
+  const adicionalesHandSavers =
+    Number(cot?.[isA ? "hand_savers_1" : "hand_savers_2"]) || 0;
+  const adicionalesOtros =
+    Number(cot?.[isA ? "otros_adicionales_1" : "otros_adicionales_2"]) || 0;
+
+  const adicionalesTotal =
+    Number(cot?.[isA ? "total_adicionales_1" : "total_adicionales_2"]) ||
+    adicionalesRunt +
+    adicionalesLicencia +
+    adicionalesDefensas +
+    adicionalesHandSavers +
+    adicionalesOtros;
+
+  const totalSinSeguros =
+    Number(cot?.[`total_sin_seguros${suffix}`]) ||
+    (precioBase +
+      precioDocumentos +
+      accesoriosYMarcacion +
+      adicionalesTotal -
+      descuentos);
+
+  const total =
+    Number(cot?.[`precio_total${suffix}`]) || totalSinSeguros + seguros;
+
+  return {
+    precioBase,
+    precioDocumentos,
+    descuentos,
+    accesoriosYMarcacion,
+    seguros,
+    soat,
+    matricula,
+    impuestos,
+    adicionalesTotal,
+    totalSinSeguros,
+    total,
+  };
+};
+
 const DetallesFacturacion: React.FC = () => {
   const { id: idParam } = useParams<{ id: string }>();
   const id_cotizacion = (idParam ?? "").trim();
@@ -224,6 +307,16 @@ const DetallesFacturacion: React.FC = () => {
 
     return fa ?? fb ?? anyCot[base];
   };
+
+  // ===== NUEVO: moto seleccionada, con los mismos cálculos de DetalleCotizacion =====
+  const ladoMoto: "A" | "B" | undefined =
+    motoSeleccionada === "a" ? "A" : motoSeleccionada === "b" ? "B" : undefined;
+
+  const motoCot = useMemo(
+    () =>
+      cot && ladoMoto ? buildMotoFromCotizacion(cot, ladoMoto) : undefined,
+    [cot, ladoMoto]
+  );
 
   // ===================== ESTADO / CLIENTE =====================
 
@@ -309,41 +402,60 @@ const DetallesFacturacion: React.FC = () => {
 
   // ===================== DOCUMENTOS & EXTRAS (BASE PARA TODOS LOS CÁLCULOS) =====================
 
-  // Documentos (preferimos la descomposición de la cotización,
-  // pero si la solicitud trae un total de documentos, lo tomamos como verdad)
-  const soat = toNum(
-    pick(sol?.tot_soat, pickMotoField("soat"), cot?.soat_a, cot?.soat_b, cred?.soat)
-  );
-  const matricula = toNum(
-    pick(
-      sol?.tot_matricula,
-      pickMotoField("matricula"),
-      pickMotoField("precio_documentos"),
-      cot?.matricula_a,
-      cot?.matricula_b,
-      cot?.precio_documentos_a,
-      cot?.precio_documentos_b,
-      cred?.matricula
-    )
-  );
-  const impuestos = toNum(
-    pick(
-      sol?.tot_impuestos,
-      pickMotoField("impuestos"),
-      cot?.impuestos_a,
-      cot?.impuestos_b,
-      cred?.impuestos
-    )
-  );
+  // Documentos: si tenemos motoCot usamos sus valores (para cuadrar con DetalleCotizacion)
+  const soat = motoCot
+    ? motoCot.soat
+    : toNum(
+      pick(
+        sol?.tot_soat,
+        pickMotoField("soat"),
+        cot?.soat_a,
+        cot?.soat_b,
+        cred?.soat
+      )
+    );
+
+  const matricula = motoCot
+    ? motoCot.matricula
+    : toNum(
+      pick(
+        sol?.tot_matricula,
+        pickMotoField("matricula"),
+        pickMotoField("precio_documentos"),
+        cot?.matricula_a,
+        cot?.matricula_b,
+        cot?.precio_documentos_a,
+        cot?.precio_documentos_b,
+        cred?.matricula
+      )
+    );
+
+  const impuestos = motoCot
+    ? motoCot.impuestos
+    : toNum(
+      pick(
+        sol?.tot_impuestos,
+        pickMotoField("impuestos"),
+        cot?.impuestos_a,
+        cot?.impuestos_b,
+        cred?.impuestos
+      )
+    );
 
   const subtotalDocs =
-    toNum((sol as any)?.tot_documentos) ??
-    sum(soat, matricula, impuestos);
+    motoCot
+      ? (motoCot.soat || 0) + (motoCot.matricula || 0) + (motoCot.impuestos || 0)
+      : toNum((sol as any)?.tot_documentos) ?? sum(soat, matricula, impuestos);
 
-  // Accesorios
-  const rawAccTotal = toNum(pick(sol?.acc_total, cred?.accesorios_total));
-  const rawAccBruto = toNum(sol?.acc_valor_bruto);
-  const rawAccIva = toNum(sol?.acc_iva);
+  // Accesorios y adicionales: usamos total de accesorios+adicionales de la moto de cotización
+  const extrasTotalCot = motoCot
+    ? (motoCot.accesoriosYMarcacion || 0) +
+    (motoCot.adicionalesTotal || 0)
+    : undefined;
+
+  const rawAccTotal = extrasTotalCot ?? toNum(pick(sol?.acc_total, cred?.accesorios_total));
+  const rawAccBruto = extrasTotalCot !== undefined ? undefined : toNum(sol?.acc_valor_bruto);
+  const rawAccIva = extrasTotalCot !== undefined ? undefined : toNum(sol?.acc_iva);
 
   const {
     total: accesorios_total,
@@ -351,10 +463,32 @@ const DetallesFacturacion: React.FC = () => {
     iva: acc_iva_accesorios,
   } = desglosarConIva(rawAccTotal, rawAccBruto, rawAccIva, IVA_DEC);
 
-  // Seguros (ya vienen como total)
-  const seguros_total = toNum(
-    pick(sol?.tot_seguros_accesorios, cred?.precio_seguros)
-  );
+
+  // =========================
+  // EXTRAS SEPARADOS
+  // =========================
+
+  const accesoriosBrutos = motoCot?.accesoriosYMarcacion ?? 0;
+  const adicionalesBrutos = motoCot?.adicionalesTotal ?? 0;
+
+  // Suma total de los valores originales
+  const extrasBrutosTotal = accesoriosBrutos + adicionalesBrutos;
+
+  const accesorios_iva = Math.round(accesoriosBrutos * IVA_DEC);
+  const adicionales_iva = Math.round(adicionalesBrutos * IVA_DEC);
+  const iva_extras_total = accesorios_iva + adicionales_iva;
+
+
+  // Seguros (preferimos lo que trae la cotización, igual que en DetalleCotizacion)
+  const seguros_total =
+    motoCot && typeof motoCot.seguros === "number"
+      ? motoCot.seguros
+      : toNum(
+        pick(
+          sol?.tot_seguros_accesorios,
+          cred?.precio_seguros
+        )
+      );
 
   const acc_seg_total = sum(accesorios_total, seguros_total);
 
@@ -384,19 +518,20 @@ const DetallesFacturacion: React.FC = () => {
 
   // ===================== CONDICIONES DEL NEGOCIO (IVA) =====================
 
-  // Tomamos un TOTAL que ya viene con IVA.
-  // Preferencia:
-  //  - sol.cn_total  (si viene desde la solicitud)
-  //  - sol.tot_general (total de la operación, en algunos casos solo vehículo)
-  //  - valorMoto (fallback)
-  //  - precio_base de la cotización (último fallback)
+  // Total vehículo con IVA:
+  // Si tenemos motoCot, calculamos:
+  //   totalVehiculo = moto.total - documentos - accesorios - seguros
   const rawVehiculoTotal =
-    toNum(sol?.cn_total) ??
-    toNum(sol?.tot_general) ??
-    valorMoto ??
-    toNum(pickMotoField("precio_base"));
+    motoCot
+      ? motoCot.total -
+      (subtotalDocs || 0) -
+      (accesorios_total || 0) -
+      (seguros_total || 0)
+      : toNum(sol?.cn_total) ??
+      toNum(sol?.tot_general) ??
+      valorMoto ??
+      toNum(pickMotoField("precio_base"));
 
-  // Desglosamos: total = bruto + iva  =>  bruto = total / (1 + IVA_DEC)
   const {
     total: cn_total,
     bruto: cn_bruto,
@@ -405,17 +540,20 @@ const DetallesFacturacion: React.FC = () => {
 
   // ===================== TOTAL GENERAL =====================
 
+  // Si tenemos motoCot, su total es la verdad (igual que en DetalleCotizacion)
   const totalGeneral =
-    sum(cn_total, subtotalDocs, acc_seg_total) ??
-    sum(
-      valorMoto,
-      soat,
-      matricula,
-      impuestos,
-      accesorios_total,
-      seguros_total
-    ) ??
-    toNum(sol?.tot_general);
+    motoCot
+      ? motoCot.total
+      : sum(cn_total, subtotalDocs, acc_seg_total) ??
+      sum(
+        valorMoto,
+        soat,
+        matricula,
+        impuestos,
+        accesorios_total,
+        seguros_total
+      ) ??
+      toNum(sol?.tot_general);
 
   // ===================== CRÉDITO (POR SI APLICA) =====================
 
@@ -429,9 +567,6 @@ const DetallesFacturacion: React.FC = () => {
       : toNum((cot as any)?.cuota_inicial_a);
 
   // 3) Cuota inicial unificada:
-  //    - Primero usamos la de créditos (si hay),
-  //    - si no, usamos la de la cotización,
-  //    - si tampoco hay, queda en 0.
   const cuota_inicial =
     cuotaInicialCredito ??
     cuotaInicialCotizacion ??
@@ -441,7 +576,7 @@ const DetallesFacturacion: React.FC = () => {
   const financiador =
     pick<string>(cred?.producto, cot?.financiera) ?? "—";
 
-  // 4) Saldo a financiar = TOTAL GENERAL - CUOTA INICIAL (siempre que haya totalGeneral)
+  // 4) Saldo a financiar = TOTAL GENERAL - CUOTA INICIAL
   const saldoFinanciar =
     max0((totalGeneral ?? 0) - (cuota_inicial ?? 0)) ?? 0;
 
@@ -516,6 +651,8 @@ const DetallesFacturacion: React.FC = () => {
     setFacturaFile(file || null);
   };
 
+  const navigate = useNavigate();
+
   const handleSubirFactura = () => {
     if (!idSolicitud) {
       Swal.fire(
@@ -548,7 +685,7 @@ const DetallesFacturacion: React.FC = () => {
     });
   };
 
-    const metodoPagoTexto = (cot?.metodo_pago ?? "")
+  const metodoPagoTexto = (cot?.metodo_pago ?? "")
     .toString()
     .toLowerCase();
 
@@ -556,6 +693,9 @@ const DetallesFacturacion: React.FC = () => {
     metodoPagoTexto.includes("crédito de terceros") ||
     metodoPagoTexto.includes("credito de terceros");
 
+  const volverAtras = () => {
+    navigate("/solicitudes");
+  };
 
   return (
     <main className="min-h-screen w-full bg-slate-50">
@@ -592,7 +732,7 @@ const DetallesFacturacion: React.FC = () => {
             <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
               <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2">
-                  <h2 className="text-base font-semibold text-emerald-700 mb-3">
+                  <h2 className="text-base font-semibold text-emerald-700.mb-3">
                     Cliente
                   </h2>
                   <div className="text-sm leading-6 text-slate-700 space-y-1.5">
@@ -601,7 +741,7 @@ const DetallesFacturacion: React.FC = () => {
                     </div>
                     <div className="text-slate-600">{clienteDocumento}</div>
                     <div>
-                      <span className="font-semibold text-slate-700">
+                      <span className="font-semibold.text-slate-700">
                         Teléfono:
                       </span>{" "}
                       <span className="text-slate-600">
@@ -631,14 +771,6 @@ const DetallesFacturacion: React.FC = () => {
                             Necesidad del cliente:
                           </span>{" "}
                           {cot.pregunta}
-                        </div>
-                      )}
-                      {cot?.tipo_pago && (
-                        <div>
-                          <span className="font-semibold">
-                            Tipo de pago:
-                          </span>{" "}
-                          {cot.tipo_pago}
                         </div>
                       )}
                       {cot?.metodo_pago && (
@@ -679,18 +811,23 @@ const DetallesFacturacion: React.FC = () => {
             <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
               <div className="bg-gradient-to-r from-sky-600 to-emerald-600 text-white font-semibold px-5 py-2.5 text-sm">
                 <div className="grid grid-cols-12 items-center">
-                  <div className="col-span-5">Motocicleta</div>
+                  <div className="col-span-3"># Pago</div>
+                  <div className="col-span-3">Motocicleta</div>
                   <div className="col-span-2"># Motor</div>
-                  <div className="col-span-3"># Chasis</div>
+                  <div className="col-span-2"># Chasis</div>
                   <div className="col-span-1 text-right">Color</div>
                   <div className="col-span-1 text-right">Placa</div>
                 </div>
               </div>
+
               <div className="px-5 py-3 text-sm text-slate-800">
                 <div className="grid grid-cols-12 items-center">
-                  <div className="col-span-5 truncate">{marcaLinea}</div>
+                  <div className="col-span-3 truncate">
+                    {numeroReciboSolicitud ?? resiboPagoSolicitud}
+                  </div>
+                  <div className="col-span-3 truncate">{marcaLinea}</div>
                   <div className="col-span-2 truncate">{numeroMotor}</div>
-                  <div className="col-span-3 truncate">{numeroChasis}</div>
+                  <div className="col-span-2 truncate">{numeroChasis}</div>
                   <div className="col-span-1 text-right">{color}</div>
                   <div className="col-span-1 text-right">{placa}</div>
                 </div>
@@ -746,27 +883,15 @@ const DetallesFacturacion: React.FC = () => {
             <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
                 <div className="bg-sky-600 text-white font-semibold px-5 py-2.5 text-sm">
-                  Seguros y accesorios
-                </div>
+                  Adicionales y accesorios                </div>
                 <div className="divide-y divide-slate-200">
-                  <RowRight
-                    label="Accesorios (bruto):"
-                    value={fmtCOP(accesorios_bruto)}
-                  />
-                  <RowRight
-                    label={`IVA accesorios (${IVA_PCT}%):`}
-                    value={fmtCOP(acc_iva_accesorios)}
-                  />
-                  <RowRight
-                    label="Accesorios (total):"
-                    value={fmtCOP(accesorios_total)}
-                  />
-                  <RowRight label="Seguros:" value={fmtCOP(seguros_total)} />
-                  <RowRight
-                    label="Total Seguros + Accesorios:"
-                    value={fmtCOP(acc_seg_total)}
-                    bold
-                  />
+                  <RowRight label="Accesorios (bruto):" value={fmtCOP(accesoriosBrutos)} />
+
+                  <RowRight label="Adicionales (bruto):" value={fmtCOP(adicionalesBrutos)} />
+                  <RowRight badge="red-500" label="Extras Total sin IVA:" value={fmtCOP(extrasBrutosTotal)} />
+
+                  <RowRight label={`IVA extras (${IVA_PCT}%):`} value={fmtCOP(iva_extras_total)} bold />
+
                 </div>
               </div>
 
@@ -796,153 +921,140 @@ const DetallesFacturacion: React.FC = () => {
                 </div>
               </div>
             </section>
-
-            {/* Soportes descargables, número de recibo y (si aplica) carga de factura */}
-            <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-              <div className="bg-slate-800 text-white font-semibold px-5 py-2.5 text-sm flex items-center justify-between">
-                <span>Soportes de pago y documentos adjuntos</span>
-                {isUltimaSolLoading && (
-                  <span className="text-xs text-slate-200">
-                    Cargando adjuntos…
-                  </span>
-                )}
-                {isUltimaSolError && (
-                  <span className="text-xs text-red-200">
-                    Error al cargar adjuntos
-                  </span>
-                )}
-              </div>
-              <div className="p-5 space-y-4 text-sm text-slate-800">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <span className="font-semibold text-slate-700">
-                      Número de recibo:
-                    </span>{" "}
-                    <span>{numeroReciboSolicitud ?? "—"}</span>
-                  </div>
-                  <div>
-                    <span className="font-semibold text-slate-700">
-                      Recibo de pago:
-                    </span>{" "}
-                    <span>{resiboPagoSolicitud ?? "—"}</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-dashed border-slate-200 mt-2">
-                  <div className="text-xs font-semibold text-slate-500 mb-2">
-                    Archivos descargables:
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <a
-                      href={cedulaUrlFinal ?? "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`btn btn-xs border ${
-                        cedulaUrlFinal
-                          ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
-                          : "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed"
-                      }`}
-                    >
-                      Cédula {cedulaUrlFinal ? "" : "(no disponible)"}
-                    </a>
-                    <a
-                      href={manifiestoUrlFinal ?? "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`btn btn-xs border ${
-                        manifiestoUrlFinal
-                          ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
-                          : "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed"
-                      }`}
-                    >
-                      Manifiesto{" "}
-                      {manifiestoUrlFinal ? "" : "(no disponible)"}
-                    </a>
-
-                    {/* Factura: mostramos botón solo si existe */}
-                    {facturaUrlFinal && (
-                      <a
-                        href={facturaUrlFinal}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn-xs border bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
-                      >
-                        Factura
-                      </a>
+            {!tieneFactura && (
+              <>
+                <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+                  <div className="bg-slate-800 text-white font-semibold px-5.py-2.5 text-sm flex items-center justify-between">
+                    <span>Soportes de pago y documentos adjuntos</span>
+                    {isUltimaSolLoading && (
+                      <span className="text-xs text-slate-200">
+                        Cargando adjuntos…
+                      </span>
                     )}
-
-                         {/* Carta: SOLO si método de pago es Crédito de terceros */}
-                    {cartaUrlFinal && esMetodoPagoCreditoTerceros && (
-                      <a
-                        href={cartaUrlFinal}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn-xs border bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
-                      >
-                        Carta
-                      </a>
+                    {isUltimaSolError && (
+                      <span className="text-xs text-red-200">
+                        Error al cargar adjuntos
+                      </span>
                     )}
-
                   </div>
-                </div>
+                  <div className="p-5 space-y-4 text-sm text-slate-800">
 
-                {/* Carga de factura: SOLO si aún NO hay factura */}
-                {!tieneFactura && (
-                  <div className="mt-4 pt-3 bg-success p-3 rounded-2xl border-t border-dashed border-slate-200 space-y-2">
-                    <div className="text-xs font-semibold text-slate-600">
-                      Cargar factura (obligatoria para poder aceptar, solo se
-                      puede adjuntar una vez):
-                    </div>
-                    {!idSolicitud && (
-                      <div className="text-xs text-rose-600">
-                        No se encontró una solicitud de facturación asociada a
-                        esta cotización. Primero crea la solicitud para poder
-                        adjuntar la factura.
+                    <div className="pt-2 border-t border-dashed border-slate-200 mt-2">
+                      <div className="text-xs font-semibold text-slate-500 mb-2">
+                        Archivos descargables:
                       </div>
-                    )}
-                    {idSolicitud && (
-                      <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-                        <input
-                          type="file"
-                          accept=".pdf,image/*"
-                          onChange={handleFacturaChange}
-                          className="block w-full text-xs text-slate-600
+                      <div className="flex flex-wrap gap-2">
+                        <a
+                          href={cedulaUrlFinal ?? "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`btn btn-xs border ${cedulaUrlFinal
+                            ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+                            : "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed"
+                            }`}
+                        >
+                          Cédula {cedulaUrlFinal ? "" : "(no disponible)"}
+                        </a>
+                        <a
+                          href={manifiestoUrlFinal ?? "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`btn btn-xs border ${manifiestoUrlFinal
+                            ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+                            : "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed"
+                            }`}
+                        >
+                          Manifiesto{" "}
+                          {manifiestoUrlFinal ? "" : "(no disponible)"}
+                        </a>
+
+                        {/* Factura: mostramos botón solo si existe */}
+                        {facturaUrlFinal && (
+                          <a
+                            href={facturaUrlFinal}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-xs border bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+                          >
+                            Factura
+                          </a>
+                        )}
+
+                        {/* Carta: SOLO si método de pago es Crédito de terceros */}
+                        {cartaUrlFinal && esMetodoPagoCreditoTerceros && (
+                          <a
+                            href={cartaUrlFinal}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-xs border bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+                          >
+                            Carta
+                          </a>
+                        )}
+
+                      </div>
+                    </div>
+
+                    {/* Carga de factura: SOLO si aún NO hay factura */}
+                    {!tieneFactura && (
+                      <div className="mt-4 pt-3 bg-success p-3 rounded-2xl border-t border-dashed border-slate-200 space-y-2">
+                        <div className="text-xs font-semibold text-slate-600">
+                          Cargar factura (obligatoria para poder aceptar, solo se
+                          puede adjuntar una vez):
+                        </div>
+                        {!idSolicitud && (
+                          <div className="text-xs text-rose-600">
+                            No se encontró una solicitud de facturación asociada a
+                            esta cotización. Primero crea la solicitud para poder
+                            adjuntar la factura.
+                          </div>
+                        )}
+                        {idSolicitud && (
+                          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                            <input
+                              type="file"
+                              accept=".pdf,image/*"
+                              onChange={handleFacturaChange}
+                              className="block w-full text-xs text-slate-600
                             file:mr-3 file:py-1.5 file:px-3
                             file:rounded-md file:border-0
                             file:text-xs file:font-semibold
                             file:bg-slate-100 file:text-slate-700
                             hover:file:bg-slate-200"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleSubirFactura}
-                          disabled={isSubiendoFactura || !facturaFile}
-                          className="btn btn-sm border bg-white text-success"
-                        >
-                          {isSubiendoFactura
-                            ? "Subiendo factura…"
-                            : "Subir factura"}
-                        </button>
-                      </div>
-                    )}
-                    {facturaFile && (
-                      <div className="text-xs text-slate-500">
-                        Archivo seleccionado:{" "}
-                        <span className="font-medium">
-                          {facturaFile.name}
-                        </span>
+                            />
+                            <button
+                              type="button"
+                              onClick={handleSubirFactura}
+                              disabled={isSubiendoFactura || !facturaFile}
+                              className="btn btn-sm border bg-white text-success"
+                            >
+                              {isSubiendoFactura
+                                ? "Subiendo factura…"
+                                : "Subir factura"}
+                            </button>
+                          </div>
+                        )}
+                        {facturaFile && (
+                          <div className="text-xs text-slate-500">
+                            Archivo seleccionado:{" "}
+                            <span className="font-medium">
+                              {facturaFile.name}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
-              </div>
-            </section>
+                </section>
+
+              </>
+            )}
 
             {/* Observaciones crédito: SOLO si NO es contado (incluye crédito normal y de terceros) */}
             {!esContado && (
               <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
                 <div className="p-6">
-                  <h3 className="text-base font-semibold text-slate-900 mb-2">
+                  <h3 className="text-base font-semibold text-slate-900.mb-2">
                     Observaciones del crédito:
                   </h3>
                   <ul className="list-disc pl-5 text-sm text-slate-800 space-y-1.5">
@@ -985,6 +1097,9 @@ const DetallesFacturacion: React.FC = () => {
                   factura_url: facturaUrlFinal,
                   carta_url: cartaUrlFinal,
                 }}
+                onVolver={() => {
+                  volverAtras();
+                }}
                 estadoCotizacion={estadoCotizacion}
                 onAprobado={() => {
                   if (!tieneFactura) {
@@ -1014,12 +1129,6 @@ const DetallesFacturacion: React.FC = () => {
                   Ver acta de entrega
                 </Link>
 
-                <button
-                  onClick={() => refetch()}
-                  className="btn btn-sm bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600"
-                >
-                  Recargar datos
-                </button>
                 <PDFDownloadLink
                   fileName={`solicitud_factura_${codigoSolicitud}.pdf`}
                   document={

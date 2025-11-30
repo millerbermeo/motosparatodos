@@ -46,10 +46,10 @@ type Motocicleta = {
   precioDocumentos: number;
   descuentos: number;              // descuentos_a / descuentos_b
   accesoriosYMarcacion: number;    // accesorios + marcación
-  seguros: number;                 // suma de seguros
+  seguros: number;                 // TOTAL seguros (ya viene sumado, aunque no lo mostramos)
   garantia: boolean;               // si/no
   garantiaExtendidaMeses?: number; // meses de garantía extendida
-  totalSinSeguros: number;         // backend o calculado
+  totalSinSeguros: number;         // backend o calculado (con docs + adicionales, pero sin seguros)
   total: number;
   cuotas: Cuotas;
   lado: 'A' | 'B';
@@ -66,7 +66,7 @@ type Motocicleta = {
   adicionalesOtros?: number;
   adicionalesTotal?: number;
 
-  // 👇 NUEVO: saldo a financiar
+  // Saldo a financiar
   saldoFinanciar: number;
 };
 
@@ -106,8 +106,7 @@ type Cotizacion = {
 type MotoImageProps = {
   src?: string;
   alt?: string;
-  // Opcional: tamaño de la miniatura en la tarjeta
-  thumbClassName?: string; // ej: "w-24 h-24" (default)
+  thumbClassName?: string;
 };
 
 const MotoImage: React.FC<MotoImageProps> = ({
@@ -262,24 +261,6 @@ const numOrUndef = (v: any) => {
   return Number.isFinite(n) && n > 0 ? n : undefined;
 };
 
-// Suma valores de un JSON de seguros (string o array)
-const sumSegurosFromJson = (raw: unknown): number | undefined => {
-  try {
-    if (Array.isArray(raw)) {
-      return raw.reduce((acc, it: any) => acc + (Number(it?.valor) || 0), 0);
-    }
-    if (typeof raw === 'string') {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return parsed.reduce((acc, it: any) => acc + (Number(it?.valor) || 0), 0);
-      }
-    }
-  } catch {
-    // ignora y devuelve undefined
-  }
-  return undefined;
-};
-
 /* =======================
    Mapeo de API -> UI
    ======================= */
@@ -300,7 +281,7 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
   const precioBase = Number(data?.[`precio_base${suffix}`]) || 0;
   const precioDocumentos = Number(data?.[`precio_documentos${suffix}`]) || 0;
 
-  // Descuentos (nuevas columnas)
+  // Descuentos
   const descuentos = Number(data?.[`descuentos${suffix}`]) || 0;
 
   // Accesorios + marcación
@@ -308,9 +289,8 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
   const marcacion = Number(data?.[`marcacion${suffix}`]) || 0;
   const accesoriosYMarcacion = accesorios + marcacion;
 
-  // Seguros (prioriza JSON; si no viene, suma por campos)
-  const segurosJson = data?.[`seguros${suffix}`];
-  const segurosFromJson = sumSegurosFromJson(segurosJson);
+  // Seguros (aunque ya no los mostramos)
+  const seguros = Number(data?.[`seguros${suffix}`]) || 0;
 
   const soat = Number(data?.[`soat${suffix}`]) || 0;
   const matricula = Number(data?.[`matricula${suffix}`]) || 0;
@@ -332,14 +312,6 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
       adicionalesDefensas +
       adicionalesHandSavers +
       adicionalesOtros);
-
-  const seguros =
-    typeof segurosFromJson === 'number'
-      ? segurosFromJson
-      : (Number(data?.[`seguro_vida${suffix}`]) || 0) +
-      (Number(data?.[`seguro_mascota_s${suffix}`]) || 0) +
-      (Number(data?.[`seguro_mascota_a${suffix}`]) || 0) +
-      (Number(data?.[`otro_seguro${suffix}`]) || 0);
 
   // Garantía si/no
   const garantiaStr = String(data?.[`garantia${suffix}`] ?? '')
@@ -378,18 +350,8 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
     meses36: numOrUndef(data?.[`cuota_36${suffix}`]),
   };
 
-  // 👇 SALDO A FINANCIAR
-  // 1) Valor base del backend: saldo_financiar_a / saldo_financiar_b
-  const saldoFinanciarBase = Number(data?.[`saldo_financiar${suffix}`]) || 0;
-
-  // 2) Alternativa calculada si el base no existe / es 0: total - cuota inicial
-  const saldoFinanciarCalculado = Math.max(total - (cuotas.inicial || 0), 0);
-
-  // 3) Regla:
-  //    - Si el valor del backend existe y es > 0 => usar ese.
-  //    - Si no, usar el calculado.
-  const saldoFinanciar =
-    saldoFinanciarBase > 0 ? saldoFinanciarBase : saldoFinanciarCalculado;
+  // SALDO A FINANCIAR: siempre total - cuota inicial
+  const saldoFinanciar = Math.max(total - (cuotas.inicial || 0), 0);
 
   return {
     modelo: modeloLabel,
@@ -413,7 +375,7 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
     adicionalesHandSavers,
     adicionalesOtros,
     adicionalesTotal,
-    saldoFinanciar, // 👈 NUEVO
+    saldoFinanciar,
   };
 };
 
@@ -442,7 +404,7 @@ const mapApiToCotizacion = (data: any): Cotizacion => {
   const motoB = buildMoto(data, 'B');
 
   // Estado
-  let estadoNombre =
+  const estadoNombre =
     typeof data?.estado === 'string' && data.estado.trim()
       ? String(data.estado).trim()
       : 'Sin estado';
@@ -450,8 +412,18 @@ const mapApiToCotizacion = (data: any): Cotizacion => {
   const creada = fmtFecha(data?.fecha_creacion);
 
   const actividad: Evento[] = [
-    { fecha: fmtFecha(data?.fecha_actualizacion), titulo: 'Actualización de cotización', etiqueta: data?.estado || 'Sin estado', color: 'info' },
-    { fecha: fmtFecha(data?.fecha_creacion), titulo: 'Se crea la cotización', etiqueta: data?.estado || 'Sin estado', color: 'warning' },
+    {
+      fecha: fmtFecha(data?.fecha_actualizacion),
+      titulo: 'Actualización de cotización',
+      etiqueta: data?.estado || 'Sin estado',
+      color: 'info',
+    },
+    {
+      fecha: fmtFecha(data?.fecha_creacion),
+      titulo: 'Se crea la cotización',
+      etiqueta: data?.estado || 'Sin estado',
+      color: 'warning',
+    },
   ];
 
   return {
@@ -505,7 +477,7 @@ const DetalleCotizacion: React.FC = () => {
 
   const moto = tab === 'A' ? q?.motoA : q?.motoB;
 
-  // 👇 NUEVO: determinar si la moto seleccionada tiene cuotas
+  // Determinar si la moto seleccionada tiene cuotas
   const hasCuotas = React.useMemo(() => {
     if (!moto) return false;
     const c = moto.cuotas || ({} as Cuotas);
@@ -532,7 +504,9 @@ const DetalleCotizacion: React.FC = () => {
     return (
       <main className="w-full min-h-screen flex items-center justify-center">
         <div className="alert alert-error max-w-lg">
-          <span>Falta el parámetro <code>id</code> en la URL. Debe ser <code>/cotizaciones/:id</code></span>
+          <span>
+            Falta el parámetro <code>id</code> en la URL. Debe ser <code>/cotizaciones/:id</code>
+          </span>
         </div>
       </main>
     );
@@ -559,9 +533,9 @@ const DetalleCotizacion: React.FC = () => {
   }
 
   return (
-    <main className="w-full min-h-screen px-4 md:px-6 pb-6">
+    <main className="w-full.min-h-screen px-4 md:px-6 pb-6">
       {/* Header */}
-      <div className='pt-4 mb-3'>
+      <div className="pt-4 mb-3">
         <ButtonLink to="/cotizaciones" label="Volver a cotizaciones" direction="back" />
       </div>
 
@@ -586,7 +560,6 @@ const DetalleCotizacion: React.FC = () => {
               </div>
             </div>
           </div>
-
         </div>
       </section>
 
@@ -606,11 +579,11 @@ const DetalleCotizacion: React.FC = () => {
               <InfoRow label="Teléfono" value={q.cliente.celular || ''} />
               <InfoRow label="Cédula" value={q.cliente.cedula || ''} />
               <InfoRow
-                label="Comentarios"
+                label="Primer Comentario"
                 value={[
-                  q.cliente.comentario || '—',
-                  q.cliente.comentario2 || '—'
-                ].join(' | ')}
+                  q.cliente.comentario || '',
+                  q.cliente.comentario2 || ''
+                ]}
                 full
               />
             </div>
@@ -618,11 +591,11 @@ const DetalleCotizacion: React.FC = () => {
             {/* Datos comerciales */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-2 mt-2">
               <InfoPill icon={<UserCircle2 className="w-4 h-4" />} label="Asesor" value={q.comercial?.asesor || '—'} />
-              <InfoPill icon={<Building2 className="w-4 h-4" />} label="Financiera" value={q.comercial?.financiera || '—'} />
               <InfoPill icon={<Fingerprint className="w-4 h-4" />} label="Tipo de pago" value={q.comercial?.tipo_pago || '—'} />
               <InfoPill icon={<MessageSquareQuote className="w-4 h-4" />} label="Canal de contacto" value={q.comercial?.canal_contacto || '—'} />
               <InfoPill icon={<BadgeCheck className="w-4 h-4" />} label="Prospecto" value={q.comercial?.prospecto || '—'} />
               <InfoPill icon={<MessageSquareQuote className="w-4 h-4" />} label="Pregunta" value={q.comercial?.pregunta || '—'} />
+              <InfoPill icon={<Building2 className="w-4 h-4" />} label="Financiera" value={q.comercial?.financiera || 'No aplica'} />
             </div>
           </div>
         </section>
@@ -661,7 +634,6 @@ const DetalleCotizacion: React.FC = () => {
                   </button>
                 </div>
               )}
-
             </div>
 
             {/* Cabecera del modelo */}
@@ -671,66 +643,185 @@ const DetalleCotizacion: React.FC = () => {
               </div>
             )}
 
-            {/* Detalle precios */}
+            {/* Detalle precios AGRUPADO en 2 columnas + TOTALES */}
             {moto ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <DataRow label="Precio base" value={fmtCOP(moto.precioBase)} />
-                  <DataRow label="Descuentos" value={fmtCOP(moto.descuentos)} valueClass="text-error font-semibold" />
-                  <DataRow label="SOAT" value={fmtCOP(moto.soat || 0)} />
-                  <DataRow label="Matrícula" value={fmtCOP(moto.matricula || 0)} />
-                  <DataRow label="Impuestos" value={fmtCOP(moto.impuestos || 0)} />
-                  <DataRow label="Seguro todo riesgo" value={fmtCOP(moto.seguros)} />
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                {/* Columna izquierda: Vehículo + Documentos + Adicionales/Accesorios */}
+                <div className="space-y-3 rounded-xl border border-base-300/60 p-3 bg-base-100">
+                  <h3 className="text-sm font-semibold text-slate-700 mb-1">
+                    Vehículo
+                  </h3>
 
-                  {(moto.adicionalesTotal ?? 0) > 0 && (
-                    <div className="mt-2 space-y-1">
-                      <div className="text-xs font-semibold uppercase tracking-wide opacity-80">
-                        Adicionales (RUNT / licencias / defensas / hand savers / otros)
-                      </div>
-                      <DataRow2 label="RUNT" value={fmtCOP(moto.adicionalesRunt || 0)} />
-                      <DataRow2 label="Licencias" value={fmtCOP(moto.adicionalesLicencia || 0)} />
-                      <DataRow2 label="Defensas" value={fmtCOP(moto.adicionalesDefensas || 0)} />
-                      <DataRow2 label="Hand savers" value={fmtCOP(moto.adicionalesHandSavers || 0)} />
-                      <DataRow2
-                        label="Otros adicionales"
-                        value={fmtCOP(moto.adicionalesOtros || 0)}
+                  <DataRow
+                    label="Precio base"
+                    value={fmtCOP(moto.precioBase)}
+                  />
+                  <DataRow
+                    label="Descuentos"
+                    value={fmtCOP(moto.descuentos)}
+                    valueClass="text-error font-semibold"
+                  />
+                  <DataRow
+                    label="Precio neto vehículo"
+                    value={fmtCOP((moto.precioBase || 0) - (moto.descuentos || 0))}
+                    strong
+                  />
+
+                  <div className="mt-3 pt-2 border-t border-dashed border-base-300/80">
+                    <div className="text-[11px] font-semibold uppercase tracking-wide opacity-70 mb-1">
+                      Documentos
+                    </div>
+                    <div className="space-y-1.5">
+                      <DataRow
+                        label="SOAT"
+                        value={fmtCOP(moto.soat || 0)}
                       />
-                      <DataRow2
-                        label="TOTAL adicionales"
-                        value={fmtCOP(moto.adicionalesTotal || 0)}
+                      <DataRow
+                        label="Matrícula"
+                        value={fmtCOP(moto.matricula || 0)}
+                      />
+                      <DataRow
+                        label="Impuestos"
+                        value={fmtCOP(moto.impuestos || 0)}
+                      />
+                      <DataRow
+                        label="TOTAL documentos"
+                        value={fmtCOP(
+                          (moto.soat || 0) +
+                          (moto.matricula || 0) +
+                          (moto.impuestos || 0)
+                        )}
                         strong
                       />
                     </div>
-                  )}
+                  </div>
 
-                </div>
-                <div className="space-y-2">
-                  <DataRowText label="Garantía" value={moto.garantia ? 'Sí' : 'No'} />
-                  {/* Garantía extendida */}
-                  <DataRowText
-                    label="Garantía extendida"
-                    value={typeof moto.garantiaExtendidaMeses === 'number' ? `${moto.garantiaExtendidaMeses} meses` : ''}
-                  />
-                  <DataRow label="Precio documentos" value={fmtCOP(moto.precioDocumentos)} />
-                  <DataRow label="Accesorios / Marcación / Personalización" value={fmtCOP(moto.accesoriosYMarcacion)} />
-                  <DataRow label="Total sin seguros" value={fmtCOP(moto.totalSinSeguros)} />
-                  <DataRow label="Total" value={fmtCOP(moto.total)} strong />
-                  {/* 👇 NUEVO: muestra saldo a financiar */}
-                  {/* <DataRow
-                    label="Saldo a financiar"
-                    value={fmtCOP(moto.saldoFinanciar)}
-                    strong
-                  /> */}
+                  <div className="mt-3 pt-2 border-t border-dashed border-base-300/80">
+                    <div className="text-[11px] font-semibold uppercase tracking-wide opacity-70 mb-1">
+                      Adicionales y accesorios
+                    </div>
+
+                    <DataRow
+                      label="Accesorios / Marcación / Personalización"
+                      value={fmtCOP(moto.accesoriosYMarcacion)}
+                    />
+
+                    {(moto.adicionalesTotal ?? 0) > 0 && (
+                      <div className="mt-2 space-y-1.5">
+                        <DataRow2
+                          label="RUNT"
+                          value={fmtCOP(moto.adicionalesRunt || 0)}
+                        />
+                        <DataRow2
+                          label="Licencias"
+                          value={fmtCOP(moto.adicionalesLicencia || 0)}
+                        />
+                        <DataRow2
+                          label="Defensas"
+                          value={fmtCOP(moto.adicionalesDefensas || 0)}
+                        />
+                        <DataRow2
+                          label="Hand savers"
+                          value={fmtCOP(moto.adicionalesHandSavers || 0)}
+                        />
+                        <DataRow2
+                          label="Otros adicionales"
+                          value={fmtCOP(moto.adicionalesOtros || 0)}
+                        />
+                        <DataRow2
+                          label="TOTAL adicionales"
+                          value={fmtCOP(moto.adicionalesTotal || 0)}
+                          strong
+                        />
+                      </div>
+                    )}
+
+                    <div className="mt-3 pt-2 border-t border-dashed border-base-300/80">
+                      <DataRow
+                        label="Subtotal extras (docs + accesorios + adicionales)"
+                        value={fmtCOP(
+                          (moto.precioDocumentos || 0) +
+                          (moto.accesoriosYMarcacion || 0) +
+                          (moto.adicionalesTotal || 0)
+                        )}
+                        strong
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <MotoImage
-                  src={getFotoUrl(payload, tab)}
-                  alt={`Moto ${tab} – ${moto?.modelo || ""}`}
-                  thumbClassName="w-40 h-28 md:w-64 md:h-40"
-                />
+                {/* Columna derecha: Resumen + Imagen */}
+                <div className="space-y-3">
+                  <div className="rounded-xl border border-base-300/60 p-3 bg-base-100 space-y-2">
+                    <h3 className="text-sm font-semibold text-slate-700 mb-1">
+                      Resumen
+                    </h3>
+
+                    <div className="space-y-1.5 mt-1">
+                      <DataRowText
+                        label="Garantía"
+                        value={moto.garantia ? 'Sí' : 'No'}
+                      />
+
+                      <DataRowText
+                        label="Garantía extendida"
+                        value={
+                          typeof moto.garantiaExtendidaMeses === 'number'
+                            ? `${moto.garantiaExtendidaMeses} meses`
+                            : 'No aplica'
+                        }
+                      />
+
+                      {/* Totales sin/ con documentos y adicionales */}
+                      <div className="mt-2 pt-2 border-t border-dashed border-base-300/80 space-y-1.5">
+                        <DataRow
+                          label="Total sin documentos / adicionales / accesorios"
+                          value={fmtCOP(
+                            (moto.precioBase || 0) -
+                            (moto.descuentos || 0) +
+                            (moto.accesoriosYMarcacion || 0)
+                          )}
+                        />
+
+                        <DataRow
+                          label="Total con documentos / adicionales"
+                          value={fmtCOP(moto.totalSinSeguros)}
+                          strong
+                        />
+
+                        {/* Solo mostrar si aplica */}
+                        {moto.cuotas.inicial > 0 && (
+                          <DataRow
+                            label="Menos cuota inicial"
+                            value={fmtCOP(moto.cuotas.inicial)}
+                            strong
+                            valueClass="text-error font-semibold"
+                          />
+                        )}
+
+                        <DataRow
+                          label="Saldo a financiar"
+                          value={fmtCOP(moto.saldoFinanciar)}
+                          strong
+                          valueClass="text-success font-bold"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-base-300/60 bg-base-100 p-3 flex items-center justify-center">
+                    <MotoImage
+                      src={getFotoUrl(payload, tab)}
+                      alt={`Moto ${tab} – ${moto?.modelo || ""}`}
+                      thumbClassName="w-40 h-28 md:w-64 md:h-40"
+                    />
+                  </div>
+                </div>
               </div>
             ) : (
-              <div className="text-sm opacity-70">No hay información de la {tab === 'A' ? 'Moto A' : 'Moto B'}.</div>
+              <div className="text-sm opacity-70">
+                No hay información de la {tab === 'A' ? 'Moto A' : 'Moto B'}.
+              </div>
             )}
           </div>
         </section>
@@ -819,9 +910,9 @@ const DetalleCotizacion: React.FC = () => {
           </div>
         </section>
 
-        {/* Cuotas – solo de la moto seleccionada en el tab */}
+        {/* Cuotas – solo de la moto seleccionada en el tab (oculto, pero lo dejo armado) */}
         {moto && hasCuotas && (
-          <section className="card bg-base-100 border border-base-300/60 shadow-sm rounded-2xl">
+          <section className="card bg-base-100 hidden border border-base-300/60 shadow-sm rounded-2xl">
             <div className="card-body">
               <div className="flex items-center gap-2 mb-2">
                 <Calculator className="w-5 h-5" />
@@ -902,7 +993,6 @@ const DetalleCotizacion: React.FC = () => {
                 </li>
               ))}
             </ol>
-
           </div>
         </section>
       </div>
@@ -910,7 +1000,6 @@ const DetalleCotizacion: React.FC = () => {
       {/* Barra de acciones (inferior) – PDF detallado */}
       <section className="sticky bottom-0 mt-4 bg-base-100/90 backdrop-blur border-t border-base-300 px-4 py-3">
         <div className="max-w-full mx-auto flex flex-wrap items-center justify-end gap-2">
-          {/* PDF DETALLADO (JSON COTIZACIÓN + JSON GARANTÍA) */}
           {payload && (
             <PDFDownloadLink
               document={
@@ -956,17 +1045,23 @@ const DetalleCotizacion: React.FC = () => {
           {useAuthStore.getState().user?.rol === "Asesor" &&
             q.estado !== 'Sin interés' &&
             q.estado !== 'Solicitar facturación' &&
+            q.estado !== 'Facturado' &&
             q.estado !== 'Solicitar crédito' &&
             q.estado !== 'Solicitar crédito express' && (
               <Link to={`/cotizaciones/estado/${id}`}>
-                <button className="btn btn-warning btn-sm" title="Canbiar estado de la cotización">
+                <button className="btn btn-warning btn-sm" title="Cambiar estado de la cotización">
                   <Edit className="w-4 h-4" />
                   Cambiar estado
                 </button>
               </Link>
             )}
 
-          <button disabled className="btn btn-success btn-sm" onClick={() => console.log('Crear recordatorio', q?.id)} title="Crear recordatorio">
+          <button
+            disabled
+            className="btn btn-success btn-sm"
+            onClick={() => console.log('Crear recordatorio', q?.id)}
+            title="Crear recordatorio"
+          >
             <CalendarPlus className="w-4 h-4" />
             Crear recordatorio
           </button>
@@ -974,7 +1069,7 @@ const DetalleCotizacion: React.FC = () => {
           {useAuthStore.getState().user?.rol === "Administrador" && (
             <>
               <button
-                className="btn btn-success btn-sm"
+                className="btn btn-success.btn-sm"
                 onClick={() => {
                   if (!q) return;
                   const to = q.cliente.email || '';
@@ -1040,7 +1135,7 @@ const InfoPill: React.FC<{ icon: React.ReactNode; label: string; value: React.Re
   <div className="flex items-center gap-2 bg-[#F5F5F5] rounded-lg px-3 py-2">
     <span className="opacity-80">{icon}</span>
     <div>
-      <div className="text-xs.opacity-60">{label}</div>
+      <div className="text-xs opacity-60">{label}</div>
       <div className="text-sm font-medium">{value}</div>
     </div>
   </div>

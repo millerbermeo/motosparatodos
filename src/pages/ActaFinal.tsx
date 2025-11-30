@@ -11,7 +11,7 @@ import {
   CheckCircle2,
   AlertCircle,
   PenLine,
-  Download, // ⬅️ NUEVO ICONO
+  Download,
 } from "lucide-react";
 import { useLoaderStore } from "../store/loader.store";
 
@@ -56,7 +56,10 @@ const estadoBadgeClass = (estado: ActaEntrega["estado"]) => {
   }
 };
 
-/* Mini componente para la firma */
+/* =======================
+   Firma
+   ======================= */
+
 const FirmaView: React.FC<{ firma_url: string | null }> = ({ firma_url }) => {
   const url = buildImageUrl(firma_url || undefined);
   if (!url) {
@@ -68,7 +71,7 @@ const FirmaView: React.FC<{ firma_url: string | null }> = ({ firma_url }) => {
     );
   }
   return (
-    <div className="inline-flex flex-col items-center gap-2 px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 shadow-sm">
+    <div className="inline-flex flex-col items-center gap-2 px-4 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 shadow-sm w-full sm:w-auto">
       <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
         Firma del cliente
       </span>
@@ -76,8 +79,8 @@ const FirmaView: React.FC<{ firma_url: string | null }> = ({ firma_url }) => {
         {/* Botón de descarga de la firma */}
         <a
           href={url}
-            target="_blank"
-  rel="noopener noreferrer"
+          target="_blank"
+          rel="noopener noreferrer"
           download="firma-cliente.png"
           className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-white/90 border border-slate-200 px-2 py-1 text-[11px] text-slate-700 shadow-sm hover:bg-slate-50"
         >
@@ -95,19 +98,18 @@ const FirmaView: React.FC<{ firma_url: string | null }> = ({ firma_url }) => {
   );
 };
 
-/* Grid de fotos en forma de tarjetas */
+/* =======================
+   Grid de fotos
+   ======================= */
+
 const FotosGrid: React.FC<{ fotos: string[] }> = ({ fotos }) => {
-  // 👉 Función para descargar todas las fotos
-const handleDownloadAll = () => {
-  fotos.forEach((f) => {
-    const url = buildImageUrl(f);
-    if (!url) return;
-
-    // Abrir cada foto en una nueva pestaña
-    window.open(url, "_blank", "noopener,noreferrer");
-  });
-};
-
+  const handleDownloadAll = () => {
+    fotos.forEach((f) => {
+      const url = buildImageUrl(f);
+      if (!url) return;
+      window.open(url, "_blank", "noopener,noreferrer");
+    });
+  };
 
   if (!fotos || fotos.length === 0) {
     return (
@@ -121,7 +123,7 @@ const handleDownloadAll = () => {
   return (
     <div className="space-y-3">
       {/* Botón para descargar todas las fotos */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <p className="text-xs text-slate-500">
           Total de fotos:{" "}
           <span className="font-semibold text-slate-700">{fotos.length}</span>
@@ -143,15 +145,15 @@ const handleDownloadAll = () => {
           return (
             <article
               key={`${f}-${i}`}
-              className="group relative rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+              className="group relative rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden hover:shadow-md hover:border-slate-300 transition-all"
             >
               {url ? (
                 <>
                   {/* Botón de descarga individual */}
                   <a
                     href={url}
-                      target="_blank"
-  rel="noopener noreferrer"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     download={`foto-${i + 1}.jpg`}
                     className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-white/90 border border-slate-200 px-2 py-1 text-[11px] text-slate-700 shadow-sm hover:bg-slate-50 z-10"
                   >
@@ -163,7 +165,7 @@ const handleDownloadAll = () => {
                     <img
                       src={url}
                       alt={`Foto ${i + 1}`}
-                      className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform"
+                      className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform"
                     />
                   </figure>
                 </>
@@ -192,7 +194,6 @@ const handleDownloadAll = () => {
 const ActaFinal: React.FC = () => {
   const { id } = useParams<{ id: string }>();
 
-  // id de la URL se interpreta como id_factura
   const id_factura = id ? Number(id) : undefined;
 
   const {
@@ -200,12 +201,11 @@ const ActaFinal: React.FC = () => {
     isLoading,
     error,
   } = useActas({
-    factura: id_factura, // 🔥 filtro por id_factura
+    factura: id_factura,
     limit: 50,
   });
 
   const actas: ActaEntrega[] = listResp?.data ?? [];
-
   const { show, hide } = useLoaderStore();
 
   React.useEffect(() => {
@@ -213,10 +213,12 @@ const ActaFinal: React.FC = () => {
     else hide();
   }, [isLoading, show, hide]);
 
+  /* ===== Estados especiales ===== */
+
   if (!id_factura || id_factura <= 0) {
     return (
       <main className="w-full min-h-screen flex items-center justify-center bg-slate-50 px-4">
-        <div className="max-w-lg w-full rounded-2xl border border-rose-200 bg-white shadow-sm px-5 py-4 flex gap-3">
+        <div className="max-w-lg w-full rounded-2xl border border-rose-200 bg-white shadow-lg px-5 py-4 flex gap-3">
           <AlertCircle className="w-5 h-5 text-rose-500 mt-1" />
           <div className="space-y-1">
             <h2 className="text-sm font-semibold text-rose-600">
@@ -224,8 +226,8 @@ const ActaFinal: React.FC = () => {
             </h2>
             <p className="text-sm text-slate-600">
               Falta el parámetro{" "}
-              <code className="bg-slate-100 px-1.5 rounded">id</code> en la
-              URL. Debe ser{" "}
+              <code className="bg-slate-100 px-1.5 rounded">id</code> en la URL.
+              Debe ser{" "}
               <code className="bg-slate-100 px-1.5 rounded">
                 /actas/final/:id
               </code>{" "}
@@ -240,7 +242,7 @@ const ActaFinal: React.FC = () => {
   if (error) {
     return (
       <main className="w-full min-h-screen flex items-center justify-center bg-slate-50 px-4">
-        <div className="max-w-lg w-full rounded-2xl border border-amber-200 bg-amber-50 shadow-sm px-5 py-4 flex gap-3">
+        <div className="max-w-lg w-full rounded-2xl border border-amber-200 bg-amber-50 shadow-lg px-5 py-4 flex gap-3">
           <AlertCircle className="w-5 h-5 text-amber-500 mt-1" />
           <div className="space-y-1">
             <h2 className="text-sm font-semibold text-amber-700">
@@ -259,7 +261,7 @@ const ActaFinal: React.FC = () => {
   if (!isLoading && actas.length === 0) {
     return (
       <main className="w-full min-h-screen flex items-center justify-center bg-slate-50 px-4">
-        <div className="max-w-lg w-full rounded-2xl border border-sky-200 bg-white shadow-sm px-5 py-4 flex gap-3">
+        <div className="max-w-lg w-full rounded-2xl border border-sky-200 bg-white shadow-lg px-5 py-4 flex gap-3">
           <FileText className="w-5 h-5 text-sky-500 mt-1" />
           <div className="space-y-1">
             <h2 className="text-sm font-semibold text-sky-700">
@@ -275,13 +277,15 @@ const ActaFinal: React.FC = () => {
     );
   }
 
+  /* ===== Vista principal ===== */
+
   return (
-    <main className="w-full min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
+    <main className="w-full min-h-screen bg-gradient-to-b from-slate-50 via-slate-50 to-slate-100">
       {/* Header / volver */}
-      <header className="sticky top-0 z-10 bg-white/70 backdrop-blur border-b border-slate-200">
-        <div className="max-w-6xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div className="hidden sm:flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-50 border border-emerald-100">
+      <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-slate-200">
+        <div className="max-w-9xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 border border-emerald-100 shadow-sm">
               <FileText className="w-5 h-5 text-emerald-600" />
             </div>
             <div className="flex flex-col">
@@ -290,9 +294,12 @@ const ActaFinal: React.FC = () => {
               </h1>
               <p className="text-xs text-slate-500">
                 Factura asociada:{" "}
-                <span className="font-semibold text-slate-700">
+                <span className="font-semibold text-slate-800">
                   #{id_factura}
-                </span>
+                </span>{" "}
+                · {actas.length} acta
+                {actas.length !== 1 && "s"} registrada
+                {actas.length !== 1 && "s"}
               </p>
             </div>
           </div>
@@ -308,7 +315,7 @@ const ActaFinal: React.FC = () => {
       </header>
 
       {/* Contenido principal */}
-      <div className="max-w-full mx-auto px-4 md:px-6 py-6">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-6">
         {/* Listado de actas en forma de tarjetas */}
         <section className="space-y-5">
           {isLoading && (
@@ -324,9 +331,9 @@ const ActaFinal: React.FC = () => {
             actas.map((acta, idx) => (
               <article
                 key={acta.id_acta}
-                className="relative rounded-3xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+                className="relative rounded-3xl border border-slate-200 bg-white shadow-sm hover:shadow-lg hover:border-slate-300 transition-all overflow-hidden"
               >
-                {/* Pequeña barra lateral de estado */}
+                {/* Barra lateral de estado */}
                 <div
                   className={`absolute inset-y-0 left-0 w-1.5 ${
                     acta.estado === "cerrada"
@@ -338,7 +345,7 @@ const ActaFinal: React.FC = () => {
                   {/* Encabezado del acta */}
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
                     <div className="flex items-start gap-3">
-                      <div className="mt-0.5 h-9 w-9 rounded-2xl bg-slate-100 flex items-center justify-center">
+                      <div className="mt-0.5 h-9 w-9 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center">
                         <FileText className="w-5 h-5 text-slate-700" />
                       </div>
                       <div>
@@ -346,13 +353,13 @@ const ActaFinal: React.FC = () => {
                           <h2 className="text-base md:text-lg font-semibold tracking-tight text-slate-900">
                             Acta de entrega #{acta.id_acta}
                           </h2>
-                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
+                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium border border-slate-200">
                             #{idx + 1} de {actas.length}
                           </span>
                         </div>
                         <p className="text-xs text-slate-500 mt-1">
                           Factura vinculada:{" "}
-                          <span className="font-semibold">
+                          <span className="font-semibold text-slate-800">
                             #{acta.id_factura || "—"}
                           </span>
                         </p>
@@ -387,10 +394,10 @@ const ActaFinal: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Separador suave */}
+                  {/* Separador */}
                   <div className="border-t border-dashed border-slate-200 my-3" />
 
-                  {/* Responsables / observaciones en tarjetas */}
+                  {/* Responsables / observaciones */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
                     {/* Responsable */}
                     <div className="space-y-3">
@@ -416,7 +423,7 @@ const ActaFinal: React.FC = () => {
                         <PenLine className="w-4 h-4 mt-0.5 opacity-70" />
                         <span>
                           Esta persona certifica la entrega del vehículo y/o
-                          equipos, de acuerdo con las condiciones pactadas.
+                          equipos de acuerdo con las condiciones pactadas.
                         </span>
                       </div>
                     </div>
@@ -447,33 +454,36 @@ const ActaFinal: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Firma */}
-                  <div className="mt-6 bg-[#70B6E5] p-3 rounded-2xl">
-                    <h3 className="text-sm font-semibold text-slate-900 mb-2 flex items-center gap-2">
-                      <PenLine className="w-4 h-4 text-slate-500" />
-                      Firma del cliente
-                    </h3>
-                    <FirmaView firma_url={acta.firma_url} />
-                  </div>
-
-                  {/* Fotos */}
-                  <div className="mt-6">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="h-8 w-8 rounded-xl bg-slate-900 flex items-center justify-center">
-                        <FileImage className="w-4 h-4 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-semibold text-slate-900">
-                          Registro fotográfico
-                        </h3>
-                        <p className="text-[11px] text-slate-500">
-                          Evidencia visual del estado del vehículo/equipos al
-                          momento de la entrega.
-                        </p>
-                      </div>
+                  {/* Firma + Fotos en layout vertical con mejor fondo */}
+                  <div className="mt-6 grid grid-cols-1 lg:grid-cols-[minmax(0,0.6fr)_minmax(0,1.4fr)] gap-6">
+                    {/* Firma */}
+                    <div className="bg-slate-900/5 rounded-2xl p-4 border border-slate-200/80">
+                      <h3 className="text-sm font-semibold text-slate-900 mb-2 flex items-center gap-2">
+                        <PenLine className="w-4 h-4 text-slate-500" />
+                        Firma del cliente
+                      </h3>
+                      <FirmaView firma_url={acta.firma_url} />
                     </div>
 
-                    <FotosGrid fotos={acta.fotos || []} />
+                    {/* Fotos */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="h-8 w-8 rounded-xl bg-slate-900 flex items-center justify-center">
+                          <FileImage className="w-4 h-4 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold text-slate-900">
+                            Registro fotográfico
+                          </h3>
+                          <p className="text-[11px] text-slate-500">
+                            Evidencia visual del estado del vehículo/equipos al
+                            momento de la entrega.
+                          </p>
+                        </div>
+                      </div>
+
+                      <FotosGrid fotos={acta.fotos || []} />
+                    </div>
                   </div>
                 </div>
               </article>
