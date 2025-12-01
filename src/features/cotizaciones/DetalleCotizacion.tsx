@@ -923,7 +923,7 @@ const DetalleCotizacion: React.FC = () => {
 
         {/* Cuotas – solo de la moto seleccionada en el tab (oculto, pero lo dejo armado) */}
         {moto && hasCuotas && (
-          <section className="card bg-base-100 hidden border border-base-300/60 shadow-sm rounded-2xl">
+          <section className="card bg-base-100 border border-base-300/60 shadow-sm rounded-2xl">
             <div className="card-body">
               <div className="flex items-center gap-2 mb-2">
                 <Calculator className="w-5 h-5" />

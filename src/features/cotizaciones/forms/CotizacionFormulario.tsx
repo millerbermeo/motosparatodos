@@ -2248,7 +2248,7 @@ const CotizacionFormulario: React.FC = () => {
 
             {/* Cuotas manuales MOTO 1 */}
             {metodo === "terceros" && moto1Seleccionada && (
-                <div className=" gap-6 flex-col w-full hidden bg-white p-3 rounded-xl">
+                <div className="flex gap-6 flex-col w-full bg-white p-3 rounded-xl">
                     <div className="badge text-lg badge-success text-white">Cuotas Moto 1 (A)</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormInput<FormValues> formatThousands name="cuota_6_a" label="Cuota 6 meses A" type="number" control={control} placeholder="Opcional" />
@@ -2263,7 +2263,7 @@ const CotizacionFormulario: React.FC = () => {
 
             {/* Cuotas manuales MOTO 2 */}
             {metodo === "terceros" && moto2Seleccionada && (
-                <div className=" gap-6 flex-col hidden w-full bg-white p-3 rounded-xl">
+                <div className="flex gap-6 flex-col w-full bg-white p-3 rounded-xl">
                     <div className="badge text-lg badge-success text-white">Cuotas Moto 2 (B)</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormInput<FormValues> formatThousands name="cuota_6_b" label="Cuota 6 meses B" type="number" control={control} placeholder="Opcional" />
