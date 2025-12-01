@@ -5,6 +5,7 @@ import { useCotizacionFullById } from "../services/fullServices";
 import DocumentosSolicitud from "../features/solicitudes/DocumentosSolicitud";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { useIvaDecimal } from "../services/ivaServices";
+import { useAuthStore } from "../store/auth.store";
 
 // Hooks del servicio de solicitudes
 import {
@@ -186,7 +187,29 @@ const buildMotoFromCotizacion = (cot: any, lado: "A" | "B"): MotoCot | undefined
   const marcacion = Number(cot?.[`marcacion${suffix}`]) || 0;
   const accesoriosYMarcacion = accesorios + marcacion;
 
-  const seguros = Number(cot?.[`seguros${suffix}`]) || 0;
+  let seguros = 0;
+
+  // 1) Campo numérico directo: otro_seguro_a / otro_seguro_b
+  const otroSeguro = Number(cot?.[`otro_seguro${suffix}`]) || 0;
+  seguros += otroSeguro;
+
+  // 2) Campo JSON: seguros_a / seguros_b  (ej: [{"id":-1,"nombre":"Otros seguros","valor":200000}, ...])
+  const segurosRaw = cot?.[`seguros${suffix}`];
+  if (typeof segurosRaw === "number") {
+    seguros += segurosRaw;
+  } else if (typeof segurosRaw === "string" && segurosRaw.trim()) {
+    try {
+      const arr = JSON.parse(segurosRaw);
+      if (Array.isArray(arr)) {
+        seguros += arr.reduce((acc, item) => {
+          const v = Number(item?.valor ?? 0);
+          return acc + (Number.isFinite(v) ? v : 0);
+        }, 0);
+      }
+    } catch {
+      // si falla el JSON, simplemente lo ignoramos
+    }
+  }
 
   const soat = Number(cot?.[`soat${suffix}`]) || 0;
   const matricula = Number(cot?.[`matricula${suffix}`]) || 0;
@@ -273,6 +296,9 @@ const DetallesFacturacion: React.FC = () => {
   const cot = data?.data?.cotizacion ?? null;
   const cred = data?.data?.creditos ?? null;
   const sol = data?.data?.solicitar_estado_facturacion ?? null;
+
+  const user = useAuthStore((s) => s.user);
+
 
   // ===================== SELECCIÓN DE MOTO A/B =====================
 
@@ -676,6 +702,9 @@ const DetallesFacturacion: React.FC = () => {
     fd.append("id", String(idSolicitud));
     fd.append("factura", facturaFile);
     fd.append("id_cotizacion", id_cotizacion);
+    fd.append("facturado", "Si");
+    fd.append("facturador", user?.name || user?.rol || "");
+
 
     actualizarFactura(fd, {
       onSuccess: () => {
@@ -924,7 +953,7 @@ const DetallesFacturacion: React.FC = () => {
             {!tieneFactura && (
               <>
                 <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-                  <div className="bg-slate-800 text-white font-semibold px-5.py-2.5 text-sm flex items-center justify-between">
+                  <div className="bg-slate-800 text-white  p-3 font-semibold px-5.py-2.5 text-sm flex items-center justify-between">
                     <span>Soportes de pago y documentos adjuntos</span>
                     {isUltimaSolLoading && (
                       <span className="text-xs text-slate-200">
@@ -1030,7 +1059,7 @@ const DetallesFacturacion: React.FC = () => {
                             >
                               {isSubiendoFactura
                                 ? "Subiendo factura…"
-                                : "Subir factura"}
+                                : "Facturar"}
                             </button>
                           </div>
                         )}

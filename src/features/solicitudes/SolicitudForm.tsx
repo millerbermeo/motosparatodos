@@ -254,6 +254,10 @@ const SolicitudForm: React.FC = () => {
 
     const esCreditoTerceros = incoming?.esCreditoTerceros === true;
 
+  const numeroMoto =
+    incoming.motoSeleccion === "A" ? "1" :
+    incoming.motoSeleccion === "B" ? "2" :
+    "";
 
     if (id) fd.append("id_cotizacion", String(id));
     fd.append("is_act", "2");
@@ -282,6 +286,7 @@ const SolicitudForm: React.FC = () => {
     fd.append("placa", (values.placa ?? "").toUpperCase().trim());
     fd.append("color", (values.color ?? "").trim());
     fd.append("tipo_solicitud", esCreditoTerceros ? "Credito de Terceros" : "Contado");
+    fd.append("moto_seleccion", numeroMoto); // "1" o "2"
 
     // ==== NUEVO: enriquecer motos/seleccionada con SOAT/IMP/MAT/Docs ====
     const ladoInferido = inferLadoFromIncoming(incoming);
@@ -404,6 +409,8 @@ const SolicitudForm: React.FC = () => {
     }
   }, [placaValue, setValue]);
 
+
+  
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 px-4 py-6 md:py-10">

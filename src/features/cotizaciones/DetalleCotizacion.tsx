@@ -68,6 +68,8 @@ type Motocicleta = {
 
   // Saldo a financiar
   saldoFinanciar: number;
+  // 👇 NUEVO
+  otrosSeguros?: number;
 };
 
 type Evento = {
@@ -288,9 +290,11 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
   const accesorios = Number(data?.[`accesorios${suffix}`]) || 0;
   const marcacion = Number(data?.[`marcacion${suffix}`]) || 0;
   const accesoriosYMarcacion = accesorios + marcacion;
+  const otrosSeguros = Number(data?.[`otro_seguro${suffix}`]) || 0;
 
   // Seguros (aunque ya no los mostramos)
-  const seguros = Number(data?.[`seguros${suffix}`]) || 0;
+  const seguros = otrosSeguros;
+
 
   const soat = Number(data?.[`soat${suffix}`]) || 0;
   const matricula = Number(data?.[`matricula${suffix}`]) || 0;
@@ -376,6 +380,7 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
     adicionalesOtros,
     adicionalesTotal,
     saldoFinanciar,
+    otrosSeguros,
   };
 };
 
@@ -775,7 +780,7 @@ const DetalleCotizacion: React.FC = () => {
                       {/* Totales sin/ con documentos y adicionales */}
                       <div className="mt-2 pt-2 border-t border-dashed border-base-300/80 space-y-1.5">
                         <DataRow
-                          label="Total sin documentos / adicionales / accesorios"
+                          label="Total sin documentos / adicionales / accesorios / seguros"
                           value={fmtCOP(
                             (moto.precioBase || 0) -
                             (moto.descuentos || 0) +
@@ -784,17 +789,23 @@ const DetalleCotizacion: React.FC = () => {
                         />
 
                         <DataRow
-                          label="Total con documentos / adicionales"
-                          value={fmtCOP(moto.totalSinSeguros)}
+                          label="Total con documentos / adicionales / accesorios /  seguros"
+                          value={fmtCOP(moto.totalSinSeguros + (moto.seguros || 0))}
                           strong
+                        />
+
+                        {/* 👇 NUEVO: mostrar otros seguros */}
+                        <DataRow
+                          label="Otros seguros"
+                          value={fmtCOP(moto.otrosSeguros || 0)}
                         />
 
                         {/* Solo mostrar si aplica */}
                         {moto.cuotas.inicial > 0 && (
                           <DataRow
-                            label="Menos cuota inicial"
+                            label="Cuota inicial"
                             value={fmtCOP(moto.cuotas.inicial)}
-                            strong
+
                             valueClass="text-error font-semibold"
                           />
                         )}
@@ -872,13 +883,13 @@ const DetalleCotizacion: React.FC = () => {
 
               const valor = isA ? ge?.valor_a : ge?.valor_b;
 
-              const plan = isA
-                ? (ge?.garantia_extendida_a ??
-                  (typeof q?.motoA?.garantiaExtendidaMeses === 'number'
-                    ? `${q?.motoA?.garantiaExtendidaMeses}m` : '—'))
-                : (ge?.garantia_extendida_b ??
-                  (typeof q?.motoB?.garantiaExtendidaMeses === 'number'
-                    ? `${q?.motoB?.garantiaExtendidaMeses}m` : '—'));
+              // const plan = isA
+              //   ? (ge?.garantia_extendida_a ??
+              //     (typeof q?.motoA?.garantiaExtendidaMeses === 'number'
+              //       ? `${q?.motoA?.garantiaExtendidaMeses}m` : '—'))
+              //   : (ge?.garantia_extendida_b ??
+              //     (typeof q?.motoB?.garantiaExtendidaMeses === 'number'
+              //       ? `${q?.motoB?.garantiaExtendidaMeses}m` : '—'));
 
               return (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -899,10 +910,10 @@ const DetalleCotizacion: React.FC = () => {
                       }
                     />
 
-                    <DataRowText
+                    {/* <DataRowText
                       label="Plan"
                       value={plan || '—'}
-                    />
+                    /> */}
                   </div>
                 </div>
               );

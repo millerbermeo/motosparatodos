@@ -131,6 +131,8 @@ const estadoBadgeClass = (estado?: string) => {
 
         case 'Solicitar crédito':
             return 'badge-info';
+        case 'Facturado':
+            return 'badge-accent';
 
 
         default:

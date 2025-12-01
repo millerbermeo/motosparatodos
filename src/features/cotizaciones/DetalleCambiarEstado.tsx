@@ -833,7 +833,7 @@ const DetalleCambiarEstado: React.FC = () => {
                                         </span>
                                     </label>
                                     <select
-                                        className="select select-bordered"
+                                        className="select select-bordered ml-20"
                                         value={motoSeleccion}
                                         onChange={(e) => setMotoSeleccion(e.target.value as 'A' | 'B' | '')}
                                     >

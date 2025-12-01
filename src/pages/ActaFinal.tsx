@@ -315,7 +315,7 @@ const ActaFinal: React.FC = () => {
       </header>
 
       {/* Contenido principal */}
-      <div className="max-w-6xl mx-auto px-4 md:px-6 py-6">
+      <div className="max-w-9xl mx-auto px-4 md:px-6 py-6">
         {/* Listado de actas en forma de tarjetas */}
         <section className="space-y-5">
           {isLoading && (
