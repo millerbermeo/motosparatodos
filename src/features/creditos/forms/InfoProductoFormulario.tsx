@@ -139,29 +139,37 @@ const InfoProductoFormulario: React.FC = () => {
     );
   };
 
-  // 👇 Ojo: ahora usamos getPlazoCuotasNumber, no toNumber
-  const plazoCuotasWatch = watch("plazoCuotas");
-  const cuotaInicialWatch = watch("cuotaInicial");
+// 👇 Leemos lo que hay en el form
+const plazoCuotasWatch = watch("plazoCuotas");
+const cuotaInicialWatch = watch("cuotaInicial");
 
-  const plazoParaTabla = getPlazoCuotasNumber(plazoCuotasWatch);
-  const cuotaInicialParaTabla = toNumberPesos(cuotaInicialWatch);
+// 1) Sacamos el número de cuotas con fallback: form → backend → 12
+const plazoParaTabla =
+  getPlazoCuotasNumber(
+    plazoCuotasWatch ?? creditoBackend?.plazo_meses ?? 12
+  ) || 12;
 
-  // 👇 Aquí armamos el objeto que consume TablaAmortizacionCredito
-  const creditoParaTabla =
-    creditoBackend && plazoParaTabla > 0
-      ? {
-          valor_producto: Number(creditoBackend.valor_producto) || 0,
-          cuota_inicial: cuotaInicialParaTabla,
-          plazo_meses: plazoParaTabla,
-          soat: creditoBackend.soat ?? "0",
-          matricula: creditoBackend.matricula ?? "0",
-          impuestos: creditoBackend.impuestos ?? "0",
-          accesorios_total: creditoBackend.accesorios_total ?? "0",
-          precio_seguros: creditoBackend.precio_seguros ?? "0",
-          garantia_extendida_valor:
-            creditoBackend.garantia_extendida_valor ?? "0",
-        }
-      : null;
+// 2) Igual para cuota inicial: form → backend → 0
+const cuotaInicialParaTabla = toNumberPesos(
+  cuotaInicialWatch ?? creditoBackend?.cuota_inicial ?? 0
+);
+
+// 3) Armamos el objeto para la tabla si ya tenemos el crédito
+const creditoParaTabla = creditoBackend
+  ? {
+      valor_producto: Number(creditoBackend.valor_producto) || 0,
+      cuota_inicial: cuotaInicialParaTabla,
+      plazo_meses: plazoParaTabla,
+      soat: creditoBackend.soat ?? "0",
+      matricula: creditoBackend.matricula ?? "0",
+      impuestos: creditoBackend.impuestos ?? "0",
+      accesorios_total: creditoBackend.accesorios_total ?? "0",
+      precio_seguros: creditoBackend.precio_seguros ?? "0",
+      garantia_extendida_valor:
+        creditoBackend.garantia_extendida_valor ?? "0",
+    }
+  : null;
+
 
   const fechaCreacionCredito = creditoBackend?.fecha_creacion ?? undefined;
 

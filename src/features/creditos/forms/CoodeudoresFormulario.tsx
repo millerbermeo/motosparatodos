@@ -576,11 +576,11 @@ const CoodeudoresFormulario: React.FC = () => {
               <FormInput
                 className="mt-6"
                 control={control}
+                type="number"
                 name={`codeudores.${idx}.numDocumento`}
                 label="Número de documento*"
                 placeholder="Ingrese número de documento"
                 rules={{
-                  required: "Requerido",
                   pattern: {
                     value: /^[0-9]+$/, // solo números
                     message: "Solo se permiten números",
@@ -606,7 +606,6 @@ const CoodeudoresFormulario: React.FC = () => {
                 label="Lugar de expedición"
                 placeholder="Ej. Neiva"
                 rules={{
-                  minLength: { value: 2, message: "Mínimo 2 caracteres" },
                   pattern: {
                     value: /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s.'-]{2,}$/,
                     message: "Solo letras y espacios",
@@ -629,7 +628,6 @@ const CoodeudoresFormulario: React.FC = () => {
                 label="Ciudad de residencia"
                 placeholder="Ej. Pitalito"
                 rules={{
-                  minLength: { value: 2, message: "Mínimo 2 caracteres" },
                   pattern: {
                     value: /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s.'-]{2,}$/,
                     message: "Solo letras y espacios",
