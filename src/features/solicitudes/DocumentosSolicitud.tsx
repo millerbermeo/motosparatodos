@@ -140,7 +140,7 @@ const DocumentosSolicitud: React.FC<Props> = ({
             title="Aprobar entrega"
           >
             <CheckCircle2 className="w-4 h-4" />
-            Aceptar
+            Realizar entrega
           </button>
         )}
       </div>

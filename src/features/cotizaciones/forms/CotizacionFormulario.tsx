@@ -979,6 +979,8 @@ const CotizacionFormulario: React.FC = () => {
 
     const esCreditoDirecto = metodo === "credibike" || metodo === "terceros";
 
+    const esCreditoDirecto2 = metodo === "credibike"; 
+
     React.useEffect(() => {
         if (!esCreditoDirecto) {
             setValue("cuotaInicial1", "0");
@@ -1221,7 +1223,13 @@ const CotizacionFormulario: React.FC = () => {
                         label="Celular"
                         control={control}
                         placeholder="3001234567"
-                        rules={{ required: "El celular es obligatorio.", pattern: { value: /^[0-9]{7,10}$/, message: "Solo números (7-10 dígitos)" } }}
+                        rules={{
+                            required: "El celular es obligatorio.",
+                            pattern: {
+                                value: /^[0-9]{10}$/,
+                                message: "Debe tener exactamente 10 números."
+                            }
+                        }}
                     />
                     <FormInput<FormValues>
                         name="email"
@@ -1309,6 +1317,18 @@ const CotizacionFormulario: React.FC = () => {
                                                 options={garantiaExtendidaOptions}
                                                 placeholder="Seleccione..."
                                                 disabled={!showMotos || !incluirMoto1}
+                                                rules={{
+                                                    validate: (v) => {
+                                                        // si es crédito (directo/terceros) y la moto 1 va incluida,
+                                                        // NO se permite "no"
+                                                        if (esCreditoDirecto2 && incluirMoto1) {
+                                                            return v && v !== "no"
+                                                                ? true
+                                                                : "La garantía extendida es obligatoria para crédito directo.";
+                                                        }
+                                                        return true;
+                                                    },
+                                                }}
                                             />
 
                                             {watch("garantiaExtendida1") !== "no" && (
@@ -1794,6 +1814,16 @@ const CotizacionFormulario: React.FC = () => {
                                                 options={garantiaExtendidaOptions}
                                                 placeholder="Seleccione..."
                                                 disabled={!showMotos || !incluirMoto2}
+                                                rules={{
+                                                    validate: (v) => {
+                                                        if (esCreditoDirecto2 && incluirMoto2) {
+                                                            return v && v !== "no"
+                                                                ? true
+                                                                : "La garantía extendida es obligatoria para crédito directo directo.";
+                                                        }
+                                                        return true;
+                                                    },
+                                                }}
                                             />
 
                                             {watch("garantiaExtendida2") !== "no" && (
