@@ -3,11 +3,9 @@ import { useParams } from "react-router-dom";
 import { useComentariosCredito } from "../../services/comentariosServices";
 import { ShieldCheck, UserRound } from "lucide-react";
 
-export type UserRole = "Asesor" | "Administrador";
-
 export interface ChatMessage {
   id: string | number;
-  role: UserRole;
+  role: string; // rol tal como viene del backend
   name: string;
   comment: string;
   timestamp: string | number | Date;
@@ -30,21 +28,9 @@ function formatDateEs(value: ChatMessage["timestamp"]) {
   }).format(d);
 }
 
-const roleStyles: Record<
-  UserRole,
-  {
-    align: "chat-start" | "chat-end";
-    bubble: string;
-    name: string;
-    footer: string;
-    ring: string;
-    iconColor: string;
-    Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-    label: string;
-  }
-> = {
+const roleStyles = {
   Asesor: {
-    align: "chat-start",
+    align: "chat-start" as const,
     bubble: "bg-base-200 text-base-content",
     name: "text-emerald-600",
     footer: "text-sky-500",
@@ -54,7 +40,7 @@ const roleStyles: Record<
     label: "Asesor",
   },
   Administrador: {
-    align: "chat-end",
+    align: "chat-end" as const,
     bubble: "bg-sky-600 text-white",
     name: "text-sky-600 dark:text-sky-400",
     footer: "text-emerald-500",
@@ -115,10 +101,12 @@ const ChatThread: React.FC<ChatThreadProps> = ({ className = "" }) => {
 
   const { data, isLoading, error } = useComentariosCredito(codigo_credito, !!codigo_credito);
 
+  console.log("messages", data);
+
   const messages: ChatMessage[] = useMemo(() => {
     return (data ?? []).map((c) => ({
       id: c.id,
-      role: (c.rol_usuario === "Administrador" ? "Administrador" : "Asesor") as UserRole,
+      role: c.rol_usuario || "Asesor", // usamos el rol que viene del backend
       name: c.nombre_usuario || "Usuario",
       comment: c.comentario || "",
       timestamp: c.fecha_creacion || new Date().toISOString(),
@@ -130,7 +118,7 @@ const ChatThread: React.FC<ChatThreadProps> = ({ className = "" }) => {
     return (
       <div className="p-6">
         <div className="alert alert-error">
-          <span>{(error as any)?.response?.data?.error || error.message}</span>
+          <span>{(error as any)?.response?.data?.error || (error as any)?.message}</span>
         </div>
       </div>
     );
@@ -144,7 +132,9 @@ const ChatThread: React.FC<ChatThreadProps> = ({ className = "" }) => {
   return (
     <div className={`w-full max-full mx-auto p-6 ${className}`}>
       {sorted.map((m) => {
-        const s = roleStyles[m.role];
+        // Solo Administrador va a la derecha, el resto se pinta como "Asesor"
+        const isAdmin = m.role === "Administrador";
+        const s = isAdmin ? roleStyles.Administrador : roleStyles.Asesor;
         const dateLabel = formatDateEs(m.timestamp);
 
         return (
@@ -168,6 +158,11 @@ const ChatThread: React.FC<ChatThreadProps> = ({ className = "" }) => {
 
               <div className="chat-header flex mt-2 mb-1 items-center gap-2">
                 <span className={`font-semibold ${s.name}`}>{m.name}</span>
+
+                {/* Mostrar rol tal como viene del backend */}
+                <span className="text-xs opacity-70 italic">
+                  ({m.role})
+                </span>
               </div>
 
               <div className={`chat-bubble ${s.bubble}`}>

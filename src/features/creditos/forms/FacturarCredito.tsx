@@ -116,7 +116,11 @@ const FacturarCredito: React.FC = () => {
   const submitFormData = (fd: FormData) => {
     registrarSolicitud(fd, {
       onSuccess: () => {
-        if (user?.rol === 'Administrador') {
+        if (
+          user?.rol === "Administrador" ||
+          user?.rol === "Lider_credito_cartera" ||
+          user?.rol === "Aux_cartera"
+        ) {
           navigate('/solicitudes');
         } else {
           navigate(`/creditos/detalle/facturar-credito/${codigo_credito}`);
@@ -268,18 +272,18 @@ const FacturarCredito: React.FC = () => {
     typeof valorProducto === 'number' && Number.isFinite(valorProducto)
       ? valorProducto
       : (() => {
-          const parts = [
-            valorMoto,
-            soat,
-            matricula,
-            impuestos,
-            accesoriosYSeguros,
-          ].filter(
-            (n): n is number =>
-              typeof n === 'number' && Number.isFinite(n) && n > 0
-          );
-          return parts.length ? parts.reduce((a, b) => a + b, 0) : undefined;
-        })();
+        const parts = [
+          valorMoto,
+          soat,
+          matricula,
+          impuestos,
+          accesoriosYSeguros,
+        ].filter(
+          (n): n is number =>
+            typeof n === 'number' && Number.isFinite(n) && n > 0
+        );
+        return parts.length ? parts.reduce((a, b) => a + b, 0) : undefined;
+      })();
 
   const fechaCreacion = safeStr(credito?.fecha_creacion);
   const asesor = safeStr(credito?.asesor);
@@ -381,10 +385,10 @@ const FacturarCredito: React.FC = () => {
           loadingDistribuidoras ||
           loadingFull ||
           ivaLoading) && (
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            Cargando información…
-          </div>
-        )}
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              Cargando información…
+            </div>
+          )}
 
         {(error || errorDistribuidoras || errorFull || ivaError) && (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800 shadow-sm">
@@ -512,9 +516,9 @@ const FacturarCredito: React.FC = () => {
                 value={fmtCOP(
                   accesoriosYSeguros
                     ? (accesoriosYSeguros as number) -
-                        Math.round(
-                          (accesoriosYSeguros as number) / (1 + IVA_DEC)
-                        )
+                    Math.round(
+                      (accesoriosYSeguros as number) / (1 + IVA_DEC)
+                    )
                     : undefined
                 )}
               />
@@ -915,9 +919,8 @@ const RowRight: React.FC<{
   <div className="px-5 py-3 grid grid-cols-12 items-center text-sm">
     <div className="col-span-8 sm:col-span-10 text-slate-700">{label}</div>
     <div
-      className={`col-span-4 sm:col-span-2 text-right ${
-        bold ? 'font-semibold text-slate-900' : 'font-medium text-slate-800'
-      }`}
+      className={`col-span-4 sm:col-span-2 text-right ${bold ? 'font-semibold text-slate-900' : 'font-medium text-slate-800'
+        }`}
     >
       {badge ? <span className={badge}>{value}</span> : value}
     </div>

@@ -1129,6 +1129,7 @@ const DetallesFacturacion: React.FC = () => {
                 onVolver={() => {
                   volverAtras();
                 }}
+                finalizado={sol.is_final_acta}
                 estadoCotizacion={estadoCotizacion}
                 onAprobado={() => {
                   if (!tieneFactura) {

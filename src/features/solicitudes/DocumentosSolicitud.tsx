@@ -21,6 +21,8 @@ type Props = {
   onVolver?: () => void;
   onAprobado?: (id: string | number) => void; // callback opcional
   estadoCotizacion?: string; // 👈 NUEVO: estado actual de la cotización
+    finalizado?: number | boolean | string; // 👈 NUEVO
+
 };
 
 // Backend base (env o fallback fijo)
@@ -47,6 +49,8 @@ const DocumentosSolicitud: React.FC<Props> = ({
   onVolver,
   onAprobado,
   estadoCotizacion,
+    finalizado, // 👈 NUEVO
+
 }) => {
   const open = useModalStore((s) => s.open);
 
@@ -55,6 +59,12 @@ const DocumentosSolicitud: React.FC<Props> = ({
     if (!finalUrl) return;
     window.open(finalUrl, "_blank", "noopener,noreferrer");
   };
+
+
+    const estaFinalizado =
+    finalizado === 1 ||
+    finalizado === "1" ||
+    finalizado === true; // 👈 lo convertimos a booleano
 
   // ✅ Nuevo flujo:
   // 1) Clic en "Aceptar" -> abre modal global con el formulario del acta
@@ -78,6 +88,12 @@ const DocumentosSolicitud: React.FC<Props> = ({
   const isFacturado =
     estadoCotizacion &&
     estadoCotizacion.toString().toLowerCase() === "facturado";
+
+  // 👇 Solo mostramos el botón si NO está facturado y NO está finalizado
+  const puedeMostrarEntrega = !isFacturado && !estaFinalizado;
+
+  console.log({ estadoCotizacion, finalizado, estaFinalizado, isFacturado });
+
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
@@ -130,7 +146,7 @@ const DocumentosSolicitud: React.FC<Props> = ({
         </button>
 
         {/* Solo mostramos "Aceptar" si NO está facturado */}
-        {!isFacturado && (
+        {puedeMostrarEntrega && (
           <button
             type="button"
             onClick={onAceptar}
