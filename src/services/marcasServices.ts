@@ -143,6 +143,8 @@ export interface Moto {
   descuento_empresa?: string
   descuento_ensambladora?: string
   foto: string | null
+  id_empresa?: number | null;
+
 }
 
 export interface FiltroMarcaResponseRaw {
@@ -160,6 +162,8 @@ export interface FiltroMarcaResponseRaw {
     modelo: string
     descuento_empresa?: string
     descuento_ensambladora?: string
+      id_empresa?: number | null;
+
   }>;
 }
 
@@ -204,7 +208,7 @@ export const useMotosPorMarca = (marca: string | undefined) => {
           modelo: m.modelo,
           descuento_empresa: m.descuento_empresa,
           descuento_ensambladora: m.descuento_ensambladora,
-
+          id_empresa: m.id_empresa
         })),
       };
     },

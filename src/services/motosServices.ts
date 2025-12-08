@@ -23,6 +23,8 @@ export interface Moto {
   impuestos?: string
   descuento_empresa?: string
   descuento_ensambladora?: string
+  id_empresa?: number;
+  id_distribuidora?: number;
 
 }
 
@@ -60,6 +62,14 @@ const toFormData = (data: Partial<Moto> & { imagen?: File | null }) => {
   if (data.descuento_ensambladora != null) fd.append("descuento_ensambladora", data.descuento_ensambladora);
   if (data.imagen instanceof File) fd.append("imagen", data.imagen);
 
+    // 🔹 NUEVO: enviar los IDs al backend
+  if (data.id_empresa != null) {
+    fd.append("id_empresa", String(data.id_empresa));
+  }
+  if (data.id_distribuidora != null) {
+    fd.append("id_distribuidora", String(data.id_distribuidora));
+  }
+  
   return fd;
 };
 

@@ -282,7 +282,7 @@ const CotizacionFormulario: React.FC = () => {
 
     const { data: motos1 } = useMotosPorMarca(selectedMarca1 || undefined);
     const { data: motos2 } = useMotosPorMarca(selectedMarca2 || undefined);
-
+console.log(motos1)
     const motoOptions1: SelectOption[] = (motos1?.motos ?? []).map((m, index) => ({
         value: String(index), // 👈 valor único
         label: `${m.linea} - ${Number(m.precio_base).toLocaleString("es-CO")} COP - Modelo ${m.modelo ?? ""}`,
@@ -709,6 +709,21 @@ const CotizacionFormulario: React.FC = () => {
             const raw = unformatNumber(v); return raw ? Number(raw) : null;
         };
 
+            // 🔹 Obtener la moto A seleccionada (por índice del select)
+    const motoA =
+        incluirMoto1 && motos1?.motos
+            ? motos1.motos[Number(data.moto1)] ?? null
+            : null;
+
+    // 🔹 Obtener la moto B seleccionada (por índice del select)
+    const motoB =
+        incluirMoto2 && motos2?.motos
+            ? motos2.motos[Number(data.moto2)] ?? null
+            : null;
+
+            console.log(motoA)
+
+
         // Validaciones con SweetAlert2
         const mustHaveMoto1 = showMotos && incluirMoto1;
         const mustHaveMoto2 = showMotos && incluirMoto2;
@@ -961,6 +976,21 @@ const CotizacionFormulario: React.FC = () => {
 
             saldo_financiar_a: saldoFinanciar1,
             saldo_financiar_b: saldoFinanciar2,
+
+                // IDs de empresa según la moto A seleccionada
+    id_empresa_a:
+        incluirMoto1 && motoA?.id_empresa != null
+            ? Number(motoA.id_empresa)
+            : null,
+
+                // IDs de empresa según la moto B seleccionada
+    id_empresa_b:
+        incluirMoto2 && motoB?.id_empresa != null
+            ? Number(motoB.id_empresa)
+            : null,
+
+
+            
         };
 
         console.log("SUBMIT (payload EXACTO BD):", payload);

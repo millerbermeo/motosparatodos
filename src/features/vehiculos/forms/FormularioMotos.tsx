@@ -25,9 +25,15 @@ type Base = {
   precio_base: number;
   descrip: string;
   imagen?: string;
-  empresa?: string;          // nombre
-  subdistribucion?: string;  // nombre
+
+  empresa?: string;           // nombre (lo que ya existía)
+  subdistribucion?: string;   // nombre (lo que ya existía)
+
+  // 🔹 NUEVO — IDs reales para edición
+  id_empresa?: number;
+  id_distribuidora?: number;
 };
+
 
 type Props =
   | { initialValues?: undefined; mode?: "create" }
@@ -42,6 +48,8 @@ type MotoFormValues = {
   descrip: string;
   empresa: string;
   subdistribucion?: string;
+  id_empresa?: number | string;
+  id_distribuidora?: number | string;
 };
 
 const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) => {
@@ -210,6 +218,18 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
   ]);
 
   const onSubmit = (values: MotoFormValues) => {
+    // 🔹 buscamos la empresa seleccionada para obtener su id
+    const empresaSeleccionada = (empresas as any[])?.find(
+      (e: any) =>
+        (e.nombre_empresa ?? e.nombre) === values.empresa
+    );
+
+    // 🔹 buscamos la subdistribución seleccionada para obtener su id (si viene como objeto)
+    const subdistribSeleccionada = (subdistribs as any[])?.find(
+      (s: any) =>
+        (s.nombre ?? s) === values.subdistribucion
+    );
+
     // 🔹 Armamos un objeto con los datos del rango SOLO en create
     let rangoPayload: {
       soat?: string;
@@ -235,8 +255,21 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
       precio_base: Number(values.precio_base) || 0,
       descrip: values.descrip,
       imagen: file ?? null,
+
+      // nombre de empresa (lo que ya tenías en el form)
       empresa: values.empresa,
+      // nuevo: id de empresa según el select
+      id_empresa: empresaSeleccionada
+        ? Number(empresaSeleccionada.id)
+        : null,
+
+      // nombre de subdistribución (lo que ya tenías en el form)
       subdistribucion: values.subdistribucion || null,
+      // nuevo: id de distribuidora si existe
+      id_distribuidora: subdistribSeleccionada &&
+        subdistribSeleccionada.id != null
+        ? Number(subdistribSeleccionada.id)
+        : null,
 
       // 🔹 se fusionan aquí los campos del rango
       ...(mode === "create" ? rangoPayload : {}),
@@ -265,10 +298,18 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
     lineasFiltradas?.map((l: any) => ({ value: l.linea, label: l.linea })) ?? [];
 
   const empresaOptions: SelectOption[] =
-    empresas?.map((e: any) => ({ value: e.nombre, label: e.nombre })) ?? [];
+    empresas?.map((e: any) => ({
+      // usamos el nombre de empresa como value/label (como ya lo manejabas)
+      value: e.nombre_empresa ?? e.nombre,
+      label: e.nombre_empresa ?? e.nombre,
+    })) ?? [];
 
   const subdistribOptions: SelectOption[] =
-    subdistribs?.map((s: string) => ({ value: s, label: s })) ?? [];
+    subdistribs?.map((s: any) => ({
+      // compatible si es string o si es objeto { id, nombre }
+      value: s.nombre ?? s,
+      label: s.nombre ?? s,
+    })) ?? [];
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
