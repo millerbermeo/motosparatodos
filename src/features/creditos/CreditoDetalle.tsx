@@ -701,18 +701,14 @@ const CreditoDetalle: React.FC = () => {
  */}
 
                                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    {estado === 'Aprobado' && (
-                                        <ChipButton
-                                            label="Descargar firmas de solicitud"
-                                            icon={<FileDown className="w-4 h-4" />}
-                                            onClick={
-                                                firmasHref
-                                                    ? () => window.open(firmasHref, '_blank')
-                                                    : fakeDownload('Firmas de solicitud')
-                                            }
-                                            color="bg-pink-500 hover:bg-pink-600"
-                                        />
-                                    )}
+                           {estado === 'Aprobado' && firmasHref && (
+    <ChipButton
+        label="Descargar firmas de solicitud"
+        icon={<FileDown className="w-4 h-4" />}
+        onClick={() => window.open(firmasHref, '_blank')}
+        color="bg-pink-500 hover:bg-pink-600"
+    />
+)}
 
 
                                     {/* 🔹 AQUÍ USAMOS EL NUEVO HANDLER DE PDF */}

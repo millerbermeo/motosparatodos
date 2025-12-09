@@ -22,6 +22,8 @@ type Props = {
   onAprobado?: (id: string | number) => void; // callback opcional
   estadoCotizacion?: string; // 👈 NUEVO: estado actual de la cotización
     finalizado?: number | boolean | string; // 👈 NUEVO
+      tiene_factura?: boolean; // 👈 NUEVO
+
 
 };
 
@@ -50,6 +52,8 @@ const DocumentosSolicitud: React.FC<Props> = ({
   onAprobado,
   estadoCotizacion,
     finalizado, // 👈 NUEVO
+    tiene_factura
+    
 
 }) => {
   const open = useModalStore((s) => s.open);
@@ -85,14 +89,14 @@ const DocumentosSolicitud: React.FC<Props> = ({
   };
 
   // 👇 Si la cotización está en "Facturado", NO mostramos el botón Aceptar
-  const isFacturado =
-    estadoCotizacion &&
-    estadoCotizacion.toString().toLowerCase() === "facturado";
+  // const isFacturado =
+  //   estadoCotizacion &&
+  //   estadoCotizacion.toString().toLowerCase() === "facturado";
 
   // 👇 Solo mostramos el botón si NO está facturado y NO está finalizado
-  const puedeMostrarEntrega = isFacturado && estaFinalizado;
+  const puedeMostrarEntrega = !!tiene_factura && !estaFinalizado;
 
-  console.log({ estadoCotizacion, finalizado, estaFinalizado, isFacturado });
+  console.log({ tiene_factura });
 
 
   return (

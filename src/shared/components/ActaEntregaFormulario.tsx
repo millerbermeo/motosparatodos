@@ -144,21 +144,24 @@ const ActaEntregaFormulario: React.FC<Props> = ({
     // si quieres que registrar_acta también actualice por cotización:
     // fd.append("id_cotizacion", String(id_cotizacion));
 
-    registrarActa(fd, {
-      onSuccess: (resp) => {
-        const idActaNum =
-          resp?.id_acta !== undefined
-            ? Number(resp.id_acta)
-            : undefined;
+registrarActa(fd, {
+  onSuccess: (resp) => {
+    const idActaNum =
+      resp?.id_acta !== undefined
+        ? Number(resp.id_acta)
+        : undefined;
 
-        onSuccess?.(
-          idActaNum !== undefined && !Number.isNaN(idActaNum)
-            ? idActaNum
-            : undefined
-        );
-        close();
-      },
-    });
+    onSuccess?.(
+      idActaNum !== undefined && !Number.isNaN(idActaNum)
+        ? idActaNum
+        : undefined
+    );
+
+    close();                // cierro el modal (opcional, porque al recargar igual se irá)
+    window.location.reload(); // 🔄 recarga toda la página
+  },
+});
+
   };
 
   return (

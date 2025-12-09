@@ -427,6 +427,22 @@ const DetallesFacturacion: React.FC = () => {
       ? Number(ultimaSolRegistro.id)
       : undefined;
 
+
+      const finalizadoActaRaw =
+  (sol as any)?.is_final_acta ??
+  (sol as any)?.is_final ??
+  (ultimaSolRegistro as any)?.is_final_acta ??
+  (ultimaSolRegistro as any)?.is_final ??
+  0;
+
+console.log("DEBUG finalizadoActaRaw", {
+  sol_is_final_acta: (sol as any)?.is_final_acta,
+  sol_is_final: (sol as any)?.is_final,
+  ultima_is_final_acta: (ultimaSolRegistro as any)?.is_final_acta,
+  ultima_is_final: (ultimaSolRegistro as any)?.is_final,
+  finalizadoActaRaw,
+});
+
   const isFinalAutorizacion: boolean = (() => {
     if (!ultimaSolRegistro) return false;
     const raw =
@@ -1173,6 +1189,8 @@ const DetallesFacturacion: React.FC = () => {
               <DocumentosSolicitud
                 id_factura={Number(id_cotizacion)}
                 id={id_cotizacion}
+                    tiene_factura={tieneFactura} // 👈 NUEVO
+
                 docs={{
                   manifiesto_url: manifiestoUrlFinal,
                   cedula_url: cedulaUrlFinal,
@@ -1182,7 +1200,7 @@ const DetallesFacturacion: React.FC = () => {
                 onVolver={() => {
                   volverAtras();
                 }}
-                finalizado={sol.is_final_acta}
+  finalizado={finalizadoActaRaw}   // 👈 AQUÍ EL CAMBIO
                 estadoCotizacion={estadoCotizacion}
                 onAprobado={() => {
                   if (!tieneFactura) {
