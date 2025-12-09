@@ -72,7 +72,7 @@ const InfoProductoFormulario: React.FC = () => {
     defaultValues: {
       producto: "",
       valorMoto: "0",
-      plazoCuotas: 12, // 👈 valor por defecto como número
+      plazoCuotas: PLAZO_OPTIONS[0], // 👈 { value: 12, label: "12 cuotas" }
       cuotaInicial: "0",
       comentario: "",
     },
@@ -98,16 +98,18 @@ const InfoProductoFormulario: React.FC = () => {
       shouldDirty: false,
     });
 
-    // 👇 Si el backend trae plazo, lo ponemos como número
-    setValue("plazoCuotas", Number(c?.plazo_meses ?? 12), {
-      shouldDirty: false,
-    });
+    const plazoNumero = Number(c?.plazo_meses ?? 12);
+    const plazoOption =
+      PLAZO_OPTIONS.find((o) => o.value === plazoNumero) ?? PLAZO_OPTIONS[0];
+
+    setValue("plazoCuotas", plazoOption, { shouldDirty: false });
 
     setValue("cuotaInicial", String(c?.cuota_inicial ?? "0"), {
       shouldDirty: false,
     });
     setValue("comentario", c?.comentario ?? "", { shouldDirty: false });
   }, [creditoBackend, setValue]);
+
 
   const onSubmit = (v: ProductoValues) => {
     // 🔧 Usamos siempre la función robusta para sacar el número de meses
@@ -124,9 +126,11 @@ const InfoProductoFormulario: React.FC = () => {
       { codigo_credito, payload },
       {
         onSuccess: () => {
-          setValue("plazoCuotas", payload.plazo_meses ?? 0, {
-            shouldDirty: false,
-          });
+          const plazoNumero = payload.plazo_meses ?? 12;
+          const plazoOption =
+            PLAZO_OPTIONS.find((o) => o.value === plazoNumero) ?? PLAZO_OPTIONS[0];
+
+          setValue("plazoCuotas", plazoOption, { shouldDirty: false });
           setValue("cuotaInicial", String(payload.cuota_inicial ?? 0), {
             shouldDirty: false,
           });
@@ -134,29 +138,30 @@ const InfoProductoFormulario: React.FC = () => {
             shouldDirty: false,
           });
           next();
-        },
+        }
+
       }
     );
   };
 
-// 👇 Leemos lo que hay en el form
-const plazoCuotasWatch = watch("plazoCuotas");
-const cuotaInicialWatch = watch("cuotaInicial");
+  // 👇 Leemos lo que hay en el form
+  const plazoCuotasWatch = watch("plazoCuotas");
+  const cuotaInicialWatch = watch("cuotaInicial");
 
-// 1) Sacamos el número de cuotas con fallback: form → backend → 12
-const plazoParaTabla =
-  getPlazoCuotasNumber(
-    plazoCuotasWatch ?? creditoBackend?.plazo_meses ?? 12
-  ) || 12;
+  // 1) Sacamos el número de cuotas con fallback: form → backend → 12
+  const plazoParaTabla =
+    getPlazoCuotasNumber(
+      plazoCuotasWatch ?? creditoBackend?.plazo_meses ?? 12
+    ) || 12;
 
-// 2) Igual para cuota inicial: form → backend → 0
-const cuotaInicialParaTabla = toNumberPesos(
-  cuotaInicialWatch ?? creditoBackend?.cuota_inicial ?? 0
-);
+  // 2) Igual para cuota inicial: form → backend → 0
+  const cuotaInicialParaTabla = toNumberPesos(
+    cuotaInicialWatch ?? creditoBackend?.cuota_inicial ?? 0
+  );
 
-// 3) Armamos el objeto para la tabla si ya tenemos el crédito
-const creditoParaTabla = creditoBackend
-  ? {
+  // 3) Armamos el objeto para la tabla si ya tenemos el crédito
+  const creditoParaTabla = creditoBackend
+    ? {
       valor_producto: Number(creditoBackend.valor_producto) || 0,
       cuota_inicial: cuotaInicialParaTabla,
       plazo_meses: plazoParaTabla,
@@ -168,7 +173,7 @@ const creditoParaTabla = creditoBackend
       garantia_extendida_valor:
         creditoBackend.garantia_extendida_valor ?? "0",
     }
-  : null;
+    : null;
 
 
   const fechaCreacionCredito = creditoBackend?.fecha_creacion ?? undefined;

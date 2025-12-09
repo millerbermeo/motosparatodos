@@ -282,7 +282,7 @@ const CotizacionFormulario2: React.FC = () => {
 
     const { data: motos1 } = useMotosPorMarca(selectedMarca1 || undefined);
     const { data: motos2 } = useMotosPorMarca(selectedMarca2 || undefined);
-
+console.log(motos1)
     const motoOptions1: SelectOption[] = (motos1?.motos ?? []).map((m, index) => ({
         value: String(index), // 👈 valor único
         label: `${m.linea} - ${Number(m.precio_base).toLocaleString("es-CO")} COP - Modelo ${m.modelo ?? ""}`,
@@ -709,6 +709,21 @@ const CotizacionFormulario2: React.FC = () => {
             const raw = unformatNumber(v); return raw ? Number(raw) : null;
         };
 
+            // 🔹 Obtener la moto A seleccionada (por índice del select)
+    const motoA =
+        incluirMoto1 && motos1?.motos
+            ? motos1.motos[Number(data.moto1)] ?? null
+            : null;
+
+    // 🔹 Obtener la moto B seleccionada (por índice del select)
+    const motoB =
+        incluirMoto2 && motos2?.motos
+            ? motos2.motos[Number(data.moto2)] ?? null
+            : null;
+
+            console.log(motoA)
+
+
         // Validaciones con SweetAlert2
         const mustHaveMoto1 = showMotos && incluirMoto1;
         const mustHaveMoto2 = showMotos && incluirMoto2;
@@ -961,6 +976,21 @@ const CotizacionFormulario2: React.FC = () => {
 
             saldo_financiar_a: saldoFinanciar1,
             saldo_financiar_b: saldoFinanciar2,
+
+                // IDs de empresa según la moto A seleccionada
+    id_empresa_a:
+        incluirMoto1 && motoA?.id_empresa != null
+            ? Number(motoA.id_empresa)
+            : null,
+
+                // IDs de empresa según la moto B seleccionada
+    id_empresa_b:
+        incluirMoto2 && motoB?.id_empresa != null
+            ? Number(motoB.id_empresa)
+            : null,
+
+
+            
         };
 
         console.log("SUBMIT (payload EXACTO BD):", payload);
@@ -2248,7 +2278,7 @@ const CotizacionFormulario2: React.FC = () => {
 
             {/* Cuotas manuales MOTO 1 */}
             {metodo === "terceros" && moto1Seleccionada && (
-                <div className="flex gap-6 flex-col w-full bg-white p-3 rounded-xl">
+                <div className="hidden gap-6 flex-col w-full bg-white p-3 rounded-xl">
                     <div className="badge text-lg badge-success text-white">Cuotas Moto 1 (A)</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormInput<FormValues> formatThousands name="cuota_6_a" label="Cuota 6 meses A" type="number" control={control} placeholder="Opcional" />
@@ -2263,7 +2293,7 @@ const CotizacionFormulario2: React.FC = () => {
 
             {/* Cuotas manuales MOTO 2 */}
             {metodo === "terceros" && moto2Seleccionada && (
-                <div className="flex gap-6 flex-col w-full bg-white p-3 rounded-xl">
+                <div className="hidden gap-6 flex-col w-full bg-white p-3 rounded-xl">
                     <div className="badge text-lg badge-success text-white">Cuotas Moto 2 (B)</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormInput<FormValues> formatThousands name="cuota_6_b" label="Cuota 6 meses B" type="number" control={control} placeholder="Opcional" />

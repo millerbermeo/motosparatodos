@@ -11,6 +11,15 @@ import {
 
 type Num = number | null | undefined;
 
+type EmpresaPDF = {
+  nombre: string;
+  nit: string;
+  telefono?: string | null;
+  direccion?: string | null;
+  ciudad?: string | null;
+  almacen?: string | null;
+};
+
 const fmtCOP = (v?: Num) =>
   typeof v === "number" && Number.isFinite(v)
     ? new Intl.NumberFormat("es-CO", {
@@ -38,7 +47,7 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingHorizontal: 24,
     paddingBottom: 24,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#f3f4f6", // gris clarito para que resalte la "hoja"
     fontSize: 9,
     color: "#111827",
   },
@@ -46,14 +55,15 @@ const styles = StyleSheet.create({
   sheet: {
     borderWidth: 1,
     borderColor: "#d1d5db",
-    paddingVertical: 16,
-    paddingHorizontal: 18,
+    backgroundColor: "#ffffff",
+    paddingVertical: 18,
+    paddingHorizontal: 20,
   },
 
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 12,
   },
   logo: {
     width: 110,
@@ -65,13 +75,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   headerRight: {
-    width: 150,
+    width: 160,
     fontSize: 8,
+    padding: 6,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 3,
   },
   title: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: 700,
-    marginBottom: 2,
+    marginBottom: 3,
   },
   companyName: {
     fontSize: 9,
@@ -84,32 +98,40 @@ const styles = StyleSheet.create({
 
   divider: {
     height: 1,
-    backgroundColor: "#9ca3af",
-    marginVertical: 6,
+    backgroundColor: "#d1d5db",
+    marginVertical: 8,
+  },
+
+  sectionWrapper: {
+    marginTop: 6,
+    marginBottom: 4,
   },
 
   sectionTitle: {
     fontSize: 9,
     fontWeight: 700,
-    marginTop: 6,
     marginBottom: 4,
+    letterSpacing: 0.4,
   },
 
   table: {
-    borderWidth: 1,
-    borderColor: "#d1d5db",
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderColor: "#e5e7eb",
   },
   tRow: {
     flexDirection: "row",
     paddingVertical: 3,
     paddingHorizontal: 4,
+    borderRightWidth: 1,
     borderBottomWidth: 1,
     borderColor: "#e5e7eb",
   },
   tKey: {
-    width: 160,
+    width: 165,
     fontSize: 8,
-    color: "#374151",
+    color: "#4b5563",
+    fontWeight: 700,
   },
   tVal: {
     flex: 1,
@@ -119,18 +141,21 @@ const styles = StyleSheet.create({
   twoCol: {
     flexDirection: "row",
     marginTop: 4,
+    gap: 8 as any, // gap soportado por react-pdf 3+, si no, usar margins
   },
-  colLeft: { flex: 1, marginRight: 4 },
-  colRight: { flex: 1, marginLeft: 4 },
+  colLeft: { flex: 1 },
+  colRight: { flex: 1 },
 
   card: {
     borderWidth: 1,
     borderColor: "#d1d5db",
+    borderRadius: 4,
+    overflow: "hidden",
   },
   cardHeader: {
     backgroundColor: "#111827",
-    paddingVertical: 3,
-    paddingHorizontal: 5,
+    paddingVertical: 4,
+    paddingHorizontal: 6,
   },
   cardHeaderText: {
     color: "#f9fafb",
@@ -145,20 +170,29 @@ const styles = StyleSheet.create({
   moneyRow: {
     flexDirection: "row",
     paddingVertical: 3,
-    paddingHorizontal: 4,
+    paddingHorizontal: 6,
     borderBottomWidth: 1,
     borderColor: "#e5e7eb",
   },
-  moneyKey: { fontSize: 8 },
-  moneyVal: { marginLeft: "auto", fontSize: 8 },
+  moneyRowStrong: {
+    backgroundColor: "#f3f4f6",
+  },
+  moneyKey: {
+    fontSize: 8,
+  },
+  moneyVal: {
+    marginLeft: "auto",
+    fontSize: 8,
+  },
 
   totalCard: {
-    marginTop: 6,
+    marginTop: 10,
     borderWidth: 1,
     borderColor: "#16a34a",
     backgroundColor: "#ecfdf3",
-    paddingVertical: 5,
-    paddingHorizontal: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 4,
   },
   totalRow: {
     flexDirection: "row",
@@ -221,7 +255,8 @@ export type SolicitudFacturaPDFProps = {
   // Totales
   totalGeneral?: Num;
 
-  // Logo opcional en base64
+  // Empresa y logo
+  empresa?: EmpresaPDF;
   logoDataUrl?: string;
 };
 
@@ -236,8 +271,15 @@ const RowTable = ({ k, v }: { k: string; v: React.ReactNode }) => (
   </View>
 );
 
-const MoneyRow = ({ k, v }: { k: string; v?: Num }) => (
-  <View style={styles.moneyRow}>
+const MoneyRow = ({
+  k,
+  v,
+}: {
+  k: string;
+  v?: Num;
+  strong?: boolean;
+}) => (
+  <View style={[styles.moneyRow]}>
     <Text style={styles.moneyKey}>{k}</Text>
     <Text style={styles.moneyVal}>{fmtCOP(v)}</Text>
   </View>
@@ -248,6 +290,11 @@ const MoneyRow = ({ k, v }: { k: string; v?: Num }) => (
    ============================ */
 
 const SolicitudFacturaPDF2: React.FC<SolicitudFacturaPDFProps> = (props) => {
+  const empresaNombre = props.empresa?.nombre || "MOTOMAX DEL VALLE S.A.S.";
+  const empresaNit = props.empresa?.nit || "900139218-1";
+  const empresaDireccion = props.empresa?.direccion || "";
+  const empresaTelefono = props.empresa?.telefono || "";
+
   return (
     <Document>
       <Page size="LETTER" style={styles.page}>
@@ -261,8 +308,14 @@ const SolicitudFacturaPDF2: React.FC<SolicitudFacturaPDFProps> = (props) => {
 
             <View style={styles.headerCenter}>
               <Text style={styles.title}>SOLICITUD DE FACTURA</Text>
-              <Text style={styles.companyName}>MOTOMAX DEL VALLE S.A.S.</Text>
-              <Text style={styles.headerMeta}>NIT. 900139218-1</Text>
+              <Text style={styles.companyName}>{empresaNombre}</Text>
+              <Text style={styles.headerMeta}>NIT. {empresaNit}</Text>
+              {empresaDireccion ? (
+                <Text style={styles.headerMeta}>{empresaDireccion}</Text>
+              ) : null}
+              {empresaTelefono ? (
+                <Text style={styles.headerMeta}>Tel: {empresaTelefono}</Text>
+              ) : null}
             </View>
 
             <View style={styles.headerRight}>
@@ -284,144 +337,146 @@ const SolicitudFacturaPDF2: React.FC<SolicitudFacturaPDFProps> = (props) => {
           <View style={styles.divider} />
 
           {/* DEUDOR */}
-          <Text style={styles.sectionTitle}>
-            Deudor / Información personal
-          </Text>
-          <View style={styles.table}>
-            <RowTable
-              k="Documento de identidad"
-              v={NR(props.cedula ?? "")}
-            />
-            <RowTable k="Nombre" v={NR(props.nombre ?? "")} />
-            <RowTable
-              k="Dirección de residencia"
-              v={NR(props.direccion ?? "")}
-            />
-            <RowTable k="Teléfono" v={NR(props.telefono ?? "")} />
-          </View>
-
-          {/* DETALLE + CONDICIONES */}
-          <Text style={styles.sectionTitle}>
-            Detalle de la venta / Condiciones del negocio
-          </Text>
-
-          <View style={styles.twoCol}>
-            {/* Detalle de la venta */}
-            <View style={styles.colLeft}>
-              <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardHeaderText}>
-                    Detalle de la venta
-                  </Text>
-                </View>
-                <View style={styles.cardBody}>
-                  <View style={styles.table}>
-                    <RowTable
-                      k="Recibo de pago"
-                      v={NR(props.reciboPago ?? "")}
-                    />
-                    <RowTable
-                      k="Motocicleta"
-                      v={NR(props.motocicleta ?? "")}
-                    />
-                    <RowTable k="Modelo" v={NR(props.modelo ?? "")} />
-                    <RowTable
-                      k="Número de motor"
-                      v={NR(props.numeroMotor ?? "")}
-                    />
-                    <RowTable
-                      k="Número de chasis"
-                      v={NR(props.numeroChasis ?? "")}
-                    />
-                    <RowTable k="Color" v={NR(props.color ?? "")} />
-                  </View>
+          <View style={styles.sectionWrapper}>
+            <Text style={styles.sectionTitle}>
+              DEUDOR / INFORMACIÓN PERSONAL
+            </Text>
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardHeaderText}>Datos del deudor</Text>
+              </View>
+              <View style={styles.cardBody}>
+                <View style={styles.table}>
+                  <RowTable
+                    k="Documento de identidad"
+                    v={NR(props.cedula ?? "")}
+                  />
+                  <RowTable k="Nombre" v={NR(props.nombre ?? "")} />
+                  <RowTable
+                    k="Dirección de residencia"
+                    v={NR(props.direccion ?? "")}
+                  />
+                  <RowTable k="Teléfono" v={NR(props.telefono ?? "")} />
                 </View>
               </View>
             </View>
+          </View>
 
-            {/* Condiciones del negocio */}
-            <View style={styles.colRight}>
-              <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardHeaderText}>
-                    Condiciones del negocio
-                  </Text>
+          {/* DETALLE + CONDICIONES */}
+          <View style={styles.sectionWrapper}>
+            <Text style={styles.sectionTitle}>
+              DETALLE DE LA VENTA / CONDICIONES DEL NEGOCIO
+            </Text>
+
+            <View style={styles.twoCol}>
+              {/* Detalle de la venta */}
+              <View style={styles.colLeft}>
+                <View style={styles.card}>
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.cardHeaderText}>
+                      Detalle de la venta
+                    </Text>
+                  </View>
+                  <View style={styles.cardBody}>
+                    <View style={styles.table}>
+                      <RowTable
+                        k="Recibo de pago"
+                        v={NR(props.reciboPago ?? "")}
+                      />
+                      <RowTable
+                        k="Motocicleta"
+                        v={NR(props.motocicleta ?? "")}
+                      />
+                      <RowTable k="Modelo" v={NR(props.modelo ?? "")} />
+                      <RowTable
+                        k="Número de motor"
+                        v={NR(props.numeroMotor ?? "")}
+                      />
+                      <RowTable
+                        k="Número de chasis"
+                        v={NR(props.numeroChasis ?? "")}
+                      />
+                      <RowTable k="Color" v={NR(props.color ?? "")} />
+                    </View>
+                  </View>
                 </View>
-                <View style={styles.cardBody}>
-                  <MoneyRow
-                    k="Valor moto"
-                    v={props.cn_valor_moto ?? props.cn_total}
-                  />
-                  <MoneyRow k="Descuento" v={props.cn_descuento ?? 0} />
-                  <MoneyRow
-                    k="Descuento autorizado por jefe de zona"
-                    v={props.cn_desc_auto ?? 0}
-                  />
-                  <MoneyRow
-                    k="Valor moto - descuentos"
-                    v={props.cn_valorMotoDesc ?? props.cn_valor_moto}
-                  />
-                  <MoneyRow k="Valor bruto" v={props.cn_valorBruto} />
-                  <MoneyRow k="IVA" v={props.cn_iva} />
-                  <MoneyRow k="Total" v={props.cn_total} />
+              </View>
+
+              {/* Condiciones del negocio */}
+              <View style={styles.colRight}>
+                <View style={styles.card}>
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.cardHeaderText}>
+                      Condiciones del negocio
+                    </Text>
+                  </View>
+                  <View style={styles.cardBody}>
+                    <MoneyRow
+                      k="Valor moto"
+                      v={props.cn_valor_moto ?? props.cn_total}
+                    />
+                    <MoneyRow k="Descuento" v={props.cn_descuento ?? 0} />
+                    <MoneyRow
+                      k="Descuento autorizado por jefe de zona"
+                      v={props.cn_desc_auto ?? 0}
+                    />
+                    <MoneyRow
+                      k="Valor moto - descuentos"
+                      v={props.cn_valorMotoDesc ?? props.cn_valor_moto}
+                    />
+                    <MoneyRow k="Valor bruto" v={props.cn_valorBruto} />
+                    <MoneyRow k="IVA" v={props.cn_iva} />
+                    <MoneyRow k="Total" v={props.cn_total} strong />
+                  </View>
                 </View>
               </View>
             </View>
           </View>
 
           {/* ACCESORIOS + RESUMEN */}
-          <Text style={styles.sectionTitle}>Accesorios / Totales</Text>
-          <View style={styles.twoCol}>
-            {/* Accesorios */}
-            <View style={styles.colLeft}>
-              <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardHeaderText}>Accesorios</Text>
-                </View>
-                <View style={styles.cardBody}>
-                  <MoneyRow
-                    k="Valor bruto"
-                    v={props.accesorios_bruto}
-                  />
-                  <MoneyRow
-                    k="IVA"
-                    v={props.accesorios_iva}
-                  />
-                  <MoneyRow
-                    k="Total accesorios"
-                    v={props.accesorios_total}
-                  />
+          <View style={styles.sectionWrapper}>
+            <Text style={styles.sectionTitle}>ACCESORIOS / TOTALES</Text>
+            <View style={styles.twoCol}>
+              {/* Accesorios */}
+              <View style={styles.colLeft}>
+                <View style={styles.card}>
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.cardHeaderText}>Accesorios</Text>
+                  </View>
+                  <View style={styles.cardBody}>
+                    <MoneyRow k="Valor bruto" v={props.accesorios_bruto} />
+                    <MoneyRow k="IVA" v={props.accesorios_iva} />
+                    <MoneyRow
+                      k="Total accesorios"
+                      v={props.accesorios_total}
+                      strong
+                    />
+                  </View>
                 </View>
               </View>
-            </View>
 
-            {/* Resumen documentos + total */}
-            <View style={styles.colRight}>
-              <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardHeaderText}>
-                    Resumen de valores
-                  </Text>
-                </View>
-                <View style={styles.cardBody}>
-                  <MoneyRow k="Valor moto" v={props.cn_total} />
-                  <MoneyRow k="SOAT" v={props.soat} />
-                  <MoneyRow k="Matrícula" v={props.matricula} />
-                  <MoneyRow k="Impuestos" v={props.impuestos} />
-                  <MoneyRow
-                    k="Accesorios"
-                    v={props.accesorios_total}
-                  />
-                  <MoneyRow
-                    k="TOTAL"
-                    v={props.totalGeneral}
-                  />
+              {/* Resumen documentos + total */}
+              <View style={styles.colRight}>
+                <View style={styles.card}>
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.cardHeaderText}>
+                      Resumen de valores
+                    </Text>
+                  </View>
+                  <View style={styles.cardBody}>
+                    <MoneyRow k="Valor moto" v={props.cn_total} />
+                    <MoneyRow k="SOAT" v={props.soat} />
+                    <MoneyRow k="Matrícula" v={props.matricula} />
+                    <MoneyRow k="Impuestos" v={props.impuestos} />
+                    <MoneyRow k="Accesorios" v={props.accesorios_total} />
+                    <MoneyRow k="TOTAL" v={props.totalGeneral} strong />
+                  </View>
                 </View>
               </View>
             </View>
           </View>
 
-          {/* TOTAL GENERAL */}
+          {/* TOTAL GENERAL DESTACADO */}
           <View style={styles.totalCard}>
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>TOTAL GENERAL</Text>

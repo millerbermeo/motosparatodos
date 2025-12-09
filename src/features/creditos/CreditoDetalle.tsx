@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-    BadgeCheck, Building2, CalendarDays, Check, CheckCircle2, CheckSquare, ClipboardCheck, Download,
+    BadgeCheck, Building2, CalendarDays, Check, CheckCircle2, CheckSquare, Download,
     FileDown, FileMinusIcon, FileSignature, History, Info, LibraryBig,
     MessageCircle,
     MessageSquarePlus,
@@ -22,7 +22,6 @@ import ButtonLink from '../../shared/components/ButtonLink';
 
 // 🔹 IMPORTS PARA EL PDF
 import { pdf } from '@react-pdf/renderer';
-import { SolicitudCreditoPDFDoc } from './pdf/SolicitudCreditoPDF';
 import TablaAmortizacionCredito from './TablaAmortizacionCredito';
 
 // 🔹 NUEVO: PDF de tabla de amortización
@@ -33,6 +32,7 @@ import { useConfigPlazoByCodigo } from '../../services/configuracionPlazoService
 
 // 🔹 NUEVO: Paquete de crédito (25 páginas)
 import { PaqueteCreditoPDFDoc } from './pdf/PaqueteCreditoPDF';
+import { CotizacionSingleMotoPDFButton } from '../cotizaciones/CotizacionSingleMotoPDFButton';
 
 const fmtCOP = (v: number) =>
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
@@ -171,33 +171,6 @@ const CreditoDetalle: React.FC = () => {
         );
     };
 
-    // 🔹 USAR COMPONENTE DE PDF DESDE UNA FUNCIÓN (SOLICITUD)
-    const handleDownloadSolicitud = async () => {
-        try {
-            if (!codigo_credito || !datos) {
-                alert('No hay información de crédito para generar la solicitud.');
-                return;
-            }
-
-            const creditoActual: any = (datos as any)?.creditos?.[0] ?? (datos as any);
-            const deudorActual: any = deudorData;
-
-            const blob = await pdf(
-                <SolicitudCreditoPDFDoc
-                    codigo_credito={codigo_credito}
-                    credito={creditoActual}
-                    deudorData={deudorActual}
-                />
-            ).toBlob();
-
-            const url = URL.createObjectURL(blob);
-            // abrir en nueva pestaña
-            window.open(url, '_blank');
-        } catch (err) {
-            console.error(err);
-            alert('No fue posible generar la solicitud de crédito.');
-        }
-    };
 
     // 🔹 NUEVO: generar PDF de TABLA DE AMORTIZACIÓN
     const handleDownloadTabla = async () => {
@@ -574,23 +547,28 @@ const CreditoDetalle: React.FC = () => {
                                 <Row label="Placa" value={moto?.placa} />
 
 
-                                {estado != 'Aprobado' && (
+                                {estado != 'Aprobado' && idCot && (
                                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                        <ChipButton
-                                            label="Descargar solicitud"
-                                            icon={<ClipboardCheck className="w-4 h-4" />}
-                                            onClick={handleDownloadSolicitud}
-                                            color="bg-blue-500 hover:bg-blue-600"
+                                        <CotizacionSingleMotoPDFButton
+                                            id={idCot}
+                                            label="Descargar cotización (PDF v2)"
+                                            className="btn w-full bg-blue-500 hover:bg-blue-600 text-white border-0 normal-case text-sm"
                                         />
                                     </div>
                                 )}
+
+                                {estado != 'Aprobado' && !idCot && (
+                                    <div className="mt-4 text-xs text-amber-600">
+                                        No hay cotización asociada a este crédito (idCot vacío).
+                                    </div>
+                                )}
+
                                 {estado === 'Aprobado' && (
                                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                        <ChipButton
-                                            label="Descargar solicitud"
-                                            icon={<ClipboardCheck className="w-4 h-4" />}
-                                            onClick={handleDownloadSolicitud}
-                                            color="bg-blue-500 hover:bg-blue-600"
+                                        <CotizacionSingleMotoPDFButton
+                                            id={Number(idCot)}
+                                            label="Descargar cotización (PDF v2)"
+                                            className="btn w-full bg-blue-500 hover:bg-blue-600 text-white border-0 normal-case text-sm"
                                         />
                                         <ChipButton
                                             label="Descargar formato"

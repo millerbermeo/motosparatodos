@@ -136,3 +136,18 @@ export const useDeleteEmpresa = () => {
     },
   });
 };
+
+
+// Trae UNA empresa por id (toda la data de la tabla)
+export const useEmpresaById = (id?: number) => {
+  return useQuery<any | null>({
+    queryKey: ["empresa-by-id", id],
+    enabled: !!id, // solo consulta si hay id
+    queryFn: async () => {
+      const { data } = await api.get<any>("/empresas_id_full.php", {
+        params: { id },
+      });
+      return data.empresa ?? null;
+    },
+  });
+};

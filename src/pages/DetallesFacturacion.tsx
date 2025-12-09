@@ -18,8 +18,10 @@ import Swal from "sweetalert2";
 // 🔹 NUEVO: panel de descuentos / contraentrega
 import DescuentosContraentregaPanel from "../shared/components/DescuentosContraentregaPanel";
 import SolicitudFacturaPDF2 from "../features/creditos/pdf/SolicitudFacturaPDF2";
+import { useEmpresaById } from "../services/empresasServices";
 
 type Num = number | undefined | null;
+
 
 // Helpers
 const toNum = (v: unknown): number | undefined => {
@@ -298,6 +300,57 @@ const DetallesFacturacion: React.FC = () => {
   const sol = data?.data?.solicitar_estado_facturacion ?? null;
 
   const user = useAuthStore((s) => s.user);
+
+
+    // ===================== EMPRESA (igual que en DetalleCotizacion) =====================
+  const rawIdEmpresa =
+    cot?.id_empresa_a ??
+    cot?.id_empresa_b ??
+    (cred as any)?.id_empresa ??
+    null;
+
+  const idEmpresa = rawIdEmpresa ? Number(rawIdEmpresa) : undefined;
+
+  const {
+    data: empresaSeleccionada,
+    isLoading: loadingEmpresa,
+  } = useEmpresaById(idEmpresa);
+
+  console.log()
+
+  // Objeto que espera el PDF
+  const empresaPDF = useMemo(() => {
+    if (!empresaSeleccionada) {
+      // Fallback si algo falla
+      return {
+        nombre: "Feria de la Movilidad",
+        ciudad: "Cali",
+        almacen: "Feria de la Movilidad",
+        nit: "123.456.789-0",
+        telefono: "300 000 0000",
+        direccion: "Dirección ejemplo 123",
+      };
+    }
+
+    return {
+      nombre: empresaSeleccionada.nombre_empresa,
+      ciudad: "Cali", // o campo real si lo tienes
+      almacen: empresaSeleccionada.nombre_empresa,
+      nit: empresaSeleccionada.nit_empresa,
+      telefono: empresaSeleccionada.telefono_garantias ?? "",
+      direccion: empresaSeleccionada.direccion_siniestros ?? "",
+    };
+  }, [empresaSeleccionada]);
+
+  // Logo de la empresa para el PDF
+  const logoUrl = useMemo(() => {
+    const fromEmpresa = empresaSeleccionada?.foto
+      ? buildUrlFromBase(empresaSeleccionada.foto)
+      : null;
+
+    // Si no hay logo en la empresa, usa uno por defecto
+    return fromEmpresa || "/motomax.png";
+  }, [empresaSeleccionada]);
 
 
   // ===================== SELECCIÓN DE MOTO A/B =====================
@@ -1159,70 +1212,83 @@ const DetallesFacturacion: React.FC = () => {
                   Ver acta de entrega
                 </Link>
 
-                <PDFDownloadLink
-                  fileName={`solicitud_factura_${codigoSolicitud}.pdf`}
-                  document={
-                    <SolicitudFacturaPDF2
-                      // ENCABEZADO
-                      codigoFactura={codigoSolicitud || ""}
-                      codigoCredito={cred?.codigo_credito ?? ""}
-                      fecha={fmtDate(fechaCreacion)}
-                      agencia={cot?.canal_contacto ?? ""}
-                      logoDataUrl="/motomax.png"
-                      // DEUDOR
-                      cedula={clienteDocumento || ""}
-                      nombre={clienteNombre || ""}
-                      telefono={clienteTelefono || ""}
-                      direccion={
-                        cot?.direccion_residencia ??
-                        sol?.direccion_residencia ??
-                        ""
-                      }
-                      // DETALLE DE LA VENTA
-                      reciboPago={
-                        numeroReciboSolicitud ??
-                        (cot as any)?.numero_recibo ??
-                        ""
-                      }
-                      motocicleta={marcaLinea || ""}
-                      modelo={
-                        pick<string>(
-                          sol?.modelo,
-                          (pickMotoField("modelo") as string | undefined),
-                          cot?.modelo_a
-                        ) ?? ""
-                      }
-                      numeroMotor={numeroMotor || ""}
-                      numeroChasis={numeroChasis || ""}
-                      color={color || ""}
-                      // CONDICIONES DEL NEGOCIO
-                      cn_valor_moto={cn_total}
-                      cn_descuento={0}
-                      cn_desc_auto={0}
-                      cn_valorMotoDesc={cn_total}
-                      cn_valorBruto={cn_bruto}
-                      cn_iva={cn_iva}
-                      cn_total={cn_total}
-                      // DOCUMENTOS
-                      soat={soat}
-                      matricula={matricula}
-                      impuestos={impuestos}
-                      // ACCESORIOS / SEGUROS
-                      accesorios_bruto={accesorios_bruto}
-                      accesorios_iva={acc_iva_accesorios}
-                      accesorios_total={accesorios_total}
-                      seguros_total={seguros_total}
-                      // TOTAL GENERAL
-                      totalGeneral={totalGeneral}
-                    />
-                  }
-                >
-                  {({ loading }) => (
-                    <button className="btn btn-sm bg-sky-600 hover:bg-sky-700 text-white border-sky-600">
-                      {loading ? "Generando…" : "Descargar PDF"}
-                    </button>
-                  )}
-                </PDFDownloadLink>
+              <PDFDownloadLink
+  fileName={`solicitud_factura_${codigoSolicitud}.pdf`}
+  document={
+    <SolicitudFacturaPDF2
+      // 👇 NUEVO: empresa + logo dinámico
+      empresa={empresaPDF}
+      logoDataUrl={logoUrl}
+
+      // ENCABEZADO
+      codigoFactura={codigoSolicitud || ""}
+      codigoCredito={cred?.codigo_credito ?? ""}
+      fecha={fmtDate(fechaCreacion)}
+      agencia={cot?.canal_contacto ?? ""}
+
+      // DEUDOR
+      cedula={clienteDocumento || ""}
+      nombre={clienteNombre || ""}
+      telefono={clienteTelefono || ""}
+      direccion={
+        cot?.direccion_residencia ??
+        sol?.direccion_residencia ??
+        ""
+      }
+
+      // DETALLE DE LA VENTA
+      reciboPago={
+        numeroReciboSolicitud ??
+        (cot as any)?.numero_recibo ??
+        ""
+      }
+      motocicleta={marcaLinea || ""}
+      modelo={
+        pick<string>(
+          sol?.modelo,
+          (pickMotoField("modelo") as string | undefined),
+          cot?.modelo_a
+        ) ?? ""
+      }
+      numeroMotor={numeroMotor || ""}
+      numeroChasis={numeroChasis || ""}
+      color={color || ""}
+
+      // CONDICIONES DEL NEGOCIO
+      cn_valor_moto={cn_total}
+      cn_descuento={0}
+      cn_desc_auto={0}
+      cn_valorMotoDesc={cn_total}
+      cn_valorBruto={cn_bruto}
+      cn_iva={cn_iva}
+      cn_total={cn_total}
+
+      // DOCUMENTOS
+      soat={soat}
+      matricula={matricula}
+      impuestos={impuestos}
+
+      // ACCESORIOS / SEGUROS
+      accesorios_bruto={accesorios_bruto}
+      accesorios_iva={acc_iva_accesorios}
+      accesorios_total={accesorios_total}
+      seguros_total={seguros_total}
+
+      // TOTAL GENERAL
+      totalGeneral={totalGeneral}
+    />
+  }
+>
+  {({ loading }) => (
+    <button
+      className="btn btn-sm bg-sky-600 hover:bg-sky-700 text-white border-sky-600"
+      disabled={loading || loadingEmpresa} // opcional, para esperar empresa
+    >
+      {loading ? "Generando…" : "Descargar PDF"}
+    </button>
+  )}
+</PDFDownloadLink>
+
               </div>
             </section>
           </>

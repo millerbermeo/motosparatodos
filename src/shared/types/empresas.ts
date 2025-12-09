@@ -45,3 +45,8 @@ export interface EmpresasSelectResponse {
   success: boolean;
   puntos: { id: string; nombre_empresa: string }[];
 }
+
+export interface EmpresaIdResponse {
+  success: boolean;
+  empresa: Empresa | null;
+}

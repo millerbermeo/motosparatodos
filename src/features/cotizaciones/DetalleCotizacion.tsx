@@ -24,6 +24,7 @@ import { useAuthStore } from '../../store/auth.store';
 import { useLoaderStore } from '../../store/loader.store';
 import { useGarantiaExtByCotizacionId } from '../../services/garantiaExtServices';
 import { CotizacionDetalladaPDFDoc } from './CotizacionDetalladaPDFDoc';
+import { useEmpresaById } from '../../services/empresasServices';
 
 const BaseUrl = import.meta.env.VITE_API_URL ?? "http://tuclick.vozipcolombia.net.co/motos/back";
 
@@ -455,6 +456,54 @@ const DetalleCotizacion: React.FC = () => {
     () => (payload ? mapApiToCotizacion(payload) : undefined),
     [payload]
   );
+
+
+  const rawIdEmpresa =
+  payload?.id_empresa_a ??
+  payload?.id_empresa_b;
+
+  console.log(rawIdEmpresa)
+
+const idEmpresa = Number(rawIdEmpresa);
+
+const { data: empresaSeleccionada, isLoading: loadingEmpresa } = useEmpresaById(idEmpresa);
+
+// Objeto que espera el PDF
+const empresaPDF = React.useMemo(() => {
+  if (!empresaSeleccionada) {
+    // Fallback si algo falla
+    return {
+      nombre: "Feria de la Movilidad",
+      ciudad: "Cali",
+      almacen: "Feria de la Movilidad",
+      nit: "123.456.789-0",
+      telefono: "300 000 0000",
+      direccion: "Dirección ejemplo 123",
+    };
+  }
+
+  return {
+    nombre: empresaSeleccionada.nombre_empresa,
+    ciudad: "Cali", // o lo que tú quieras/añadas en la tabla
+    almacen: empresaSeleccionada.nombre_empresa,
+    nit: empresaSeleccionada.nit_empresa,
+    telefono: empresaSeleccionada.telefono_garantias ?? "",
+    direccion: empresaSeleccionada.direccion_siniestros ?? "",
+  };
+}, [empresaSeleccionada]);
+
+
+const logoUrl = React.useMemo(() => {
+  // foto viene de la BD, ej: "img_empresa/loquesea.png"
+  const fromEmpresa = empresaSeleccionada?.foto
+    ? buildImageUrl(empresaSeleccionada.foto)
+    : undefined;
+
+  // Si no hay logo en la empresa, usa uno por defecto
+  return fromEmpresa || "/moto3.png";
+}, [empresaSeleccionada]);
+
+
 
   const { data: actividades = [], isLoading: loadingAct } = useCotizacionActividades(id);
 
@@ -1021,15 +1070,8 @@ const DetalleCotizacion: React.FC = () => {
                       ? { success: true, data: ge }
                       : undefined
                   }
-                  logoUrl="/moto3.png"
-                  empresa={{
-                    nombre: "Feria de la Movilidad",
-                    ciudad: "Cali",
-                    almacen: "Feria de la Movilidad",
-                    nit: "123.456.789-0",
-                    telefono: "300 000 0000",
-                    direccion: "Dirección ejemplo 123",
-                  }}
+                  logoUrl={logoUrl}
+                   empresa={empresaPDF}   // 👈 ahora usamos la empresa real
                 />
               }
               fileName={`Cotizacion_detallada_${q?.id || id}.pdf`}
@@ -1038,7 +1080,7 @@ const DetalleCotizacion: React.FC = () => {
                 <button
                   className="btn btn-success btn-sm"
                   type="button"
-                  disabled={loading}
+      disabled={loading || loadingEmpresa}   // 👈 espera empresa también
                   title="Descargar PDF cotización"
                 >
                   <FileDown className="w-4 h-4" />

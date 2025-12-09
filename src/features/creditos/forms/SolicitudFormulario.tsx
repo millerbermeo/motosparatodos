@@ -5,7 +5,7 @@ import { useCredito } from "../../../services/creditosServices";
 import { useParams } from "react-router-dom";
 import { useWizardStore } from "../../../store/wizardStore";
 import Swal from "sweetalert2";
-import SolicitudCreditoPDFDoc from "../pdf/SolicitudCreditoPDF";
+import { CotizacionSingleMotoPDFButton } from "../../cotizaciones/CotizacionSingleMotoPDFButton";
 
 // 🔧 BASE URL PARA ARCHIVOS DEL BACK
 const BASE_URL_BACK = "https://tuclick.vozipcolombia.net.co/motos/back/";
@@ -41,6 +41,12 @@ const SolicitudFormulario: React.FC = () => {
 
   const creditoBackend =
     data?.success && data.creditos?.length ? data.creditos[0] : null;
+
+    const cotizacionId = creditoBackend?.cotizacion_id;
+
+// y en cualquier parte del componente:
+console.log("ID de la cotización:", cotizacionId);
+
 
   const firmasUrl = React.useMemo(
     () =>
@@ -97,7 +103,7 @@ const SolicitudFormulario: React.FC = () => {
       <div className="space-y-2 w-full flex flex-col">
         <h2 className="text-lg font-semibold">1. Descargar solicitud</h2>
         {/* Usa el componente de PDF para generar y descargar la solicitud */}
-        <SolicitudCreditoPDFDoc />
+        <CotizacionSingleMotoPDFButton id={Number(cotizacionId)} />
       </div>
 
       {/* Sección 2: Adjuntar firmas (opcional) */}
