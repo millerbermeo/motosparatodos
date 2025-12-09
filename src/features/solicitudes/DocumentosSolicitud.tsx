@@ -87,6 +87,7 @@ const DocumentosSolicitud: React.FC<Props> = ({
       { size: "5xl", position: "center" }
     );
   };
+  console.log(estadoCotizacion)
 
   // 👇 Si la cotización está en "Facturado", NO mostramos el botón Aceptar
   // const isFacturado =
