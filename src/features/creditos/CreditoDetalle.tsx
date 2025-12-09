@@ -684,7 +684,7 @@ const CreditoDetalle: React.FC = () => {
                                 <Row label="Fecha de entrega" value={moto?.fechaEntrega} />
 
 
-                                {estado != 'Aprobado' && (
+                                {/* {estado != 'Aprobado' && (
                                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         <ChipButton
                                             label="Descargar firmas de solicitud"
@@ -698,7 +698,7 @@ const CreditoDetalle: React.FC = () => {
                                         />
                                     </div>
                                 )}
-
+ */}
 
                                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     {estado === 'Aprobado' && (
