@@ -13,6 +13,61 @@ import {
    Tipos de los payloads
    ============================ */
 
+
+
+const formatSeguros = (raw: any): string => {
+  if (!raw) return "—";
+
+  // Si ya es un texto simple sin JSON, lo devolvemos tal cual
+  if (typeof raw === "string" && !raw.includes("[")) {
+    return raw.trim();
+  }
+
+  try {
+    let data: any = raw;
+
+    // Si viene como string con texto + JSON, extraemos la parte del JSON
+    if (typeof raw === "string") {
+      const start = raw.indexOf("[");
+      const end = raw.lastIndexOf("]");
+      if (start !== -1 && end !== -1) {
+        const jsonPart = raw.slice(start, end + 1);
+        data = JSON.parse(jsonPart);
+      } else {
+        // Intenta parsear todo el string
+        data = JSON.parse(raw);
+      }
+    }
+
+    if (!Array.isArray(data)) {
+      return String(raw);
+    }
+
+    // Tomamos solo los seguros "activos" (valor = 1, true, etc.)
+    const nombres = data
+      .filter(
+        (item) =>
+          item &&
+          (item.valor === 1 ||
+            item.valor === true ||
+            item.seleccionado === true)
+      )
+      .map((item) => item.nombre)
+      .filter(Boolean);
+
+    // Si no hay nombres válidos, devolvemos guion largo
+    if (!nombres.length) return "—";
+
+    // "Otros seguros - Seguro X - Seguro Y"
+    return nombres.join(" - ");
+  } catch {
+    // En caso de error de parseo, devolvemos la parte de texto antes del JSON
+    if (typeof raw === "string") {
+      return raw.split("[")[0].trim();
+    }
+    return String(raw);
+  }
+};
 export type CotizacionApi = {
   success: boolean;
   data: any;
@@ -406,7 +461,7 @@ const publicUrl = (p: string) => {
     if (typeof window !== "undefined" && window?.location?.origin) {
       return window.location.origin + p;
     }
-  } catch {}
+  } catch { }
   return p;
 };
 
@@ -446,24 +501,24 @@ const SectionTitle: React.FC<{ title: string; tag?: string }> = ({
   </View>
 );
 
-const InfoRowPDF: React.FC<{
-  label: string;
-  value: string;
-  colSpan?: 1 | 2;
-}> = ({ label, value, colSpan = 1 }) => (
-  <View
-    style={[
-      colSpan === 2
-        ? { marginBottom: 6 }
-        : styles.row,
-    ]}
-  >
-    <View style={[styles.col, colSpan === 2 ? { flex: 0 } : {}]}>
-      <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{value}</Text>
-    </View>
-  </View>
-);
+// const InfoRowPDF: React.FC<{
+//   label: string;
+//   value: string;
+//   colSpan?: 1 | 2;
+// }> = ({ label, value, colSpan = 1 }) => (
+//   <View
+//     style={[
+//       colSpan === 2
+//         ? { marginBottom: 6 }
+//         : styles.row,
+//     ]}
+//   >
+//     <View style={[styles.col, colSpan === 2 ? { flex: 0 } : {}]}>
+//       <Text style={styles.label}>{label}</Text>
+//       <Text style={styles.value}>{value}</Text>
+//     </View>
+//   </View>
+// );
 
 /* ============================
    Componente principal PDF v2
@@ -784,7 +839,11 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
               ["Precio público", precioBase, "Valor base de la moto"],
               ["Documentos", precioDocumentos, "Trámites de documentos"],
               ["Accesorios", accesorios, "Accesorios adicionales"],
-              ["Seguros", otrosSeguros, safe(d.seguros ?? d.seguros_a)],
+              [
+                "Seguros",
+                otrosSeguros,
+                formatSeguros(d.seguros ?? d.seguros_a),
+              ],
               ["Descuentos", descuentos, "Descuento aplicado"],
               ["SOAT", soat, ""],
               ["Impuestos", impuestos, ""],
@@ -884,7 +943,7 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
         )}
 
         {/* 5. BENEFICIOS / OBSERVACIONES / COPIA */}
-        <SectionTitle title="5. Beneficios y observaciones" />
+        {/* <SectionTitle title="5. Beneficios y observaciones" />
         <View style={styles.boxSoft}>
           <InfoRowPDF
             label="Beneficios"
@@ -899,7 +958,7 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
             value={safe(d.comentario2 ?? d.comentario ?? "", "—")}
             colSpan={2}
           />
-        </View>
+        </View> */}
 
         <View style={styles.copiaWrapper}>
           <Text style={styles.copiaTitle}>Copia de cotización</Text>

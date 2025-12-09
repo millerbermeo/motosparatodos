@@ -87,18 +87,25 @@ const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito, id_cotizacio
     });
 
     // Si el usuario confirmó y la mutación fue OK:
-    if (result.isConfirmed) {
-      await Swal.fire({
-        icon: "success",
-        title: "Crédito cerrado",
-        text: "Se guardó la información del cierre.",
-        timer: 1500,
-        showConfirmButton: false,
-        willClose: () => navigate("/creditos"),
-      });
-      // Fallback, por si el willClose no dispara (navega igual):
-      navigate("/creditos");
-    }
+  if (result.isConfirmed) {
+  await Swal.fire({
+    icon: "success",
+    title: "Crédito cerrado",
+    text: "Se guardó la información del cierre.",
+    timer: 1500,
+    showConfirmButton: false,
+    willClose: () =>
+      navigate(
+        `/creditos/detalle/facturar-credito/${id_cotizacion}/${codigo_credito}`
+      ),
+  });
+
+  // Fallback, por si el willClose no dispara
+  navigate(
+    `/creditos/detalle/facturar-credito/${id_cotizacion}/${codigo_credito}`
+  );
+}
+
   };
 
   // 🔵 Convertir la PLACA a MAYÚSCULAS mientras la escriben

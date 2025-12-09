@@ -9,6 +9,62 @@ import {
   Image,
 } from "@react-pdf/renderer";
 
+
+const formatSeguros = (raw: any): string => {
+  if (!raw) return "—";
+
+  // Si ya es un texto simple sin JSON, lo devolvemos tal cual
+  if (typeof raw === "string" && !raw.includes("[")) {
+    return raw.trim();
+  }
+
+  try {
+    let data: any = raw;
+
+    // Si viene como string con texto + JSON, extraemos la parte del JSON
+    if (typeof raw === "string") {
+      const start = raw.indexOf("[");
+      const end = raw.lastIndexOf("]");
+      if (start !== -1 && end !== -1) {
+        const jsonPart = raw.slice(start, end + 1);
+        data = JSON.parse(jsonPart);
+      } else {
+        // Intenta parsear todo el string
+        data = JSON.parse(raw);
+      }
+    }
+
+    if (!Array.isArray(data)) {
+      return String(raw);
+    }
+
+    // Tomamos solo los seguros "activos" (valor = 1, true, etc.)
+    const nombres = data
+      .filter(
+        (item) =>
+          item &&
+          (item.valor === 1 ||
+            item.valor === true ||
+            item.seleccionado === true)
+      )
+      .map((item) => item.nombre)
+      .filter(Boolean);
+
+    // Si no hay nombres válidos, devolvemos guion largo
+    if (!nombres.length) return "—";
+
+    // "Otros seguros - Seguro X - Seguro Y"
+    return nombres.join(" - ");
+  } catch {
+    // En caso de error de parseo, devolvemos la parte de texto antes del JSON
+    if (typeof raw === "string") {
+      return raw.split("[")[0].trim();
+    }
+    return String(raw);
+  }
+};
+
+
 /* ============================
    Tipos de los payloads
    ============================ */
@@ -406,7 +462,7 @@ const publicUrl = (p: string) => {
     if (typeof window !== "undefined" && window?.location?.origin) {
       return window.location.origin + p;
     }
-  } catch {}
+  } catch { }
   return p;
 };
 
@@ -766,7 +822,7 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
               ["Precio público", d.precio_base_a, "Valor base de la moto"],
               ["Documentos", d.precio_documentos_a, "Trámites de documentos"],
               ["Accesorios", d.accesorios_a, "Accesorios adicionales"],
-              ["Seguros", d.otro_seguro_a, safe(d.seguros_a)],
+              ["Seguros", d.otro_seguro_a, formatSeguros(d.seguros_a)],
               ["Descuentos", d.descuentos_a, "Descuento aplicado"],
               ["SOAT", d.soat_a, ""],
               ["Impuestos", d.impuestos_a, ""],
@@ -852,7 +908,7 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
                   ["Precio público", d.precio_base_b, ""],
                   ["Documentos", d.precio_documentos_b, ""],
                   ["Accesorios", d.accesorios_b, ""],
-                  ["Seguros", d.otro_seguro_b, safe(d.seguros_b)],
+                  ["Seguros", d.otro_seguro_b, formatSeguros(d.seguros_b)],
                   ["Descuentos", d.descuentos_b, ""],
                   ["SOAT", d.soat_b, ""],
                   ["Impuestos", d.impuestos_b, ""],
@@ -889,7 +945,7 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
         {/* 5. GARANTÍA EXTENDIDA */}
         <SectionTitle title="5. Garantía extendida" />
         <View style={styles.box}>
-          <View style={styles.row}>
+          {/* <View style={styles.row}>
             <View style={styles.col}>
               <Text style={styles.label}>ID garantía</Text>
               <Text style={styles.value}>{safe(g.id)}</Text>
@@ -898,7 +954,7 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
               <Text style={styles.label}>Cotización ID</Text>
               <Text style={styles.value}>{safe(g.cotizacion_id)}</Text>
             </View>
-          </View>
+          </View> */}
 
           <View style={styles.table}>
             <View style={styles.tableHeaderRow}>
@@ -953,17 +1009,17 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
 
         {/* 6. BENEFICIOS / OBSERVACIONES / COPIA */}
         <SectionTitle title="6. Beneficios y observaciones" />
-        <View style={styles.boxSoft}>
+        {/* <View style={styles.boxSoft}>
           <InfoRowPDF
             label="Beneficios"
             value={safe(d.beneficios ?? "", "—")}
             colSpan={2}
           />
-        </View>
+        </View> */}
 
         <View style={styles.boxSoft}>
           <InfoRowPDF
-            label="Observaciones"
+            label=""
             value={safe(d.comentario2 ?? d.comentario ?? "", "—")}
             colSpan={2}
           />

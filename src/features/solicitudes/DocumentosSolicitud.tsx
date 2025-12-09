@@ -90,7 +90,7 @@ const DocumentosSolicitud: React.FC<Props> = ({
     estadoCotizacion.toString().toLowerCase() === "facturado";
 
   // 👇 Solo mostramos el botón si NO está facturado y NO está finalizado
-  const puedeMostrarEntrega = isFacturado || !estaFinalizado;
+  const puedeMostrarEntrega = isFacturado && estaFinalizado;
 
   console.log({ estadoCotizacion, finalizado, estaFinalizado, isFacturado });
 

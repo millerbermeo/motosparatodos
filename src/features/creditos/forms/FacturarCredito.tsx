@@ -877,7 +877,7 @@ const FacturarCredito: React.FC = () => {
                     )}
                   </li>
 
-                  <li className="flex items-center justify-between gap-4">
+                  <li className=" items-center justify-between gap-4 hidden">
                     <div className="min-w-0">
                       <span className="font-medium block">Factura</span>
                       <span className="text-xs text-slate-500">
