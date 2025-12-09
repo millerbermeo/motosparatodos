@@ -33,10 +33,21 @@ import { useConfigPlazoByCodigo } from '../../services/configuracionPlazoService
 // 🔹 NUEVO: Paquete de crédito (25 páginas)
 import { PaqueteCreditoPDFDoc } from './pdf/PaqueteCreditoPDF';
 import { CotizacionSingleMotoPDFButton } from '../cotizaciones/CotizacionSingleMotoPDFButton';
+import { useCotizacionById } from '../../services/cotizacionesServices';
+import { useEmpresaById } from '../../services/empresasServices';
 
 const fmtCOP = (v: number) =>
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
+const BaseUrl = import.meta.env.VITE_API_URL ?? "http://tuclick.vozipcolombia.net.co/motos/back";
 
+
+const buildImageUrl = (path?: string): string | undefined => {
+    if (!path) return undefined;
+    if (/^https?:\/\//i.test(path)) return path; // ya es absoluta
+    const root = (BaseUrl || "").replace(/\/+$/, "");
+    const rel = String(path).replace(/^\/+/, "");
+    return `${root}/${rel}`;
+};
 
 const BadgeEstado: React.FC<{ value?: string }> = ({ value }) => {
     const safe = value ?? '—';
@@ -155,10 +166,82 @@ const CreditoDetalle: React.FC = () => {
 
 
     const idCot = credito?.cotizacion_id ?? null;
+    const { data: cotizacion } = useCotizacionById(Number(idCot));
+
+    const empresaIdRaw =
+        cotizacion?.data?.id_empresa_a ??
+        cotizacion?.data?.id_empresa_b;
+
+    const empresaId = empresaIdRaw ? Number(empresaIdRaw) : undefined;
+
+    // 👉 muy importante: no llamar el hook si no hay id
+    const { data: empresaSeleccionada } = useEmpresaById(empresaId);
+
+    // Normalizar la empresa (por si viene anidada en .data)
+    const empresaApi = (empresaSeleccionada as any)?.data ?? empresaSeleccionada ?? null;
+
+    console.log("empresaApi", empresaApi);
 
 
-    const fakeDownload = (what: string) => () => alert(`Descargando: ${what} (simulado)`);
+    // Objeto que espera el PDF
+    const empresaPDF = React.useMemo(() => {
+        if (!empresaApi) {
+            // Fallback si algo falla
+            return {
+                nombre: "Feria de la Movilidad",
+                ciudad: "Cali",
+                nit: "123.456.789-0",
+            };
+        }
 
+        return {
+            nombre: empresaApi.nombre_empresa,
+            ciudad: "Cali", // si no tienes ciudad en la BD aún
+            nit: empresaApi.nit_empresa,
+        };
+    }, [empresaApi]);
+
+
+    const logoUrl = React.useMemo(() => {
+        const fromEmpresa = empresaApi?.foto
+            ? buildImageUrl(empresaApi.foto)
+            : undefined;
+
+        // Si no hay logo en la empresa, usa uno por defecto (por ejemplo de /public)
+        return fromEmpresa || "/moto3.png";
+    }, [empresaApi]);
+
+    const fakeDownload = (what: string) => async () => {
+        // 1. Abrir SweetAlert con loading
+        Swal.fire({
+            title: 'Descargando...',
+            text: `Generando archivo ${what}`,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            },
+        });
+
+        try {
+            // 2. Crear un archivo en blanco (por ejemplo PDF vacío)
+            const blob = new Blob([' '], { type: 'application/pdf' }); // o 'text/plain'
+            const url = URL.createObjectURL(blob);
+
+            // 3. Crear link oculto y disparar descarga
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${what || 'archivo'}.pdf`; // nombre del archivo
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+
+            URL.revokeObjectURL(url);
+        } finally {
+            // 4. Cerrar el SweetAlert
+            Swal.close();
+        }
+    };
 
     const open = useModalStore((s) => s.open);
 
@@ -206,19 +289,15 @@ const CreditoDetalle: React.FC = () => {
                     tasaMensualPorcentaje={tasaMensualPorcentaje}
                     codigoPlan={String(codigo_credito)}
                     fechaPlan={credito.fecha_creacion}
-                    empresa={{
-                        nombre: 'VERIFICARTE AAA S.A.S',
-                        ciudad: 'Cali',
-                        nit: '901155548-8',
-                    }}
+                    empresa={empresaPDF}
                     cliente={{
                         nombre: nombreCliente,
                         documento: informacion_personal?.numero_documento,
                         direccion: informacion_personal?.direccion_residencia,
                         telefono: informacion_personal?.celular,
                     }}
-                // si tienes logo en /public, por ejemplo:
-                // logoUrl="/logo-verificarte.png"
+                    // si tienes logo en /public, por ejemplo:
+                    logoUrl={logoUrl}
                 />
             ).toBlob();
 
