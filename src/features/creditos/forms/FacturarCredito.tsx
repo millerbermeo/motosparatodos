@@ -359,7 +359,7 @@ const FacturarCredito: React.FC = () => {
 
   const BaseUrl =
     import.meta.env.VITE_API_URL ??
-    'http://tuclick.vozipcolombia.net.co/motos/back';
+    'https://tuclick.vozipcolombia.net.co/motos/back';
 
   return (
     <main className="min-h-screen w-full bg-slate-50">

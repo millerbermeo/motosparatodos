@@ -11,7 +11,7 @@ import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { useConfigPlazoByCodigo } from "../../../services/configuracionPlazoService";
 
-const BaseUrl = import.meta.env.VITE_API_URL ?? "http://tuclick.vozipcolombia.net.co/motos/back";
+const BaseUrl = import.meta.env.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
 
 
 type MetodoPago = "contado" | "credibike" | "terceros";

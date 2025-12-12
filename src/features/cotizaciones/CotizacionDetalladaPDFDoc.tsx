@@ -447,7 +447,7 @@ const safe = (v: any, fallback: string = "—") =>
 
 const BaseUrl =
   (import.meta as any)?.env?.VITE_API_URL ??
-  "http://tuclick.vozipcolombia.net.co/motos/back";
+  "https://tuclick.vozipcolombia.net.co/motos/back";
 
 const buildAbsUrl = (path?: string | null): string | null => {
   if (!path) return null;

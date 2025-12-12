@@ -38,7 +38,7 @@ import { useEmpresaById } from '../../services/empresasServices';
 
 const fmtCOP = (v: number) =>
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
-const BaseUrl = import.meta.env.VITE_API_URL ?? "http://tuclick.vozipcolombia.net.co/motos/back";
+const BaseUrl = import.meta.env.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
 
 
 const buildImageUrl = (path?: string): string | undefined => {
@@ -381,7 +381,7 @@ const CreditoDetalle: React.FC = () => {
             : []),
     ];
 
-    const BaseUrl = import.meta.env.VITE_API_URL ?? "http://tuclick.vozipcolombia.net.co/motos/back";
+    const BaseUrl = import.meta.env.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
 
     // URLs completas para abrir en nueva pestaña
     const firmasHref: string | undefined =

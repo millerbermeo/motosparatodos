@@ -118,7 +118,7 @@ const TablaMotos: React.FC = () => {
 
   if (isError) return <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4 text-error">Error al cargar motos</div>;
 
-  const BaseUrl = import.meta.env.VITE_API_URL ?? "http://tuclick.vozipcolombia.net.co/motos/back";
+  const BaseUrl = import.meta.env.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
 
   return (
     <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">

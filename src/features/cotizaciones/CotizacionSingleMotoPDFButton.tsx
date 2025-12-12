@@ -30,7 +30,7 @@ type Props = {
 
 const BaseUrl =
   import.meta.env.VITE_API_URL ??
-  "http://tuclick.vozipcolombia.net.co/motos/back";
+  "https://tuclick.vozipcolombia.net.co/motos/back";
 
 const sameChipStyles =
   "group flex w-full items-center cursor-pointer max-h-14 justify-between " +

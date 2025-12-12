@@ -17,7 +17,7 @@ import { useLoaderStore } from "../store/loader.store";
 
 const BaseUrl =
   import.meta.env.VITE_API_URL ??
-  "http://tuclick.vozipcolombia.net.co/motos/back";
+  "https://tuclick.vozipcolombia.net.co/motos/back";
 
 /* =======================
    Helpers

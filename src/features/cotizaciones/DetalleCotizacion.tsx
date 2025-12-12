@@ -26,7 +26,7 @@ import { useGarantiaExtByCotizacionId } from '../../services/garantiaExtServices
 import { CotizacionDetalladaPDFDoc } from './CotizacionDetalladaPDFDoc';
 import { useEmpresaById } from '../../services/empresasServices';
 
-const BaseUrl = import.meta.env.VITE_API_URL ?? "http://tuclick.vozipcolombia.net.co/motos/back";
+const BaseUrl = import.meta.env.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
 
 /* =======================
    Tipos

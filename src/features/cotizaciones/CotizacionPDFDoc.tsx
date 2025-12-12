@@ -67,7 +67,7 @@ const missing = (ej: string) => <Text style={{ color: "#1E40AF" }}>{ej}</Text>;
 // ===== Imagenes: Base URL + helpers =====
 const BaseUrl =
   (import.meta as any)?.env?.VITE_API_URL ??
-  "http://tuclick.vozipcolombia.net.co/motos/back";
+  "https://tuclick.vozipcolombia.net.co/motos/back";
 
 // Construye URL absoluta para imágenes del backend (p.e. "img_motos/archivo.jpg")
 const buildAbsUrl = (path?: string | null): string | null => {
