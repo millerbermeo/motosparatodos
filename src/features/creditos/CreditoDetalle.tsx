@@ -701,14 +701,14 @@ const CreditoDetalle: React.FC = () => {
  */}
 
                                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                           {estado === 'Aprobado' && firmasHref && (
-    <ChipButton
-        label="Descargar firmas de solicitud"
-        icon={<FileDown className="w-4 h-4" />}
-        onClick={() => window.open(firmasHref, '_blank')}
-        color="bg-pink-500 hover:bg-pink-600"
-    />
-)}
+                                    {estado === 'Aprobado' && firmasHref && (
+                                        <ChipButton
+                                            label="Descargar firmas de solicitud"
+                                            icon={<FileDown className="w-4 h-4" />}
+                                            onClick={() => window.open(firmasHref, '_blank')}
+                                            color="bg-pink-500 hover:bg-pink-600"
+                                        />
+                                    )}
 
 
                                     {/* 🔹 AQUÍ USAMOS EL NUEVO HANDLER DE PDF */}
@@ -1000,44 +1000,52 @@ const CreditoDetalle: React.FC = () => {
                         )}
 
 
-                    {useAuthStore.getState().user?.rol === "Administrador" && (
+                    {(
+                        useAuthStore.getState().user?.rol === "Administrador" ||
+                        useAuthStore.getState().user?.rol === "Lider_marca" ||
+                        useAuthStore.getState().user?.rol === "Lider_punto"
+                    ) && (
 
-                        <>
-                            <button
-                                type='button'
-                                className="btn flex items-center gap-2"
-                                onClick={handleEliminar}
-                            >
-                                <X className="w-4 h-4" />
-                                Eliminar garantía extendida
-                            </button>
-
-
-                            <button
-                                type='button'
-                                className="btn bg-sky-400 hover:bg-sky-500 text-white flex items-center gap-2"
-                                onClick={handleIncompleto}
-                            >
-                                <CheckSquare className="w-4 h-4" />
-                                Pasar a incompleto
-                            </button>
+                            <>
+                                <button
+                                    type='button'
+                                    className="btn flex items-center gap-2"
+                                    onClick={handleEliminar}
+                                >
+                                    <X className="w-4 h-4" />
+                                    Eliminar garantía extendida
+                                </button>
 
 
+                                <button
+                                    type='button'
+                                    className="btn bg-sky-400 hover:bg-sky-500 text-white flex items-center gap-2"
+                                    onClick={handleIncompleto}
+                                >
+                                    <CheckSquare className="w-4 h-4" />
+                                    Pasar a incompleto
+                                </button>
 
-                            {useAuthStore.getState().user?.rol === "Administrador" && estado != 'Aprobado' && (
-                                <Link to={`/creditos/detalle/cambiar-estado/${codigo_credito}`}>
 
-                                    <button
-                                        className="btn btn-warning text-white flex items-center gap-2"
-                                    >
-                                        <Pencil className="w-4 h-4" />
 
-                                        Cambiar Estado
-                                    </button>
-                                </Link>
-                            )}
-                        </>
-                    )}
+                                {(
+                                    useAuthStore.getState().user?.rol === "Administrador" ||
+                                    useAuthStore.getState().user?.rol === "Lider_marca" ||
+                                    useAuthStore.getState().user?.rol === "Lider_punto"
+                                ) && estado !== "Aprobado" && (
+                                        <Link to={`/creditos/detalle/cambiar-estado/${codigo_credito}`}>
+
+                                            <button
+                                                className="btn btn-warning text-white flex items-center gap-2"
+                                            >
+                                                <Pencil className="w-4 h-4" />
+
+                                                Cambiar Estado
+                                            </button>
+                                        </Link>
+                                    )}
+                            </>
+                        )}
 
                     {(useAuthStore.getState().user?.rol === "Asesor" ||
                         useAuthStore.getState().user?.rol === "Lider_credito_cartera" ||

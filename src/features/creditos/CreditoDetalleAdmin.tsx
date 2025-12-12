@@ -263,21 +263,25 @@ const CreditoDetalleAdmin: React.FC = () => {
                                 credito, // si prefieres, puedes enviar solo { estado: credito?.estado, ... }
                             }} /> */}
 
-                {useAuthStore.getState().user?.rol === "Administrador" && estado !== 'Aprobado' && (
-                    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
-                        {camposCompletosMinimos ? (
-                            <CambiarEstadoCredito codigo_credito={codigo_credito} data={{
-                                informacion_personal,
-                                moto,
-                                credito, // si prefieres, puedes enviar solo { estado: credito?.estado, ... }
-                            }} />
-                        ) : (
-                            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800 text-sm">
-                                Para habilitar el cambio de estado, completa la información primero:
-                            </div>
-                        )}
-                    </section>
-                )}
+                {(
+                    useAuthStore.getState().user?.rol === "Administrador" ||
+                    useAuthStore.getState().user?.rol === "Lider_marca" ||
+                    useAuthStore.getState().user?.rol === "Lider_punto"
+                ) && estado !== "Aprobado" && (
+                        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
+                            {camposCompletosMinimos ? (
+                                <CambiarEstadoCredito codigo_credito={codigo_credito} data={{
+                                    informacion_personal,
+                                    moto,
+                                    credito, // si prefieres, puedes enviar solo { estado: credito?.estado, ... }
+                                }} />
+                            ) : (
+                                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800 text-sm">
+                                    Para habilitar el cambio de estado, completa la información primero:
+                                </div>
+                            )}
+                        </section>
+                    )}
 
 
             </div>

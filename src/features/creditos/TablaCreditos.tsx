@@ -256,13 +256,17 @@ const TablaCreditos: React.FC = () => {
                                 <td>{c.id || "-"}</td>
                                 <td className="flex gap-3">
 
-                                    {useAuthStore.getState().user?.rol === "Administrador" && c.estado != 'Aprobado' && (
-                                        <Link to={`/creditos/detalle/cambiar-estado/${c.codigo_credito}`}>
-                                            <button className="btn btn-sm text-warning bg-white btn-circle" title="Editar Estado">
-                                                <Pencil size="18px" />
-                                            </button>
-                                        </Link>
-                                    )}
+                                    {(
+                                        useAuthStore.getState().user?.rol === "Administrador" ||
+                                        useAuthStore.getState().user?.rol === "Lider_marca" ||
+                                        useAuthStore.getState().user?.rol === "Lider_punto"
+                                    ) && c.estado !== "Aprobado" && (
+                                            <Link to={`/creditos/detalle/cambiar-estado/${c.codigo_credito}`}>
+                                                <button className="btn btn-sm text-warning bg-white btn-circle" title="Editar Estado">
+                                                    <Pencil size="18px" />
+                                                </button>
+                                            </Link>
+                                        )}
 
                                     <Link to={`/creditos/detalle/${c.codigo_credito}`}>
                                         <button className="btn btn-sm text-success bg-white btn-circle" title="Ver">

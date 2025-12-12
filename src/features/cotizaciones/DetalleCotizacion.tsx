@@ -459,49 +459,49 @@ const DetalleCotizacion: React.FC = () => {
 
 
   const rawIdEmpresa =
-  payload?.id_empresa_a ??
-  payload?.id_empresa_b;
+    payload?.id_empresa_a ??
+    payload?.id_empresa_b;
 
   console.log(rawIdEmpresa)
 
-const idEmpresa = Number(rawIdEmpresa);
+  const idEmpresa = Number(rawIdEmpresa);
 
-const { data: empresaSeleccionada, isLoading: loadingEmpresa } = useEmpresaById(idEmpresa);
+  const { data: empresaSeleccionada, isLoading: loadingEmpresa } = useEmpresaById(idEmpresa);
 
-// Objeto que espera el PDF
-const empresaPDF = React.useMemo(() => {
-  if (!empresaSeleccionada) {
-    // Fallback si algo falla
+  // Objeto que espera el PDF
+  const empresaPDF = React.useMemo(() => {
+    if (!empresaSeleccionada) {
+      // Fallback si algo falla
+      return {
+        nombre: "Feria de la Movilidad",
+        ciudad: "Cali",
+        almacen: "Feria de la Movilidad",
+        nit: "123.456.789-0",
+        telefono: "300 000 0000",
+        direccion: "Dirección ejemplo 123",
+      };
+    }
+
     return {
-      nombre: "Feria de la Movilidad",
-      ciudad: "Cali",
-      almacen: "Feria de la Movilidad",
-      nit: "123.456.789-0",
-      telefono: "300 000 0000",
-      direccion: "Dirección ejemplo 123",
+      nombre: empresaSeleccionada.nombre_empresa,
+      ciudad: "Cali", // o lo que tú quieras/añadas en la tabla
+      almacen: empresaSeleccionada.nombre_empresa,
+      nit: empresaSeleccionada.nit_empresa,
+      telefono: empresaSeleccionada.telefono_garantias ?? "",
+      direccion: empresaSeleccionada.direccion_siniestros ?? "",
     };
-  }
-
-  return {
-    nombre: empresaSeleccionada.nombre_empresa,
-    ciudad: "Cali", // o lo que tú quieras/añadas en la tabla
-    almacen: empresaSeleccionada.nombre_empresa,
-    nit: empresaSeleccionada.nit_empresa,
-    telefono: empresaSeleccionada.telefono_garantias ?? "",
-    direccion: empresaSeleccionada.direccion_siniestros ?? "",
-  };
-}, [empresaSeleccionada]);
+  }, [empresaSeleccionada]);
 
 
-const logoUrl = React.useMemo(() => {
-  // foto viene de la BD, ej: "img_empresa/loquesea.png"
-  const fromEmpresa = empresaSeleccionada?.foto
-    ? buildImageUrl(empresaSeleccionada.foto)
-    : undefined;
+  const logoUrl = React.useMemo(() => {
+    // foto viene de la BD, ej: "img_empresa/loquesea.png"
+    const fromEmpresa = empresaSeleccionada?.foto
+      ? buildImageUrl(empresaSeleccionada.foto)
+      : undefined;
 
-  // Si no hay logo en la empresa, usa uno por defecto
-  return fromEmpresa || "/moto3.png";
-}, [empresaSeleccionada]);
+    // Si no hay logo en la empresa, usa uno por defecto
+    return fromEmpresa || "/moto3.png";
+  }, [empresaSeleccionada]);
 
 
 
@@ -1071,7 +1071,7 @@ const logoUrl = React.useMemo(() => {
                       : undefined
                   }
                   logoUrl={logoUrl}
-                   empresa={empresaPDF}   // 👈 ahora usamos la empresa real
+                  empresa={empresaPDF}   // 👈 ahora usamos la empresa real
                 />
               }
               fileName={`Cotizacion_detallada_${q?.id || id}.pdf`}
@@ -1080,7 +1080,7 @@ const logoUrl = React.useMemo(() => {
                 <button
                   className="btn btn-success btn-sm"
                   type="button"
-      disabled={loading || loadingEmpresa}   // 👈 espera empresa también
+                  disabled={loading || loadingEmpresa}   // 👈 espera empresa también
                   title="Descargar PDF cotización"
                 >
                   <FileDown className="w-4 h-4" />
@@ -1119,51 +1119,59 @@ const logoUrl = React.useMemo(() => {
             Crear recordatorio
           </button>
 
-          {useAuthStore.getState().user?.rol === "Administrador" && (
-            <>
-              <button
-                className="btn btn-success.btn-sm"
-                onClick={() => {
-                  if (!q) return;
-                  const to = q.cliente.email || '';
-                  const subject = `Tu cotización #${q.id}`;
-                  const body = [
-                    `Hola ${q.cliente.nombres || ''},`,
-                    '',
-                    `Te compartimos el detalle de tu cotización #${q.id}.`,
-                    q.motoA ? `Moto A: ${q.motoA.modelo} | Total: ${fmtCOP(q.motoA.total)}` : '',
-                    q.motoB ? `Moto B: ${q.motoB.modelo} | Total: ${fmtCOP(q.motoB.total)}` : '',
-                    '',
-                    'Quedo atento/a.',
-                  ].filter(Boolean).join('\n');
-                  window.location.href = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                }}
-                disabled={!q.cliente.email}
-                title="Enviar por correo"
-              >
-                <MailIcon className="w-4 h-4" />
-                Enviar por correo
-              </button>
-            </>
-          )}
+          {(
+            useAuthStore.getState().user?.rol === "Administrador" ||
+            useAuthStore.getState().user?.rol === "Lider_marca" ||
+            useAuthStore.getState().user?.rol === "Lider_punto"
+          ) && (
+              <>
+                <button
+                  className="btn btn-success.btn-sm"
+                  onClick={() => {
+                    if (!q) return;
+                    const to = q.cliente.email || '';
+                    const subject = `Tu cotización #${q.id}`;
+                    const body = [
+                      `Hola ${q.cliente.nombres || ''},`,
+                      '',
+                      `Te compartimos el detalle de tu cotización #${q.id}.`,
+                      q.motoA ? `Moto A: ${q.motoA.modelo} | Total: ${fmtCOP(q.motoA.total)}` : '',
+                      q.motoB ? `Moto B: ${q.motoB.modelo} | Total: ${fmtCOP(q.motoB.total)}` : '',
+                      '',
+                      'Quedo atento/a.',
+                    ].filter(Boolean).join('\n');
+                    window.location.href = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                  }}
+                  disabled={!q.cliente.email}
+                  title="Enviar por correo"
+                >
+                  <MailIcon className="w-4 h-4" />
+                  Enviar por correo
+                </button>
+              </>
+            )}
 
-          {useAuthStore.getState().user?.rol === "Administrador" && (
-            <button
-              className="btn btn-success btn-sm"
-              onClick={() => {
-                const link = document.createElement('a');
-                link.href = '/runt.pdf';
-                link.download = 'runt.pdf';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-              }}
-              title="Descargar RUNT"
-            >
-              <FileDown className="w-4 h-4" />
-              Descargar RUNT
-            </button>
-          )}
+          {(
+            useAuthStore.getState().user?.rol === "Administrador" ||
+            useAuthStore.getState().user?.rol === "Lider_marca" ||
+            useAuthStore.getState().user?.rol === "Lider_punto"
+          ) && (
+              <button
+                className="btn btn-success btn-sm"
+                onClick={() => {
+                  const link = document.createElement('a');
+                  link.href = '/runt.pdf';
+                  link.download = 'runt.pdf';
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+                title="Descargar RUNT"
+              >
+                <FileDown className="w-4 h-4" />
+                Descargar RUNT
+              </button>
+            )}
         </div>
       </section>
     </main>

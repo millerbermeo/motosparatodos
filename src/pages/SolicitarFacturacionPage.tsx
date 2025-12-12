@@ -123,10 +123,9 @@ const Row = ({ cols }: { cols: React.ReactNode[] }) => (
       <div
         key={i}
         className={`px-3 py-2 text-xs md:text-sm
-          ${
-            i === 0
-              ? "col-span-6 md:col-span-6 font-medium text-slate-600"
-              : "col-span-6 md:col-span-6 text-right text-slate-800"
+          ${i === 0
+            ? "col-span-6 md:col-span-6 font-medium text-slate-600"
+            : "col-span-6 md:col-span-6 text-right text-slate-800"
           }
           border-r border-slate-100 last:border-r-0`}
       >
@@ -276,10 +275,10 @@ const buildMotoFromCotizacion = (
   const adicionalesTotal =
     Number(cot?.[isA ? "total_adicionales_1" : "total_adicionales_2"]) ||
     adicionalesRunt +
-      adicionalesLicencia +
-      adicionalesDefensas +
-      adicionalesHandSavers +
-      adicionalesOtros;
+    adicionalesLicencia +
+    adicionalesDefensas +
+    adicionalesHandSavers +
+    adicionalesOtros;
 
   const totalSinSeguros =
     Number(cot?.[`total_sin_seguros${suffix}`]) ||
@@ -621,7 +620,11 @@ const SolicitarFacturacionPage: React.FC = () => {
           timer: 1500,
           showConfirmButton: false,
         }).then(() => {
-          if (user?.rol === "Administrador") {
+          if (
+            user?.rol === "Administrador" ||
+            user?.rol === "Lider_marca" ||
+            user?.rol === "Lider_punto"
+          ) {
             navigate("/solicitudes");
           } else {
             navigate("/cotizaciones");
@@ -660,8 +663,8 @@ const SolicitarFacturacionPage: React.FC = () => {
             {esCreditoTercerosCot
               ? "Crédito de terceros"
               : esContado
-              ? "Contado"
-              : cotF?.tipo_pago || cotF?.metodo_pago || "—"}
+                ? "Contado"
+                : cotF?.tipo_pago || cotF?.metodo_pago || "—"}
           </span>
         </span>
       </div>
@@ -1018,9 +1021,8 @@ const SolicitarFacturacionPage: React.FC = () => {
                     </label>
                     <input
                       type="file"
-                      className={`file-input file-input-bordered bg-slate-50 ${
-                        errors.cartaFile ? "file-input-error" : ""
-                      }`}
+                      className={`file-input file-input-bordered bg-slate-50 ${errors.cartaFile ? "file-input-error" : ""
+                        }`}
                       accept=".pdf,.jpg,.jpeg,.png"
                       {...register("cartaFile", {
                         validate: (files) =>
@@ -1055,9 +1057,8 @@ const SolicitarFacturacionPage: React.FC = () => {
                   </label>
                   <input
                     type="file"
-                    className={`file-input file-input-bordered bg-slate-50 ${
-                      errors.manifiestoFile ? "file-input-error" : ""
-                    }`}
+                    className={`file-input file-input-bordered bg-slate-50 ${errors.manifiestoFile ? "file-input-error" : ""
+                      }`}
                     accept=".pdf,.jpg,.jpeg,.png"
                     {...register("manifiestoFile", {
                       validate: (files) =>
@@ -1104,9 +1105,8 @@ const SolicitarFacturacionPage: React.FC = () => {
                     </span>
                   </label>
                   <textarea
-                    className={`textarea w-full textarea-bordered bg-slate-50 min-h-28 ${
-                      errors.observaciones ? "textarea-error" : ""
-                    }`}
+                    className={`textarea w-full textarea-bordered bg-slate-50 min-h-28 ${errors.observaciones ? "textarea-error" : ""
+                      }`}
                     placeholder="Incluye observaciones relevantes para el área de facturación"
                     {...register("observaciones", {
                       required: "Requerido",
@@ -1182,9 +1182,8 @@ const SolicitarFacturacionPage: React.FC = () => {
                   </label>
                   <input
                     type="file"
-                    className={`file-input file-input-bordered bg-slate-50 ${
-                      errors.cedulaFile ? "file-input-error" : ""
-                    }`}
+                    className={`file-input file-input-bordered bg-slate-50 ${errors.cedulaFile ? "file-input-error" : ""
+                      }`}
                     accept=".pdf,.jpg,.jpeg,.png"
                     {...register("cedulaFile", {
                       validate: (files) =>
