@@ -1,7 +1,7 @@
 import React from "react";
 import { Pen, Trash2 } from "lucide-react";
 import { useModalStore } from "../../store/modalStore";
-import { useMarcas, useDeleteMarca } from "../../services/marcasServices";
+import { useMarcas, useDeleteMarca } from "../../services/marcasServices"; // o "../../api/hooksMarcas" según tu proyecto
 import Swal from "sweetalert2";
 import FormularioMarcas from "./forms/FormularioMarcas";
 import { useLoaderStore } from "../../store/loader.store";
@@ -44,19 +44,13 @@ function getPaginationItems(
   const items: (number | "...")[] = [];
   items.push(...startPages);
 
-  if (siblingsStart > boundaryCount + 2) {
-    items.push("...");
-  } else if (boundaryCount + 1 < totalPages - boundaryCount) {
-    items.push(boundaryCount + 1);
-  }
+  if (siblingsStart > boundaryCount + 2) items.push("...");
+  else if (boundaryCount + 1 < totalPages - boundaryCount) items.push(boundaryCount + 1);
 
   items.push(...range(siblingsStart, siblingsEnd));
 
-  if (siblingsEnd < totalPages - boundaryCount - 1) {
-    items.push("...");
-  } else if (totalPages - boundaryCount > boundaryCount) {
-    items.push(totalPages - boundaryCount);
-  }
+  if (siblingsEnd < totalPages - boundaryCount - 1) items.push("...");
+  else if (totalPages - boundaryCount > boundaryCount) items.push(totalPages - boundaryCount);
 
   items.push(...endPages);
   return items.filter((v, i, a) => a.indexOf(v) === i);
@@ -71,14 +65,32 @@ const btnEllipsis =
 
 const TablaMarcas: React.FC = () => {
   const open = useModalStore((s) => s.open);
-  const { data, isPending, isError } = useMarcas();
+
+  // ✅ NUEVO: input y debounce
+  const [search, setSearch] = React.useState("");
+  const [debouncedSearch, setDebouncedSearch] = React.useState("");
+
+  React.useEffect(() => {
+    const t = window.setTimeout(() => {
+      setDebouncedSearch(search.trim());
+    }, 500); // 👈 medio segundo
+
+    return () => window.clearTimeout(t);
+  }, [search]);
+
+  // ✅ ahora el hook recibe el texto ya "debounced"
+  const { data, isPending, isError } = useMarcas(debouncedSearch);
   const deleteMarca = useDeleteMarca();
 
-  // Asegura arreglo
   const marcas = Array.isArray(data) ? data : data ?? [];
 
   // Hooks
   const [page, setPage] = React.useState(1);
+
+  // ✅ reset página cuando cambia el filtro
+  React.useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
 
   const totalPages = React.useMemo(
     () => Math.max(1, Math.ceil(marcas.length / PAGE_SIZE)),
@@ -98,7 +110,6 @@ const TablaMarcas: React.FC = () => {
   const goNext = () => setPage((p) => Math.min(totalPages, p + 1));
   const goTo = (p: number) => setPage(Math.min(Math.max(1, p), totalPages));
 
-  // 👉 Usamos key para forzar remount y evitar "datos pegados"
   const openCrear = () =>
     open(<FormularioMarcas key="create" />, "Crear marca", {
       size: "md",
@@ -122,21 +133,15 @@ const TablaMarcas: React.FC = () => {
       cancelButtonText: "Cancelar",
       confirmButtonColor: "#ef4444",
     });
-    if (res.isConfirmed) {
-      deleteMarca.mutate(id);
-    }
+    if (res.isConfirmed) deleteMarca.mutate(id);
   };
 
   const { show, hide } = useLoaderStore();
 
   React.useEffect(() => {
-    if (isPending) {
-      show();   // 👈 enciende el overlay global
-    } else {
-      hide();   // 👈 lo apaga
-    }
+    if (isPending) show();
+    else hide();
   }, [isPending, show, hide]);
-
 
   if (isError) {
     return (
@@ -145,6 +150,11 @@ const TablaMarcas: React.FC = () => {
       </div>
     );
   }
+
+  const clearSearch = () => {
+    setSearch("");
+    setDebouncedSearch(""); // 👈 vuelve a traer todas
+  };
 
   return (
     <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
@@ -158,8 +168,43 @@ const TablaMarcas: React.FC = () => {
         </button>
       </div>
 
-      <div className="relative overflow-x-auto max-w-full px-4">
+      {/* ✅ NUEVO: SEARCH EN VIVO */}
+      <div className="px-4 pb-3">
+        <div className="bg-white rounded-xl border border-base-200 p-3">
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-end sm:justify-between">
+            <div className="form-control w-full sm:max-w-md">
+              <label className="label">
+                <span className="label-text">Buscar marca</span>
+              </label>
+              <input
+                className="input input-bordered w-full"
+                placeholder="Escribe: Yamaha, Honda..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <label className="label">
+                <span className="label-text-alt opacity-70">
+                  {search.trim()
+                    ? "Buscando..."
+                    : "Escribe para filtrar"}
+                </span>
+              </label>
+            </div>
 
+            <div className="flex gap-2">
+              <button type="button" className="btn btn-ghost btn-sm" onClick={clearSearch} disabled={!search}>
+                Limpiar
+              </button>
+
+              <span className="text-xs opacity-70 self-center">
+                {isPending ? "Cargando..." : `Resultados: ${marcas.length}`}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="relative overflow-x-auto max-w-full px-4">
         <table className="table table-zebra table-pin-rows">
           <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
             <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
@@ -194,15 +239,15 @@ const TablaMarcas: React.FC = () => {
                 </td>
               </tr>
             ))}
-          </tbody>
 
-          <tfoot className="bg-base-200/60">
-            <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-base-content/70">
-              <th></th>
-              <th>Marca</th>
-              <th className="text-right pr-6">Acciones</th>
-            </tr>
-          </tfoot>
+            {!isPending && visible.length === 0 && (
+              <tr>
+                <td colSpan={3} className="text-center py-6 opacity-70">
+                  No hay resultados para “{debouncedSearch}”.
+                </td>
+              </tr>
+            )}
+          </tbody>
         </table>
       </div>
 
@@ -213,12 +258,7 @@ const TablaMarcas: React.FC = () => {
         </span>
 
         <div className="flex items-center gap-2">
-          <button
-            className={btnGhost}
-            onClick={goPrev}
-            disabled={page === 1}
-            aria-label="Página anterior"
-          >
+          <button className={btnGhost} onClick={goPrev} disabled={page === 1} aria-label="Página anterior">
             «
           </button>
 
@@ -238,12 +278,7 @@ const TablaMarcas: React.FC = () => {
             )
           )}
 
-          <button
-            className={btnGhost}
-            onClick={goNext}
-            disabled={page === totalPages}
-            aria-label="Página siguiente"
-          >
+          <button className={btnGhost} onClick={goNext} disabled={page === totalPages} aria-label="Página siguiente">
             »
           </button>
         </div>

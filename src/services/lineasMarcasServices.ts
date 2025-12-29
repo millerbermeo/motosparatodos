@@ -24,17 +24,43 @@ export interface ServerError {
   message: string | string[];
 }
 
-/* ========= QUERIES ========= */
-export const useLineas = () => {
-  return useQuery<Linea[]>({
-    queryKey: ["lineas"],
-    queryFn: async () => {
-      const { data } = await api.get<LineasResponse>("/list_lineas.php");
-      return data.lineas;
-    },
-  });
+/* ✅ NUEVO: filtros opcionales */
+export type LineasFilters = {
+  marca?: string;
+  linea?: string;
+  cilindraje?: string | number;
 };
 
+/* ========= QUERIES ========= */
+export const useLineas = (filters?: LineasFilters) => {
+  const marca = (filters?.marca ?? "").trim();
+  const linea = (filters?.linea ?? "").trim();
+
+  // cilindraje: solo números o vacío
+  const cilRaw = filters?.cilindraje ?? "";
+  const cilStr = String(cilRaw).trim();
+  const cilindraje = /^\d+$/.test(cilStr) ? cilStr : "";
+
+  const params =
+    marca || linea || cilindraje
+      ? {
+          ...(marca ? { marca } : {}),
+          ...(linea ? { linea } : {}),
+          ...(cilindraje ? { cilindraje } : {}),
+        }
+      : undefined;
+
+  return useQuery<Linea[]>({
+    queryKey: ["lineas", { marca, linea, cilindraje }],
+    queryFn: async () => {
+      const { data } = await api.get<LineasResponse>("/list_lineas.php", {
+        params,
+      });
+      return data.lineas;
+    },
+    staleTime: 10_000,
+  });
+};
 /* ========= MUTATIONS ========= */
 export const useCreateLinea = () => {
   const qc = useQueryClient();

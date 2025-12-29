@@ -73,18 +73,46 @@ const toFormData = (data: Partial<Moto> & { imagen?: File | null }) => {
   return fd;
 };
 
-/* ===== QUERIES ===== */
-export const useMotos = () => {
+export type MotoFilters = {
+  marca?: string;
+  linea?: string;
+  modelo?: string;
+  empresa?: string;
+  estado?: "Nueva" | "Usada" | "";
+};
+
+export interface MotosResponse {
+  success?: boolean;
+  count?: number;
+  motos: Moto[];
+}
+
+const clean = (v?: string) => {
+  const t = (v ?? "").trim();
+  return t.length ? t : undefined;
+};
+
+export const useMotos = (filters: MotoFilters) => {
+  // queryKey incluye filtros => cambia => refetch automático
   return useQuery<Moto[]>({
-    queryKey: ["motos"],
+    queryKey: ["motos", filters],
     queryFn: async () => {
-      const { data } = await api.get<MotosResponse>("/list_motos.php");
-      // si tu API devuelve strings, castea precio_base a number
-      return data.motos.map((m) => ({
+      const params: Record<string, string> = {};
+
+      if (clean(filters.marca)) params.marca = clean(filters.marca)!;
+      if (clean(filters.linea)) params.linea = clean(filters.linea)!;
+      if (clean(filters.modelo)) params.modelo = clean(filters.modelo)!;
+      if (clean(filters.empresa)) params.empresa = clean(filters.empresa)!;
+      if (clean(filters.estado)) params.estado = clean(filters.estado)!;
+
+      const { data } = await api.get<MotosResponse>("/list_motos.php", { params });
+
+      return (data.motos ?? []).map((m) => ({
         ...m,
         precio_base: typeof m.precio_base === "string" ? Number(m.precio_base) : m.precio_base,
       }));
     },
+    staleTime: 10_000,
   });
 };
 

@@ -1,7 +1,7 @@
 import React from "react";
 import { Pen, Trash2 } from "lucide-react";
 import { useModalStore } from "../../store/modalStore";
-import { useLineas, useDeleteLinea } from "../../services/lineasMarcasServices";
+import { useLineas, useDeleteLinea } from "../../services/lineasMarcasServices"; // ajusta si tu ruta real es lineasServices
 import Swal from "sweetalert2";
 import FormularioLineas from "./forms/FormularioLineas";
 import { useLoaderStore } from "../../store/loader.store";
@@ -44,19 +44,13 @@ function getPaginationItems(
   const items: (number | "...")[] = [];
   items.push(...startPages);
 
-  if (siblingsStart > boundaryCount + 2) {
-    items.push("...");
-  } else if (boundaryCount + 1 < totalPages - boundaryCount) {
-    items.push(boundaryCount + 1);
-  }
+  if (siblingsStart > boundaryCount + 2) items.push("...");
+  else if (boundaryCount + 1 < totalPages - boundaryCount) items.push(boundaryCount + 1);
 
   items.push(...range(siblingsStart, siblingsEnd));
 
-  if (siblingsEnd < totalPages - boundaryCount - 1) {
-    items.push("...");
-  } else if (totalPages - boundaryCount > boundaryCount) {
-    items.push(totalPages - boundaryCount);
-  }
+  if (siblingsEnd < totalPages - boundaryCount - 1) items.push("...");
+  else if (totalPages - boundaryCount > boundaryCount) items.push(totalPages - boundaryCount);
 
   items.push(...endPages);
   return items.filter((v, i, a) => a.indexOf(v) === i);
@@ -71,16 +65,47 @@ const btnEllipsis =
 
 const TablaLineas: React.FC = () => {
   const open = useModalStore((s) => s.open);
-  const { data, isPending, isError } = useLineas();
+
+  // ✅ filtros locales
+  const [marca, setMarca] = React.useState("");
+  const [linea, setLinea] = React.useState("");
+  const [cilindraje, setCilindraje] = React.useState("");
+
+  // ✅ debounce
+  const [debounced, setDebounced] = React.useState({
+    marca: "",
+    linea: "",
+    cilindraje: "",
+  });
+
+  React.useEffect(() => {
+    const t = window.setTimeout(() => {
+      setDebounced({
+        marca: marca.trim(),
+        linea: linea.trim(),
+        cilindraje: cilindraje.trim(),
+      });
+    }, 500);
+
+    return () => window.clearTimeout(t);
+  }, [marca, linea, cilindraje]);
+
+  // ✅ hook con filtros
+  const { data, isPending, isError } = useLineas(debounced);
   const deleteLinea = useDeleteLinea();
 
-  const lineas = Array.isArray(data) ? data : data ?? [];
+  const lineasArr = Array.isArray(data) ? data : data ?? [];
 
   const [page, setPage] = React.useState(1);
 
+  // ✅ reset página al cambiar filtro
+  React.useEffect(() => {
+    setPage(1);
+  }, [debounced.marca, debounced.linea, debounced.cilindraje]);
+
   const totalPages = React.useMemo(
-    () => Math.max(1, Math.ceil(lineas.length / PAGE_SIZE)),
-    [lineas.length]
+    () => Math.max(1, Math.ceil(lineasArr.length / PAGE_SIZE)),
+    [lineasArr.length]
   );
 
   React.useEffect(() => {
@@ -88,15 +113,14 @@ const TablaLineas: React.FC = () => {
   }, [page, totalPages]);
 
   const start = (page - 1) * PAGE_SIZE;
-  const end = Math.min(start + PAGE_SIZE, lineas.length);
-  const visible = lineas.slice(start, end);
+  const end = Math.min(start + PAGE_SIZE, lineasArr.length);
+  const visible = lineasArr.slice(start, end);
   const items = getPaginationItems(page, totalPages);
 
   const goPrev = () => setPage((p) => Math.max(1, p - 1));
   const goNext = () => setPage((p) => Math.min(totalPages, p + 1));
   const goTo = (p: number) => setPage(Math.min(Math.max(1, p), totalPages));
 
-  // 👉 key para remount y evitar “datos pegados”
   const openCrear = () =>
     open(<FormularioLineas key="create" />, "Crear línea", {
       size: "lg",
@@ -126,11 +150,8 @@ const TablaLineas: React.FC = () => {
   const { show, hide } = useLoaderStore();
 
   React.useEffect(() => {
-    if (isPending) {
-      show(); // 👈 muestra el overlay global
-    } else {
-      hide(); // 👈 lo quita
-    }
+    if (isPending) show();
+    else hide();
   }, [isPending, show, hide]);
 
   if (isError) {
@@ -140,6 +161,13 @@ const TablaLineas: React.FC = () => {
       </div>
     );
   }
+
+  const clearFilters = () => {
+    setMarca("");
+    setLinea("");
+    setCilindraje("");
+    setDebounced({ marca: "", linea: "", cilindraje: "" }); // vuelve a traer todo
+  };
 
   return (
     <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl">
@@ -151,6 +179,63 @@ const TablaLineas: React.FC = () => {
         <button className="btn bg-[#2BB352] text-white" onClick={openCrear}>
           Crear Línea
         </button>
+      </div>
+
+      {/* ✅ FILTROS */}
+      <div className="px-4 pb-3">
+        <div className="bg-white rounded-xl border border-base-200 p-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="form-control w-full">
+              <label className="label">
+                <span className="label-text">Filtrar por marca</span>
+              </label>
+              <input
+                className="input input-bordered w-full"
+                placeholder="Ej: STARKER"
+                value={marca}
+                onChange={(e) => setMarca(e.target.value)}
+              />
+            </div>
+
+            <div className="form-control w-full">
+              <label className="label">
+                <span className="label-text">Filtrar por línea</span>
+              </label>
+              <input
+                className="input input-bordered w-full"
+                placeholder="Ej: COOLJOY"
+                value={linea}
+                onChange={(e) => setLinea(e.target.value)}
+              />
+            </div>
+
+            <div className="form-control w-full">
+              <label className="label">
+                <span className="label-text">Filtrar por cilindraje</span>
+              </label>
+              <input
+                className="input input-bordered w-full"
+                placeholder="Ej: 500"
+                inputMode="numeric"
+                value={cilindraje}
+                onChange={(e) => {
+                  // solo permite números o vacío
+                  const v = e.target.value;
+                  if (v === "" || /^\d+$/.test(v)) setCilindraje(v);
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="mt-3 flex items-center justify-between gap-3 flex-wrap">
+            <button className="btn btn-ghost btn-sm" onClick={clearFilters} disabled={!marca && !linea && !cilindraje}>
+              Limpiar filtros
+            </button>
+            <span className="text-xs opacity-70">
+              {isPending ? "Cargando..." : `Resultados: ${lineasArr.length}`}
+            </span>
+          </div>
+        </div>
       </div>
 
       <div className="relative overflow-x-auto max-w-full px-4">
@@ -183,12 +268,7 @@ const TablaLineas: React.FC = () => {
                     </button>
                     <button
                       className="btn btn-sm bg-white btn-circle"
-                      onClick={() =>
-                        confirmarEliminar(
-                          Number(l.id),
-                          `${l.marca} ${l.linea}`
-                        )
-                      }
+                      onClick={() => confirmarEliminar(Number(l.id), `${l.marca} ${l.linea}`)}
                       title="Eliminar"
                     >
                       <Trash2 size="18px" color="#ef4444" />
@@ -197,33 +277,28 @@ const TablaLineas: React.FC = () => {
                 </td>
               </tr>
             ))}
+
+            {!isPending && visible.length === 0 && (
+              <tr>
+                <td colSpan={5} className="text-center py-6 opacity-70">
+                  No hay resultados con esos filtros.
+                </td>
+              </tr>
+            )}
           </tbody>
 
-          <tfoot className="bg-base-200/60">
-            <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-base-content/70">
-              <th></th>
-              <th>Marca</th>
-              <th>Línea</th>
-              <th>Cilindraje</th>
-              <th className="text-right pr-6">Acciones</th>
-            </tr>
-          </tfoot>
+        
         </table>
       </div>
 
       {/* Footer paginación */}
       <div className="flex items-center justify-between px-4 pb-4 pt-2">
         <span className="text-xs text-base-content/50">
-          Mostrando {lineas.length === 0 ? 0 : start + 1}–{end} de {lineas.length}
+          Mostrando {lineasArr.length === 0 ? 0 : start + 1}–{end} de {lineasArr.length}
         </span>
 
         <div className="flex items-center gap-2">
-          <button
-            className={btnGhost}
-            onClick={goPrev}
-            disabled={page === 1}
-            aria-label="Página anterior"
-          >
+          <button className={btnGhost} onClick={goPrev} disabled={page === 1} aria-label="Página anterior">
             «
           </button>
 
@@ -243,12 +318,7 @@ const TablaLineas: React.FC = () => {
             )
           )}
 
-          <button
-            className={btnGhost}
-            onClick={goNext}
-            disabled={page === totalPages}
-            aria-label="Página siguiente"
-          >
+          <button className={btnGhost} onClick={goNext} disabled={page === totalPages} aria-label="Página siguiente">
             »
           </button>
         </div>

@@ -2,13 +2,12 @@
 import React from "react";
 import { Banknote, Pen, Percent, Trash2 } from "lucide-react";
 import { useModalStore } from "../../store/modalStore";
-import { useMotos, useDeleteMoto } from "../../services/motosServices";
+import { useMotos, useDeleteMoto, type MotoFilters } from "../../services/motosServices";
 import Swal from "sweetalert2";
 import FormularioMotos from "./forms/FormularioMotos";
-import ImpuestosMotosFormulario from "./forms/ImpuestosMotosFormulario"; // 👈 importa el formulario
+import ImpuestosMotosFormulario from "./forms/ImpuestosMotosFormulario";
 import DescuentosMotosFormulario from "./forms/DescuentosMotosFormulario";
 import { useLoaderStore } from "../../store/loader.store";
-
 
 const PAGE_SIZE = 10;
 const SIBLING_COUNT = 1;
@@ -16,12 +15,24 @@ const BOUNDARY_COUNT = 1;
 
 const range = (start: number, end: number) =>
   Array.from({ length: end - start + 1 }, (_, i) => start + i);
-function getPaginationItems(current: number, totalPages: number, siblingCount = SIBLING_COUNT, boundaryCount = BOUNDARY_COUNT) {
+
+function getPaginationItems(
+  current: number,
+  totalPages: number,
+  siblingCount = SIBLING_COUNT,
+  boundaryCount = BOUNDARY_COUNT
+) {
   if (totalPages <= 1) return [1];
   const startPages = range(1, Math.min(boundaryCount, totalPages));
   const endPages = range(Math.max(totalPages - boundaryCount + 1, boundaryCount + 1), totalPages);
-  const siblingsStart = Math.max(Math.min(current - siblingCount, totalPages - boundaryCount - siblingCount * 2 - 1), boundaryCount + 2);
-  const siblingsEnd = Math.min(Math.max(current + siblingCount, boundaryCount + siblingCount * 2 + 2), endPages.length > 0 ? endPages[0] - 2 : totalPages - 1);
+  const siblingsStart = Math.max(
+    Math.min(current - siblingCount, totalPages - boundaryCount - siblingCount * 2 - 1),
+    boundaryCount + 2
+  );
+  const siblingsEnd = Math.min(
+    Math.max(current + siblingCount, boundaryCount + siblingCount * 2 + 2),
+    endPages.length > 0 ? endPages[0] - 2 : totalPages - 1
+  );
   const items: (number | "...")[] = [];
   items.push(...startPages);
   if (siblingsStart > boundaryCount + 2) items.push("...");
@@ -38,16 +49,39 @@ const btnGhost = `${btnBase} btn-ghost bg-base-200 text-base-content/70 hover:bg
 const btnActive = `${btnBase} btn-primary text-primary-content`;
 const btnEllipsis = "btn btn-xs rounded-xl min-w-8 h-8 px-3 bg-base-200 text-base-content/60 pointer-events-none";
 
+// ✅ Helpers para opciones únicas
+const unique = (arr: string[]) => Array.from(new Set(arr)).filter(Boolean).sort();
+
 const TablaMotos: React.FC = () => {
   const open = useModalStore((s) => s.open);
-  const { data, isPending, isError } = useMotos();
+
+  // ✅ NUEVO: estado de filtros
+  const [filters, setFilters] = React.useState<MotoFilters>({
+    marca: "",
+    linea: "",
+    modelo: "",
+    empresa: "",
+    estado: "",
+  });
+
+  // ✅ IMPORTANTE: ahora useMotos recibe filtros (pero si lo llamas sin filtros también sirve)
+  const { data, isPending, isError } = useMotos(filters);
+
   const deleteMoto = useDeleteMoto();
 
   const motos = Array.isArray(data) ? data : data ?? [];
   const [page, setPage] = React.useState(1);
+
+  // ✅ Reset página cuando cambian filtros (para no quedar en página vacía)
+  React.useEffect(() => {
+    setPage(1);
+  }, [filters.marca, filters.linea, filters.modelo, filters.empresa, filters.estado]);
+
   const totalPages = React.useMemo(() => Math.max(1, Math.ceil(motos.length / PAGE_SIZE)), [motos.length]);
 
-  React.useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
+  React.useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   const start = (page - 1) * PAGE_SIZE;
   const end = Math.min(start + PAGE_SIZE, motos.length);
@@ -58,12 +92,18 @@ const TablaMotos: React.FC = () => {
   const goNext = () => setPage((p) => Math.min(totalPages, p + 1));
   const goTo = (p: number) => setPage(Math.min(Math.max(1, p), totalPages));
 
-  const openCrear = () => open(<FormularioMotos key="create" />, "Crear moto", { size: "5xl", position: "center" });
-  const openEditar = (m: any) => open(<FormularioMotos key={`edit-${m.id}`} initialValues={m} mode="edit" />, `Editar moto: ${m.marca} ${m.linea}`, { size: "5xl", position: "center" });
-  // 👇 NUEVO: abrir modal de impuestos
+  const openCrear = () =>
+    open(<FormularioMotos key="create" />, "Crear moto", { size: "5xl", position: "center" });
+
+  const openEditar = (m: any) =>
+    open(<FormularioMotos key={`edit-${m.id}`} initialValues={m} mode="edit" />, `Editar moto: ${m.marca} ${m.linea}`, {
+      size: "5xl",
+      position: "center",
+    });
+
   const openImpuestos = (m: any) => {
     const initialValues = {
-      id: Number(m.id), // el id viaja oculto
+      id: Number(m.id),
       soat: m.soat ?? "",
       matricula_contado: m.matricula_contado ?? "",
       matricula_credito: m.matricula_credito ?? "",
@@ -90,8 +130,6 @@ const TablaMotos: React.FC = () => {
     );
   };
 
-
-
   const confirmarEliminar = async (id: number, nombre: string) => {
     const res = await Swal.fire({
       icon: "warning",
@@ -108,28 +146,130 @@ const TablaMotos: React.FC = () => {
   const { show, hide } = useLoaderStore();
 
   React.useEffect(() => {
-    if (isPending) {
-      show();   // 👈 enciende overlay
-    } else {
-      hide();   // 👈 lo apaga
-    }
+    if (isPending) show();
+    else hide();
   }, [isPending, show, hide]);
 
-
-  if (isError) return <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4 text-error">Error al cargar motos</div>;
+  if (isError)
+    return (
+      <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4 text-error">
+        Error al cargar motos
+      </div>
+    );
 
   const BaseUrl = import.meta.env.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
+
+  // ✅ Opciones de filtros basadas en los datos actuales (si quieres que sean globales,
+  // crea un endpoint "distinct" o llama useMotos({}) por aparte)
+  const marcaOptions = React.useMemo(() => unique(motos.map((m: any) => m.marca ?? "")), [motos]);
+  const lineaOptions = React.useMemo(() => unique(motos.map((m: any) => m.linea ?? "")), [motos]);
+  const modeloOptions = React.useMemo(() => unique(motos.map((m: any) => String(m.modelo ?? ""))), [motos]);
+  const empresaOptions = React.useMemo(() => unique(motos.map((m: any) => m.empresa ?? "")), [motos]);
+
+  const set = (k: keyof MotoFilters) => (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const v = e.target.value;
+    setFilters((prev) => ({ ...prev, [k]: v }));
+  };
+
+  const clearFilters = () => {
+    setFilters({ marca: "", linea: "", modelo: "", empresa: "", estado: "" });
+  };
 
   return (
     <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
       <div className="px-4 pt-4 flex items-center justify-between gap-3 flex-wrap my-3">
         <h3 className="text-sm font-semibold tracking-wide text-base-content/70">Módulo de motos</h3>
-        <button className="btn bg-[#2BB352] text-white" onClick={openCrear}>Crear Moto</button>
+        <button className="btn bg-[#2BB352] text-white" onClick={openCrear}>
+          Crear Moto
+        </button>
+      </div>
+
+      {/* ✅ NUEVO: FILTROS ARRIBA DE LA TABLA */}
+      <div className="px-4 pb-3">
+        <div className="bg-white rounded-xl border border-base-200 p-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Marca</span>
+              </label>
+              <select className="select select-bordered" value={filters.marca ?? ""} onChange={set("marca")}>
+                <option value="">Todas</option>
+                {marcaOptions.map((x) => (
+                  <option key={x} value={x}>
+                    {x}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Línea</span>
+              </label>
+              <select className="select select-bordered" value={filters.linea ?? ""} onChange={set("linea")}>
+                <option value="">Todas</option>
+                {lineaOptions.map((x) => (
+                  <option key={x} value={x}>
+                    {x}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Modelo</span>
+              </label>
+              <select className="select select-bordered" value={filters.modelo ?? ""} onChange={set("modelo")}>
+                <option value="">Todos</option>
+                {modeloOptions.map((x) => (
+                  <option key={x} value={x}>
+                    {x}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Empresa</span>
+              </label>
+              <select className="select select-bordered" value={filters.empresa ?? ""} onChange={set("empresa")}>
+                <option value="">Todas</option>
+                {empresaOptions.map((x) => (
+                  <option key={x} value={x}>
+                    {x}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Estado</span>
+              </label>
+              <select className="select select-bordered" value={filters.estado ?? ""} onChange={set("estado")}>
+                <option value="">Todos</option>
+                <option value="Nueva">Nueva</option>
+                <option value="Usada">Usada</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between mt-3">
+            <span className="text-xs text-base-content/60">
+              {isPending ? "Cargando..." : `Resultados: ${motos.length}`}
+            </span>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={clearFilters}>
+              Limpiar filtros
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* 👇 Wrapper scrolleable para hacerla responsive */}
       <div className="relative overflow-x-auto max-w-full px-4">
-        <table className="table table-zebra table-pin-rows  min-w-[900px]">
+        <table className="table table-zebra table-pin-rows min-w-[900px]">
           <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
             <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
               <th className="w-12">#</th>
@@ -137,7 +277,6 @@ const TablaMotos: React.FC = () => {
               <th>Marca</th>
               <th>Línea</th>
               <th>Modelo</th>
-              {/* Oculta algunas columnas en pantallas pequeñas */}
               <th className="hidden md:table-cell">Empresa</th>
               <th className="hidden lg:table-cell">Subdistribucion</th>
               <th className="hidden sm:table-cell">Estado</th>
@@ -181,6 +320,7 @@ const TablaMotos: React.FC = () => {
                     >
                       <Percent size="18px" />
                     </button>
+
                     <button
                       className="btn btn-sm bg-white btn-circle"
                       onClick={() => openImpuestos(m)}
@@ -188,18 +328,31 @@ const TablaMotos: React.FC = () => {
                     >
                       <Banknote size="18px" />
                     </button>
+
                     <button className="btn btn-sm bg-white btn-circle" onClick={() => openEditar(m)} title="Editar">
                       <Pen size="18px" color="green" />
                     </button>
-                    <button className="btn btn-sm bg-white btn-circle" onClick={() => confirmarEliminar(Number(m.id), `${m.marca} ${m.linea}`)} title="Eliminar">
+
+                    <button
+                      className="btn btn-sm bg-white btn-circle"
+                      onClick={() => confirmarEliminar(Number(m.id), `${m.marca} ${m.linea}`)}
+                      title="Eliminar"
+                    >
                       <Trash2 size="18px" color="#ef4444" />
                     </button>
                   </div>
                 </td>
               </tr>
             ))}
-          </tbody>
 
+            {!isPending && visible.length === 0 && (
+              <tr>
+                <td colSpan={10} className="text-center py-6 opacity-70">
+                  No hay resultados con esos filtros.
+                </td>
+              </tr>
+            )}
+          </tbody>
         </table>
       </div>
 
@@ -207,19 +360,31 @@ const TablaMotos: React.FC = () => {
         <span className="text-xs text-base-content/50">
           Mostrando {motos.length === 0 ? 0 : start + 1}–{end} de {motos.length}
         </span>
+
         <div className="flex items-center gap-2">
-          <button className={btnGhost} onClick={goPrev} disabled={page === 1}>«</button>
-          {items.map((it, i) => it === "..." ? (
-            <span key={`e-${i}`} className={btnEllipsis}>…</span>
-          ) : (
-            <button key={`p-${it}`} className={it === page ? btnActive : btnGhost} onClick={() => goTo(Number(it))}>{it}</button>
-          ))}
-          <button className={btnGhost} onClick={goNext} disabled={page === totalPages}>»</button>
+          <button className={btnGhost} onClick={goPrev} disabled={page === 1}>
+            «
+          </button>
+
+          {items.map((it, i) =>
+            it === "..." ? (
+              <span key={`e-${i}`} className={btnEllipsis}>
+                …
+              </span>
+            ) : (
+              <button key={`p-${it}`} className={it === page ? btnActive : btnGhost} onClick={() => goTo(Number(it))}>
+                {it}
+              </button>
+            )
+          )}
+
+          <button className={btnGhost} onClick={goNext} disabled={page === totalPages}>
+            »
+          </button>
         </div>
       </div>
     </div>
   );
-
 };
 
 export default TablaMotos;

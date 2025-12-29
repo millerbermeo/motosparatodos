@@ -21,14 +21,18 @@ export interface ServerError {
   message: string | string[];
 }
 
+// ✅ NUEVO: recibe q opcional
+export const useMarcas = (q?: string) => {
+  const qClean = (q ?? "").trim();
 
-export const useMarcas = () => {
   return useQuery<Marca[]>({
-    queryKey: ["marcas"],
+    queryKey: ["marcas", qClean],
     queryFn: async () => {
-      const { data } = await api.get<MarcasResponse>("/list_marcas.php");
+      const params = qClean ? { q: qClean } : undefined;
+      const { data } = await api.get<MarcasResponse>("/list_marcas.php", { params });
       return data.marcas;
     },
+    staleTime: 10_000,
   });
 };
 

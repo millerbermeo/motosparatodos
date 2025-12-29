@@ -1,7 +1,7 @@
 // FormInput.tsx
 import { Controller } from "react-hook-form";
 import type { Control, FieldValues, Path, RegisterOptions } from "react-hook-form";
-import { useId, useRef, useLayoutEffect } from "react";
+import { useId, useRef, useLayoutEffect, useState } from "react";
 import { formatThousands as fmt, unformatNumber } from "./moneyUtils";
 
 type FormInputProps<T extends FieldValues> = {
@@ -30,9 +30,12 @@ export function FormInput<T extends FieldValues>({
 }: FormInputProps<T>) {
   const id = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // 👇 Hack anti-autofill (Chrome/Safari): inicia readonly y se habilita al enfocar
+  const [ro, setRo] = useState(true);
+
   // (simple) estrategia de caret: lo enviamos al final cuando se enmascara
   // Si necesitas caret preciso, te paso versión avanzada.
-
   useLayoutEffect(() => {
     if (!formatThousands) return;
     const el = inputRef.current;
@@ -83,6 +86,22 @@ export function FormInput<T extends FieldValues>({
                 inputMode={formatThousands ? "numeric" : undefined}
                 placeholder={label ?? placeholder}
                 disabled={disabled}
+
+                // 👇 evita autocompletado / sugerencias (Chrome a veces ignora "off")
+                autoComplete="new-password"
+                autoCorrect="off"
+                spellCheck={false}
+
+                // 👇 opcional (a veces ayuda): que el name sea el del field
+                name={field.name}
+
+                // 👇 "modo nuclear": bloquea autofill al montar y lo habilita al enfocar
+                readOnly={ro}
+                onFocus={(e) => {
+                  console.log("Input focused, disabling readOnly to prevent autofill", e);
+                  setRo(false);
+                }}
+
                 className={[
                   "w-full bg-transparent outline-none border-none",
                   "px-3 pt-6 pb-2 text-base",

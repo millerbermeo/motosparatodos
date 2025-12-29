@@ -145,7 +145,7 @@ const garantiaExtendidaOptions: SelectOption[] = [
 ];
 
 
-const CotizacionFormulario2: React.FC = () => {
+const CotizacionFormulario: React.FC = () => {
 
     const {
         register,
@@ -282,7 +282,7 @@ const CotizacionFormulario2: React.FC = () => {
 
     const { data: motos1 } = useMotosPorMarca(selectedMarca1 || undefined);
     const { data: motos2 } = useMotosPorMarca(selectedMarca2 || undefined);
-console.log(motos1)
+    console.log(motos1)
     const motoOptions1: SelectOption[] = (motos1?.motos ?? []).map((m, index) => ({
         value: String(index), // 👈 valor único
         label: `${m.linea} - ${Number(m.precio_base).toLocaleString("es-CO")} COP - Modelo ${m.modelo ?? ""}`,
@@ -620,13 +620,14 @@ console.log(motos1)
             return;
         }
 
-        if (configMarcacion1) {
-            // usamos el valor del servicio MARC_12 / 24 / 36
-            setValue("marcacion1", String(configMarcacion1.valor ?? 0), {
-                shouldDirty: true,
-                shouldValidate: true,
-            });
-        }
+        // if (configMarcacion1) {
+        //     // usamos el valor del servicio MARC_12 / 24 / 36
+        //     setValue("marcacion1", String(configMarcacion1.valor ?? 0), {
+        //         shouldDirty: true,
+        //         shouldValidate: true,
+        //     });
+        // }
+
     }, [garantiaExt1Sel, configMarcacion1, incluirMoto1, setValue]);
 
     // Cuando cambia la garantía extendida de la MOTO 2 o llega la tarifa, actualizar marcación2
@@ -641,12 +642,13 @@ console.log(motos1)
             return;
         }
 
-        if (configMarcacion2) {
-            setValue("marcacion2", String(configMarcacion2.valor ?? 0), {
-                shouldDirty: true,
-                shouldValidate: true,
-            });
-        }
+        // if (configMarcacion2) {
+        //     setValue("marcacion2", String(configMarcacion2.valor ?? 0), {
+        //         shouldDirty: true,
+        //         shouldValidate: true,
+        //     });
+        // }
+
     }, [garantiaExt2Sel, configMarcacion2, incluirMoto2, setValue]);
 
 
@@ -709,19 +711,19 @@ console.log(motos1)
             const raw = unformatNumber(v); return raw ? Number(raw) : null;
         };
 
-            // 🔹 Obtener la moto A seleccionada (por índice del select)
-    const motoA =
-        incluirMoto1 && motos1?.motos
-            ? motos1.motos[Number(data.moto1)] ?? null
-            : null;
+        // 🔹 Obtener la moto A seleccionada (por índice del select)
+        const motoA =
+            incluirMoto1 && motos1?.motos
+                ? motos1.motos[Number(data.moto1)] ?? null
+                : null;
 
-    // 🔹 Obtener la moto B seleccionada (por índice del select)
-    const motoB =
-        incluirMoto2 && motos2?.motos
-            ? motos2.motos[Number(data.moto2)] ?? null
-            : null;
+        // 🔹 Obtener la moto B seleccionada (por índice del select)
+        const motoB =
+            incluirMoto2 && motos2?.motos
+                ? motos2.motos[Number(data.moto2)] ?? null
+                : null;
 
-            console.log(motoA)
+        console.log(motoA)
 
 
         // Validaciones con SweetAlert2
@@ -977,20 +979,20 @@ console.log(motos1)
             saldo_financiar_a: saldoFinanciar1,
             saldo_financiar_b: saldoFinanciar2,
 
-                // IDs de empresa según la moto A seleccionada
-    id_empresa_a:
-        incluirMoto1 && motoA?.id_empresa != null
-            ? Number(motoA.id_empresa)
-            : null,
+            // IDs de empresa según la moto A seleccionada
+            id_empresa_a:
+                incluirMoto1 && motoA?.id_empresa != null
+                    ? Number(motoA.id_empresa)
+                    : null,
 
-                // IDs de empresa según la moto B seleccionada
-    id_empresa_b:
-        incluirMoto2 && motoB?.id_empresa != null
-            ? Number(motoB.id_empresa)
-            : null,
+            // IDs de empresa según la moto B seleccionada
+            id_empresa_b:
+                incluirMoto2 && motoB?.id_empresa != null
+                    ? Number(motoB.id_empresa)
+                    : null,
 
 
-            
+
         };
 
         console.log("SUBMIT (payload EXACTO BD):", payload);
@@ -1009,7 +1011,7 @@ console.log(motos1)
 
     const esCreditoDirecto = metodo === "credibike" || metodo === "terceros";
 
-    const esCreditoDirecto2 = metodo === "credibike"; 
+    const esCreditoDirecto2 = metodo === "credibike";
 
     React.useEffect(() => {
         if (!esCreditoDirecto) {
@@ -1114,6 +1116,19 @@ console.log(motos1)
 
     const fotoMoto1 = watch("foto_a");
     const fotoMoto2 = watch("foto_b");
+
+    const showGarantiaExtendida = esCreditoDirecto; // credibike o terceros
+
+    React.useEffect(() => {
+        if (metodo === "contado") {
+            setValue("garantiaExtendida1", "no");
+            setValue("garantiaExtendida2", "no");
+            setValue("valor_garantia_extendida_a", "0");
+            setValue("valor_garantia_extendida_b", "0");
+            setValue("marcacion1", "0");
+            setValue("marcacion2", "0");
+        }
+    }, [metodo, setValue]);
 
 
     return (
@@ -1340,43 +1355,47 @@ console.log(motos1)
                                                 disabled={!showMotos || !incluirMoto1 || esCreditoDirecto}  // 👈 BLOQUEA EN CRÉDITO
                                                 rules={reqIf(showMotos && incluirMoto1, "La garantía es obligatoria")}
                                             />
-                                            <FormSelect<FormValues>
-                                                name="garantiaExtendida1"
-                                                label="Garantía extendida"
-                                                control={control}
-                                                options={garantiaExtendidaOptions}
-                                                placeholder="Seleccione..."
-                                                disabled={!showMotos || !incluirMoto1}
-                                                rules={{
-                                                    validate: (v) => {
-                                                        // si es crédito (directo/terceros) y la moto 1 va incluida,
-                                                        // NO se permite "no"
-                                                        if (esCreditoDirecto2 && incluirMoto1) {
-                                                            return v && v !== "no"
-                                                                ? true
-                                                                : "La garantía extendida es obligatoria para crédito directo.";
-                                                        }
-                                                        return true;
-                                                    },
-                                                }}
-                                            />
+                       
+                                            {showGarantiaExtendida && (
+                                                <>
+                                                    <FormSelect<FormValues>
+                                                        name="garantiaExtendida1"
+                                                        label="Garantía extendida"
+                                                        control={control}
+                                                        options={garantiaExtendidaOptions}
+                                                        placeholder="Seleccione..."
+                                                        disabled={!showMotos || !incluirMoto1}
+                                                        rules={{
+                                                            validate: (v) => {
+                                                                if (esCreditoDirecto2 && incluirMoto1) {
+                                                                    return v && v !== "no"
+                                                                        ? true
+                                                                        : "La garantía extendida es obligatoria para crédito directo.";
+                                                                }
+                                                                return true;
+                                                            },
+                                                        }}
+                                                    />
 
-                                            {watch("garantiaExtendida1") !== "no" && (
-                                                <FormInput<FormValues>
-                                                    name="valor_garantia_extendida_a"
-                                                    label="Valor garantía extendida A"
-                                                    type="number"
-                                                    formatThousands
-                                                    control={control}
-                                                    placeholder="0"
-                                                    disabled={!showMotos || !incluirMoto1}
-                                                    rules={{
-                                                        required: "Ingresa el valor de la garantía extendida",
-                                                        min: { value: 0, message: "No puede ser negativo" },
-                                                        setValueAs: (v) => (v === "" ? "" : String(v)),
-                                                    }}
-                                                />
+                                                    {watch("garantiaExtendida1") !== "no" && (
+                                                        <FormInput<FormValues>
+                                                            name="valor_garantia_extendida_a"
+                                                            label="Valor garantía extendida A"
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled={!showMotos || !incluirMoto1}
+                                                            rules={{
+                                                                required: "Ingresa el valor de la garantía extendida",
+                                                                min: { value: 0, message: "No puede ser negativo" },
+                                                                setValueAs: (v) => (v === "" ? "" : String(v)),
+                                                            }}
+                                                        />
+                                                    )}
+                                                </>
                                             )}
+
 
                                         </>
                                     )}
@@ -1441,9 +1460,9 @@ console.log(motos1)
                                                 type="number"
                                                 disabled={!showMotos || !incluirMoto1}
                                                 rules={{
-                                                    ...reqIf(showMotos && incluirMoto2, "Ingresa accesorios"),
+                                                    ...reqIf(showMotos && incluirMoto1, "Ingresa accesorios"),
                                                     validate: (v: unknown) => {
-                                                        if (!showMotos || !incluirMoto2) return true;
+                                                        if (!showMotos || !incluirMoto1) return true;
                                                         const s = typeof v === "string" ? v : String(v ?? "");
                                                         return /^[0-9]+(\.[0-9]{3})*$/.test(s) || "Formato inválido (ej: 1.000.000)";
                                                     },
@@ -1837,40 +1856,46 @@ console.log(motos1)
                                                 rules={reqIf(showMotos && incluirMoto2, "La garantía es obligatoria")}
                                             />
 
-                                            <FormSelect<FormValues>
-                                                name="garantiaExtendida2"
-                                                label="Garantía extendida"
-                                                control={control}
-                                                options={garantiaExtendidaOptions}
-                                                placeholder="Seleccione..."
-                                                disabled={!showMotos || !incluirMoto2}
-                                                rules={{
-                                                    validate: (v) => {
-                                                        if (esCreditoDirecto2 && incluirMoto2) {
-                                                            return v && v !== "no"
-                                                                ? true
-                                                                : "La garantía extendida es obligatoria para crédito directo directo.";
-                                                        }
-                                                        return true;
-                                                    },
-                                                }}
-                                            />
+                                            {showGarantiaExtendida && (
+                                                <>
+                                                    <FormSelect<FormValues>
+                                                        name="garantiaExtendida2"
+                                                        label="Garantía extendida"
+                                                        control={control}
+                                                        options={garantiaExtendidaOptions}
+                                                        placeholder="Seleccione..."
+                                                        disabled={!showMotos || !incluirMoto2}
+                                                        rules={{
+                                                            validate: (v) => {
+                                                                // Si es crédito directo (credibike) y la moto 2 está incluida,
+                                                                // NO se permite "no"
+                                                                if (esCreditoDirecto2 && incluirMoto2) {
+                                                                    return v && v !== "no"
+                                                                        ? true
+                                                                        : "La garantía extendida es obligatoria para crédito directo.";
+                                                                }
+                                                                return true;
+                                                            },
+                                                        }}
+                                                    />
 
-                                            {watch("garantiaExtendida2") !== "no" && (
-                                                <FormInput<FormValues>
-                                                    name="valor_garantia_extendida_b"
-                                                    label="Valor garantía extendida B"
-                                                    type="number"
-                                                    formatThousands
-                                                    control={control}
-                                                    placeholder="0"
-                                                    disabled={!showMotos || !incluirMoto1}
-                                                    rules={{
-                                                        required: "Ingresa el valor de la garantía extendida",
-                                                        min: { value: 0, message: "No puede ser negativo" },
-                                                        setValueAs: (v) => (v === "" ? "" : String(v)),
-                                                    }}
-                                                />
+                                                    {watch("garantiaExtendida2") !== "no" && (
+                                                        <FormInput<FormValues>
+                                                            name="valor_garantia_extendida_b"
+                                                            label="Valor garantía extendida B"
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled={!showMotos || !incluirMoto2}
+                                                            rules={{
+                                                                required: "Ingresa el valor de la garantía extendida",
+                                                                min: { value: 0, message: "No puede ser negativo" },
+                                                                setValueAs: (v) => (v === "" ? "" : String(v)),
+                                                            }}
+                                                        />
+                                                    )}
+                                                </>
                                             )}
 
 
@@ -2378,7 +2403,7 @@ console.log(motos1)
     );
 };
 
-export default CotizacionFormulario2;
+export default CotizacionFormulario;
 
 
 
