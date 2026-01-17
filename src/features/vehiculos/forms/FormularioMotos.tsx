@@ -8,6 +8,7 @@ import { useMarcas } from "../../../services/marcasServices";
 import { useLineas } from "../../../services/lineasMarcasServices";
 import { useEmpresasSelect } from "../../../services/empresasServices";
 import { useSubDistribucion } from "../../../services/distribucionesServices";
+import Swal from "sweetalert2";
 
 // 🔹 hooks de rango
 import {
@@ -26,14 +27,13 @@ type Base = {
   descrip: string;
   imagen?: string;
 
-  empresa?: string;           // nombre (lo que ya existía)
-  subdistribucion?: string;   // nombre (lo que ya existía)
+  empresa?: string; // nombre (lo que ya existía)
+  subdistribucion?: string; // nombre (lo que ya existía)
 
   // 🔹 NUEVO — IDs reales para edición
   id_empresa?: number;
   id_distribuidora?: number;
 };
-
 
 type Props =
   | { initialValues?: undefined; mode?: "create" }
@@ -44,7 +44,7 @@ type MotoFormValues = {
   linea: string;
   modelo: string;
   estado: "Nueva" | "Usada";
-  precio_base: number | string;
+  precio_base: number | string; // ✅ lo dejamos así para permitir el formato
   descrip: string;
   empresa: string;
   subdistribucion?: string;
@@ -68,6 +68,20 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
   const [cilindrajeBusqueda, setCilindrajeBusqueda] = React.useState<number | null>(null);
   const [esMotocarro, setEsMotocarro] = React.useState(false);
 
+  // ===== helper para dinero (igual idea que en cotizaciones) =====
+  const unformatNumber = React.useCallback((v: string | number | null | undefined): string => {
+    if (v === null || v === undefined) return "";
+    return String(v).replace(/[^\d-]/g, "");
+  }, []);
+
+  const toNumberSafe = React.useCallback(
+    (v: string | number | null | undefined): number => {
+      const raw = unformatNumber(v);
+      return raw ? Number(raw) : 0;
+    },
+    [unformatNumber]
+  );
+
   const {
     control,
     handleSubmit,
@@ -80,13 +94,35 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
       linea: initialValues?.linea ?? "",
       modelo: initialValues?.modelo ?? "",
       estado: (initialValues?.estado as "Nueva" | "Usada") ?? "Nueva",
-      precio_base: initialValues?.precio_base ?? 0,
+      // ✅ guardamos como string para que el FormInput formatee sin problemas
+      precio_base:
+        initialValues?.precio_base != null ? String(initialValues.precio_base) : "0",
       descrip: initialValues?.descrip ?? "",
       empresa: initialValues?.empresa ?? "",
       subdistribucion: initialValues?.subdistribucion ?? "",
     },
     mode: "onBlur",
   });
+
+  const limpiarFormulario = React.useCallback(() => {
+    reset({
+      marca: "",
+      linea: "",
+      modelo: "",
+      estado: "Nueva",
+      precio_base: "0",
+      descrip: "",
+      empresa: "",
+      subdistribucion: "",
+    });
+
+    setFile(null);
+    setPreview(null);
+
+    // también reinicia variables del rango (por si el usuario crea otra moto)
+    setCilindrajeBusqueda(null);
+    setEsMotocarro(false);
+  }, [reset]);
 
   // cuando cambien los props, rehidrata el form
   React.useEffect(() => {
@@ -95,7 +131,8 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
       linea: initialValues?.linea ?? "",
       modelo: initialValues?.modelo ?? "",
       estado: (initialValues?.estado as "Nueva" | "Usada") ?? "Nueva",
-      precio_base: initialValues?.precio_base ?? 0,
+      precio_base:
+        initialValues?.precio_base != null ? String(initialValues.precio_base) : "0",
       descrip: initialValues?.descrip ?? "",
       empresa: initialValues?.empresa ?? "",
       subdistribucion: initialValues?.subdistribucion ?? "",
@@ -114,10 +151,18 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
     return lineas.filter((l: any) => l.marca === selectedMarca);
   }, [lineas, selectedMarca]);
 
-  // cuando cambia marca, resetear línea
+  // ✅ FIX: Solo resetear línea cuando el usuario CAMBIA marca en CREATE.
+  // En EDIT no debemos borrar la línea del registro.
   React.useEffect(() => {
-    setValue("linea", "");
-  }, [selectedMarca, setValue]);
+    if (mode === "create") {
+      setValue("linea", "");
+    } else {
+      // en edit, si viene initialValues.linea, asegúrate de mantenerla
+      if (initialValues?.linea) {
+        setValue("linea", initialValues.linea);
+      }
+    }
+  }, [selectedMarca, setValue, mode, initialValues?.linea]);
 
   // preview de imagen
   React.useEffect(() => {
@@ -186,9 +231,7 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
     mode === "create" && !esMotocarro && cilindrajeBusqueda !== null
   );
 
-  const rangoMotocarroQuery = useRangoMotocarro(
-    mode === "create" && esMotocarro
-  );
+  const rangoMotocarroQuery = useRangoMotocarro(mode === "create" && esMotocarro);
 
   const rangoSeleccionado: RangoCilindraje | null =
     mode === "create"
@@ -217,17 +260,31 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
     rangoSeleccionado,
   ]);
 
+  const mostrarError = (err: any, fallback: string) => {
+    const raw =
+      err?.response?.data?.message ??
+      err?.response?.data?.error ??
+      err?.message ??
+      fallback;
+
+    const arr = Array.isArray(raw) ? raw : [raw];
+
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      html: arr.join("<br/>"),
+    });
+  };
+
   const onSubmit = (values: MotoFormValues) => {
     // 🔹 buscamos la empresa seleccionada para obtener su id
     const empresaSeleccionada = (empresas as any[])?.find(
-      (e: any) =>
-        (e.nombre_empresa ?? e.nombre) === values.empresa
+      (e: any) => (e.nombre_empresa ?? e.nombre) === values.empresa
     );
 
     // 🔹 buscamos la subdistribución seleccionada para obtener su id (si viene como objeto)
     const subdistribSeleccionada = (subdistribs as any[])?.find(
-      (s: any) =>
-        (s.nombre ?? s) === values.subdistribucion
+      (s: any) => (s.nombre ?? s) === values.subdistribucion
     );
 
     // 🔹 Armamos un objeto con los datos del rango SOLO en create
@@ -252,26 +309,20 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
       linea: values.linea,
       modelo: values.modelo,
       estado: values.estado,
-      precio_base: Number(values.precio_base) || 0,
+      // ✅ ahora soporta formato (1.000.000) sin romper
+      precio_base: toNumberSafe(values.precio_base),
       descrip: values.descrip,
       imagen: file ?? null,
 
-      // nombre de empresa (lo que ya tenías en el form)
       empresa: values.empresa,
-      // nuevo: id de empresa según el select
-      id_empresa: empresaSeleccionada
-        ? Number(empresaSeleccionada.id)
-        : null,
+      id_empresa: empresaSeleccionada ? Number(empresaSeleccionada.id) : null,
 
-      // nombre de subdistribución (lo que ya tenías en el form)
       subdistribucion: values.subdistribucion || null,
-      // nuevo: id de distribuidora si existe
-      id_distribuidora: subdistribSeleccionada &&
-        subdistribSeleccionada.id != null
-        ? Number(subdistribSeleccionada.id)
-        : null,
+      id_distribuidora:
+        subdistribSeleccionada && subdistribSeleccionada.id != null
+          ? Number(subdistribSeleccionada.id)
+          : null,
 
-      // 🔹 se fusionan aquí los campos del rango
       ...(mode === "create" ? rangoPayload : {}),
     };
 
@@ -279,9 +330,26 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
     console.log("[MOTOS] onSubmit - payload enviado:", payload);
 
     if (mode === "edit" && initialValues?.id != null) {
-      update.mutate({ id: initialValues.id, ...payload, nuevaImagen: file ?? null } as any);
+      update.mutate(
+        { id: initialValues.id, ...payload, nuevaImagen: file ?? null } as any,
+        {
+          onSuccess: () => {
+            limpiarFormulario();
+          },
+          onError: (err) => {
+            mostrarError(err, "Error al actualizar la moto");
+          },
+        }
+      );
     } else {
-      create.mutate(payload as any);
+      create.mutate(payload as any, {
+        onSuccess: () => {
+          limpiarFormulario();
+        },
+        onError: (err) => {
+          mostrarError(err, "Error al crear la moto");
+        },
+      });
     }
   };
 
@@ -299,14 +367,12 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
 
   const empresaOptions: SelectOption[] =
     empresas?.map((e: any) => ({
-      // usamos el nombre de empresa como value/label (como ya lo manejabas)
       value: e.nombre_empresa ?? e.nombre,
       label: e.nombre_empresa ?? e.nombre,
     })) ?? [];
 
   const subdistribOptions: SelectOption[] =
     subdistribs?.map((s: any) => ({
-      // compatible si es string o si es objeto { id, nombre }
       value: s.nombre ?? s,
       label: s.nombre ?? s,
     })) ?? [];
@@ -367,18 +433,21 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
           rules={{ required: "El estado es obligatorio" }}
         />
 
-        {/* Precio base */}
+        {/* Precio base (✅ con formato de miles) */}
         <FormInput<MotoFormValues>
           name="precio_base"
           label="Precio base"
           control={control}
           className="mt-6"
           type="number"
-          placeholder="15000"
+          placeholder="0"
+          formatThousands
           rules={{
             required: "El precio base es obligatorio",
             validate: (v) =>
-              Number(v) >= 0 || "El precio debe ser un número mayor o igual a 0",
+              toNumberSafe(v) >= 0 || "El precio debe ser un número mayor o igual a 0",
+            // ✅ evitar NaN cuando viene "1.000.000"
+            setValueAs: (v) => (v === "" ? "" : String(v)),
           }}
         />
 

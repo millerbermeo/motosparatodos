@@ -9,23 +9,24 @@ import { useModalStore } from "../store/modalStore";
 export interface Moto {
   id: number;
   marca: string;
+  estado_moto: 0 | 1; // ✅ ACTIVO/INACTIVO (1/0)
+
   linea: string;
   modelo: string;
-  estado: string;        // p.ej. "Nueva" | "Usada"
-  precio_base: number;   // en tu API puede venir string; lo normalizamos a number
+  estado: string; // p.ej. "Nueva" | "Usada"
+  precio_base: number; // en tu API puede venir string; lo normalizamos a number
   descrip: string;
-  imagen?: any;       // URL/filename guardado por el backend
-  empresa?: string
-  subdistribucion: string
-  soat?: string
-  matricula_contado?: string
-  matricula_credito?: string
-  impuestos?: string
-  descuento_empresa?: string
-  descuento_ensambladora?: string
+  imagen?: any; // URL/filename guardado por el backend
+  empresa?: string;
+  subdistribucion: string;
+  soat?: string;
+  matricula_contado?: string;
+  matricula_credito?: string;
+  impuestos?: string;
+  descuento_empresa?: string;
+  descuento_ensambladora?: string;
   id_empresa?: number;
   id_distribuidora?: number;
-
 }
 
 export type NewMoto = Omit<Moto, "id" | "imagen"> & { imagen?: File | null };
@@ -35,7 +36,8 @@ export interface MotosResponse {
 }
 
 export interface ServerError {
-  message: string | string[];
+  message?: string | string[];
+  error?: string | string[];
 }
 
 /* Helper para armar FormData */
@@ -52,24 +54,26 @@ const toFormData = (data: Partial<Moto> & { imagen?: File | null }) => {
   // 🔹 Agregar los dos campos nuevos (nombres en string)
   if (data.empresa != null) fd.append("empresa", data.empresa);
   if (data.subdistribucion != null) fd.append("subdistribucion", data.subdistribucion);
-  if (data.soat != null) fd.append("soat", data.soat);
+
+  // ✅ quitar duplicados: soat e impuestos se estaban enviando 2 veces
   if (data.soat != null) fd.append("soat", data.soat);
   if (data.matricula_contado != null) fd.append("matricula_contado", data.matricula_contado);
   if (data.matricula_credito != null) fd.append("matricula_credito", data.matricula_credito);
   if (data.impuestos != null) fd.append("impuestos", data.impuestos);
+
   if (data.descuento_empresa != null) fd.append("descuento_empresa", data.descuento_empresa);
-  if (data.impuestos != null) fd.append("impuestos", data.impuestos);
   if (data.descuento_ensambladora != null) fd.append("descuento_ensambladora", data.descuento_ensambladora);
+
   if (data.imagen instanceof File) fd.append("imagen", data.imagen);
 
-    // 🔹 NUEVO: enviar los IDs al backend
+  // 🔹 NUEVO: enviar los IDs al backend
   if (data.id_empresa != null) {
     fd.append("id_empresa", String(data.id_empresa));
   }
   if (data.id_distribuidora != null) {
     fd.append("id_distribuidora", String(data.id_distribuidora));
   }
-  
+
   return fd;
 };
 
@@ -136,7 +140,10 @@ export const useCreateMoto = () => {
       Swal.fire({ icon: "success", title: "Moto creada", timer: 1800, showConfirmButton: false });
     },
     onError: (error: AxiosError<ServerError>) => {
-      const raw = error.response?.data?.message ?? "Error al crear la moto";
+      const raw =
+        error.response?.data?.message ??
+        error.response?.data?.error ??
+        "Error al crear la moto";
       const arr = Array.isArray(raw) ? raw : [raw];
       Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
     },
@@ -166,7 +173,10 @@ export const useUpdateMoto = () => {
       Swal.fire({ icon: "success", title: "Moto actualizada", timer: 1800, showConfirmButton: false });
     },
     onError: (error: AxiosError<ServerError>) => {
-      const raw = error.response?.data?.message ?? "Error al actualizar la moto";
+      const raw =
+        error.response?.data?.message ??
+        error.response?.data?.error ??
+        "Error al actualizar la moto";
       const arr = Array.isArray(raw) ? raw : [raw];
       Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
     },
@@ -187,30 +197,28 @@ export const useDeleteMoto = () => {
       Swal.fire({ icon: "success", title: "Moto eliminada", timer: 1400, showConfirmButton: false });
     },
     onError: (error: AxiosError<ServerError>) => {
-      const raw = error.response?.data?.message ?? "Error al eliminar la moto";
+      const raw =
+        error.response?.data?.message ??
+        error.response?.data?.error ??
+        "Error al eliminar la moto";
       const arr = Array.isArray(raw) ? raw : [raw];
       Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
     },
   });
 };
 
-
-
 /* ===== TIPOS ===== */
 export interface ImpuestosMoto {
-  id: number;                // oculto en el form (p.ej. el id del registro o de la moto)
-  soat: string;              // "458000"
+  id: number; // oculto en el form (p.ej. el id del registro o de la moto)
+  soat: string; // "458000"
   matricula_contado: string; // "4548000"
   matricula_credito: string; // "4538000"
-  impuestos: string;         // "4548000"
+  impuestos: string; // "4548000"
 }
 
 export type NewImpuestosMoto = Omit<ImpuestosMoto, "id"> & { id?: number };
 
-
-
 // src/services/motosServices.ts
-
 export const useUpdateImpuestosMoto = () => {
   const qc = useQueryClient();
   const close = useModalStore((s) => s.close);
@@ -238,19 +246,20 @@ export const useUpdateImpuestosMoto = () => {
     },
     onError: (error: AxiosError<ServerError>) => {
       const raw =
-        error.response?.data?.message ?? "Error al actualizar impuestos";
+        error.response?.data?.message ??
+        error.response?.data?.error ??
+        "Error al actualizar impuestos";
       const arr = Array.isArray(raw) ? raw : [raw];
       Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
     },
   });
 };
 
-
 // ===== DESCUENTOS =====
 export interface DescuentosMotoPayload {
   id: number;
-  descuento_empresa?: number | string;        // opcional
-  descuento_ensambladora?: number | string;   // opcional
+  descuento_empresa?: number | string; // opcional
+  descuento_ensambladora?: number | string; // opcional
 }
 
 export const useUpdateDescuentosMoto = () => {
@@ -284,9 +293,52 @@ export const useUpdateDescuentosMoto = () => {
       Swal.fire({ icon: "success", title: "Descuentos actualizados", timer: 1600, showConfirmButton: false });
     },
     onError: (error: AxiosError<ServerError>) => {
-      const raw = error.response?.data?.message ?? "Error al actualizar descuentos";
+      const raw =
+        error.response?.data?.message ??
+        error.response?.data?.error ??
+        "Error al actualizar descuentos";
       const arr = Array.isArray(raw) ? raw : [raw];
       Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
+    },
+  });
+};
+
+// ===== TOGGLE ESTADO MOTO (estado_moto 1/0) =====
+export interface ToggleEstadoMotoResponse {
+  success: boolean;
+  id: number;
+  estado_anterior: 0 | 1; // estado_moto anterior
+  estado_nuevo: 0 | 1; // estado_moto nuevo
+}
+
+export const useToggleEstadoMoto = () => {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { data } = await api.post<ToggleEstadoMotoResponse>(
+        "/toggle_estado_moto.php",
+        { id },
+        { headers: { "Content-Type": "application/json" } }
+      );
+      return data;
+    },
+    onSuccess: async (res) => {
+      await qc.invalidateQueries({ queryKey: ["motos"] });
+
+      Swal.fire({
+        icon: "success",
+        title: res.estado_nuevo === 1 ? "Moto activada" : "Moto inactivada",
+        timer: 1400,
+        showConfirmButton: false,
+      });
+    },
+    onError: (error: AxiosError<any>) => {
+      const msg =
+        error.response?.data?.message ??
+        error.response?.data?.error ??
+        "Error al cambiar el estado";
+      Swal.fire({ icon: "error", title: "Error", text: msg });
     },
   });
 };

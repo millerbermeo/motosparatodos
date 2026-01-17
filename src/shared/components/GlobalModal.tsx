@@ -1,12 +1,12 @@
-// components/GlobalModal.tsx
 import { useEffect } from "react";
+import { X } from "lucide-react";
 import { useModalStore } from "../../store/modalStore";
 
 type ModalSize =
   | "sm" | "md" | "lg" | "xl" | "2xl"
   | "3xl" | "4xl" | "5xl"
-  | "full"               // pantalla completa
-  | { width?: string; height?: string; maxHeight?: string }; // clases personalizadas
+  | "full"
+  | { width?: string; height?: string; maxHeight?: string };
 
 const sizeToClasses = (size: ModalSize) => {
   if (typeof size === "object") {
@@ -25,16 +25,21 @@ const sizeToClasses = (size: ModalSize) => {
     case "4xl": return "w-11/12 max-w-4xl";
     case "5xl": return "w-11/12 max-w-5xl";
     case "full":
-      // Modal a pantalla completa
       return "w-screen h-screen max-w-none m-0 rounded-none";
     default:
-      return "w-11/12 max-w-lg"; // por defecto
+      return "w-11/12 max-w-lg";
   }
 };
 
 export default function GlobalModal() {
-  // Puedes guardar el size en el store si quieres: const { size = "lg" } = useModalStore();
-  const { isOpen, title, content, close, size = "lg", position = "center" } = useModalStore() as any;
+  const {
+    isOpen,
+    title,
+    content,
+    close,
+    size = "lg",
+    position = "center",
+  } = useModalStore() as any;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
@@ -42,26 +47,38 @@ export default function GlobalModal() {
     return () => document.removeEventListener("keydown", onKey);
   }, [isOpen, close]);
 
-  // Posición del modal (center/top/bottom) usando helpers de DaisyUI
   const positionClass =
-    position === "top" ? "modal-top"
-    : position === "bottom" ? "modal-bottom"
-    : "modal-middle";
+    position === "top"
+      ? "modal-top"
+      : position === "bottom"
+      ? "modal-bottom"
+      : "modal-middle";
 
-  // Altura/scroll del contenido dentro del modal
-  const scrollClasses = "max-h-[80vh] overflow-y-auto"; // ajusta a gusto
+  const scrollClasses = "max-h-[80vh] overflow-y-auto";
 
   return (
     <div className={`modal ${positionClass} ${isOpen ? "modal-open" : ""}`} role="dialog">
-      <div className={`modal-box ${sizeToClasses(size)} ${size === "full" ? "" : scrollClasses}`}>
-        {title ? <h3 className="text-lg font-bold mb-2">{title}</h3> : null}
+      <div
+        className={`modal-box relative ${sizeToClasses(size)} ${
+          size === "full" ? "" : scrollClasses
+        }`}
+      >
+        {/* ❌ BOTÓN CERRAR */}
+        <button
+          type="button"
+          onClick={close}
+          className="btn btn-sm btn-circle btn-ghost absolute right-3 top-3"
+          aria-label="Cerrar modal"
+        >
+          <X size={18} />
+        </button>
+
+        {title ? <h3 className="text-lg font-bold mb-2 pr-8">{title}</h3> : null}
+
         {content}
-        {/* <div className="modal-action">
-          <button className="btn" onClick={close}>Cerrar</button>
-        </div> */}
       </div>
 
-      {/* backdrop: DaisyUI permite cerrar con botón, aquí lo manejamos con onClick */}
+      {/* backdrop */}
       <div className="modal-backdrop" onClick={close} />
     </div>
   );
