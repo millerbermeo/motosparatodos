@@ -1,32 +1,18 @@
 // src/pages/CotizacionDetalladaPDFDocV2.tsx
 import React from "react";
-import {
-  Document,
-  Page,
-  Text,
-  View,
-  StyleSheet,
-  Image,
-} from "@react-pdf/renderer";
+import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
 
 /* ============================
-   Tipos de los payloads
-   ============================ */
-
-
+   Helpers
+============================ */
 
 const formatSeguros = (raw: any): string => {
   if (!raw) return "—";
-
-  // Si ya es un texto simple sin JSON, lo devolvemos tal cual
-  if (typeof raw === "string" && !raw.includes("[")) {
-    return raw.trim();
-  }
+  if (typeof raw === "string" && !raw.includes("[")) return raw.trim();
 
   try {
     let data: any = raw;
 
-    // Si viene como string con texto + JSON, extraemos la parte del JSON
     if (typeof raw === "string") {
       const start = raw.indexOf("[");
       const end = raw.lastIndexOf("]");
@@ -34,49 +20,31 @@ const formatSeguros = (raw: any): string => {
         const jsonPart = raw.slice(start, end + 1);
         data = JSON.parse(jsonPart);
       } else {
-        // Intenta parsear todo el string
         data = JSON.parse(raw);
       }
     }
 
-    if (!Array.isArray(data)) {
-      return String(raw);
-    }
+    if (!Array.isArray(data)) return String(raw);
 
-    // Tomamos solo los seguros "activos" (valor = 1, true, etc.)
     const nombres = data
       .filter(
         (item) =>
           item &&
-          (item.valor === 1 ||
-            item.valor === true ||
-            item.seleccionado === true)
+          (item.valor === 1 || item.valor === true || item.seleccionado === true)
       )
-      .map((item) => item.nombre)
+      .map((item) => item?.nombre)
       .filter(Boolean);
 
-    // Si no hay nombres válidos, devolvemos guion largo
     if (!nombres.length) return "—";
-
-    // "Otros seguros - Seguro X - Seguro Y"
     return nombres.join(" - ");
   } catch {
-    // En caso de error de parseo, devolvemos la parte de texto antes del JSON
-    if (typeof raw === "string") {
-      return raw.split("[")[0].trim();
-    }
+    if (typeof raw === "string") return raw.split("[")[0].trim();
     return String(raw);
   }
 };
-export type CotizacionApi = {
-  success: boolean;
-  data: any;
-};
 
-export type GarantiaExtApi = {
-  success: boolean;
-  data: any;
-};
+export type CotizacionApi = { success: boolean; data: any };
+export type GarantiaExtApi = { success: boolean; data: any };
 
 export type EmpresaInfo = {
   nombre?: string;
@@ -88,170 +56,100 @@ export type EmpresaInfo = {
 };
 
 type PropsV2 = {
-  cotizacion: CotizacionApi;      // JSON completo (una sola moto)
-  garantiaExt?: GarantiaExtApi;   // JSON garantía (opcional)
+  cotizacion: CotizacionApi;
+  garantiaExt?: GarantiaExtApi;
   logoUrl?: string;
   empresa?: EmpresaInfo;
-
-  // URL ya resuelta de la foto de la moto (opcional)
   motoFotoUrl?: string;
 };
 
-/* ============================
-   Helpers
-   ============================ */
-
-const ACCENT = "#0f766e"; // verde teal
-const ACCENT_LIGHT = "#ecfdf5"; // verde muy claro
+const ACCENT = "#0f766e";
+const ACCENT_LIGHT = "#ecfdf5";
 const GRAY_BG = "#f3f4f6";
 const BORDER = "#d1d5db";
 
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 42,
-    paddingBottom: 48,
-    paddingHorizontal: 42,
-    fontSize: 10,
+    paddingTop: 26,
+    paddingBottom: 28,
+    paddingHorizontal: 28,
+    fontSize: 9,
     fontFamily: "Helvetica",
     backgroundColor: "#ffffff",
   },
 
-  /* ---- HEADER ---- */
+  /* HEADER */
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 22,
+    marginBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
-    paddingBottom: 12,
+    paddingBottom: 8,
   },
-  headerLeft: {
-    flexDirection: "column",
-    maxWidth: "60%",
-  },
-  headerRight: {
-    flexDirection: "column",
-    alignItems: "flex-end",
-    maxWidth: "40%",
-  },
-  logo: {
-    width: 100,
-    height: 50,
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: ACCENT,
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 9.5,
-    marginBottom: 2,
-    color: "#4b5563",
-  },
+  headerLeft: { flexDirection: "column", maxWidth: "65%" },
+  headerRight: { flexDirection: "column", alignItems: "flex-end", maxWidth: "35%" },
+  logo: { width: 90, height: 40, marginBottom: 6 },
+  title: { fontSize: 15, fontWeight: "bold", color: ACCENT, marginBottom: 2 },
+  subtitle: { fontSize: 8.6, marginBottom: 2, color: "#4b5563" },
 
-  /* ---- ENCABEZADO COTIZACIÓN ---- */
-  encabezadoCotizacion: {
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: BORDER,
-    backgroundColor: GRAY_BG,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    marginBottom: 16,
-  },
-  encabezadoRow: {
-    flexDirection: "row",
-    marginBottom: 4,
-  },
-  encabezadoLabel: {
-    fontSize: 9.5,
-    fontWeight: "bold",
-    color: "#111827",
-    width: 90,
-  },
-  encabezadoValue: {
-    fontSize: 9.5,
-    color: "#111827",
-  },
-
-  /* ---- SECTION TITLES ---- */
+  /* SECTION */
   sectionTitleWrapper: {
     backgroundColor: GRAY_BG,
     borderRadius: 5,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    marginTop: 18,
-    marginBottom: 8,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    marginTop: 8,
+    marginBottom: 6,
     flexDirection: "row",
+    justifyContent: "space-between",
   },
-  sectionTitleText: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "#111827",
-  },
-  sectionTitleTag: {
-    fontSize: 9,
-    color: "#6b7280",
-    marginLeft: 6,
-  },
+  sectionTitleText: { fontSize: 10.5, fontWeight: "bold", color: "#111827" },
+  sectionTitleTag: { fontSize: 8.4, color: "#6b7280" },
 
-  /* ---- BASIC BLOCKS ---- */
+  /* RESUMEN */
+  resumenWrapper: {
+    flexDirection: "row",
+    borderRadius: 7,
+    backgroundColor: ACCENT_LIGHT,
+    borderWidth: 1,
+    borderColor: "#a7f3d0",
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    marginBottom: 10,
+  },
+  resumenCol: { flex: 1, paddingRight: 8 },
+  resumenHeader: { fontSize: 10, fontWeight: "bold", color: ACCENT, marginBottom: 3 },
+  resumenLine: { fontSize: 8.6, color: "#064e3b", marginBottom: 2 },
+
+  /* BOX */
   box: {
     borderWidth: 1,
     borderColor: BORDER,
     borderRadius: 5,
-    padding: 10,
-    marginBottom: 12,
-    marginTop: 2,
+    padding: 8,
+    marginBottom: 8,
   },
-  boxSoft: {
-    borderRadius: 5,
-    backgroundColor: GRAY_BG,
-    padding: 10,
-    marginBottom: 12,
-    marginTop: 2,
-  },
-  row: {
-    flexDirection: "row",
-    marginBottom: 6,
-  },
-  col: {
-    flex: 1,
-    paddingRight: 6,
-  },
-  label: {
-    fontWeight: "bold",
-    color: "#374151",
-    marginBottom: 1,
-    fontSize: 9.5,
-  },
-  value: {
-    fontSize: 9.5,
-    color: "#111827",
-  },
+  row: { flexDirection: "row", marginBottom: 5 },
+  col: { flex: 1, paddingRight: 6 },
+  label: { fontWeight: "bold", color: "#374151", marginBottom: 1, fontSize: 8.6 },
+  value: { fontSize: 8.6, color: "#111827" },
 
-  /* ---- TABLES ---- */
+  /* TABLE */
   table: {
-    marginTop: 8,
-    marginBottom: 10,
+    marginTop: 6,
+    marginBottom: 6,
     borderWidth: 1,
     borderColor: BORDER,
     borderRadius: 5,
   },
-  tableHeaderRow: {
-    flexDirection: "row",
-    backgroundColor: ACCENT_LIGHT,
-  },
-  tableRow: {
-    flexDirection: "row",
-  },
+  tableHeaderRow: { flexDirection: "row", backgroundColor: ACCENT_LIGHT },
+  tableRow: { flexDirection: "row" },
   tableCellHeader: {
     flex: 1,
-    paddingVertical: 5,
+    paddingVertical: 4,
     paddingHorizontal: 5,
-    fontSize: 9,
+    fontSize: 8.4,
     fontWeight: "bold",
     borderRightWidth: 1,
     borderRightColor: BORDER,
@@ -259,149 +157,51 @@ const styles = StyleSheet.create({
   },
   tableCell: {
     flex: 1,
-    paddingVertical: 5,
+    paddingVertical: 4,
     paddingHorizontal: 5,
-    fontSize: 8.8,
+    fontSize: 8.4,
     borderTopWidth: 1,
     borderTopColor: "#e5e7eb",
     borderRightWidth: 1,
     borderRightColor: "#e5e7eb",
   },
-  tableCellLast: {
-    borderRightWidth: 0,
-  },
+  tableCellLast: { borderRightWidth: 0 },
 
-  /* ---- RESUMEN ---- */
-  resumenWrapper: {
-    flexDirection: "row",
-    borderRadius: 7,
-    backgroundColor: ACCENT_LIGHT,
-    borderWidth: 1,
-    borderColor: "#a7f3d0",
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    marginBottom: 18,
-    marginTop: 4,
-  },
-  resumenCol: {
-    flex: 1,
-    paddingRight: 10,
-  },
-  resumenHeader: {
-    fontSize: 11,
-    fontWeight: "bold",
-    color: ACCENT,
-    marginBottom: 4,
-  },
-  resumenLine: {
-    fontSize: 9,
-    color: "#064e3b",
-    marginBottom: 3,
-  },
-
-  /* ---- MOTO CARD ---- */
+  /* MOTO */
   motoCard: {
     borderWidth: 1,
     borderColor: BORDER,
     borderRadius: 6,
-    padding: 10,
-    marginBottom: 18,
-    marginTop: 2,
-  },
-  motoHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 6,
-  },
-  motoTitle: {
-    fontSize: 11,
-    fontWeight: "bold",
-    color: "#111827",
-  },
-  motoChip: {
-    fontSize: 9,
-    color: "#374151",
-  },
-  motoImageWrapper: {
-    marginTop: 8,
+    padding: 8,
     marginBottom: 10,
+  },
+  motoHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 4 },
+  motoTitle: { fontSize: 10, fontWeight: "bold", color: "#111827" },
+  motoChip: { fontSize: 8.4, color: "#374151" },
+  motoImageWrapper: {
+    marginTop: 6,
+    marginBottom: 6,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
     borderColor: BORDER,
     borderRadius: 5,
-    padding: 6,
+    padding: 5,
     backgroundColor: "#f9fafb",
   },
-  motoImage: {
-    width: 210,
-    height: 125,
-    objectFit: "contain",
-  },
-  motoImageLabel: {
-    fontSize: 8,
-    color: "#6b7280",
-    marginTop: 3,
-  },
+  motoImage: { width: 190, height: 110, objectFit: "contain" },
+  motoImageLabel: { fontSize: 7.8, color: "#6b7280", marginTop: 3 },
 
-  /* ---- COPIA COTIZACIÓN / HABEAS / FIRMAS ---- */
-  copiaWrapper: {
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: BORDER,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    marginTop: 6,
-    marginBottom: 12,
-  },
-  copiaTitle: {
-    fontSize: 11.5,
-    fontWeight: "bold",
-    marginBottom: 6,
-    color: "#111827",
-  },
-  habeasTitle: {
-    fontSize: 10.5,
-    fontWeight: "bold",
-    marginBottom: 4,
-    marginTop: 4,
-    color: "#111827",
-  },
-  habeasText: {
-    fontSize: 8.5,
-    color: "#374151",
-    lineHeight: 1.3,
-    marginBottom: 4,
-  },
-  firmaRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 16,
-  },
-  firmaBox: {
-    width: "45%",
-    borderTopWidth: 1,
-    borderTopColor: "#111827",
-    paddingTop: 4,
-  },
-  firmaLabel: {
-    fontSize: 9,
-    color: "#111827",
-  },
+  /* HABEAS / FIRMAS */
+  habeasTitle: { fontSize: 9.6, fontWeight: "bold", marginBottom: 4, marginTop: 2, color: "#111827" },
+  habeasText: { fontSize: 8.2, color: "#374151", lineHeight: 1.25, marginBottom: 4 },
+  firmaRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 12 },
+  firmaBox: { width: "45%", borderTopWidth: 1, borderTopColor: "#111827", paddingTop: 4 },
+  firmaLabel: { fontSize: 8.6, color: "#111827" },
 
-  /* ---- FOOTER ---- */
-  smallMuted: {
-    fontSize: 8.5,
-    color: "#6b7280",
-    marginTop: 10,
-    lineHeight: 1.4,
-  },
-  smallMutedCenter: {
-    fontSize: 8.5,
-    color: "#374151",
-    marginTop: 6,
-    textAlign: "center",
-  },
+  /* FOOTER */
+  smallMuted: { fontSize: 7.8, color: "#6b7280", marginTop: 8, lineHeight: 1.25 },
+  smallMutedCenter: { fontSize: 7.8, color: "#374151", marginTop: 4, textAlign: "center" },
 });
 
 const fmtCOP = (v: any) =>
@@ -442,15 +242,14 @@ const fmtDateShort = (raw?: string) => {
 const safe = (v: any, fallback: string = "—") =>
   v === null || v === undefined || v === "" ? fallback : String(v);
 
-/* ====== helpers de imagen ====== */
+/* ====== Imagen helpers ====== */
 
 const BaseUrl =
-  (import.meta as any)?.env?.VITE_API_URL ??
-  "https://tuclick.vozipcolombia.net.co/motos/back";
+  (import.meta as any)?.env?.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
 
 const buildAbsUrl = (path?: string | null): string | null => {
   if (!path) return null;
-  if (/^https?:\/\//i.test(path)) return path; // ya es absoluta
+  if (/^https?:\/\//i.test(path)) return path;
   const root = String(BaseUrl || "").replace(/\/+$/, "");
   const rel = String(path).replace(/^\/+/, "");
   return `${root}/${rel}`;
@@ -458,28 +257,17 @@ const buildAbsUrl = (path?: string | null): string | null => {
 
 const publicUrl = (p: string) => {
   try {
-    if (typeof window !== "undefined" && window?.location?.origin) {
-      return window.location.origin + p;
+    if (typeof window !== "undefined" && (window as any)?.location?.origin) {
+      return (window as any).location.origin + p;
     }
-  } catch { }
+  } catch {}
   return p;
 };
 
-/**
- * Foto de la moto:
- *  - Primero `motoFotoUrl` (prop)
- *  - Luego campos del backend: foto / foto_a / product_img / imagen / foto
- *  - Luego placeholder /producto.png
- */
 const resolveMotoImg = (d: any, override?: string): string | null => {
   if (override) return override;
 
-  const candidates = [
-    d?.foto,      // nuevo campo genérico
-    d?.foto_a,    // fallback si backend aún usa *_a
-    d?.product_img,
-    d?.imagen,
-  ].filter(Boolean) as string[];
+  const candidates = [d?.foto, d?.foto_a, d?.product_img, d?.imagen].filter(Boolean) as string[];
 
   for (const c of candidates) {
     const abs = buildAbsUrl(c);
@@ -489,41 +277,16 @@ const resolveMotoImg = (d: any, override?: string): string | null => {
   return publicUrl("/producto.png");
 };
 
-/* ============ Mini componentes internos ============ */
-
-const SectionTitle: React.FC<{ title: string; tag?: string }> = ({
-  title,
-  tag,
-}) => (
+const SectionTitle: React.FC<{ title: string; tag?: string }> = ({ title, tag }) => (
   <View style={styles.sectionTitleWrapper}>
     <Text style={styles.sectionTitleText}>{title}</Text>
     {tag ? <Text style={styles.sectionTitleTag}>{tag}</Text> : null}
   </View>
 );
 
-// const InfoRowPDF: React.FC<{
-//   label: string;
-//   value: string;
-//   colSpan?: 1 | 2;
-// }> = ({ label, value, colSpan = 1 }) => (
-//   <View
-//     style={[
-//       colSpan === 2
-//         ? { marginBottom: 6 }
-//         : styles.row,
-//     ]}
-//   >
-//     <View style={[styles.col, colSpan === 2 ? { flex: 0 } : {}]}>
-//       <Text style={styles.label}>{label}</Text>
-//       <Text style={styles.value}>{value}</Text>
-//     </View>
-//   </View>
-// );
-
 /* ============================
-   Componente principal PDF v2
-   SOLO UNA MOTO (campos genéricos)
-   ============================ */
+   PDF V2 COMPACTO (1 moto)
+============================ */
 
 export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
   cotizacion,
@@ -535,21 +298,11 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
   const d = cotizacion?.data || {};
   const g = garantiaExt?.data || {};
 
-  const nombreCompletoCliente = [
-    d.name,
-    d.s_name,
-    d.last_name,
-    d.s_last_name,
-  ]
+  const nombreCompletoCliente = [d.name, d.s_name, d.last_name, d.s_last_name]
     .filter(Boolean)
     .join(" ");
 
-  // 🔹 SOLO UNA MOTO: usamos campos genéricos, con fallback a *_a
-  const motoLabel = [
-    d.marca ?? d.marca_a,
-    d.linea ?? d.linea_a,
-    d.modelo ?? d.modelo_a,
-  ]
+  const motoLabel = [d.marca ?? d.marca_a, d.linea ?? d.linea_a, d.modelo ?? d.modelo_a]
     .filter(Boolean)
     .join(" ");
 
@@ -557,11 +310,9 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
   const ciudad = empresa?.ciudad || "Cali";
   const almacen = empresa?.almacen || "FERIA DE LA MOVILIDAD";
 
-  // Imagen de la moto (una sola)
   const motoImg = resolveMotoImg(d, motoFotoUrl);
 
-  // ===================== CÁLCULOS ECONÓMICOS (UNA MOTO) =====================
-
+  // Económicos
   const totalSinSeguros = num(d.total_sin_seguros ?? d.total_sin_seguros_a);
   const total =
     num(d.precio_total ?? d.precio_total_a) ||
@@ -569,37 +320,28 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
 
   const cuotaInicial = num(d.cuota_inicial ?? d.cuota_inicial_a);
   const saldoAFinanciar =
-    d.saldo_financiar ??
-    d.saldo_financiar_a ??
-    Math.max(total - cuotaInicial, 0);
+    d.saldo_financiar ?? d.saldo_financiar_a ?? Math.max(total - cuotaInicial, 0);
 
   const precioBase = d.precio_base ?? d.precio_base_a;
   const precioDocumentos = d.precio_documentos ?? d.precio_documentos_a;
   const accesorios = d.accesorios ?? d.accesorios_a;
   const otrosSeguros = d.otro_seguro ?? d.otro_seguro_a;
   const descuentos = d.descuentos ?? d.descuentos_a;
-  const soat = d.soat ?? d.soat_a;
-  const impuestos = d.impuestos ?? d.impuestos_a;
-  const matricula = d.matricula ?? d.matricula_a;
-
-  const runt = d.runt ?? d.runt_1;
-  const licencia = d.licencia ?? d.licencia_1;
-  const defensas = d.defensas ?? d.defensas_1;
-  const handSavers = d.hand_savers ?? d.hand_savers_1;
-  const otrosAdicionales =
-    d.otros_adicionales ?? d.otros_adicionales_1;
-  const totalAdicionales =
-    d.total_adicionales ?? d.total_adicionales_1;
 
   const garantia = d.garantia ?? d.garantia_a;
-  const garantiaExtMoto =
-    d.garantia_extendida ?? d.garantia_extendida_a;
+  const garantiaExtMoto = d.garantia_extendida ?? d.garantia_extendida_a;
 
-  // Datos de garantía extendida (JSON 2) SOLO para esta moto
+  // Garantía extendida (JSON 2) solo tabla
+  const mostrarGarantia =
+    !!garantiaExt && (g?.moto || g?.moto_a || g?.garantia_extendida || g?.garantia_extendida_a || g?.valor || g?.valor_a);
+
   const gMoto = g?.moto ?? g?.moto_a;
   const gPlan = g?.garantia_extendida ?? g?.garantia_extendida_a;
   const gMeses = g?.meses ?? g?.meses_a;
   const gValor = g?.valor ?? g?.valor_a;
+
+  const tipoPago = safe(d.tipo_pago || d.metodo_pago);
+  const telefonos = `${safe(d.celular)}${empresa?.telefono ? ` · ${empresa.telefono}` : ""}`;
 
   return (
     <Document>
@@ -609,300 +351,132 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
           <View style={styles.headerLeft}>
             {logoUrl ? <Image src={logoUrl} style={styles.logo} /> : null}
             <Text style={styles.title}>Cotización #{safe(d.id, "")}</Text>
-            <Text style={styles.subtitle}>
-              Fecha de creación: {fmtDateTime(d.fecha_creacion)}
-            </Text>
-            <Text style={styles.subtitle}>
-              Última actualización: {fmtDateTime(d.fecha_actualizacion)}
-            </Text>
+            <Text style={styles.subtitle}>Fecha: {fmtDateTime(d.fecha_creacion)} ({fechaCorta})</Text>
+            <Text style={styles.subtitle}>Actualización: {fmtDateTime(d.fecha_actualizacion)}</Text>
           </View>
 
           <View style={styles.headerRight}>
-            <Text style={styles.subtitle}>
-              Estado: {safe(d.estado, "Sin estado")}
-            </Text>
-            {empresa?.nombre && (
-              <Text style={styles.subtitle}>{empresa.nombre}</Text>
-            )}
-            {empresa?.almacen && (
-              <Text style={styles.subtitle}>{empresa.almacen}</Text>
-            )}
-            {empresa?.ciudad && (
-              <Text style={styles.subtitle}>{empresa.ciudad}</Text>
-            )}
-            {empresa?.nit && (
-              <Text style={styles.subtitle}>NIT: {empresa.nit}</Text>
-            )}
-            {empresa?.telefono && (
-              <Text style={styles.subtitle}>Tel: {empresa.telefono}</Text>
-            )}
-            {empresa?.direccion && (
-              <Text style={styles.subtitle}>{empresa.direccion}</Text>
-            )}
+            <Text style={styles.subtitle}>Estado: {safe(d.estado, "Sin estado")}</Text>
+            {empresa?.nombre ? <Text style={styles.subtitle}>{empresa.nombre}</Text> : null}
+            <Text style={styles.subtitle}>{almacen} · {ciudad}</Text>
+            {empresa?.nit ? <Text style={styles.subtitle}>NIT: {empresa.nit}</Text> : null}
           </View>
         </View>
 
-        {/* ENCABEZADO TIPO FORMATO */}
-        <View style={styles.encabezadoCotizacion}>
-          <View style={styles.encabezadoRow}>
-            <Text style={styles.encabezadoLabel}>Cotización</Text>
-            <Text style={styles.encabezadoValue}>#{safe(d.id, "")}</Text>
-          </View>
-          <View style={styles.encabezadoRow}>
-            <Text style={styles.encabezadoLabel}>Fecha</Text>
-            <Text style={styles.encabezadoValue}>{fechaCorta}</Text>
-          </View>
-          <View style={styles.encabezadoRow}>
-            <Text style={styles.encabezadoLabel}>Ciudad</Text>
-            <Text style={styles.encabezadoValue}>{ciudad}</Text>
-          </View>
-          <View style={styles.encabezadoRow}>
-            <Text style={styles.encabezadoLabel}>Almacén</Text>
-            <Text style={styles.encabezadoValue}>{almacen}</Text>
-          </View>
-          <View style={styles.encabezadoRow}>
-            <Text style={styles.encabezadoLabel}>A nombre de</Text>
-            <Text style={styles.encabezadoValue}>
-              {safe(nombreCompletoCliente)}
-            </Text>
-          </View>
-          <View style={styles.encabezadoRow}>
-            <Text style={styles.encabezadoLabel}>Atendido por</Text>
-            <Text style={styles.encabezadoValue}>{safe(d.asesor)}</Text>
-          </View>
-          <View style={styles.encabezadoRow}>
-            <Text style={styles.encabezadoLabel}>Teléfonos</Text>
-            <Text style={styles.encabezadoValue}>
-              {safe(d.celular)}
-              {empresa?.telefono ? ` · ${empresa.telefono}` : ""}
-            </Text>
-          </View>
-        </View>
-
-        {/* RESUMEN GENERAL (UNA MOTO) */}
+        {/* RESUMEN (compacto, sin duplicados) */}
         <View style={styles.resumenWrapper}>
           <View style={styles.resumenCol}>
-            <Text style={styles.resumenHeader}>Resumen cliente</Text>
-            <Text style={styles.resumenLine}>
-              Cliente: {safe(nombreCompletoCliente)}
-            </Text>
-            <Text style={styles.resumenLine}>Cédula: {safe(d.cedula)}</Text>
-            <Text style={styles.resumenLine}>
-              Celular: {safe(d.celular)} · Email: {safe(d.email)}
-            </Text>
-            <Text style={styles.resumenLine}>
-              Canal de contacto: {safe(d.canal_contacto)}
-            </Text>
+            <Text style={styles.resumenHeader}>Cliente</Text>
+            <Text style={styles.resumenLine}>{safe(nombreCompletoCliente)}</Text>
+            <Text style={styles.resumenLine}>CC: {safe(d.cedula)} · Tel: {telefonos}</Text>
+            <Text style={styles.resumenLine}>Email: {safe(d.email)}</Text>
           </View>
           <View style={styles.resumenCol}>
-            <Text style={styles.resumenHeader}>Resumen económico</Text>
-            <Text style={styles.resumenLine}>
-              Moto: {safe(motoLabel)} · Total: {fmtCOP(total)}
-            </Text>
-            <Text style={styles.resumenLine}>
-              Cuota inicial: {fmtCOP(cuotaInicial)} · Saldo a financiar:{" "}
-              {fmtCOP(saldoAFinanciar)}
-            </Text>
-            <Text style={styles.resumenLine}>
-              Tipo de pago: {safe(d.tipo_pago || d.metodo_pago)}
-            </Text>
-            <Text style={styles.resumenLine}>
-              Prospecto: {safe(d.prospecto)} · Asesor: {safe(d.asesor)}
-            </Text>
+            <Text style={styles.resumenHeader}>Cotización</Text>
+            <Text style={styles.resumenLine}>Moto: {safe(motoLabel)}</Text>
+            <Text style={styles.resumenLine}>Total: {fmtCOP(total)} · Inicial: {fmtCOP(cuotaInicial)}</Text>
+            <Text style={styles.resumenLine}>Saldo: {fmtCOP(saldoAFinanciar)}</Text>
+            <Text style={styles.resumenLine}>Pago: {tipoPago} · Asesor: {safe(d.asesor)}</Text>
           </View>
         </View>
 
-        {/* 1. CLIENTE */}
-        <SectionTitle title="1. Información del cliente" />
+        {/* INFO CLAVE (una sola caja) */}
+        <SectionTitle title="Información clave" />
         <View style={styles.box}>
           <View style={styles.row}>
             <View style={styles.col}>
-              <Text style={styles.label}>Nombre completo</Text>
-              <Text style={styles.value}>{safe(nombreCompletoCliente)}</Text>
-            </View>
-            <View style={styles.col}>
-              <Text style={styles.label}>Cédula</Text>
-              <Text style={styles.value}>{safe(d.cedula)}</Text>
-            </View>
-          </View>
-
-          <View style={styles.row}>
-            <View style={styles.col}>
-              <Text style={styles.label}>Celular</Text>
-              <Text style={styles.value}>{safe(d.celular)}</Text>
-            </View>
-            <View style={styles.col}>
-              <Text style={styles.label}>Correo electrónico</Text>
-              <Text style={styles.value}>{safe(d.email)}</Text>
-            </View>
-          </View>
-
-          <View style={styles.row}>
-            <View style={styles.col}>
-              <Text style={styles.label}>Fecha de nacimiento</Text>
-              <Text style={styles.value}>{safe(d.fecha_nacimiento)}</Text>
-            </View>
-            <View style={styles.col}>
-              <Text style={styles.label}>Canal de contacto</Text>
+              <Text style={styles.label}>Canal</Text>
               <Text style={styles.value}>{safe(d.canal_contacto)}</Text>
             </View>
-          </View>
-        </View>
-
-        {/* Necesidad / Comentarios lado a lado */}
-        <View style={styles.row}>
-          <View style={styles.col}>
-            <Text style={styles.label}>Necesidad / Motivo de compra</Text>
-            <Text style={styles.value}>{safe(d.pregunta)}</Text>
-          </View>
-          <View style={styles.col}>
-            <Text style={styles.label}>Comentarios</Text>
-            <Text style={styles.value}>{safe(d.comentario)}</Text>
-          </View>
-        </View>
-
-        {/* 2. COMERCIAL */}
-        <SectionTitle title="2. Información comercial" />
-        <View style={styles.boxSoft}>
-          <View style={styles.row}>
-            <View style={styles.col}>
-              <Text style={styles.label}>Asesor</Text>
-              <Text style={styles.value}>{safe(d.asesor)}</Text>
-            </View>
-            <View style={styles.col}>
-              <Text style={styles.label}>Tipo de pago</Text>
-              <Text style={styles.value}>
-                {safe(d.tipo_pago || d.metodo_pago)}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.row}>
             <View style={styles.col}>
               <Text style={styles.label}>Prospecto</Text>
               <Text style={styles.value}>{safe(d.prospecto)}</Text>
             </View>
+          </View>
+
+          <View style={styles.row}>
             <View style={styles.col}>
               <Text style={styles.label}>Financiera</Text>
               <Text style={styles.value}>{safe(d.financiera)}</Text>
             </View>
+            <View style={styles.col}>
+              <Text style={styles.label}>Motivo / Necesidad</Text>
+              <Text style={styles.value}>{safe(d.pregunta)}</Text>
+            </View>
+          </View>
+
+          <View style={styles.row}>
+            <View style={styles.col}>
+              <Text style={styles.label}>Comentarios</Text>
+              <Text style={styles.value}>{safe(d.comentario2 ?? d.comentario ?? "", "—")}</Text>
+            </View>
           </View>
         </View>
 
-        {/* 3. MOTO (ÚNICA) */}
-        <SectionTitle title="3. Opción Moto" tag={safe(motoLabel)} />
+        {/* MOTO (compacta) */}
+        <SectionTitle title="Detalle de la moto" tag={safe(motoLabel)} />
         <View style={styles.motoCard}>
           <View style={styles.motoHeader}>
             <Text style={styles.motoTitle}>{safe(motoLabel)}</Text>
             <Text style={styles.motoChip}>
-              Garantía: {safe(garantia, "—")} · Ext:{" "}
-              {safe(garantiaExtMoto, "—")}
+              Garantía: {safe(garantia, "—")} · Ext: {safe(garantiaExtMoto, "—")}
             </Text>
           </View>
 
-          {/* Imagen moto */}
           {motoImg && (
             <View style={styles.motoImageWrapper}>
               <Image src={motoImg} style={styles.motoImage} />
-              <Text style={styles.motoImageLabel}>
-                Imagen referencia Moto
-              </Text>
+              <Text style={styles.motoImageLabel}>Imagen referencia</Text>
             </View>
           )}
 
-          {/* Totales clave */}
-          <View style={styles.row}>
-            <View style={styles.col}>
-              <Text style={styles.label}>Total sin seguros</Text>
-              <Text style={styles.value}>{fmtCOP(totalSinSeguros)}</Text>
-            </View>
-            <View style={styles.col}>
-              <Text style={[styles.label, { color: ACCENT }]}>
-                Total Moto
-              </Text>
-              <Text style={[styles.value, { fontWeight: "bold" }]}>
-                {fmtCOP(total)}
-              </Text>
-            </View>
-          </View>
-
-          {/* Tabla de conceptos */}
           <View style={styles.table}>
             <View style={styles.tableHeaderRow}>
               <Text style={styles.tableCellHeader}>Concepto</Text>
-              <Text style={styles.tableCellHeader}>Valor</Text>
-              <Text style={[styles.tableCellHeader, styles.tableCellLast]}>
-                Detalle
-              </Text>
+              <Text style={[styles.tableCellHeader, styles.tableCellLast]}>Valor</Text>
             </View>
 
             {[
-              ["Precio público", precioBase, "Valor base de la moto"],
-              ["Documentos", precioDocumentos, "Trámites de documentos"],
-              ["Accesorios", accesorios, "Accesorios adicionales"],
-              [
-                "Seguros",
-                otrosSeguros,
-                formatSeguros(d.seguros ?? d.seguros_a),
-              ],
-              ["Descuentos", descuentos, "Descuento aplicado"],
-              ["SOAT", soat, ""],
-              ["Impuestos", impuestos, ""],
-              ["Matrícula", matricula, ""],
-              ["RUNT", runt, ""],
-              ["Licencia", licencia, ""],
-              ["Defensas", defensas, ""],
-              ["Hand savers", handSavers, ""],
-              ["Otros adicionales", otrosAdicionales, ""],
-              ["TOTAL adicionales", totalAdicionales, ""],
-              ["Total sin seguros", totalSinSeguros, ""],
-              ["Total", total, ""],
-              [
-                "Saldo a financiar",
-                saldoAFinanciar,
-                cuotaInicial > 0
-                  ? `Total - cuota inicial (${fmtCOP(cuotaInicial)})`
-                  : "Total (incluye seguros)",
-              ],
-            ].map(([label, val, detail], idx) => (
-              <View style={styles.tableRow} key={String(label) + idx}>
-                <Text style={styles.tableCell}>{label}</Text>
-                <Text style={styles.tableCell}>{fmtCOP(val)}</Text>
-                <Text style={[styles.tableCell, styles.tableCellLast]}>
-                  {detail as string}
-                </Text>
+              ["Precio público", precioBase],
+              ["Documentos", precioDocumentos],
+              ["Accesorios", accesorios],
+              ["Seguros", otrosSeguros],
+              ["Descuentos", descuentos],
+              ["Total sin seguros", totalSinSeguros],
+              ["TOTAL", total],
+              ["Cuota inicial", cuotaInicial],
+              ["Saldo a financiar", saldoAFinanciar],
+            ].map(([k, v], idx) => (
+              <View style={styles.tableRow} key={String(k) + idx}>
+                <Text style={styles.tableCell}>{k as string}</Text>
+                <Text style={[styles.tableCell, styles.tableCellLast]}>{fmtCOP(v)}</Text>
               </View>
             ))}
           </View>
+
+          {(() => {
+            const det = formatSeguros(d.seguros ?? d.seguros_a);
+            return det && det !== "—" ? (
+              <Text style={styles.value}>
+                <Text style={{ fontWeight: "bold" }}>Detalle seguros: </Text>
+                {det}
+              </Text>
+            ) : null;
+          })()}
         </View>
 
-        {/* 4. GARANTÍA EXTENDIDA (solo de esta moto, si viene) */}
-        {garantiaExt && (
+        {/* GARANTÍA EXTENDIDA (compacta) */}
+        {mostrarGarantia ? (
           <>
-            <SectionTitle title="4. Garantía extendida" />
+            <SectionTitle title="Garantía extendida" />
             <View style={styles.box}>
-              <View style={styles.row}>
-                <View style={styles.col}>
-                  <Text style={styles.label}>ID garantía</Text>
-                  <Text style={styles.value}>{safe(g.id)}</Text>
-                </View>
-                <View style={styles.col}>
-                  <Text style={styles.label}>Cotización ID</Text>
-                  <Text style={styles.value}>{safe(g.cotizacion_id)}</Text>
-                </View>
-              </View>
-
               <View style={styles.table}>
                 <View style={styles.tableHeaderRow}>
                   <Text style={styles.tableCellHeader}>Moto</Text>
                   <Text style={styles.tableCellHeader}>Plan</Text>
                   <Text style={styles.tableCellHeader}>Meses</Text>
-                  <Text
-                    style={[styles.tableCellHeader, styles.tableCellLast]}
-                  >
-                    Valor
-                  </Text>
+                  <Text style={[styles.tableCellHeader, styles.tableCellLast]}>Valor</Text>
                 </View>
-
                 <View style={styles.tableRow}>
                   <Text style={styles.tableCell}>{safe(gMoto)}</Text>
                   <Text style={styles.tableCell}>{safe(gPlan)}</Text>
@@ -912,75 +486,15 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
                   </Text>
                 </View>
               </View>
-
-              <View style={styles.row}>
-                <View style={styles.col}>
-                  <Text style={styles.label}>Cliente (garantía)</Text>
-                  <Text style={styles.value}>{safe(g.cliente_nombre)}</Text>
-                  <Text style={styles.value}>
-                    Cédula: {safe(g.cliente_cedula)} · Cel:{" "}
-                    {safe(g.cliente_celular)}
-                  </Text>
-                  <Text style={styles.value}>
-                    Email: {safe(g.cliente_email)}
-                  </Text>
-                </View>
-                <View style={styles.col}>
-                  <Text style={styles.label}>Fechas</Text>
-                  <Text style={styles.value}>
-                    Fecha: {fmtDateTime(g.fecha)}
-                  </Text>
-                  <Text style={styles.value}>
-                    Creado: {fmtDateTime(g.creado_en)}
-                  </Text>
-                  <Text style={styles.value}>
-                    Actualizado: {fmtDateTime(g.actualizado_en)}
-                  </Text>
-                </View>
-              </View>
             </View>
           </>
-        )}
+        ) : null}
 
-        {/* 5. BENEFICIOS / OBSERVACIONES / COPIA */}
-        {/* <SectionTitle title="5. Beneficios y observaciones" />
-        <View style={styles.boxSoft}>
-          <InfoRowPDF
-            label="Beneficios"
-            value={safe(d.beneficios ?? "", "—")}
-            colSpan={2}
-          />
-        </View>
-
-        <View style={styles.boxSoft}>
-          <InfoRowPDF
-            label="Observaciones"
-            value={safe(d.comentario2 ?? d.comentario ?? "", "—")}
-            colSpan={2}
-          />
-        </View> */}
-
-        <View style={styles.copiaWrapper}>
-          <Text style={styles.copiaTitle}>Copia de cotización</Text>
-          <Text style={styles.value}>
-            Fecha: {fechaCorta} · Ciudad: {ciudad} · Almacén: {almacen}
-          </Text>
-          <Text style={styles.value}>
-            A nombre de: {safe(nombreCompletoCliente)} · Atendido por:{" "}
-            {safe(d.asesor)}
-          </Text>
-          <Text style={styles.value}>
-            Teléfonos: {safe(d.celular)}
-            {empresa?.telefono ? ` · ${empresa.telefono}` : ""}
-          </Text>
-        </View>
-
-        {/* 6. HABEAS DATA Y FIRMAS */}
-        <SectionTitle title="6. Autorización de habeas data y firmas" />
+        {/* HABEAS DATA (COMPLETO) + FIRMAS */}
+        <SectionTitle title="Autorización de habeas data y firmas" />
         <View style={styles.box}>
-          <Text style={styles.habeasTitle}>
-            Autorización de habeas data:
-          </Text>
+          <Text style={styles.habeasTitle}>Autorización de habeas data:</Text>
+
           <Text style={styles.habeasText}>
             Con la firma del presente documento y con el suministro libre,
             espontáneo y voluntario de sus datos generales de comunicación,
@@ -991,6 +505,7 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
             fin de suministrar, a través de documentos digitales y/o en físico
             la información comercial y de venta al consumidor de la siguiente
           </Text>
+
           <Text style={styles.habeasText}>
             También quedan facultadas la empresa y el consumidor para: a)
             Conocer, actualizar y rectificar en cualquier momento los datos
@@ -1005,6 +520,12 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
             la Ley 1581 de 2012.
           </Text>
 
+          <Text style={styles.habeasText}>
+            Para conocer más detalles de nuestra política de tratamiento y
+            protección de datos personales, consulte nuestro manual de
+            tratamiento en www.tuclickmotos.com
+          </Text>
+
           <View style={styles.firmaRow}>
             <View style={styles.firmaBox}>
               <Text style={styles.firmaLabel}>Firma del cliente</Text>
@@ -1015,17 +536,13 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
           </View>
         </View>
 
-        {/* PIE TEXTOS LEGALES Y SLOGAN */}
+        {/* FOOTER */}
         <Text style={styles.smallMuted}>
-          Todos los precios y/o promociones publicados en este documento están
-          sujetos a cambio sin previo aviso o hasta agotar existencias. La
-          motocicleta se entrega con kit de herramienta básico. La información
-          suministrada será tratada acorde a lo estipulado por la Ley 1581 de
-          2012.
+          Todos los precios y/o promociones publicados en este documento están sujetos a cambio sin
+          previo aviso o hasta agotar existencias. La motocicleta se entrega con kit de herramienta básico.
+          La información suministrada será tratada acorde a lo estipulado por la Ley 1581 de 2012.
         </Text>
-        <Text style={styles.smallMutedCenter}>
-          MOTO PARA TODOS S.A.S - Hacemos tu sueño realidad
-        </Text>
+        <Text style={styles.smallMutedCenter}>MOTO PARA TODOS S.A.S - Hacemos tu sueño realidad</Text>
       </Page>
     </Document>
   );
