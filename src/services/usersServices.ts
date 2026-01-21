@@ -1,38 +1,66 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./axiosInstance";
 import type { AxiosError } from "axios";
-import type { NewUsuario, Usuario, UsuariosResponse } from "../shared/types/users";
+import type { NewUsuario, Usuario } from "../shared/types/users";
 import type { ServerError } from "../shared/types/server";
 import { useModalStore } from "../store/modalStore";
 import Swal from "sweetalert2";
 
-
-
-
-export const useUsuarios = () => {
-  return useQuery<Usuario[]>({
-    queryKey: ['users'],
-    queryFn: async () => {
-      const { data } = await api.get<UsuariosResponse>('/list_users.php');
-      return data.usuarios;
-    },
-  });
+// ====== LISTADO con filtros + paginación ======
+export type UserFilters = {
+  q?: string;
+  rol?: string;
+  state?: "" | "1" | "0";
 };
 
-export const useUsuarioById = (id: string) => {
-  return useQuery<Usuario>({
-    queryKey: ['user', id],
+export interface UsersListResponse {
+  success: boolean;
+  data: Usuario[];
+  roles: string[];
+  pagination: {
+    total: number | string;
+    per_page: number;
+    current_page: number;
+    last_page: number;
+  };
+}
+
+const clean = (v?: string) => {
+  const t = (v ?? "").trim();
+  return t.length ? t : undefined;
+};
+
+// ✅ ahora useUsuarios recibe page/perPage/filters
+export const useUsuarios = (page: number, perPage: number, filters: UserFilters) => {
+  return useQuery<UsersListResponse>({
+    queryKey: ["users", { page, perPage, ...filters }],
     queryFn: async () => {
-const { data } = await api.get<Usuario>("/list_users.php", {
-  params: { id }
-});
+      const params: Record<string, any> = { page, per_page: perPage };
+
+      if (clean(filters.q)) params.q = clean(filters.q);
+      if (clean(filters.rol)) params.rol = clean(filters.rol);
+      if (filters.state !== undefined && filters.state !== "") params.state = filters.state;
+
+      const { data } = await api.get<UsersListResponse>("/list_users.php", { params });
       return data;
     },
-    enabled: Boolean(id), // solo ejecuta si hay un id válido
+    staleTime: 10_000,
   });
 };
 
+// ====== BY ID (si lo sigues usando) ======
+export const useUsuarioById = (id: string) => {
+  return useQuery<Usuario>({
+    queryKey: ["user", id],
+    queryFn: async () => {
+      const { data } = await api.get<Usuario>("/list_users.php", { params: { id } });
+      return data;
+    },
+    enabled: Boolean(id),
+  });
+};
 
+// ====== CREATE ======
 export const useRegisterUsuario = () => {
   const qc = useQueryClient();
   const closeModal = useModalStore((s) => s.close);
@@ -44,7 +72,7 @@ export const useRegisterUsuario = () => {
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["users"] });
-      closeModal(); // 🔒 cierra modal
+      closeModal();
       Swal.fire({
         icon: "success",
         title: "Usuario registrado",
@@ -56,16 +84,12 @@ export const useRegisterUsuario = () => {
     onError: (error: AxiosError<ServerError>) => {
       const raw = error.response?.data?.message ?? "Error al registrar usuario";
       const arr = Array.isArray(raw) ? raw : [raw];
-
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        html: arr.join("<br/>"), // muestra todos los errores en varias líneas
-      });
+      Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
     },
   });
 };
 
+// ====== UPDATE ======
 export const useUpdateUsuario = () => {
   const qc = useQueryClient();
   const closeModal = useModalStore((s) => s.close);
@@ -77,7 +101,7 @@ export const useUpdateUsuario = () => {
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["users"] });
-      closeModal(); // 🔒 cierra modal
+      closeModal();
       Swal.fire({
         icon: "success",
         title: "Usuario actualizado",
@@ -89,17 +113,12 @@ export const useUpdateUsuario = () => {
     onError: (error: AxiosError<ServerError>) => {
       const raw = error.response?.data?.message ?? "Error al actualizar usuario";
       const arr = Array.isArray(raw) ? raw : [raw];
-
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        html: arr.join("<br/>"),
-      });
+      Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
     },
   });
 };
 
-
+// ====== TOGGLE STATE ======
 interface UpdateStatePayload {
   id: number;
   state: 0 | 1;
@@ -114,7 +133,6 @@ export const useToggleUsuarioState = () => {
       return data;
     },
     onSuccess: async () => {
-      // Refrescamos la lista de usuarios
       await qc.invalidateQueries({ queryKey: ["users"] });
     },
     onError: (error: AxiosError<ServerError>) => {

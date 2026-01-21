@@ -1,13 +1,13 @@
 import React from "react";
 import FormularioUsuarios from "./FormularioUsuarios";
 import { useModalStore } from "../../store/modalStore";
-import { useUsuarios } from "../../services/usersServices";
+import { useUsuarios, type UserFilters } from "../../services/usersServices";
 import UsuarioEstadoAlert from "./UsuarioEstadoAlert";
 import { Pen } from "lucide-react";
 import { useLoaderStore } from "../../store/loader.store";
+import FiltrosUsuarios from "./FiltrosUsuarios";
 
 // Paginación
-const PAGE_SIZE = 10;
 const SIBLING_COUNT = 1;
 const BOUNDARY_COUNT = 1;
 
@@ -29,73 +29,84 @@ function getPaginationItems(
   );
 
   const siblingsStart = Math.max(
-    Math.min(
-      current - siblingCount,
-      totalPages - boundaryCount - siblingCount * 2 - 1
-    ),
+    Math.min(current - siblingCount, totalPages - boundaryCount - siblingCount * 2 - 1),
     boundaryCount + 2
   );
 
   const siblingsEnd = Math.min(
     Math.max(current + siblingCount, boundaryCount + siblingCount * 2 + 2),
-    endPages.length > 0 ? endPages[0] - 2 : totalPages - 1
+    endPages.length > 0 ? Number(endPages[0]) - 2 : totalPages - 1
   );
 
   const items: (number | "...")[] = [];
   items.push(...startPages);
 
-  if (siblingsStart > boundaryCount + 2) {
-    items.push("...");
-  } else if (boundaryCount + 1 < totalPages - boundaryCount) {
-    items.push(boundaryCount + 1);
-  }
+  if (siblingsStart > boundaryCount + 2) items.push("...");
+  else if (boundaryCount + 1 < totalPages - boundaryCount) items.push(boundaryCount + 1);
 
   items.push(...range(siblingsStart, siblingsEnd));
 
-  if (siblingsEnd < totalPages - boundaryCount - 1) {
-    items.push("...");
-  } else if (totalPages - boundaryCount > boundaryCount) {
-    items.push(totalPages - boundaryCount);
-  }
+  if (siblingsEnd < totalPages - boundaryCount - 1) items.push("...");
+  else if (totalPages - boundaryCount > boundaryCount) items.push(totalPages - boundaryCount);
 
   items.push(...endPages);
   return items.filter((v, i, a) => a.indexOf(v) === i);
 }
 
-const btnBase =
-  "btn btn-xs rounded-xl min-w-8 h-8 px-3 font-medium shadow-none border-0";
+const btnBase = "btn btn-xs rounded-xl min-w-8 h-8 px-3 font-medium shadow-none border-0";
 const btnGhost = `${btnBase} btn-ghost bg-base-200 text-base-content/70 hover:bg-base-300`;
-const btnActive = `${btnBase} btn-primary text-primary-content`;
-const btnEllipsis =
-  "btn btn-xs rounded-xl min-w-8 h-8 px-3 bg-base-200 text-base-content/60 pointer-events-none";
+const btnActive = `${btnBase} bg-[#3498DB] text-primary-content`;
+const btnEllipsis = "btn btn-xs rounded-xl min-w-8 h-8 px-3 bg-base-200 text-base-content/60 pointer-events-none";
 
 const TablaUsuarios: React.FC = () => {
   const open = useModalStore((s) => s.open);
-  const { data, isPending, isError } = useUsuarios();
 
-  // Asegura arreglo (cuando no hay data, usa [])
-  const usuarios = Array.isArray(data) ? data : data ?? [];
-
-  // Hooks SIEMPRE se ejecutan
+  // ✅ server pagination
   const [page, setPage] = React.useState(1);
+  const [perPage, setPerPage] = React.useState(10);
 
-  const totalPages = React.useMemo(
-    () => Math.max(1, Math.ceil(usuarios.length / PAGE_SIZE)),
-    [usuarios.length]
+  // ✅ filtros
+  const [filters, setFilters] = React.useState<UserFilters>({
+    q: "",
+    rol: "",
+    state: "",
+  });
+
+  // ✅ debounce para el buscador
+  const [debouncedQ, setDebouncedQ] = React.useState("");
+  React.useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(filters.q ?? ""), 300);
+    return () => clearTimeout(t);
+  }, [filters.q]);
+
+  // ✅ reset page cuando cambia filtro
+  React.useEffect(() => {
+    setPage(1);
+  }, [debouncedQ, filters.rol, filters.state, perPage]);
+
+  const { data, isPending, isError, isFetching } = useUsuarios(page, perPage, {
+    ...filters,
+    q: debouncedQ,
+  });
+
+  const usuarios = data?.data ?? [];
+  const roles = data?.roles ?? [];
+
+  const total = Number(data?.pagination?.total ?? 0) || 0;
+  const currentPage = Number(data?.pagination?.current_page ?? page) || page;
+  const lastPage = Number(data?.pagination?.last_page ?? 1) || 1;
+
+  const items = React.useMemo(
+    () => getPaginationItems(currentPage, lastPage),
+    [currentPage, lastPage]
   );
 
-  React.useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
-
-  const start = (page - 1) * PAGE_SIZE;
-  const end = Math.min(start + PAGE_SIZE, usuarios.length);
-  const visible = usuarios.slice(start, end);
-  const items = getPaginationItems(page, totalPages);
-
   const goPrev = () => setPage((p) => Math.max(1, p - 1));
-  const goNext = () => setPage((p) => Math.min(totalPages, p + 1));
-  const goTo = (p: number) => setPage(Math.min(Math.max(1, p), totalPages));
+  const goNext = () => setPage((p) => Math.min(lastPage, p + 1));
+  const goTo = (p: number) => setPage(Math.min(Math.max(1, p), lastPage));
+
+  const start = total === 0 ? 0 : (currentPage - 1) * perPage + 1;
+  const end = Math.min(currentPage * perPage, total);
 
   const stateBadge = (s: string | number) => {
     const val = typeof s === "string" ? Number(s) : s;
@@ -128,18 +139,13 @@ const TablaUsuarios: React.FC = () => {
     );
   };
 
-  // Render condicional DESPUÉS de haber corrido todos los hooks
+  // Loader global
   const { show, hide } = useLoaderStore();
-
   React.useEffect(() => {
-    if (isPending) {
-      show();   // 🔵 muestra overlay global
-    } else {
-      hide();   // 🔵 lo oculta
-    }
+    if (isPending) show();
+    else hide();
   }, [isPending, show, hide]);
 
-  
   if (isError) {
     return (
       <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4 text-error">
@@ -148,6 +154,12 @@ const TablaUsuarios: React.FC = () => {
     );
   }
 
+  const clearFilters = () => {
+    setFilters({ q: "", rol: "", state: "" });
+    setPerPage(10);
+    setPage(1);
+  };
+
   return (
     <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
       <div className="px-4 pt-4 flex items-center justify-between gap-3 flex-wrap my-3">
@@ -155,13 +167,43 @@ const TablaUsuarios: React.FC = () => {
           Módulo de usuarios
         </h3>
 
-        <button className="btn bg-[#2BB352] text-white" onClick={openCrear}>
-          Crear Usuario
-        </button>
+        <div className="flex items-center gap-3">
+          <label className="text-xs opacity-70">Filas:</label>
+          <select
+            className="select select-accent select-sm select-bordered w-20"
+            value={perPage}
+            onChange={(e) => {
+              setPerPage(Number(e.target.value) || 10);
+              setPage(1);
+            }}
+          >
+            {[10, 20, 50].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+          {isFetching && <span className="loading loading-spinner loading-xs" />}
+          <button className="btn bg-[#2BB352] text-white" onClick={openCrear}>
+            Crear Usuario
+          </button>
+        </div>
+      </div>
+
+      {/* ✅ FILTROS */}
+      <div className="px-4 pb-3">
+        <FiltrosUsuarios
+          q={filters.q ?? ""}
+          rol={filters.rol ?? ""}
+          state={(filters.state as any) ?? ""}
+          roles={roles}
+          onChange={(next) => setFilters((prev) => ({ ...prev, ...next }))}
+          onClear={clearFilters}
+        />
       </div>
 
       <div className="relative overflow-x-auto max-w-full px-4">
-        <table className="table table-zebra table-pin-rows  min-w-[900px]">
+        <table className="table table-zebra table-pin-rows min-w-[900px]">
           <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
             <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
               <th className="w-12">#</th>
@@ -176,8 +218,8 @@ const TablaUsuarios: React.FC = () => {
           </thead>
 
           <tbody className="[&>tr:hover]:bg-base-200/40">
-            {visible.map((u: any, idx: number) => (
-              <tr key={u.id ?? `${start + idx}`} className="transition-colors">
+            {usuarios.map((u: any) => (
+              <tr key={u.id} className="transition-colors">
                 <th className="text-base-content/50">{u.id}</th>
                 <td>
                   <div className="font-medium">{u.name ?? "—"}</div>
@@ -187,53 +229,53 @@ const TablaUsuarios: React.FC = () => {
                 </td>
                 <td>{u.username ?? "—"}</td>
                 <td>
-                  <span className="badge badge-ghost badge-md">
-                    {u.rol ?? "—"}
-                  </span>
+                  <span className="badge badge-ghost badge-md">{u.rol ?? "—"}</span>
                 </td>
-                <td className="flex gap-4"><div className="w-16 min-w-16">{stateBadge(u.state)}</div>  <UsuarioEstadoAlert id={Number(u.id)} currentState={(u.state)} /></td>
+                <td className="flex gap-4">
+                  <div className="w-16 min-w-16">{stateBadge(u.state)}</div>
+                  <UsuarioEstadoAlert id={Number(u.id)} currentState={u.state} />
+                </td>
                 <td>{u.cedula ?? "—"}</td>
                 <td>{formatFecha(u.fecha_exp)}</td>
                 <td className="text-right">
                   <div className="flex justify-end gap-2">
-                    <button
-                      className="btn btn-sm bg-white btn-circle"
-                      onClick={() => openEditar(u)}
-                    >
+                    <button className="btn btn-sm bg-white btn-circle" onClick={() => openEditar(u)}>
                       <Pen color="green" size="20px" />
                     </button>
                   </div>
                 </td>
               </tr>
             ))}
+
+            {!isPending && usuarios.length === 0 && (
+              <tr>
+                <td colSpan={8} className="text-center py-6 opacity-70">
+                  No hay resultados con esos filtros.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
+
       {/* Footer paginación */}
       <div className="flex items-center justify-between px-4 pb-4 pt-2">
         <span className="text-xs text-base-content/50">
-          Mostrando {usuarios.length === 0 ? 0 : start + 1}–{end} de {usuarios.length}
+          Mostrando {start}–{end} de {total}
         </span>
 
         <div className="flex items-center gap-2">
-          <button
-            className={btnGhost}
-            onClick={goPrev}
-            disabled={page === 1}
-            aria-label="Página anterior"
-          >
+          <button className={btnGhost} onClick={goPrev} disabled={currentPage === 1}>
             «
           </button>
 
           {items.map((it, idx) =>
             it === "..." ? (
-              <span key={`e-${idx}`} className={btnEllipsis}>
-                …
-              </span>
+              <span key={`e-${idx}`} className={btnEllipsis}>…</span>
             ) : (
               <button
                 key={`p-${it}`}
-                className={it === page ? btnActive : btnGhost}
+                className={Number(it) === currentPage ? btnActive : btnGhost}
                 onClick={() => goTo(Number(it))}
               >
                 {it}
@@ -241,12 +283,7 @@ const TablaUsuarios: React.FC = () => {
             )
           )}
 
-          <button
-            className={btnGhost}
-            onClick={goNext}
-            disabled={page === totalPages}
-            aria-label="Página siguiente"
-          >
+          <button className={btnGhost} onClick={goNext} disabled={currentPage === lastPage}>
             »
           </button>
         </div>
