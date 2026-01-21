@@ -2049,8 +2049,17 @@ const CotizacionFormulario: React.FC = () => {
 
 
 
+
+
+
                                                 {/* Totales */}
                                                 <div className="space-y-2">
+
+                                                    <div className="flex justify-between items-center bg-base-200 px-4 py-2 rounded-md border border-base-300 shadow-sm">
+                                                        <span className="font-semibold">PRECIO BASE:</span>
+                                                        <span className="font-extrabold">{fmt(precioBase1)}</span>
+                                                    </div>
+
                                                     <div className="flex justify-between items-center bg-warning/10 px-4 py-2 rounded-md border border-warning/30 shadow-sm">
                                                         <span className="font-semibold text-warning">TOTAL SIN SEGUROS:</span>
                                                         <span className="font-bold">{fmt(totalSinSeguros1)}</span>
@@ -2633,6 +2642,12 @@ const CotizacionFormulario: React.FC = () => {
 
                                                 {/* Totales */}
                                                 <div className="space-y-2">
+
+                                                    <div className="flex justify-between items-center bg-base-200 px-4 py-2 rounded-md border border-base-300 shadow-sm">
+                                                        <span className="font-semibold">PRECIO BASE:</span>
+                                                        <span className="font-extrabold">{fmt(precioBase2)}</span>
+                                                    </div>
+
                                                     <div className="flex justify-between items-center bg-warning/10 px-4 py-2 rounded-md border border-warning/30 shadow-sm">
                                                         <span className="font-semibold text-warning">TOTAL SIN SEGUROS:</span>
                                                         <span className="font-bold">{fmt(totalSinSeguros2)}</span>
