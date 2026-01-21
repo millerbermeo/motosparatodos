@@ -141,6 +141,9 @@ type FormValues = {
     gps1?: "no" | "12" | "24" | "36";
     gps2?: "no" | "12" | "24" | "36";
 
+    bono_ensambladora_a?: string; // o string (si quieres fijo)
+    bono_ensambladora_b?: string;
+
 
 };
 
@@ -252,6 +255,9 @@ const CotizacionFormulario: React.FC = () => {
             valorDefensas2: "0",
             valorHandSavers2: "0",
             valorOtrosAdicionales2: "0",
+            bono_ensambladora_a: "0",
+            bono_ensambladora_b: "0",
+
         },
         mode: "onBlur",
         shouldUnregister: false,
@@ -496,6 +502,8 @@ const CotizacionFormulario: React.FC = () => {
             setValue("soat_a", "0"); setValue("impuestos_a", "0"); setValue("matricula_a", "0");
             setValue("gps1", "no");
             setValue("gps_a", "0");
+            setValue("bono_ensambladora_a", "0");
+
 
         }
     }, [incluirMoto1, setValue]);
@@ -512,6 +520,7 @@ const CotizacionFormulario: React.FC = () => {
             setValue("soat_b", "0"); setValue("impuestos_b", "0"); setValue("matricula_b", "0");
             setValue("gps2", "no");
             setValue("gps_b", "0");
+            setValue("bono_ensambladora_b", "0");
 
 
         }
@@ -653,6 +662,8 @@ const CotizacionFormulario: React.FC = () => {
 
     const tasaDecimal = tasaFinanciacion ? Number(tasaFinanciacion.valor) / 100 : 0.0188;
 
+    const bonoEnsA = N(watch("bono_ensambladora_a"));
+    const bonoEnsB = N(watch("bono_ensambladora_b"));
 
 
     // Cuando cambia la garantía extendida de la MOTO 1 o llega la tarifa, actualizar marcación1
@@ -717,10 +728,16 @@ const CotizacionFormulario: React.FC = () => {
 
 
     const totalSinSeguros1 = (showMotos && incluirMoto1)
-        ? (precioBase1 + accesorios1Val + documentos1 + marcacion1Val - descuento1Val
-            + (garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0)
-            + (gpsSel1 !== "no" ? gpsVal1 : 0)
-            + extrasMoto1)
+        ? (
+            (precioBase1 - bonoEnsA) +
+            accesorios1Val +
+            documentos1 +
+            marcacion1Val -
+            descuento1Val +
+            (garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0) +
+            (gpsSel1 !== "no" ? gpsVal1 : 0) +
+            extrasMoto1
+        )
         : 0;
 
 
@@ -744,16 +761,23 @@ const CotizacionFormulario: React.FC = () => {
 
 
     const totalSinSeguros2 = (showMotos && incluirMoto2)
-        ? (precioBase2 + accesorios2Val + documentos2 + marcacion2Val - descuento2Val
-            + (garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0)
-            + (gpsSel2 !== "no" ? gpsVal2 : 0)
-            + extrasMoto2)
+        ? (
+            (precioBase2 - bonoEnsB) +
+            accesorios2Val +
+            documentos2 +
+            marcacion2Val -
+            descuento2Val +
+            (garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0) +
+            (gpsSel2 !== "no" ? gpsVal2 : 0) +
+            extrasMoto2
+        )
         : 0;
 
     const totalConSeguros2 = totalSinSeguros2 + totalSeguros2;
 
     const moto1Seleccionada = Boolean(watch("moto1"));
     const moto2Seleccionada = Boolean(watch("moto2"));
+
 
 
 
@@ -856,11 +880,15 @@ const CotizacionFormulario: React.FC = () => {
         const gpsSelB = data.gps2 ?? "no";
 
 
+        const bonoEnsA_num = toNumberSafe(data.bono_ensambladora_a);
+        const bonoEnsB_num = toNumberSafe(data.bono_ensambladora_b);
+
+
         // 🔴 AQUÍ EL CAMBIO: ahora incluye garantía extendida + extrasMoto1/2,
         // igual que el cálculo visual de totalSinSeguros1/2.
         const totalSinSeg1 = incluirMoto1
             ? (
-                precioBase1 +
+                (precioBase1 - bonoEnsA_num) +
                 accesorios1 +
                 documentos1 +
                 marcacion1 -
@@ -873,7 +901,7 @@ const CotizacionFormulario: React.FC = () => {
 
         const totalSinSeg2 = incluirMoto2
             ? (
-                precioBase2 +
+                (precioBase2 - bonoEnsB_num) +
                 accesorios2 +
                 documentos2 +
                 marcacion2 -
@@ -883,6 +911,7 @@ const CotizacionFormulario: React.FC = () => {
                 extrasMoto2
             )
             : 0;
+
 
 
         const precioTotalA = incluirMoto1 ? (totalSinSeg1 + seg1 + otroSeguro1) : 0;
@@ -906,6 +935,9 @@ const CotizacionFormulario: React.FC = () => {
 
         const segurosA = incluirMoto1 ? mapSeguros(data.segurosIds1 as string[], otroSeguro1) : [];
         const segurosB = incluirMoto2 ? mapSeguros(data.segurosIds2 as string[], otroSeguro2) : [];
+
+
+
 
         const payload: Record<string, any> = {
             name: data.primer_nombre?.trim(),
@@ -1067,6 +1099,9 @@ const CotizacionFormulario: React.FC = () => {
             valor_gps_a: incluirMoto1 && (data.gps1 ?? "no") !== "no" ? gpsA : 0,
             valor_gps_b: incluirMoto2 && (data.gps2 ?? "no") !== "no" ? gpsB : null,
 
+            bono_ensambladora_a: incluirMoto1 ? bonoEnsA_num : 0,
+            bono_ensambladora_b: incluirMoto2 ? bonoEnsB_num : null,
+
 
 
         };
@@ -1193,9 +1228,9 @@ const CotizacionFormulario: React.FC = () => {
     const fotoMoto1 = watch("foto_a");
     const fotoMoto2 = watch("foto_b");
 
-const showGarantiaExtendida = showMotos; 
-// o si prefieres: const showGarantiaExtendida = showMotos && (metodo !== "terceros" ? true : true);
-// (pero con showMotos es suficiente: si estás en motos, se muestra)
+    const showGarantiaExtendida = showMotos;
+    // o si prefieres: const showGarantiaExtendida = showMotos && (metodo !== "terceros" ? true : true);
+    // (pero con showMotos es suficiente: si estás en motos, se muestra)
 
     React.useEffect(() => {
         if (metodo === "contado") {
@@ -1631,6 +1666,22 @@ const showGarantiaExtendida = showMotos;
                                             )}
 
 
+                                            <FormInput<FormValues>
+                                                name="bono_ensambladora_a"
+                                                label="Bono ensambladora (COP)"
+                                                type="number"
+                                                formatThousands
+                                                control={control}
+                                                placeholder="0"
+                                                disabled={!showMotos || !incluirMoto1}
+                                                rules={{
+                                                    min: { value: 0, message: "No puede ser negativo" },
+                                                    validate: (v: unknown) => {
+                                                        const val = N(v);
+                                                        return val <= precioBase1 || `No puede superar ${fmt(precioBase1)}`;
+                                                    },
+                                                }}
+                                            />
 
                                         </>
                                     )}
@@ -1983,6 +2034,17 @@ const showGarantiaExtendida = showMotos;
                                                             <span>{fmt(inicial1)}</span>
                                                         </div>
                                                     )}
+
+                                                    {bonoEnsA > 0 && (
+                                                        <div className="flex justify-between bg-error/5 px-4 py-2 rounded-md shadow-sm">
+                                                            <span className="font-medium text-gray-700">Bono ensambladora:</span>
+                                                            <span className="text-error font-semibold">
+                                                                -{fmt(bonoEnsA)}
+                                                            </span>
+                                                        </div>
+                                                    )}
+
+
                                                 </div>
 
 
@@ -2089,7 +2151,7 @@ const showGarantiaExtendida = showMotos;
                                             )}
 
 
-{/* 
+                                            {/* 
                                             <FormSelect<FormValues>
                                                 name="garantia2"
                                                 label="¿Incluye garantía?"
@@ -2178,6 +2240,23 @@ const showGarantiaExtendida = showMotos;
                                                 />
                                             )}
 
+
+                                            <FormInput<FormValues>
+                                                name="bono_ensambladora_b"
+                                                label="Bono ensambladora (COP)"
+                                                type="number"
+                                                formatThousands
+                                                control={control}
+                                                placeholder="0"
+                                                disabled={!showMotos || !incluirMoto2}
+                                                rules={{
+                                                    min: { value: 0, message: "No puede ser negativo" },
+                                                    validate: (v: unknown) => {
+                                                        const val = N(v);
+                                                        return val <= precioBase2 || `No puede superar ${fmt(precioBase2)}`;
+                                                    },
+                                                }}
+                                            />
 
 
                                         </>
@@ -2538,6 +2617,16 @@ const showGarantiaExtendida = showMotos;
                                                             <span>{fmt(inicial2)}</span>
                                                         </div>
                                                     )}
+
+                                                    {bonoEnsB > 0 && (
+                                                        <div className="flex justify-between bg-error/5 px-4 py-2 rounded-md shadow-sm">
+                                                            <span className="font-medium text-gray-700">Bono ensambladora:</span>
+                                                            <span className="text-error font-semibold">
+                                                                -{fmt(bonoEnsB)}
+                                                            </span>
+                                                        </div>
+                                                    )}
+
                                                 </div>
 
 

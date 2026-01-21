@@ -248,6 +248,16 @@ type MotoCalc = {
     cuotaInicial: number;
     // 👇 NUEVO: saldo a financiar
     saldoFinanciar: number;
+
+    // 👇 NUEVOS (para que esta vista muestre lo mismo que DetalleCotizacion)
+    soat: number;
+    matricula: number;
+    impuestos: number;
+
+    gpsMeses: string | null; // null => no aplica, 'no' => no, '12' => 12 meses, etc.
+    gpsValor: number;
+
+    bonoEnsambladora: number; // descuenta
 };
 
 const buildMotoCalc = (row: any, side: 'a' | 'b'): MotoCalc => {
@@ -278,9 +288,28 @@ const buildMotoCalc = (row: any, side: 'a' | 'b'): MotoCalc => {
         .replace(/\p{Diacritic}/gu, '');
     const garantia = gStr === 'si' || gStr === 'sí' || gStr === 'true' || gStr === '1';
 
+    // 👇 Documentos separados (para mostrarlos)
+    const soat = Number(row?.[`soat${sfx}`]) || 0;
+    const matricula = Number(row?.[`matricula${sfx}`]) || 0;
+    const impuestos = Number(row?.[`impuestos${sfx}`]) || 0;
+
+    // 👇 GPS (para mostrarlo)
+    const gpsMesesRaw = row?.[`gps_meses${sfx}`];
+    const gpsMeses =
+        gpsMesesRaw === null || gpsMesesRaw === undefined || String(gpsMesesRaw).trim() === ''
+            ? null
+            : String(gpsMesesRaw).trim().toLowerCase() === 'no'
+            ? 'no'
+            : String(gpsMesesRaw).trim();
+
+    const gpsValor = Number(row?.[`valor_gps${sfx}`]) || 0;
+
+    // 👇 Bono ensambladora (descuenta)
+    const bonoEnsambladora = Number(row?.[`bono_ensambladora${sfx}`]) || 0;
+
     const totalSinSeguros =
         Number(row?.[`total_sin_seguros${sfx}`]) ||
-        precioBase + precioDocumentos + accesoriosYMarcacion - descuentos;
+        (precioBase + precioDocumentos + accesoriosYMarcacion - descuentos - bonoEnsambladora);
 
     const total = Number(row?.[`precio_total${sfx}`]) || totalSinSeguros + seguros;
 
@@ -310,6 +339,13 @@ const buildMotoCalc = (row: any, side: 'a' | 'b'): MotoCalc => {
         total,
         cuotaInicial,
         saldoFinanciar,
+
+        soat,
+        matricula,
+        impuestos,
+        gpsMeses,
+        gpsValor,
+        bonoEnsambladora,
     };
 };
 
@@ -589,7 +625,7 @@ const DetalleCambiarEstado: React.FC = () => {
         <main className="w-full min-h-screen px-4 md:px-6 pb-6">
             <section className="w-full mb-6">
                 <div className="pt-4 mb-3">
-                    <ButtonLink to="/cotizaciones" direction='back' label="Volver a cotizaciones" />
+                    <ButtonLink to="/cotizaciones" direction="back" label="Volver a cotizaciones" />
                 </div>
             </section>
 
@@ -684,14 +720,51 @@ const DetalleCambiarEstado: React.FC = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border-b border-base-300/40">
                                 <InfoKV label="Precio base:" value={fmtCOP(motoA.precioBase)} />
                                 <InfoKV label="Precio documentos:" value={fmtCOP(motoA.precioDocumentos)} />
+
+                                {/* 👇 NUEVO: documentos separados */}
+                                <InfoKV label="SOAT:" value={fmtCOP(motoA.soat)} />
+                                <InfoKV label="Matrícula:" value={fmtCOP(motoA.matricula)} />
+                                <InfoKV label="Impuestos:" value={fmtCOP(motoA.impuestos)} />
+
                                 <InfoKV label="Accesorios + Marcación:" value={fmtCOP(motoA.accesoriosYMarcacion)} />
                                 <InfoKV
                                     label="Descuentos:"
                                     value={motoA.descuentos > 0 ? `-${fmtCOP(motoA.descuentos)}` : fmtCOP(0)}
                                 />
+
+                                {/* 👇 NUEVO: bono ensambladora */}
+                                {motoA.bonoEnsambladora > 0 && (
+                                    <InfoKV
+                                        label="Bono ensambladora:"
+                                        value={`- ${fmtCOP(motoA.bonoEnsambladora)}`}
+                                    />
+                                )}
+
                                 <InfoKV label="Seguros:" value={fmtCOP(motoA.seguros)} />
                                 <InfoKV label="Total sin seguros:" value={fmtCOP(motoA.totalSinSeguros)} />
                                 <InfoKV label="Total:" value={fmtCOP(motoA.total)} />
+
+                                {/* 👇 NUEVO: GPS */}
+                                <InfoKV
+                                    label="GPS (meses):"
+                                    value={
+                                        motoA.gpsMeses === null
+                                            ? 'No aplica'
+                                            : String(motoA.gpsMeses).toLowerCase() === 'no'
+                                            ? 'No'
+                                            : `${motoA.gpsMeses} meses`
+                                    }
+                                />
+                                <InfoKV
+                                    label="Valor GPS:"
+                                    value={
+                                        motoA.gpsMeses === null
+                                            ? '—'
+                                            : String(motoA.gpsMeses).toLowerCase() === 'no'
+                                            ? fmtCOP(0)
+                                            : fmtCOP(motoA.gpsValor)
+                                    }
+                                />
                             </div>
 
                             {/* Adicionales / trámites */}
@@ -746,14 +819,51 @@ const DetalleCambiarEstado: React.FC = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border-b border-base-300/40">
                                 <InfoKV label="Precio base:" value={fmtCOP(motoB.precioBase)} />
                                 <InfoKV label="Precio documentos:" value={fmtCOP(motoB.precioDocumentos)} />
+
+                                {/* 👇 NUEVO: documentos separados */}
+                                <InfoKV label="SOAT:" value={fmtCOP(motoB.soat)} />
+                                <InfoKV label="Matrícula:" value={fmtCOP(motoB.matricula)} />
+                                <InfoKV label="Impuestos:" value={fmtCOP(motoB.impuestos)} />
+
                                 <InfoKV label="Accesorios + Marcación:" value={fmtCOP(motoB.accesoriosYMarcacion)} />
                                 <InfoKV
                                     label="Descuentos:"
                                     value={motoB.descuentos > 0 ? `-${fmtCOP(motoB.descuentos)}` : fmtCOP(0)}
                                 />
+
+                                {/* 👇 NUEVO: bono ensambladora */}
+                                {motoB.bonoEnsambladora > 0 && (
+                                    <InfoKV
+                                        label="Bono ensambladora:"
+                                        value={`- ${fmtCOP(motoB.bonoEnsambladora)}`}
+                                    />
+                                )}
+
                                 <InfoKV label="Seguros:" value={fmtCOP(motoB.seguros)} />
                                 <InfoKV label="Total sin seguros:" value={fmtCOP(motoB.totalSinSeguros)} />
                                 <InfoKV label="Total:" value={fmtCOP(motoB.total)} />
+
+                                {/* 👇 NUEVO: GPS */}
+                                <InfoKV
+                                    label="GPS (meses):"
+                                    value={
+                                        motoB.gpsMeses === null
+                                            ? 'No aplica'
+                                            : String(motoB.gpsMeses).toLowerCase() === 'no'
+                                            ? 'No'
+                                            : `${motoB.gpsMeses} meses`
+                                    }
+                                />
+                                <InfoKV
+                                    label="Valor GPS:"
+                                    value={
+                                        motoB.gpsMeses === null
+                                            ? '—'
+                                            : String(motoB.gpsMeses).toLowerCase() === 'no'
+                                            ? fmtCOP(0)
+                                            : fmtCOP(motoB.gpsValor)
+                                    }
+                                />
                             </div>
 
                             {/* Adicionales / trámites */}
