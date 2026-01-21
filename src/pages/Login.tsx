@@ -52,7 +52,7 @@ const Login: React.FC = () => {
         <aside className="relative hidden items-center justify-center overflow-hidden lg:flex">
           <img
             src="/moto3.png"
-            alt="Motos Para Todos"
+            alt="Moto Para Todos"
             className="pointer-events-none select-none h-[75%] w-[75%] rounded-[2.5rem] object-cover "
           />
           {/* Decoraciones */}
@@ -78,7 +78,7 @@ const Login: React.FC = () => {
 
             <header className="mb-6 text-center pt-5">
               <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
-                Motos Para Todos
+                Moto Para Todos
               </h1>
               <p className="mt-1 text-sm text-slate-600">
                 Inicia sesión para continuar
