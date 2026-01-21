@@ -22,21 +22,84 @@ type ImpuestosFormValues = {
   impuestos: string;
 };
 
-const onlyDigitsMsg = "Solo números";
 
 // ==== Helpers tolerantes (evita error string | number) ====
 type AnyVal = string | number | null | undefined;
 
 const toStr = (v: AnyVal) => (v == null ? "" : typeof v === "number" ? String(v) : v);
-const digitsOnly = (v: AnyVal) => toStr(v).replace(/\D/g, "");
 
-const formatThousands = (v: AnyVal) => {
-  const digits = digitsOnly(v);
-  return digits ? digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "";
+/**
+ * Limpia el input dejando solo números y un separador decimal.
+ * Devuelve SIEMPRE formato backend: decimal con punto (.)
+ *
+ * Soporta:
+ * - "1.234,56" -> "1234.56"
+ * - "1234,56"  -> "1234.56"
+ * - "1234.56"  -> "1234.56"
+ * - "1.234.567"-> "1234567"
+ */
+const sanitizeMoneyInput = (v: AnyVal) => {
+  let s = toStr(v).trim();
+
+  // deja solo dígitos, punto y coma
+  s = s.replace(/[^\d.,]/g, "");
+
+  const hasDot = s.includes(".");
+  const hasComma = s.includes(",");
+
+  if (hasDot && hasComma) {
+    // asumimos formato ES: '.' miles y ',' decimal
+    s = s.replace(/\./g, ""); // quita miles
+    s = s.replace(/,/g, "."); // decimal -> punto
+  } else if (hasComma && !hasDot) {
+    // "1234,56" -> "1234.56"
+    s = s.replace(/,/g, ".");
+  } else {
+    // solo puntos o solo dígitos:
+    // si tiene varios puntos, probablemente eran miles: "1.234.567"
+    const parts = s.split(".");
+    if (parts.length > 2) {
+      s = parts.join("");
+    }
+  }
+
+  // dejar solo un punto decimal
+  const parts2 = s.split(".");
+  if (parts2.length > 2) {
+    s = parts2[0] + "." + parts2.slice(1).join("");
+  }
+
+  // máximo 2 decimales
+  const [intPartRaw, decPartRaw] = s.split(".");
+  const intPart = (intPartRaw ?? "").replace(/^0+(?=\d)/, "") || "0";
+
+  if (decPartRaw != null) {
+    const decPart = decPartRaw.slice(0, 2);
+    // si decimales quedó vacío (ej: "12.") lo devolvemos sin punto
+    return decPart.length ? `${intPart}.${decPart}` : intPart;
+  }
+
+  return intPart === "0" && s === "" ? "" : intPart; // permite vacío si el usuario borra
 };
 
-// Lo que se envía al backend (solo dígitos)
-const sanitize = digitsOnly;
+/**
+ * Formatea para mostrar con miles "." y decimal "," (estilo ES/CO).
+ * Recibe valor como venga (backend o usuario).
+ */
+const formatMoneyES = (v: AnyVal) => {
+  const clean = sanitizeMoneyInput(v);
+  if (!clean) return "";
+
+  const [intPart, decPart] = clean.split(".");
+  const withThousands = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+  return decPart != null && decPart.length > 0
+    ? `${withThousands},${decPart}`
+    : withThousands;
+};
+
+// Lo que se envía al backend (decimal con punto)
+const sanitizeForBackend = sanitizeMoneyInput;
 
 const ImpuestosMotosFormulario: React.FC<Props> = ({ initialValues }) => {
   const update = useUpdateImpuestosMoto();
@@ -53,10 +116,10 @@ const ImpuestosMotosFormulario: React.FC<Props> = ({ initialValues }) => {
     defaultValues: {
       id: initialValues.id,
       // Pre-formatea lo que venga del backend
-      soat: formatThousands(initialValues.soat),
-      matricula_contado: formatThousands(initialValues.matricula_contado),
-      matricula_credito: formatThousands(initialValues.matricula_credito),
-      impuestos: formatThousands(initialValues.impuestos),
+      soat: formatMoneyES(initialValues.soat),
+      matricula_contado: formatMoneyES(initialValues.matricula_contado),
+      matricula_credito: formatMoneyES(initialValues.matricula_credito),
+      impuestos: formatMoneyES(initialValues.impuestos),
     },
     mode: "onBlur",
   });
@@ -65,10 +128,10 @@ const ImpuestosMotosFormulario: React.FC<Props> = ({ initialValues }) => {
   React.useEffect(() => {
     reset({
       id: initialValues.id,
-      soat: formatThousands(initialValues.soat),
-      matricula_contado: formatThousands(initialValues.matricula_contado),
-      matricula_credito: formatThousands(initialValues.matricula_credito),
-      impuestos: formatThousands(initialValues.impuestos),
+      soat: formatMoneyES(initialValues.soat),
+      matricula_contado: formatMoneyES(initialValues.matricula_contado),
+      matricula_credito: formatMoneyES(initialValues.matricula_credito),
+      impuestos: formatMoneyES(initialValues.impuestos),
     });
   }, [initialValues, reset]);
 
@@ -84,8 +147,10 @@ const ImpuestosMotosFormulario: React.FC<Props> = ({ initialValues }) => {
     const sub = watch((val, info) => {
       const name = info?.name as keyof ImpuestosFormValues | undefined;
       if (!name || !moneyFields.includes(name)) return;
+
       const current = (val?.[name] as AnyVal) ?? "";
-      const formatted = formatThousands(current);
+      const formatted = formatMoneyES(current);
+
       if (formatted !== toStr(current)) {
         // evita loops: setea solo si cambió
         setValue(name, formatted as ImpuestosFormValues[typeof name], {
@@ -101,10 +166,10 @@ const ImpuestosMotosFormulario: React.FC<Props> = ({ initialValues }) => {
   const onSubmit = (values: ImpuestosFormValues) => {
     update.mutate({
       id: values.id,
-      soat: sanitize(values.soat),
-      matricula_contado: sanitize(values.matricula_contado),
-      matricula_credito: sanitize(values.matricula_credito),
-      impuestos: sanitize(values.impuestos),
+      soat: sanitizeForBackend(values.soat),
+      matricula_contado: sanitizeForBackend(values.matricula_contado),
+      matricula_credito: sanitizeForBackend(values.matricula_credito),
+      impuestos: sanitizeForBackend(values.impuestos),
     });
   };
 
@@ -119,11 +184,15 @@ const ImpuestosMotosFormulario: React.FC<Props> = ({ initialValues }) => {
         name="soat"
         label="SOAT"
         control={control}
-        placeholder="Ej. 458.000"
+        placeholder="Ej. 458.000,50"
         rules={{
           required: "El SOAT es obligatorio",
-          // valida sobre la versión sanitizada (permite puntos visuales)
-          validate: (v: string | number) => (!!digitsOnly(v) ? true : onlyDigitsMsg),
+          validate: (v: string | number) => {
+            const clean = sanitizeMoneyInput(v);
+            return clean && !isNaN(Number(clean))
+              ? true
+              : "Solo números (puedes usar , o . en decimales)";
+          },
         }}
       />
 
@@ -131,10 +200,15 @@ const ImpuestosMotosFormulario: React.FC<Props> = ({ initialValues }) => {
         name="matricula_contado"
         label="Matrícula (contado)"
         control={control}
-        placeholder="Ej. 4.548.000"
+        placeholder="Ej. 4.548.000,50"
         rules={{
           required: "La matrícula (contado) es obligatoria",
-          validate: (v: string | number) => (!!digitsOnly(v) ? true : onlyDigitsMsg),
+          validate: (v: string | number) => {
+            const clean = sanitizeMoneyInput(v);
+            return clean && !isNaN(Number(clean))
+              ? true
+              : "Solo números (puedes usar , o . en decimales)";
+          },
         }}
       />
 
@@ -142,10 +216,15 @@ const ImpuestosMotosFormulario: React.FC<Props> = ({ initialValues }) => {
         name="matricula_credito"
         label="Matrícula (crédito)"
         control={control}
-        placeholder="Ej. 4.538.000"
+        placeholder="Ej. 4.538.000,50"
         rules={{
           required: "La matrícula (crédito) es obligatoria",
-          validate: (v: string | number) => (!!digitsOnly(v) ? true : onlyDigitsMsg),
+          validate: (v: string | number) => {
+            const clean = sanitizeMoneyInput(v);
+            return clean && !isNaN(Number(clean))
+              ? true
+              : "Solo números (puedes usar , o . en decimales)";
+          },
         }}
       />
 
@@ -153,10 +232,15 @@ const ImpuestosMotosFormulario: React.FC<Props> = ({ initialValues }) => {
         name="impuestos"
         label="Impuestos"
         control={control}
-        placeholder="Ej. 4.548.000"
+        placeholder="Ej. 150.000,50"
         rules={{
           required: "Los impuestos son obligatorios",
-          validate: (v: string | number) => (!!digitsOnly(v) ? true : onlyDigitsMsg),
+          validate: (v: string | number) => {
+            const clean = sanitizeMoneyInput(v);
+            return clean && !isNaN(Number(clean))
+              ? true
+              : "Solo números (puedes usar , o . en decimales)";
+          },
         }}
       />
 

@@ -71,6 +71,10 @@ type Motocicleta = {
   saldoFinanciar: number;
   // 👇 NUEVO
   otrosSeguros?: number;
+  // 👇 GPS
+  gpsMeses?: string | number | null; // puede ser 'no', '12', 12, null
+  gpsValor?: number | null;          // puede ser 0, número o null
+
 };
 
 type Evento = {
@@ -310,6 +314,10 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
   const adicionalesHandSavers = Number(data?.[isA ? 'hand_savers_1' : 'hand_savers_2']) || 0;
   const adicionalesOtros = Number(data?.[isA ? 'otros_adicionales_1' : 'otros_adicionales_2']) || 0;
 
+  const gpsMeses = data?.[`gps_meses${suffix}`] ?? null;
+  const gpsValor = data?.[`valor_gps${suffix}`] ?? null;
+
+
   const adicionalesTotal =
     Number(data?.[isA ? 'total_adicionales_1' : 'total_adicionales_2']) ||
     (adicionalesRunt +
@@ -382,6 +390,10 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
     adicionalesTotal,
     saldoFinanciar,
     otrosSeguros,
+
+    gpsMeses,
+    gpsValor,
+
   };
 };
 
@@ -865,6 +877,30 @@ const DetalleCotizacion: React.FC = () => {
                           strong
                           valueClass="text-success font-bold"
                         />
+
+                        <DataRowText
+                          label="GPS (meses)"
+                          value={
+                            moto.gpsMeses === null
+                              ? 'No aplica'
+                              : String(moto.gpsMeses).toLowerCase() === 'no'
+                                ? 'No'
+                                : `${moto.gpsMeses} meses`
+                          }
+                        />
+
+                        <DataRow
+                          label="Valor GPS"
+                          value={
+                            moto.gpsMeses === null
+                              ? '—'
+                              : String(moto.gpsMeses).toLowerCase() === 'no'
+                                ? fmtCOP(0)
+                                : fmtCOP(Number(moto.gpsValor ?? 0))
+                          }
+                        />
+
+
                       </div>
                     </div>
                   </div>
@@ -958,6 +994,9 @@ const DetalleCotizacion: React.FC = () => {
                           : (typeof meses === 'number' && meses > 0 ? fmtCOP(0) : '—')
                       }
                     />
+
+
+
 
                     {/* <DataRowText
                       label="Plan"

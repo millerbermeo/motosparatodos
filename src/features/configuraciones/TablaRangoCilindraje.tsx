@@ -60,7 +60,7 @@ const TablaRangoCilindraje: React.FC = () => {
         <h3 className="text-sm font-semibold tracking-wide text-base-content/70">
           Configuración de rangos de cilindraje y tarifas
         </h3>
-        <button className="btn btn-primary" onClick={openCrear}>
+        <button className="btn hidden btn-primary" onClick={openCrear}>
           Nuevo rango
         </button>
       </div>

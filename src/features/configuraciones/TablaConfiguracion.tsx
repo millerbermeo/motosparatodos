@@ -43,7 +43,7 @@ const TablaConfiguracion: React.FC = () => {
         <h3 className="text-sm font-semibold tracking-wide text-base-content/70">
           Configuración de plazos y servicios
         </h3>
-        <button className="btn btn-primary" onClick={openCrear}>
+        <button className="btn hidden btn-primary" onClick={openCrear}>
           Nueva configuración
         </button>
       </div>

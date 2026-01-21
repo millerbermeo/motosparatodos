@@ -135,9 +135,24 @@ type FormValues = {
     valorHandSavers2: string;
     valorOtrosAdicionales2: string;
 
+    gps_a?: string;
+    gps_b?: string;
+
+    gps1?: "no" | "12" | "24" | "36";
+    gps2?: "no" | "12" | "24" | "36";
+
+
 };
 
 const garantiaExtendidaOptions: SelectOption[] = [
+    { value: "no", label: "No" },
+    { value: "12", label: "12 meses" },
+    { value: "24", label: "24 meses" },
+    { value: "36", label: "36 meses" },
+];
+
+
+const gpsOptions: SelectOption[] = [
     { value: "no", label: "No" },
     { value: "12", label: "12 meses" },
     { value: "24", label: "24 meses" },
@@ -374,6 +389,34 @@ const CotizacionFormulario: React.FC = () => {
 
 
     React.useEffect(() => {
+        const sel = watch("moto1");
+        const hayMoto = sel !== undefined && sel !== null && sel !== "";
+        if (!incluirMoto1) return;
+
+        if (hayMoto) {
+            const actual = N(watch("marcacion1"));
+            if (actual <= 0) {
+                setValue("marcacion1", "50000", { shouldDirty: true, shouldValidate: true });
+            }
+        }
+    }, [watch("moto1"), incluirMoto1, setValue]);
+
+    React.useEffect(() => {
+        const sel = watch("moto2");
+        const hayMoto = sel !== undefined && sel !== null && sel !== "";
+        if (!incluirMoto2) return;
+
+        if (hayMoto) {
+            const actual = N(watch("marcacion2"));
+            if (actual <= 0) {
+                setValue("marcacion2", "50000", { shouldDirty: true, shouldValidate: true });
+            }
+        }
+    }, [watch("moto2"), incluirMoto2, setValue]);
+
+
+
+    React.useEffect(() => {
         // A
         const selA = watch("moto1");
         const mA = (motos1?.motos ?? []).find((x) => x.linea === selA);
@@ -393,10 +436,10 @@ const CotizacionFormulario: React.FC = () => {
     }, [metodo, motos1, motos2, watch("moto1"), watch("moto2"), setValue]);
 
 
-    const garantiaOptions: SelectOption[] = [
-        { value: "si", label: "Sí" },
-        { value: "no", label: "No" },
-    ];
+    // const garantiaOptions: SelectOption[] = [
+    //     { value: "si", label: "Sí" },
+    //     { value: "no", label: "No" },
+    // ];
 
     React.useEffect(() => { setValue("moto1", ""); }, [selectedMarca1, setValue]);
     React.useEffect(() => { setValue("moto2", ""); }, [selectedMarca2, setValue]);
@@ -451,6 +494,9 @@ const CotizacionFormulario: React.FC = () => {
             setValue("garantiaExtendida1", "no");
             setValue("valor_garantia_extendida_a", "0"); // 👈
             setValue("soat_a", "0"); setValue("impuestos_a", "0"); setValue("matricula_a", "0");
+            setValue("gps1", "no");
+            setValue("gps_a", "0");
+
         }
     }, [incluirMoto1, setValue]);
 
@@ -464,6 +510,9 @@ const CotizacionFormulario: React.FC = () => {
             setValue("garantiaExtendida2", "no");
             setValue("valor_garantia_extendida_b", "0"); // 👈
             setValue("soat_b", "0"); setValue("impuestos_b", "0"); setValue("matricula_b", "0");
+            setValue("gps2", "no");
+            setValue("gps_b", "0");
+
 
         }
     }, [incluirMoto2, setValue]);
@@ -659,12 +708,21 @@ const CotizacionFormulario: React.FC = () => {
 
     const totalSeguros1 = (showMotos && incluirMoto1) ? otros1 : 0;
 
+    const gpsSel1 = watch("gps1") ?? "no";
+    const gpsVal1 = N(watch("gps_a"));
+
+    const gpsSel2 = watch("gps2") ?? "no";
+    const gpsVal2 = N(watch("gps_b"));
+
+
 
     const totalSinSeguros1 = (showMotos && incluirMoto1)
         ? (precioBase1 + accesorios1Val + documentos1 + marcacion1Val - descuento1Val
             + (garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0)
+            + (gpsSel1 !== "no" ? gpsVal1 : 0)
             + extrasMoto1)
         : 0;
+
 
 
     const totalConSeguros1 = totalSinSeguros1 + totalSeguros1;
@@ -677,6 +735,7 @@ const CotizacionFormulario: React.FC = () => {
     const inicial2 = N(watch("cuotaInicial2"));
     const marcacion2Val = N(watch("marcacion2"));
 
+
     // const totalSeguros2 = (showMotos && incluirMoto2)
     //     ? (segurosIds2 as string[]).reduce((acc, id) => acc + findSeguroValor(id), 0) + otros2
     //     : 0;
@@ -687,6 +746,7 @@ const CotizacionFormulario: React.FC = () => {
     const totalSinSeguros2 = (showMotos && incluirMoto2)
         ? (precioBase2 + accesorios2Val + documentos2 + marcacion2Val - descuento2Val
             + (garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0)
+            + (gpsSel2 !== "no" ? gpsVal2 : 0)
             + extrasMoto2)
         : 0;
 
@@ -790,6 +850,12 @@ const CotizacionFormulario: React.FC = () => {
             0
         );
 
+        const gpsA = toNumberSafe(data.gps_a);
+        const gpsB = toNumberSafe(data.gps_b);
+        const gpsSelA = data.gps1 ?? "no";
+        const gpsSelB = data.gps2 ?? "no";
+
+
         // 🔴 AQUÍ EL CAMBIO: ahora incluye garantía extendida + extrasMoto1/2,
         // igual que el cálculo visual de totalSinSeguros1/2.
         const totalSinSeg1 = incluirMoto1
@@ -800,6 +866,7 @@ const CotizacionFormulario: React.FC = () => {
                 marcacion1 -
                 descuento1 +
                 (data.garantiaExtendida1 !== "no" ? valorGarantiaA : 0) +
+                (gpsSelA !== "no" ? gpsA : 0) +
                 extrasMoto1
             )
             : 0;
@@ -812,9 +879,11 @@ const CotizacionFormulario: React.FC = () => {
                 marcacion2 -
                 descuento2 +
                 (data.garantiaExtendida2 !== "no" ? valorGarantiaB : 0) +
+                (gpsSelB !== "no" ? gpsB : 0) +
                 extrasMoto2
             )
             : 0;
+
 
         const precioTotalA = incluirMoto1 ? (totalSinSeg1 + seg1 + otroSeguro1) : 0;
         const precioTotalB = incluirMoto2 ? (totalSinSeg2 + seg2 + otroSeguro2) : 0;
@@ -992,6 +1061,13 @@ const CotizacionFormulario: React.FC = () => {
                     : null,
 
 
+            gps_meses_a: incluirMoto1 ? (data.gps1 ?? "no") : "no",
+            gps_meses_b: incluirMoto2 ? (data.gps2 ?? "no") : null,
+
+            valor_gps_a: incluirMoto1 && (data.gps1 ?? "no") !== "no" ? gpsA : 0,
+            valor_gps_b: incluirMoto2 && (data.gps2 ?? "no") !== "no" ? gpsB : null,
+
+
 
         };
 
@@ -1117,18 +1193,139 @@ const CotizacionFormulario: React.FC = () => {
     const fotoMoto1 = watch("foto_a");
     const fotoMoto2 = watch("foto_b");
 
-    const showGarantiaExtendida = esCreditoDirecto; // credibike o terceros
+const showGarantiaExtendida = showMotos; 
+// o si prefieres: const showGarantiaExtendida = showMotos && (metodo !== "terceros" ? true : true);
+// (pero con showMotos es suficiente: si estás en motos, se muestra)
 
     React.useEffect(() => {
         if (metodo === "contado") {
-            setValue("garantiaExtendida1", "no");
-            setValue("garantiaExtendida2", "no");
-            setValue("valor_garantia_extendida_a", "0");
-            setValue("valor_garantia_extendida_b", "0");
-            setValue("marcacion1", "0");
-            setValue("marcacion2", "0");
+            // setValue("garantiaExtendida1", "no");
+            // setValue("garantiaExtendida2", "no");
+            // setValue("valor_garantia_extendida_a", "0");
+            // setValue("valor_garantia_extendida_b", "0");
+            // setValue("marcacion1", "0");
+            // setValue("marcacion2", "0");
+            setValue("gps1", "no");
+            setValue("gps2", "no");
+            setValue("gps_a", "0");
+            setValue("gps_b", "0");
         }
     }, [metodo, setValue]);
+
+
+    const { data: ge12 } = useConfigPlazoByCodigo("GAR_EXT_12");
+    const { data: ge24 } = useConfigPlazoByCodigo("GAR_EXT_24");
+    const { data: ge36 } = useConfigPlazoByCodigo("GAR_EXT_36");
+
+    const geMap = React.useMemo(() => ({
+        "12": ge12,
+        "24": ge24,
+        "36": ge36,
+    }), [ge12, ge24, ge36]);
+
+
+    const calcGarantia = (precioBase: number, cfg: any | null) => {
+        if (!cfg || precioBase <= 0) return 0;
+
+        const v = Number(cfg.valor) || 0;
+        if (cfg.tipo_valor === "%") {
+            return Math.round(precioBase * (v / 100));
+        }
+        // tipo_valor === "$" o fijo
+        return Math.round(v);
+    };
+
+    React.useEffect(() => {
+        if (!incluirMoto1) return;
+
+        const sel = watch("garantiaExtendida1") ?? "no";
+        if (sel === "no") {
+            setValue("valor_garantia_extendida_a", "0");
+            return;
+        }
+
+        const cfg = geMap[sel as "12" | "24" | "36"] ?? null;
+        const val = calcGarantia(precioBase1, cfg);
+
+        setValue("valor_garantia_extendida_a", String(val), {
+            shouldDirty: true,
+            shouldValidate: true,
+        });
+    }, [incluirMoto1, watch("garantiaExtendida1"), precioBase1, geMap, setValue]);
+
+
+    React.useEffect(() => {
+        if (!incluirMoto2) return;
+
+        const sel = watch("garantiaExtendida2") ?? "no";
+        if (sel === "no") {
+            setValue("valor_garantia_extendida_b", "0");
+            return;
+        }
+
+        const cfg = geMap[sel as "12" | "24" | "36"] ?? null;
+        const val = calcGarantia(precioBase2, cfg);
+
+        setValue("valor_garantia_extendida_b", String(val), {
+            shouldDirty: true,
+            shouldValidate: true,
+        });
+    }, [incluirMoto2, watch("garantiaExtendida2"), precioBase2, geMap, setValue]);
+
+
+
+    const { data: gps12 } = useConfigPlazoByCodigo("GPS_12");
+    const { data: gps24 } = useConfigPlazoByCodigo("GPS_24");
+    const { data: gps36 } = useConfigPlazoByCodigo("GPS_36");
+
+    const gpsMap = React.useMemo(() => ({
+        "12": gps12,
+        "24": gps24,
+        "36": gps36,
+    }), [gps12, gps24, gps36]);
+
+
+    const calcGps = (precioBase: number, cfg: any | null) => {
+        if (!cfg) return 0;
+
+        const v = Number(cfg.valor) || 0;
+        if (cfg.tipo_valor === "%") {
+            return Math.round(precioBase * (v / 100));
+        }
+        return Math.round(v); // "$"
+    };
+
+    React.useEffect(() => {
+        if (!incluirMoto1) return;
+
+        const sel = watch("gps1") ?? "no";
+        if (sel === "no") {
+            setValue("gps_a", "0");
+            return;
+        }
+
+        const cfg = gpsMap[sel as "12" | "24" | "36"] ?? null;
+        const val = calcGps(precioBase1, cfg);
+
+        setValue("gps_a", String(val), { shouldDirty: true, shouldValidate: true });
+    }, [incluirMoto1, watch("gps1"), precioBase1, gpsMap, setValue]);
+
+
+    React.useEffect(() => {
+        if (!incluirMoto2) return;
+
+        const sel = watch("gps2") ?? "no";
+        if (sel === "no") {
+            setValue("gps_b", "0");
+            return;
+        }
+
+        const cfg = gpsMap[sel as "12" | "24" | "36"] ?? null;
+        const val = calcGps(precioBase2, cfg);
+
+        setValue("gps_b", String(val), { shouldDirty: true, shouldValidate: true });
+    }, [incluirMoto2, watch("gps2"), precioBase2, gpsMap, setValue]);
+
 
 
     return (
@@ -1346,7 +1543,7 @@ const CotizacionFormulario: React.FC = () => {
                                                 </div>
                                             )}
 
-                                            <FormSelect<FormValues>
+                                            {/* <FormSelect<FormValues>
                                                 name="garantia1"
                                                 label="¿Incluye garantía?"
                                                 control={control}
@@ -1354,13 +1551,13 @@ const CotizacionFormulario: React.FC = () => {
                                                 placeholder="Seleccione..."
                                                 disabled={!showMotos || !incluirMoto1 || esCreditoDirecto}  // 👈 BLOQUEA EN CRÉDITO
                                                 rules={reqIf(showMotos && incluirMoto1, "La garantía es obligatoria")}
-                                            />
-                       
+                                            /> */}
+
                                             {showGarantiaExtendida && (
                                                 <>
                                                     <FormSelect<FormValues>
                                                         name="garantiaExtendida1"
-                                                        label="Garantía extendida"
+                                                        label="Plazos"
                                                         control={control}
                                                         options={garantiaExtendidaOptions}
                                                         placeholder="Seleccione..."
@@ -1395,6 +1592,44 @@ const CotizacionFormulario: React.FC = () => {
                                                     )}
                                                 </>
                                             )}
+
+                                            <FormSelect<FormValues>
+                                                name="gps1"
+                                                label="GPS"
+                                                control={control}
+                                                options={gpsOptions}
+                                                placeholder="Seleccione..."
+                                                disabled={!showMotos || !incluirMoto1}
+                                                rules={{
+                                                    validate: (v) => {
+                                                        if (esCreditoDirecto && incluirMoto1) {
+                                                            return v && v !== "no" ? true : "El GPS es obligatorio para crédito.";
+                                                        }
+                                                        return true;
+                                                    },
+                                                }}
+                                            />
+
+
+                                            {watch("gps1") !== "no" && (
+                                                <FormInput<FormValues>
+                                                    name="gps_a"
+                                                    label="Valor GPS A"
+                                                    type="number"
+                                                    formatThousands
+                                                    control={control}
+                                                    placeholder="0"
+                                                    disabled
+                                                    rules={{
+                                                        validate: (v) => {
+                                                            if (!incluirMoto1) return true;
+                                                            if (watch("gps1") === "no") return true;
+                                                            return N(v) > 0 ? true : "El valor del GPS debe ser mayor a 0.";
+                                                        },
+                                                    }}
+                                                />
+                                            )}
+
 
 
                                         </>
@@ -1720,6 +1955,15 @@ const CotizacionFormulario: React.FC = () => {
                                                     )}
 
 
+                                                    {gpsSel1 !== "no" && (
+                                                        <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                            <span className="font-medium text-gray-700">
+                                                                GPS ({gpsSel1} meses):
+                                                            </span>
+                                                            <span>{fmt(gpsVal1)}</span>
+                                                        </div>
+                                                    )}
+
                                                     {/* Cascos y Accesorios */}
                                                     <div className="flex justify-between bg-blue-50/70 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-medium text-gray-700">Cascos y Accesorios:</span>
@@ -1845,7 +2089,7 @@ const CotizacionFormulario: React.FC = () => {
                                             )}
 
 
-
+{/* 
                                             <FormSelect<FormValues>
                                                 name="garantia2"
                                                 label="¿Incluye garantía?"
@@ -1854,13 +2098,13 @@ const CotizacionFormulario: React.FC = () => {
                                                 placeholder="Seleccione..."
                                                 disabled={!showMotos || !incluirMoto2 || esCreditoDirecto}  // 👈 BLOQUEA EN CRÉDITO
                                                 rules={reqIf(showMotos && incluirMoto2, "La garantía es obligatoria")}
-                                            />
+                                            /> */}
 
                                             {showGarantiaExtendida && (
                                                 <>
                                                     <FormSelect<FormValues>
                                                         name="garantiaExtendida2"
-                                                        label="Garantía extendida"
+                                                        label="Plazos"
                                                         control={control}
                                                         options={garantiaExtendidaOptions}
                                                         placeholder="Seleccione..."
@@ -1897,6 +2141,43 @@ const CotizacionFormulario: React.FC = () => {
                                                     )}
                                                 </>
                                             )}
+
+                                            <FormSelect<FormValues>
+                                                name="gps2"
+                                                label="GPS"
+                                                control={control}
+                                                options={gpsOptions}
+                                                placeholder="Seleccione..."
+                                                disabled={!showMotos || !incluirMoto2}
+                                                rules={{
+                                                    validate: (v) => {
+                                                        if (esCreditoDirecto && incluirMoto2) {
+                                                            return v && v !== "no" ? true : "El GPS es obligatorio para crédito.";
+                                                        }
+                                                        return true;
+                                                    },
+                                                }}
+                                            />
+
+                                            {watch("gps2") !== "no" && (
+                                                <FormInput<FormValues>
+                                                    name="gps_b"
+                                                    label="Valor GPS B"
+                                                    type="number"
+                                                    formatThousands
+                                                    control={control}
+                                                    placeholder="0"
+                                                    disabled
+                                                    rules={{
+                                                        validate: (v) => {
+                                                            if (!incluirMoto2) return true;
+                                                            if (watch("gps2") === "no") return true;
+                                                            return N(v) > 0 ? true : "El valor del GPS debe ser mayor a 0.";
+                                                        },
+                                                    }}
+                                                />
+                                            )}
+
 
 
                                         </>
@@ -2224,6 +2505,16 @@ const CotizacionFormulario: React.FC = () => {
                                                                 Garantía extendida ({garantiaExt2Sel} meses):
                                                             </span>
                                                             <span>{fmt(garantiaExtVal2)}</span>
+                                                        </div>
+                                                    )}
+
+
+                                                    {gpsSel2 !== "no" && (
+                                                        <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                            <span className="font-medium text-gray-700">
+                                                                GPS ({gpsSel2} meses):
+                                                            </span>
+                                                            <span>{fmt(gpsVal2)}</span>
                                                         </div>
                                                     )}
 
