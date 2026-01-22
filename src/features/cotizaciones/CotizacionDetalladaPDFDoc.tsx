@@ -619,9 +619,13 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
                         {k === "GPS (meses)"
                           ? fmtGpsMeses(v.gpsMeses)
                           : k === "Bono ensambladora"
-                            ? (v.bono > 0 ? `- ${fmtCOP(v.bono)}` : fmtCOP(0))
+                            ? v.bono > 0
+                              ? `- ${fmtCOP(v.bono)}`
+                              : fmtCOP(0)
                             : k === "Garantía extendida"
-                              ? (geSide.meses > 0 ? fmtCOP(geSide.valor) : "—")
+                              ? geSide.meses > 0
+                                ? fmtCOP(geSide.valor)
+                                : "—"
                               : fmtCOP(val)}
                       </Text>
                     </View>
@@ -651,7 +655,14 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
               ) : null}
 
               {segurosDetalle && segurosDetalle !== "—" ? (
-                <Text style={{ fontSize: bigger ? 7.6 : 7.0, color: "#374151", marginTop: 3, lineHeight: 1.05 }}>
+                <Text
+                  style={{
+                    fontSize: bigger ? 7.6 : 7.0,
+                    color: "#374151",
+                    marginTop: 3,
+                    lineHeight: 1.05,
+                  }}
+                >
                   <Text style={{ fontWeight: "bold" }}>Detalle seguros: </Text>
                   {segurosDetalle}
                 </Text>
@@ -672,7 +683,7 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
 
             <View style={styles.tableRow}>
               <Text style={styles.tableCell}>
-                {safe(side === "A" ? (g.moto_a ?? motoALabel) : (g.moto_b ?? motoBLabel))}
+                {safe(side === "A" ? g.moto_a ?? motoALabel : g.moto_b ?? motoBLabel)}
               </Text>
               <Text style={styles.tableCell}>{safe(geSide.plan)}</Text>
               <Text style={styles.tableCell}>{geSide.meses > 0 ? String(geSide.meses) : "—"}</Text>
@@ -686,8 +697,52 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
     );
   };
 
+  const renderHabeasFirmasFooter = () => (
+    <>
+      <SectionTitle title="Autorización de habeas data y firmas" />
+      <View style={styles.box} wrap={false}>
+        <Text style={styles.habeasTitle}>Autorización de habeas data:</Text>
+
+        <Text style={styles.habeasText}>
+          Con la firma del presente documento y con el suministro libre, espontáneo y voluntario de sus datos generales de
+          comunicación, entiéndase: nombre completo, cédula de ciudadanía, correo electrónico, número de dispositivo móvil,
+          número de teléfono fijo, whatsapp y todos aquellos que sean utilizados por redes sociales; se entenderá que la
+          empresa queda autorizada para el uso de los datos a fin de suministrar, a través de documentos digitales y/o en
+          físico la información comercial y de venta al consumidor de la siguiente
+        </Text>
+
+        <Text style={styles.habeasText}>
+          También quedan facultadas la empresa y el consumidor para: a) Conocer, actualizar y rectificar en cualquier momento
+          los datos personales; b) Solicitar prueba de la autorización otorgada; c) Ser informado, previa solicitud, respecto
+          del uso que se ha dado a los datos personales; d) Presentar ante la Superintendencia de Industria y Comercio quejas
+          por infracciones de conformidad con la ley; e) Revocar y suspender la autorización y/o solicitar la supresión de un
+          dato cuando en el tratamiento no se respeten las normas; f) Acceder en forma gratuita a los datos personales que
+          hayan sido objeto de tratamiento, y en general todas aquellas facultades consagradas en la Ley 1581 de 2012. Para
+          conocer más detalles de nuestra política de tratamiento y protección de datos personales, consulte nuestro manual de
+          tratamiento en www.tuclickmotos.com
+        </Text>
+
+        <View style={styles.firmaRow} wrap={false}>
+          <View style={styles.firmaBox}>
+            <Text style={styles.firmaLabel}>Firma del cliente</Text>
+          </View>
+          <View style={styles.firmaBox}>
+            <Text style={styles.firmaLabel}>Firma del asesor</Text>
+          </View>
+        </View>
+      </View>
+
+      <Text style={styles.footer}>
+        Precios y promociones sujetos a cambios sin previo aviso o hasta agotar existencias. La información será tratada
+        según Ley 1581 de 2012.
+      </Text>
+      <Text style={styles.footerCenter}>MOTO PARA TODOS S.A.S - Hacemos tu sueño realidad</Text>
+    </>
+  );
+
   const renderPageA = () => (
-    <Page size="A4" style={styles.page} wrap={false}>
+    // ✅ CARTA (LETTER)
+    <Page size="LETTER" style={styles.page} wrap={false}>
       {/* HEADER */}
       <View style={styles.header} wrap={false}>
         <View style={styles.headerLeft}>
@@ -756,51 +811,14 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
       {/* BLOQUE MOTO A */}
       {renderMotoBlock("A")}
 
-      {/* HABEAS + FIRMAS (solo en A) */}
-      <SectionTitle title="Autorización de habeas data y firmas" />
-      <View style={styles.box} wrap={false}>
-        <Text style={styles.habeasTitle}>Autorización de habeas data:</Text>
-
-        <Text style={styles.habeasText}>
-          Con la firma del presente documento y con el suministro libre, espontáneo y voluntario de sus datos generales de
-          comunicación, entiéndase: nombre completo, cédula de ciudadanía, correo electrónico, número de dispositivo móvil,
-          número de teléfono fijo, whatsapp y todos aquellos que sean utilizados por redes sociales; se entenderá que la
-          empresa queda autorizada para el uso de los datos a fin de suministrar, a través de documentos digitales y/o en
-          físico la información comercial y de venta al consumidor de la siguiente
-        </Text>
-
-        <Text style={styles.habeasText}>
-          También quedan facultadas la empresa y el consumidor para: a) Conocer, actualizar y rectificar en cualquier momento
-          los datos personales; b) Solicitar prueba de la autorización otorgada; c) Ser informado, previa solicitud, respecto
-          del uso que se ha dado a los datos personales; d) Presentar ante la Superintendencia de Industria y Comercio quejas
-          por infracciones de conformidad con la ley; e) Revocar y suspender la autorización y/o solicitar la supresión de un
-          dato cuando en el tratamiento no se respeten las normas; f) Acceder en forma gratuita a los datos personales que
-          hayan sido objeto de tratamiento, y en general todas aquellas facultades consagradas en la Ley 1581 de 2012. Para
-          conocer más detalles de nuestra política de tratamiento y protección de datos personales, consulte nuestro manual de
-          tratamiento en www.tuclickmotos.com
-        </Text>
-
-        <View style={styles.firmaRow} wrap={false}>
-          <View style={styles.firmaBox}>
-            <Text style={styles.firmaLabel}>Firma del cliente</Text>
-          </View>
-          <View style={styles.firmaBox}>
-            <Text style={styles.firmaLabel}>Firma del asesor</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* FOOTER (solo en A) */}
-      <Text style={styles.footer}>
-        Precios y promociones sujetos a cambios sin previo aviso o hasta agotar existencias. La información será tratada
-        según Ley 1581 de 2012.
-      </Text>
-      <Text style={styles.footerCenter}>MOTO PARA TODOS S.A.S - Hacemos tu sueño realidad</Text>
+      {/* ✅ Si NO hay Moto B, aquí va lo último (firmas) */}
+      {!hayMotoB ? renderHabeasFirmasFooter() : null}
     </Page>
   );
 
   const renderPageB = () => (
-    <Page size="A4" style={styles.pageB} wrap={false}>
+    // ✅ CARTA (LETTER)
+    <Page size="LETTER" style={styles.pageB} wrap={false}>
       {/* Header mínimo en B (sin repetir cliente/comercial/etc.) */}
       <View style={styles.header} wrap={false}>
         <View style={styles.headerLeft}>
@@ -818,8 +836,8 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
       {/* SOLO bloque Moto B (y su GE) */}
       {renderMotoBlock("B", { bigger: true })}
 
-      {/* (Opcional) footer mínimo en B; si no lo quieres, bórralo */}
-      <Text style={styles.footerCenter}>MOTO PARA TODOS S.A.S</Text>
+      {/* ✅ SIEMPRE al final del documento cuando hay 2 motos */}
+      {renderHabeasFirmasFooter()}
     </Page>
   );
 
