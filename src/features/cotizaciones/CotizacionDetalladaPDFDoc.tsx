@@ -82,28 +82,40 @@ const GRAY_BG = "#f3f4f6";
 
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 26,
-    paddingBottom: 28,
-    paddingHorizontal: 28,
-    fontSize: 9,
+    paddingTop: 12,
+    paddingBottom: 12,
+    paddingHorizontal: 12,
+    fontSize: 8.0,
     fontFamily: "Helvetica",
     backgroundColor: "#ffffff",
+    lineHeight: 1.08,
+  },
+
+  // Página B un poquito más grande (ya no va el bloque general)
+  pageB: {
+    paddingTop: 14,
+    paddingBottom: 14,
+    paddingHorizontal: 14,
+    fontSize: 8.6,
+    fontFamily: "Helvetica",
+    backgroundColor: "#ffffff",
+    lineHeight: 1.1,
   },
 
   /* HEADER */
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 10,
+    marginBottom: 5,
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
-    paddingBottom: 8,
+    paddingBottom: 5,
   },
   headerLeft: { flexDirection: "column", maxWidth: "65%" },
   headerRight: { flexDirection: "column", alignItems: "flex-end", maxWidth: "35%" },
-  logo: { width: 90, height: 40, marginBottom: 6 },
-  title: { fontSize: 15, fontWeight: "bold", color: ACCENT, marginBottom: 2 },
-  subtitle: { fontSize: 8.6, marginBottom: 2, color: "#4b5563" },
+  logo: { width: 74, height: 32, marginBottom: 3, objectFit: "contain" },
+  title: { fontSize: 12.0, fontWeight: "bold", color: ACCENT, marginBottom: 1 },
+  subtitle: { fontSize: 7.5, marginBottom: 1, color: "#4b5563" },
 
   /* RESUMEN */
   resumenWrapper: {
@@ -112,56 +124,69 @@ const styles = StyleSheet.create({
     backgroundColor: ACCENT_LIGHT,
     borderWidth: 1,
     borderColor: "#a7f3d0",
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    marginBottom: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 5,
+    marginBottom: 5,
   },
-  resumenCol: { flex: 1, paddingRight: 8 },
-  resumenHeader: { fontSize: 10, fontWeight: "bold", color: ACCENT, marginBottom: 3 },
-  resumenLine: { fontSize: 8.6, color: "#064e3b", marginBottom: 2 },
+  resumenCol: { flex: 1, paddingRight: 5 },
+  resumenHeader: { fontSize: 8.5, fontWeight: "bold", color: ACCENT, marginBottom: 2 },
+  resumenLine: { fontSize: 7.6, color: "#064e3b", marginBottom: 1 },
 
   /* SECTION TITLE */
   sectionTitleWrapper: {
     backgroundColor: GRAY_BG,
     borderRadius: 5,
-    paddingVertical: 5,
-    paddingHorizontal: 8,
-    marginTop: 8,
-    marginBottom: 6,
+    paddingVertical: 2.5,
+    paddingHorizontal: 5,
+    marginTop: 4,
+    marginBottom: 3,
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  sectionTitleText: { fontSize: 10.5, fontWeight: "bold", color: "#111827" },
-  sectionTitleTag: { fontSize: 8.4, color: "#6b7280" },
+  sectionTitleText: { fontSize: 9.0, fontWeight: "bold", color: "#111827" },
+  sectionTitleTag: { fontSize: 7.4, color: "#6b7280" },
 
   /* BOX */
   box: {
     borderWidth: 1,
     borderColor: BORDER,
     borderRadius: 5,
-    padding: 8,
-    marginBottom: 8,
+    padding: 5,
+    marginBottom: 5,
   },
-  row: { flexDirection: "row", marginBottom: 5 },
-  col: { flex: 1, paddingRight: 6 },
-  label: { fontWeight: "bold", color: "#374151", marginBottom: 1, fontSize: 8.6 },
-  value: { fontSize: 8.6, color: "#111827" },
+  row: { flexDirection: "row", marginBottom: 3 },
+  col: { flex: 1, paddingRight: 5 },
+  label: { fontWeight: "bold", color: "#374151", marginBottom: 1, fontSize: 7.6 },
+  value: { fontSize: 7.6, color: "#111827" },
 
-  /* TABLE (compacta) */
+  /* Mini resumen */
+  miniRow: { flexDirection: "row", gap: 5, marginBottom: 5 },
+  miniBox: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#a7f3d0",
+    backgroundColor: ACCENT_LIGHT,
+    borderRadius: 7,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+  },
+  miniLabel: { fontSize: 7.0, color: "#064e3b" },
+  miniValue: { fontSize: 9.0, fontWeight: "bold", color: ACCENT, marginTop: 1 },
+
+  /* TABLE */
   table: {
-    marginTop: 6,
-    marginBottom: 6,
     borderWidth: 1,
     borderColor: BORDER,
     borderRadius: 5,
+    overflow: "hidden",
   },
   tableHeaderRow: { flexDirection: "row", backgroundColor: ACCENT_LIGHT },
   tableRow: { flexDirection: "row" },
   tableCellHeader: {
     flex: 1,
-    paddingVertical: 4,
-    paddingHorizontal: 5,
-    fontSize: 8.4,
+    paddingVertical: 2.6,
+    paddingHorizontal: 3.5,
+    fontSize: 7.2,
     fontWeight: "bold",
     borderRightWidth: 1,
     borderRightColor: BORDER,
@@ -169,9 +194,9 @@ const styles = StyleSheet.create({
   },
   tableCell: {
     flex: 1,
-    paddingVertical: 4,
-    paddingHorizontal: 5,
-    fontSize: 8.4,
+    paddingVertical: 2.6,
+    paddingHorizontal: 3.5,
+    fontSize: 7.2,
     borderTopWidth: 1,
     borderTopColor: "#e5e7eb",
     borderRightWidth: 1,
@@ -179,58 +204,106 @@ const styles = StyleSheet.create({
   },
   tableCellLast: { borderRightWidth: 0 },
 
-  /* MOTO */
+  /* MOTO CARD */
   motoCard: {
     borderWidth: 1,
     borderColor: BORDER,
     borderRadius: 6,
-    padding: 8,
-    marginBottom: 10,
+    padding: 5,
+    marginBottom: 5,
   },
   motoHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 4,
+    marginBottom: 3,
+    gap: 6,
   },
-  motoTitle: { fontSize: 10, fontWeight: "bold", color: "#111827" },
-  motoChip: { fontSize: 8.4, color: "#374151" },
-  motoImageWrapper: {
-    marginTop: 6,
-    marginBottom: 6,
-    alignItems: "center",
-    justifyContent: "center",
+  motoTitle: { fontSize: 8.6, fontWeight: "bold", color: "#111827", flexGrow: 1 },
+  motoChip: { fontSize: 7.2, color: "#374151" },
+
+  // Layout horizontal
+  motoBodyRow: { flexDirection: "row", gap: 5 },
+
+  // Imagen izquierda
+  motoLeftCol: {
+    width: 120,
     borderWidth: 1,
     borderColor: BORDER,
     borderRadius: 5,
-    padding: 5,
     backgroundColor: "#f9fafb",
+    padding: 4,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  motoImage: { width: 190, height: 110, objectFit: "contain" },
-  motoImageLabel: { fontSize: 7.8, color: "#6b7280", marginTop: 3 },
+  motoImage: { width: 110, height: 62, objectFit: "contain" },
+
+  // Imagen en página B un poco más grande
+  motoLeftColB: {
+    width: 150,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 7,
+    backgroundColor: "#f9fafb",
+    padding: 6,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  motoImageB: { width: 140, height: 82, objectFit: "contain" },
+
+  motoImageLabel: { fontSize: 6.8, color: "#6b7280", marginTop: 2, textAlign: "center" },
+  motoNoImg: { fontSize: 7.0, color: "#6b7280", textAlign: "center" },
+
+  motoRightCol: { flex: 1, gap: 5 },
+  motoTablesRow: { flexDirection: "row", gap: 5 },
+  half: { flex: 1 },
+
+  /* Cuotas 3 col */
+  table3Header: { flexDirection: "row", backgroundColor: ACCENT_LIGHT },
+  table3Row: { flexDirection: "row" },
+  t3h: {
+    width: "33.33%",
+    paddingVertical: 2.6,
+    paddingHorizontal: 3.5,
+    fontSize: 7.0,
+    fontWeight: "bold",
+    borderRightWidth: 1,
+    borderRightColor: BORDER,
+    color: "#064e3b",
+  },
+  t3c: {
+    width: "33.33%",
+    paddingVertical: 2.6,
+    paddingHorizontal: 3.5,
+    fontSize: 7.0,
+    borderTopWidth: 1,
+    borderTopColor: "#e5e7eb",
+    borderRightWidth: 1,
+    borderRightColor: "#e5e7eb",
+  },
+  t3Last: { borderRightWidth: 0 },
 
   /* HABEAS / FIRMAS */
-  smallText: { fontSize: 8.2, color: "#374151", lineHeight: 1.25 },
-  firmaRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 12 },
-  firmaBox: { width: "45%", borderTopWidth: 1, borderTopColor: "#111827", paddingTop: 4 },
-  firmaLabel: { fontSize: 8.6, color: "#111827" },
+  habeasTitle: {
+    fontSize: 7.8,
+    fontWeight: "bold",
+    marginBottom: 2,
+    marginTop: 1,
+    color: "#111827",
+  },
+  habeasText: {
+    fontSize: 6.5,
+    color: "#374151",
+    lineHeight: 1.06,
+    marginBottom: 2,
+  },
+
+  firmaRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 5 },
+  firmaBox: { width: "45%", borderTopWidth: 1, borderTopColor: "#111827", paddingTop: 3 },
+  firmaLabel: { fontSize: 7.4, color: "#111827" },
 
   /* FOOTER */
-  footer: { fontSize: 7.8, color: "#6b7280", marginTop: 8, lineHeight: 1.25 },
-  footerCenter: { fontSize: 7.8, color: "#374151", marginTop: 4, textAlign: "center" },
-  habeasTitle: {
-  fontSize: 9.6,
-  fontWeight: "bold",
-  marginBottom: 4,
-  marginTop: 2,
-  color: "#111827",
-},
-habeasText: {
-  fontSize: 8.2,
-  color: "#374151",
-  lineHeight: 1.25,
-  marginBottom: 4,
-},
-
+  footer: { fontSize: 6.6, color: "#6b7280", marginTop: 3, lineHeight: 1.1 },
+  footerCenter: { fontSize: 6.6, color: "#374151", marginTop: 2, textAlign: "center" },
 });
 
 const fmtCOP = (v: any) =>
@@ -247,8 +320,8 @@ const num = (v: any): number => {
 
 const fmtDateTime = (raw?: string) => {
   if (!raw) return "";
-  const d = new Date(raw.replace(" ", "T"));
-  if (Number.isNaN(d.getTime())) return raw;
+  const d = new Date(String(raw).replace(" ", "T"));
+  if (Number.isNaN(d.getTime())) return String(raw);
   return d.toLocaleString("es-CO", {
     day: "2-digit",
     month: "2-digit",
@@ -260,8 +333,8 @@ const fmtDateTime = (raw?: string) => {
 
 const fmtDateShort = (raw?: string) => {
   if (!raw) return "";
-  const d = new Date(raw.replace(" ", "T"));
-  if (Number.isNaN(d.getTime())) return raw;
+  const d = new Date(String(raw).replace(" ", "T"));
+  if (Number.isNaN(d.getTime())) return String(raw);
   const day = String(d.getDate()).padStart(2, "0");
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const year = d.getFullYear();
@@ -270,8 +343,6 @@ const fmtDateShort = (raw?: string) => {
 
 const safe = (v: any, fallback: string = "—") =>
   v === null || v === undefined || v === "" ? fallback : String(v);
-
-/* ====== Imagen helpers ====== */
 
 const BaseUrl =
   (import.meta as any)?.env?.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
@@ -284,29 +355,19 @@ const buildAbsUrl = (path?: string | null): string | null => {
   return `${root}/${rel}`;
 };
 
-const publicUrl = (p: string) => {
-  try {
-    if (typeof window !== "undefined" && (window as any)?.location?.origin) {
-      return window.location.origin + p;
-    }
-  } catch {}
-  return p;
-};
-
+// Solo imagen real (sin fallback) para ahorrar alto en A; B puede verse sin imagen si no hay
 const resolveMotoImg = (d: any, side: "A" | "B", override?: string): string | null => {
   if (override) return override;
 
   const key = side === "A" ? "foto_a" : "foto_b";
   const sideSpecific = d?.[key];
-
   const candidates = [sideSpecific, d?.product_img, d?.imagen, d?.foto].filter(Boolean) as string[];
 
   for (const c of candidates) {
     const abs = buildAbsUrl(c);
     if (abs) return abs;
   }
-
-  return publicUrl("/producto.png");
+  return null;
 };
 
 const SectionTitle: React.FC<{ title: string; tag?: string }> = ({ title, tag }) => (
@@ -315,6 +376,22 @@ const SectionTitle: React.FC<{ title: string; tag?: string }> = ({ title, tag })
     {tag ? <Text style={styles.sectionTitleTag}>{tag}</Text> : null}
   </View>
 );
+
+const MiniBox: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+  <View style={styles.miniBox} wrap={false}>
+    <Text style={styles.miniLabel}>{label}</Text>
+    <Text style={styles.miniValue}>{value}</Text>
+  </View>
+);
+
+const fmtGpsMeses = (v: any) => {
+  if (v === null || v === undefined) return "No aplica";
+  const s = String(v).toLowerCase();
+  if (s === "no") return "No";
+  return `${v} meses`;
+};
+
+const pickComentario = (d: any) => safe(d.comentario2 ?? d.comentario ?? "", "—");
 
 /* ============================
    Componente principal PDF
@@ -337,304 +414,419 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
 
   const motoALabel = [d.marca_a, d.linea_a, d.modelo_a].filter(Boolean).join(" ");
   const motoBLabel = [d.marca_b, d.linea_b, d.modelo_b].filter(Boolean).join(" ");
-  const hayMotoB = !!d.marca_b || !!d.linea_b || !!d.precio_base_b;
+  const hayMotoB = !!d.marca_b || !!d.linea_b || !!d.precio_base_b || !!d.precio_total_b;
 
   const fechaCorta = fmtDateShort(d.fecha_creacion);
   const ciudad = empresa?.ciudad || "Cali";
   const almacen = empresa?.almacen || "FERIA DE LA MOVILIDAD";
+  const tipoPago = safe(d.tipo_pago || d.metodo_pago);
 
   const motoImgA = resolveMotoImg(d, "A", motoFotoAUrl);
   const motoImgB = hayMotoB ? resolveMotoImg(d, "B", motoFotoBUrl) : null;
 
-  // Económicos A
-  const totalSinSegurosA = num(d.total_sin_seguros_a);
-  const totalA = num(d.precio_total_a) || totalSinSegurosA + num(d.otro_seguro_a);
-  const cuotaInicialA = num(d.cuota_inicial_a);
-  const saldoAFinanciarA = Math.max(totalA - cuotaInicialA, 0);
+  const getGE = (side: "A" | "B") => {
+    if (side === "A") {
+      const meses = num(g?.meses_a) || num(d?.garantia_extendida_a);
+      const valor = num(g?.valor_a) || num(d?.valor_garantia_extendida_a);
+      const plan = safe(g?.garantia_extendida_a ?? d?.garantia_extendida_a, "—");
+      return { meses, valor, plan };
+    }
+    const meses = num(g?.meses_b) || num(d?.garantia_extendida_b);
+    const valor = num(g?.valor_b) || num(d?.valor_garantia_extendida_b);
+    const plan = safe(g?.garantia_extendida_b ?? d?.garantia_extendida_b, "—");
+    return { meses, valor, plan };
+  };
 
-  // Económicos B
-  const totalSinSegurosB = num(d.total_sin_seguros_b);
-  const totalB = num(d.precio_total_b) || totalSinSegurosB + num(d.otro_seguro_b);
-  const cuotaInicialB = num(d.cuota_inicial_b);
-  const saldoAFinanciarB = Math.max(totalB - cuotaInicialB, 0);
+  const getMotoValues = (side: "A" | "B") => {
+    const s = side === "A" ? "_a" : "_b";
+    const isA = side === "A";
 
-  const tipoPago = safe(d.tipo_pago || d.metodo_pago);
+    const precioBase = num(d[`precio_base${s}`]);
+    const descuentos = num(d[`descuentos${s}`]);
 
-  const renderMotoCompact = (opts: {
-    title: string;
-    label: string;
-    img: string | null;
-    garantia: any;
-    garantiaExtendida: any;
-    values: {
-      precio_base: any;
-      documentos: any;
-      accesorios: any;
-      seguros_valor: any;
-      seguros_detalle: any;
-      descuentos: any;
-      totalSinSeguros: number;
-      total: number;
-      cuotaInicial: number;
-      saldo: number;
+    const accesorios = num(d[`accesorios${s}`]);
+    const marcacion = num(d[`marcacion${s}`]);
+    const accesoriosMarcacion = accesorios + marcacion;
+
+    const otrosSeguros = num(d[`otro_seguro${s}`]);
+
+    const soat = num(d[`soat${s}`]);
+    const matricula = num(d[`matricula${s}`]);
+    const impuestos = num(d[`impuestos${s}`]);
+    const docsReal = soat + matricula + impuestos;
+
+    const runt = num(d[isA ? "runt_1" : "runt_2"]);
+    const licencia = num(d[isA ? "licencia_1" : "licencia_2"]);
+    const defensas = num(d[isA ? "defensas_1" : "defensas_2"]);
+    const hand = num(d[isA ? "hand_savers_1" : "hand_savers_2"]);
+    const otrosAd = num(d[isA ? "otros_adicionales_1" : "otros_adicionales_2"]);
+    const adicionalesTotal =
+      num(d[isA ? "total_adicionales_1" : "total_adicionales_2"]) ||
+      (runt + licencia + defensas + hand + otrosAd);
+
+    const gpsMeses = d[`gps_meses${s}`];
+    const gpsValor = num(d[`valor_gps${s}`]);
+
+    const bono = num(d[`bono_ensambladora${s}`]);
+
+    const totalSinSeguros =
+      num(d[`total_sin_seguros${s}`]) ||
+      (precioBase + docsReal + accesoriosMarcacion + adicionalesTotal - descuentos - bono);
+
+    const total = num(d[`precio_total${s}`]) || (totalSinSeguros + otrosSeguros);
+
+    const cuotaInicial = num(d[`cuota_inicial${s}`]);
+    const saldo = Math.max(total - cuotaInicial, 0);
+
+    const cuotas = {
+      c6: num(d[`cuota_6${s}`]),
+      c12: num(d[`cuota_12${s}`]),
+      c18: num(d[`cuota_18${s}`]),
+      c24: num(d[`cuota_24${s}`]),
+      c30: num(d[`cuota_30${s}`]),
+      c36: num(d[`cuota_36${s}`]),
     };
-  }) => {
-    const { title, label, img, garantia, garantiaExtendida, values } = opts;
+
+    return {
+      precioBase,
+      descuentos,
+      accesorios,
+      marcacion,
+      accesoriosMarcacion,
+      otrosSeguros,
+
+      soat,
+      matricula,
+      impuestos,
+      docsReal,
+
+      runt,
+      licencia,
+      defensas,
+      hand,
+      otrosAd,
+      adicionalesTotal,
+
+      gpsMeses,
+      gpsValor,
+      bono,
+
+      totalSinSeguros,
+      total,
+      cuotaInicial,
+      saldo,
+      cuotas,
+    };
+  };
+
+  const renderMotoBlock = (side: "A" | "B", opts?: { bigger?: boolean }) => {
+    const bigger = !!opts?.bigger;
+
+    const label = side === "A" ? motoALabel : motoBLabel;
+    const img = side === "A" ? motoImgA : motoImgB;
+
+    const garantia = side === "A" ? d.garantia_a : d.garantia_b;
+    const segurosDetalle = formatSeguros(side === "A" ? d.seguros_a : d.seguros_b);
+
+    const v = getMotoValues(side);
+    const geSide = getGE(side);
+
+    const cuotasList = [
+      ["6", v.cuotas.c6],
+      ["12", v.cuotas.c12],
+      ["18", v.cuotas.c18],
+      ["24", v.cuotas.c24],
+      ["30", v.cuotas.c30],
+      ["36", v.cuotas.c36],
+    ].filter(([, val]) => Number(val) > 0);
 
     return (
       <>
-        <SectionTitle title={title} tag={safe(label)} />
-        <View style={styles.motoCard}>
-          <View style={styles.motoHeader}>
+        <SectionTitle title={`Moto ${side}`} tag={safe(label)} />
+
+        <View style={styles.miniRow} wrap={false}>
+          <MiniBox label="TOTAL" value={fmtCOP(v.total)} />
+          <MiniBox label="Cuota inicial" value={fmtCOP(v.cuotaInicial)} />
+          <MiniBox label="Saldo a financiar" value={fmtCOP(v.saldo)} />
+        </View>
+
+        <View style={styles.motoCard} wrap={false}>
+          <View style={styles.motoHeader} wrap={false}>
             <Text style={styles.motoTitle}>{safe(label)}</Text>
             <Text style={styles.motoChip}>
-              Garantía: {safe(garantia, "—")} · Ext: {safe(garantiaExtendida, "—")}
+              Garantía: {safe(garantia, "—")} · GE:{" "}
+              {geSide.meses > 0 ? `${geSide.meses}m (${fmtCOP(geSide.valor)})` : "No aplica"}
             </Text>
           </View>
 
-          {img && (
-            <View style={styles.motoImageWrapper}>
-              <Image src={img} style={styles.motoImage} />
-              <Text style={styles.motoImageLabel}>Imagen referencia</Text>
+          <View style={styles.motoBodyRow} wrap={false}>
+            <View style={bigger ? styles.motoLeftColB : styles.motoLeftCol} wrap={false}>
+              {img ? (
+                <>
+                  <Image src={img} style={bigger ? styles.motoImageB : styles.motoImage} />
+                  <Text style={styles.motoImageLabel}>Imagen referencia</Text>
+                </>
+              ) : (
+                <Text style={styles.motoNoImg}>Sin imagen</Text>
+              )}
             </View>
-          )}
 
-          <View style={styles.table}>
+            <View style={styles.motoRightCol} wrap={false}>
+              <View style={styles.motoTablesRow} wrap={false}>
+                <View style={[styles.table, styles.half]} wrap={false}>
+                  <View style={styles.tableHeaderRow}>
+                    <Text style={styles.tableCellHeader}>Concepto</Text>
+                    <Text style={[styles.tableCellHeader, styles.tableCellLast]}>Valor</Text>
+                  </View>
+
+                  {[
+                    ["Precio base", v.precioBase],
+                    ["Descuentos", v.descuentos],
+                    ["Accesorios", v.accesorios],
+                    ["Marcación", v.marcacion],
+                    ["Adicionales", v.adicionalesTotal],
+                    ["SOAT", v.soat],
+                    ["Matrícula", v.matricula],
+                    ["Impuestos", v.impuestos],
+                  ].map(([k, val], idx) => (
+                    <View style={styles.tableRow} key={`L-${side}-${k}-${idx}`}>
+                      <Text style={styles.tableCell}>{k as string}</Text>
+                      <Text style={[styles.tableCell, styles.tableCellLast]}>{fmtCOP(val)}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                <View style={[styles.table, styles.half]} wrap={false}>
+                  <View style={styles.tableHeaderRow}>
+                    <Text style={styles.tableCellHeader}>Resumen</Text>
+                    <Text style={[styles.tableCellHeader, styles.tableCellLast]}>Valor</Text>
+                  </View>
+
+                  {[
+                    ["Docs (total)", v.docsReal],
+                    ["Acc + marcación", v.accesoriosMarcacion],
+                    ["Otros seguros", v.otrosSeguros],
+                    ["GPS (meses)", "TXT"],
+                    ["GPS (valor)", v.gpsValor],
+                    ["Bono ensambladora", "BONO"],
+                    ["Garantía extendida", "GEVAL"],
+                    ["Total sin seguros", v.totalSinSeguros],
+                    ["TOTAL", v.total],
+                  ].map(([k, val], idx) => (
+                    <View style={styles.tableRow} key={`R-${side}-${k}-${idx}`}>
+                      <Text style={styles.tableCell}>{k as string}</Text>
+                      <Text style={[styles.tableCell, styles.tableCellLast]}>
+                        {k === "GPS (meses)"
+                          ? fmtGpsMeses(v.gpsMeses)
+                          : k === "Bono ensambladora"
+                            ? (v.bono > 0 ? `- ${fmtCOP(v.bono)}` : fmtCOP(0))
+                            : k === "Garantía extendida"
+                              ? (geSide.meses > 0 ? fmtCOP(geSide.valor) : "—")
+                              : fmtCOP(val)}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+
+              {cuotasList.length ? (
+                <View wrap={false}>
+                  <Text style={styles.label}>Cuotas</Text>
+                  <View style={styles.table} wrap={false}>
+                    <View style={styles.table3Header}>
+                      <Text style={styles.t3h}>Plazo</Text>
+                      <Text style={styles.t3h}>Valor</Text>
+                      <Text style={[styles.t3h, styles.t3Last]}>Tipo</Text>
+                    </View>
+
+                    {cuotasList.map(([p, val]) => (
+                      <View style={styles.table3Row} key={`C-${side}-${p}`}>
+                        <Text style={styles.t3c}>{p} meses</Text>
+                        <Text style={styles.t3c}>{fmtCOP(val)}</Text>
+                        <Text style={[styles.t3c, styles.t3Last]}>{tipoPago}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
+
+              {segurosDetalle && segurosDetalle !== "—" ? (
+                <Text style={{ fontSize: bigger ? 7.6 : 7.0, color: "#374151", marginTop: 3, lineHeight: 1.05 }}>
+                  <Text style={{ fontWeight: "bold" }}>Detalle seguros: </Text>
+                  {segurosDetalle}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+        </View>
+
+        <SectionTitle title="Garantía extendida" />
+        <View style={styles.box} wrap={false}>
+          <View style={styles.table} wrap={false}>
             <View style={styles.tableHeaderRow}>
-              <Text style={styles.tableCellHeader}>Concepto</Text>
+              <Text style={styles.tableCellHeader}>Moto</Text>
+              <Text style={styles.tableCellHeader}>Plan</Text>
+              <Text style={styles.tableCellHeader}>Meses</Text>
               <Text style={[styles.tableCellHeader, styles.tableCellLast]}>Valor</Text>
             </View>
 
-            {[
-              ["Precio público", values.precio_base],
-              ["Documentos", values.documentos],
-              ["Accesorios", values.accesorios],
-              ["Seguros", values.seguros_valor],
-              ["Descuentos", values.descuentos],
-              ["Total sin seguros", values.totalSinSeguros],
-              ["TOTAL", values.total],
-              ["Cuota inicial", values.cuotaInicial],
-              ["Saldo a financiar", values.saldo],
-            ].map(([k, v], idx) => (
-              <View style={styles.tableRow} key={String(k) + idx}>
-                <Text style={styles.tableCell}>{k as string}</Text>
-                <Text style={[styles.tableCell, styles.tableCellLast]}>
-                  {fmtCOP(v)}
-                </Text>
-              </View>
-            ))}
+            <View style={styles.tableRow}>
+              <Text style={styles.tableCell}>
+                {safe(side === "A" ? (g.moto_a ?? motoALabel) : (g.moto_b ?? motoBLabel))}
+              </Text>
+              <Text style={styles.tableCell}>{safe(geSide.plan)}</Text>
+              <Text style={styles.tableCell}>{geSide.meses > 0 ? String(geSide.meses) : "—"}</Text>
+              <Text style={[styles.tableCell, styles.tableCellLast]}>
+                {geSide.meses > 0 ? fmtCOP(geSide.valor) : "—"}
+              </Text>
+            </View>
           </View>
-
-          {values.seguros_detalle && values.seguros_detalle !== "—" ? (
-            <Text style={styles.smallText}>
-              <Text style={{ fontWeight: "bold" }}>Detalle seguros: </Text>
-              {values.seguros_detalle}
-            </Text>
-          ) : null}
         </View>
       </>
     );
   };
 
-  const mostrarGarantia =
-    !!g && (g.moto_a || g.garantia_extendida_a || g.valor_a || g.moto_b || g.garantia_extendida_b || g.valor_b);
+  const renderPageA = () => (
+    <Page size="A4" style={styles.page} wrap={false}>
+      {/* HEADER */}
+      <View style={styles.header} wrap={false}>
+        <View style={styles.headerLeft}>
+          {logoUrl ? <Image src={logoUrl} style={styles.logo} /> : null}
+          <Text style={styles.title}>Cotización #{safe(d.id, "")} · Moto A</Text>
+          <Text style={styles.subtitle}>Fecha: {fmtDateTime(d.fecha_creacion)}</Text>
+          <Text style={styles.subtitle}>Actualización: {fmtDateTime(d.fecha_actualizacion)}</Text>
+        </View>
+
+        <View style={styles.headerRight}>
+          <Text style={styles.subtitle}>Estado: {safe(d.estado, "Sin estado")}</Text>
+          {empresa?.nombre ? <Text style={styles.subtitle}>{empresa.nombre}</Text> : null}
+          <Text style={styles.subtitle}>
+            {almacen} · {ciudad}
+          </Text>
+          {empresa?.nit ? <Text style={styles.subtitle}>NIT: {empresa.nit}</Text> : null}
+          {empresa?.telefono ? <Text style={styles.subtitle}>Tel: {empresa.telefono}</Text> : null}
+          {empresa?.direccion ? <Text style={styles.subtitle}>{empresa.direccion}</Text> : null}
+        </View>
+      </View>
+
+      {/* RESUMEN */}
+      <View style={styles.resumenWrapper} wrap={false}>
+        <View style={styles.resumenCol}>
+          <Text style={styles.resumenHeader}>Cliente</Text>
+          <Text style={styles.resumenLine}>{safe(nombreCompletoCliente)}</Text>
+          <Text style={styles.resumenLine}>CC: {safe(d.cedula)} · Cel: {safe(d.celular)}</Text>
+          <Text style={styles.resumenLine}>Email: {safe(d.email)}</Text>
+        </View>
+
+        <View style={styles.resumenCol}>
+          <Text style={styles.resumenHeader}>Comercial</Text>
+          <Text style={styles.resumenLine}>Asesor: {safe(d.asesor)}</Text>
+          <Text style={styles.resumenLine}>Tipo pago: {safe(d.tipo_pago || d.metodo_pago)}</Text>
+          <Text style={styles.resumenLine}>Prospecto: {safe(d.prospecto)}</Text>
+          <Text style={styles.resumenLine}>Fecha: {fechaCorta}</Text>
+        </View>
+      </View>
+
+      {/* INFO CLAVE */}
+      <SectionTitle title="Información clave" />
+      <View style={styles.box} wrap={false}>
+        <View style={styles.row}>
+          <View style={styles.col}>
+            <Text style={styles.label}>Canal de contacto</Text>
+            <Text style={styles.value}>{safe(d.canal_contacto)}</Text>
+          </View>
+          <View style={styles.col}>
+            <Text style={styles.label}>Financiera</Text>
+            <Text style={styles.value}>{safe(d.financiera)}</Text>
+          </View>
+        </View>
+
+        <View style={styles.row}>
+          <View style={styles.col}>
+            <Text style={styles.label}>Necesidad / Motivo</Text>
+            <Text style={styles.value}>{safe(d.pregunta)}</Text>
+          </View>
+          <View style={styles.col}>
+            <Text style={styles.label}>Observación</Text>
+            <Text style={styles.value}>{pickComentario(d)}</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* BLOQUE MOTO A */}
+      {renderMotoBlock("A")}
+
+      {/* HABEAS + FIRMAS (solo en A) */}
+      <SectionTitle title="Autorización de habeas data y firmas" />
+      <View style={styles.box} wrap={false}>
+        <Text style={styles.habeasTitle}>Autorización de habeas data:</Text>
+
+        <Text style={styles.habeasText}>
+          Con la firma del presente documento y con el suministro libre, espontáneo y voluntario de sus datos generales de
+          comunicación, entiéndase: nombre completo, cédula de ciudadanía, correo electrónico, número de dispositivo móvil,
+          número de teléfono fijo, whatsapp y todos aquellos que sean utilizados por redes sociales; se entenderá que la
+          empresa queda autorizada para el uso de los datos a fin de suministrar, a través de documentos digitales y/o en
+          físico la información comercial y de venta al consumidor de la siguiente
+        </Text>
+
+        <Text style={styles.habeasText}>
+          También quedan facultadas la empresa y el consumidor para: a) Conocer, actualizar y rectificar en cualquier momento
+          los datos personales; b) Solicitar prueba de la autorización otorgada; c) Ser informado, previa solicitud, respecto
+          del uso que se ha dado a los datos personales; d) Presentar ante la Superintendencia de Industria y Comercio quejas
+          por infracciones de conformidad con la ley; e) Revocar y suspender la autorización y/o solicitar la supresión de un
+          dato cuando en el tratamiento no se respeten las normas; f) Acceder en forma gratuita a los datos personales que
+          hayan sido objeto de tratamiento, y en general todas aquellas facultades consagradas en la Ley 1581 de 2012. Para
+          conocer más detalles de nuestra política de tratamiento y protección de datos personales, consulte nuestro manual de
+          tratamiento en www.tuclickmotos.com
+        </Text>
+
+        <View style={styles.firmaRow} wrap={false}>
+          <View style={styles.firmaBox}>
+            <Text style={styles.firmaLabel}>Firma del cliente</Text>
+          </View>
+          <View style={styles.firmaBox}>
+            <Text style={styles.firmaLabel}>Firma del asesor</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* FOOTER (solo en A) */}
+      <Text style={styles.footer}>
+        Precios y promociones sujetos a cambios sin previo aviso o hasta agotar existencias. La información será tratada
+        según Ley 1581 de 2012.
+      </Text>
+      <Text style={styles.footerCenter}>MOTO PARA TODOS S.A.S - Hacemos tu sueño realidad</Text>
+    </Page>
+  );
+
+  const renderPageB = () => (
+    <Page size="A4" style={styles.pageB} wrap={false}>
+      {/* Header mínimo en B (sin repetir cliente/comercial/etc.) */}
+      <View style={styles.header} wrap={false}>
+        <View style={styles.headerLeft}>
+          {logoUrl ? <Image src={logoUrl} style={styles.logo} /> : null}
+          <Text style={styles.title}>Cotización #{safe(d.id, "")} · Moto B</Text>
+          <Text style={styles.subtitle}>Fecha: {fmtDateTime(d.fecha_creacion)}</Text>
+        </View>
+
+        <View style={styles.headerRight}>
+          <Text style={styles.subtitle}>Estado: {safe(d.estado, "Sin estado")}</Text>
+          {empresa?.nombre ? <Text style={styles.subtitle}>{empresa.nombre}</Text> : null}
+        </View>
+      </View>
+
+      {/* SOLO bloque Moto B (y su GE) */}
+      {renderMotoBlock("B", { bigger: true })}
+
+      {/* (Opcional) footer mínimo en B; si no lo quieres, bórralo */}
+      <Text style={styles.footerCenter}>MOTO PARA TODOS S.A.S</Text>
+    </Page>
+  );
 
   return (
     <Document>
-      <Page size="A4" style={styles.page} wrap>
-        {/* HEADER */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            {logoUrl ? <Image src={logoUrl} style={styles.logo} /> : null}
-            <Text style={styles.title}>Cotización #{safe(d.id, "")}</Text>
-            <Text style={styles.subtitle}>Fecha: {fmtDateTime(d.fecha_creacion)}</Text>
-            <Text style={styles.subtitle}>Actualización: {fmtDateTime(d.fecha_actualizacion)}</Text>
-          </View>
-
-          <View style={styles.headerRight}>
-            <Text style={styles.subtitle}>Estado: {safe(d.estado, "Sin estado")}</Text>
-            {empresa?.nombre ? <Text style={styles.subtitle}>{empresa.nombre}</Text> : null}
-            <Text style={styles.subtitle}>
-              {almacen} · {ciudad}
-            </Text>
-            {empresa?.nit ? <Text style={styles.subtitle}>NIT: {empresa.nit}</Text> : null}
-            {empresa?.telefono ? <Text style={styles.subtitle}>Tel: {empresa.telefono}</Text> : null}
-          </View>
-        </View>
-
-        {/* RESUMEN (sin duplicados) */}
-        <View style={styles.resumenWrapper}>
-          <View style={styles.resumenCol}>
-            <Text style={styles.resumenHeader}>Cliente</Text>
-            <Text style={styles.resumenLine}>{safe(nombreCompletoCliente)}</Text>
-            <Text style={styles.resumenLine}>CC: {safe(d.cedula)} · Cel: {safe(d.celular)}</Text>
-            <Text style={styles.resumenLine}>Email: {safe(d.email)}</Text>
-          </View>
-
-          <View style={styles.resumenCol}>
-            <Text style={styles.resumenHeader}>Comercial</Text>
-            <Text style={styles.resumenLine}>Asesor: {safe(d.asesor)}</Text>
-            <Text style={styles.resumenLine}>Tipo pago: {tipoPago}</Text>
-            <Text style={styles.resumenLine}>Prospecto: {safe(d.prospecto)}</Text>
-            <Text style={styles.resumenLine}>Fecha: {fechaCorta}</Text>
-          </View>
-        </View>
-
-        {/* DATOS IMPORTANTES (compacto) */}
-        <SectionTitle title="Información clave" />
-        <View style={styles.box}>
-          <View style={styles.row}>
-            <View style={styles.col}>
-              <Text style={styles.label}>Canal de contacto</Text>
-              <Text style={styles.value}>{safe(d.canal_contacto)}</Text>
-            </View>
-            <View style={styles.col}>
-              <Text style={styles.label}>Financiera</Text>
-              <Text style={styles.value}>{safe(d.financiera)}</Text>
-            </View>
-          </View>
-
-          <View style={styles.row}>
-            <View style={styles.col}>
-              <Text style={styles.label}>Necesidad / Motivo</Text>
-              <Text style={styles.value}>{safe(d.pregunta)}</Text>
-            </View>
-            <View style={styles.col}>
-              <Text style={styles.label}>Observación (principal)</Text>
-              <Text style={styles.value}>{safe(d.comentario2 ?? d.comentario ?? "", "—")}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* MOTO A (compacta) */}
-        {renderMotoCompact({
-          title: "Moto A",
-          label: motoALabel,
-          img: motoImgA,
-          garantia: d.garantia_a,
-          garantiaExtendida: d.garantia_extendida_a,
-          values: {
-            precio_base: d.precio_base_a,
-            documentos: d.precio_documentos_a,
-            accesorios: d.accesorios_a,
-            seguros_valor: d.otro_seguro_a,
-            seguros_detalle: formatSeguros(d.seguros_a),
-            descuentos: d.descuentos_a,
-            totalSinSeguros: totalSinSegurosA,
-            total: totalA,
-            cuotaInicial: cuotaInicialA,
-            saldo: saldoAFinanciarA,
-          },
-        })}
-
-        {/* MOTO B (si existe) */}
-        {hayMotoB
-          ? renderMotoCompact({
-              title: "Moto B",
-              label: motoBLabel,
-              img: motoImgB,
-              garantia: d.garantia_b,
-              garantiaExtendida: d.garantia_extendida_b,
-              values: {
-                precio_base: d.precio_base_b,
-                documentos: d.precio_documentos_b,
-                accesorios: d.accesorios_b,
-                seguros_valor: d.otro_seguro_b,
-                seguros_detalle: formatSeguros(d.seguros_b),
-                descuentos: d.descuentos_b,
-                totalSinSeguros: totalSinSegurosB,
-                total: totalB,
-                cuotaInicial: cuotaInicialB,
-                saldo: saldoAFinanciarB,
-              },
-            })
-          : null}
-
-        {/* GARANTÍA EXTENDIDA (solo si trae datos reales) */}
-        {mostrarGarantia ? (
-          <>
-            <SectionTitle title="Garantía extendida" />
-            <View style={styles.box}>
-              <View style={styles.table}>
-                <View style={styles.tableHeaderRow}>
-                  <Text style={styles.tableCellHeader}>Moto</Text>
-                  <Text style={styles.tableCellHeader}>Plan</Text>
-                  <Text style={styles.tableCellHeader}>Meses</Text>
-                  <Text style={[styles.tableCellHeader, styles.tableCellLast]}>Valor</Text>
-                </View>
-
-                <View style={styles.tableRow}>
-                  <Text style={styles.tableCell}>{safe(g.moto_a)}</Text>
-                  <Text style={styles.tableCell}>{safe(g.garantia_extendida_a)}</Text>
-                  <Text style={styles.tableCell}>{safe(g.meses_a)}</Text>
-                  <Text style={[styles.tableCell, styles.tableCellLast]}>{fmtCOP(g.valor_a)}</Text>
-                </View>
-
-                {hayMotoB ? (
-                  <View style={styles.tableRow}>
-                    <Text style={styles.tableCell}>{safe(g.moto_b)}</Text>
-                    <Text style={styles.tableCell}>{safe(g.garantia_extendida_b)}</Text>
-                    <Text style={styles.tableCell}>{safe(g.meses_b)}</Text>
-                    <Text style={[styles.tableCell, styles.tableCellLast]}>
-                      {g.valor_b != null ? fmtCOP(g.valor_b) : "—"}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-            </View>
-          </>
-        ) : null}
-
-        {/* HABEAS DATA + FIRMAS (resumido) */}
-        <SectionTitle title="Autorización y firmas" />
-{/* HABEAS DATA Y FIRMAS (COMPLETO) */}
-<SectionTitle title="Autorización de habeas data y firmas" />
-<View style={styles.box}>
-  <Text style={styles.habeasTitle}>Autorización de habeas data:</Text>
-
-  <Text style={styles.habeasText}>
-    Con la firma del presente documento y con el suministro libre, espontáneo y
-    voluntario de sus datos generales de comunicación, entiéndase: nombre
-    completo, cédula de ciudadanía, correo electrónico, número de dispositivo
-    móvil, número de teléfono fijo, whatsapp y todos aquellos que sean utilizados
-    por redes sociales; se entenderá que la empresa queda autorizada para el uso
-    de los datos a fin de suministrar, a través de documentos digitales y/o en
-    físico la información comercial y de venta al consumidor de la siguiente
-  </Text>
-
-  <Text style={styles.habeasText}>
-    También quedan facultadas la empresa y el consumidor para: a) Conocer,
-    actualizar y rectificar en cualquier momento los datos personales; b)
-    Solicitar prueba de la autorización otorgada; c) Ser informado, previa
-    solicitud, respecto del uso que se ha dado a los datos personales; d)
-    Presentar ante la Superintendencia de Industria y Comercio quejas por
-    infracciones de conformidad con la ley; e) Revocar y suspender la autorización
-    y/o solicitar la supresión de un dato cuando en el tratamiento no se respeten
-    las normas; f) Acceder en forma gratuita a los datos personales que hayan
-    sido objeto de tratamiento, y en general todas aquellas facultades consagradas
-    en la Ley 1581 de 2012. Para conocer más detalles de nuestra política de
-    tratamiento y protección de datos personales, consulte nuestro manual de
-    tratamiento en www.tuclickmotos.com
-  </Text>
-
-  <View style={styles.firmaRow}>
-    <View style={styles.firmaBox}>
-      <Text style={styles.firmaLabel}>Firma del cliente</Text>
-    </View>
-    <View style={styles.firmaBox}>
-      <Text style={styles.firmaLabel}>Firma del asesor</Text>
-    </View>
-  </View>
-</View>
-
-
-        {/* FOOTER */}
-        <Text style={styles.footer}>
-          Precios y promociones sujetos a cambios sin previo aviso o hasta agotar existencias. La información
-          será tratada según Ley 1581 de 2012.
-        </Text>
-        <Text style={styles.footerCenter}>MOTO PARA TODOS S.A.S - Hacemos tu sueño realidad</Text>
-      </Page>
+      {renderPageA()}
+      {hayMotoB ? renderPageB() : null}
     </Document>
   );
 };
