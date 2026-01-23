@@ -75,8 +75,6 @@ type Motocicleta = {
   gpsMeses?: string | number | null; // puede ser 'no', '12', 12, null
   gpsValor?: number | null;          // puede ser 0, número o null
 
-  // 👇 BONO ENSAMBLADORA (descuenta)
-  bonoEnsambladora?: number | null;
 
 
 };
@@ -322,10 +320,6 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
   const gpsValor = data?.[`valor_gps${suffix}`] ?? null;
 
 
-  // 👇 BONO ENSAMBLADORA (viene de backend: bono_ensambladora_a / bono_ensambladora_b)
-  const bonoEnsambladora = data?.[`bono_ensambladora${suffix}`] ?? null;
-
-
   const adicionalesTotal =
     Number(data?.[isA ? 'total_adicionales_1' : 'total_adicionales_2']) ||
     (adicionalesRunt +
@@ -354,8 +348,7 @@ const totalSinSeguros =
     precioDocumentos +
     accesoriosYMarcacion +
     adicionalesTotal -
-    descuentos -
-    (Number(bonoEnsambladora) || 0));
+    descuentos )
 
 
   const total =
@@ -403,7 +396,6 @@ const totalSinSeguros =
 
     gpsMeses,
     gpsValor,
-    bonoEnsambladora,
 
 
   };
@@ -912,14 +904,7 @@ const DetalleCotizacion: React.FC = () => {
                           }
                         />
 
-                        {/* 👇 NUEVO: Bono Ensambladora (descuenta) */}
-                        {Number(moto.bonoEnsambladora ?? 0) > 0 && (
-                          <DataRow
-                            label="Bono ensambladora"
-                            value={`- ${fmtCOP(Number(moto.bonoEnsambladora ?? 0))}`}
-                            valueClass="text-error font-extrabold"
-                          />
-                        )}
+          
 
 
                       </div>

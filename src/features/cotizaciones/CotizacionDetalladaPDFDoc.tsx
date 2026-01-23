@@ -467,11 +467,10 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
     const gpsMeses = d[`gps_meses${s}`];
     const gpsValor = num(d[`valor_gps${s}`]);
 
-    const bono = num(d[`bono_ensambladora${s}`]);
 
     const totalSinSeguros =
       num(d[`total_sin_seguros${s}`]) ||
-      (precioBase + docsReal + accesoriosMarcacion + adicionalesTotal - descuentos - bono);
+      (precioBase + docsReal + accesoriosMarcacion + adicionalesTotal - descuentos);
 
     const total = num(d[`precio_total${s}`]) || (totalSinSeguros + otrosSeguros);
 
@@ -509,8 +508,6 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
 
       gpsMeses,
       gpsValor,
-      bono,
-
       totalSinSeguros,
       total,
       cuotaInicial,
@@ -608,7 +605,7 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
                     ["Otros seguros", v.otrosSeguros],
                     ["GPS (meses)", "TXT"],
                     ["GPS (valor)", v.gpsValor],
-                    ["Bono ensambladora", "BONO"],
+                    // ["Bono ensambladora", "BONO"],  // ❌ eliminado
                     ["Garantía extendida", "GEVAL"],
                     ["Total sin seguros", v.totalSinSeguros],
                     ["TOTAL", v.total],
@@ -618,18 +615,15 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
                       <Text style={[styles.tableCell, styles.tableCellLast]}>
                         {k === "GPS (meses)"
                           ? fmtGpsMeses(v.gpsMeses)
-                          : k === "Bono ensambladora"
-                            ? v.bono > 0
-                              ? `- ${fmtCOP(v.bono)}`
-                              : fmtCOP(0)
-                            : k === "Garantía extendida"
-                              ? geSide.meses > 0
-                                ? fmtCOP(geSide.valor)
-                                : "—"
-                              : fmtCOP(val)}
+                          : k === "Garantía extendida"
+                            ? geSide.meses > 0
+                              ? fmtCOP(geSide.valor)
+                              : "—"
+                            : fmtCOP(val)}
                       </Text>
                     </View>
                   ))}
+
                 </View>
               </View>
 
