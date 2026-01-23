@@ -3,12 +3,14 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { FormInput } from "../../../shared/components/FormInput";
 import { FormSelect } from "../../../shared/components/FormSelect";
-import { useActualizarCredito, useCredito } from "../../../services/creditosServices";
+import {
+  useActualizarCredito,
+  useCredito,
+} from "../../../services/creditosServices";
 import { useParams } from "react-router-dom";
 import { useWizardStore } from "../../../store/wizardStore";
 
-import { TablaAmortizacionCredito } from "../../../features/creditos/TablaAmortizacionCredito"; // 👈 sin .tsx
-
+import { TablaAmortizacionCredito } from "../../../features/creditos/TablaAmortizacionCredito";
 import { unformatNumber } from "../../../shared/components/moneyUtils";
 
 /** String con puntos/comas/etc. → número en PESOS (entero) */
@@ -19,32 +21,18 @@ const toNumberPesos = (v: unknown): number => {
   return Number.isFinite(n) ? n : 0;
 };
 
+// ✅ AHORA plazoCuotas ES NUMBER SIEMPRE
 type ProductoValues = {
   producto: string;
-  // 👇 este tipo puede terminar siendo número, string o incluso un option object
-  plazoCuotas: any;
+  plazoCuotas: number; // ✅ 6/12/24/36
   valorMoto: number | string;
   cuotaInicial: number | string;
   comentario?: string;
 };
 
-
-
-// 🔧 NUEVO: función robusta para sacar el número de cuotas
-const getPlazoCuotasNumber = (v: unknown): number => {
-  // Si viene un option { value, label }
-  if (v && typeof v === "object" && "value" in (v as any)) {
-    const raw = (v as any).value;
-    const n = Number(raw);
-    return Number.isFinite(n) ? n : 0;
-  }
-  // Si viene string/number plano
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-};
-
 // Opciones de plazo (en meses)
-const PLAZO_OPTIONS = [
+const PLAZO_OPTIONS: Array<{ value: number; label: string }> = [
+  { value: 6, label: "6 cuotas" },
   { value: 12, label: "12 cuotas" },
   { value: 24, label: "24 cuotas" },
   { value: 36, label: "36 cuotas" },
@@ -57,6 +45,12 @@ const buildProducto = (c: any): string => {
   const linea = (c?.linea ?? "").toString().trim();
   const modelo = (c?.modelo ?? "").toString().trim();
   return [marca, linea, modelo].filter(Boolean).join(" - ");
+};
+
+const normalizePlazo = (v: unknown, fallback = 12): number => {
+  const n = Number(v);
+  if (Number.isFinite(n) && n > 0) return n;
+  return fallback;
 };
 
 const InfoProductoFormulario: React.FC = () => {
@@ -72,7 +66,7 @@ const InfoProductoFormulario: React.FC = () => {
     defaultValues: {
       producto: "",
       valorMoto: "0",
-      plazoCuotas: PLAZO_OPTIONS[0], // 👈 { value: 12, label: "12 cuotas" }
+      plazoCuotas: 12, // ✅ número (default)
       cuotaInicial: "0",
       comentario: "",
     },
@@ -89,6 +83,7 @@ const InfoProductoFormulario: React.FC = () => {
   const creditoBackend =
     data?.success && data.creditos?.length ? data.creditos[0] : null;
 
+  // ✅ Sincroniza FORM apenas llega backend (plazoCuotas = número)
   React.useEffect(() => {
     if (!creditoBackend) return;
     const c = creditoBackend;
@@ -98,11 +93,9 @@ const InfoProductoFormulario: React.FC = () => {
       shouldDirty: false,
     });
 
-    const plazoNumero = Number(c?.plazo_meses ?? 12);
-    const plazoOption =
-      PLAZO_OPTIONS.find((o) => o.value === plazoNumero) ?? PLAZO_OPTIONS[0];
-
-    setValue("plazoCuotas", plazoOption, { shouldDirty: false });
+    // ✅ número
+    const plazoNumero = normalizePlazo(c?.plazo_meses, 12);
+    setValue("plazoCuotas", plazoNumero, { shouldDirty: false });
 
     setValue("cuotaInicial", String(c?.cuota_inicial ?? "0"), {
       shouldDirty: false,
@@ -110,14 +103,9 @@ const InfoProductoFormulario: React.FC = () => {
     setValue("comentario", c?.comentario ?? "", { shouldDirty: false });
   }, [creditoBackend, setValue]);
 
-
   const onSubmit = (v: ProductoValues) => {
-    // 🔧 Usamos siempre la función robusta para sacar el número de meses
-    const plazo_meses = getPlazoCuotasNumber(v.plazoCuotas);
-
     const payload = {
-      plazo_meses: plazo_meses || undefined, // si queda 0, se manda undefined
-      // Backend en PESOS
+      plazo_meses: v.plazoCuotas || undefined,
       cuota_inicial: toNumberPesos(v.cuotaInicial) || 0,
       comentario: (v.comentario?.trim() ?? "") || null,
     };
@@ -126,11 +114,10 @@ const InfoProductoFormulario: React.FC = () => {
       { codigo_credito, payload },
       {
         onSuccess: () => {
-          const plazoNumero = payload.plazo_meses ?? 12;
-          const plazoOption =
-            PLAZO_OPTIONS.find((o) => o.value === plazoNumero) ?? PLAZO_OPTIONS[0];
-
-          setValue("plazoCuotas", plazoOption, { shouldDirty: false });
+          // ✅ Re-afirma valores en form
+          setValue("plazoCuotas", normalizePlazo(payload.plazo_meses, 12), {
+            shouldDirty: false,
+          });
           setValue("cuotaInicial", String(payload.cuota_inicial ?? 0), {
             shouldDirty: false,
           });
@@ -138,8 +125,7 @@ const InfoProductoFormulario: React.FC = () => {
             shouldDirty: false,
           });
           next();
-        }
-
+        },
       }
     );
   };
@@ -148,33 +134,29 @@ const InfoProductoFormulario: React.FC = () => {
   const plazoCuotasWatch = watch("plazoCuotas");
   const cuotaInicialWatch = watch("cuotaInicial");
 
-  // 1) Sacamos el número de cuotas con fallback: form → backend → 12
-  const plazoParaTabla =
-    getPlazoCuotasNumber(
-      plazoCuotasWatch ?? creditoBackend?.plazo_meses ?? 12
-    ) || 12;
+  // ✅ Tabla: form → backend → 12 (pero ya todo es número)
+  const plazoParaTabla = normalizePlazo(
+    plazoCuotasWatch ?? creditoBackend?.plazo_meses ?? 12,
+    12
+  );
 
-  // 2) Igual para cuota inicial: form → backend → 0
   const cuotaInicialParaTabla = toNumberPesos(
     cuotaInicialWatch ?? creditoBackend?.cuota_inicial ?? 0
   );
 
-  // 3) Armamos el objeto para la tabla si ya tenemos el crédito
   const creditoParaTabla = creditoBackend
     ? {
-      valor_producto: Number(creditoBackend.valor_producto) || 0,
-      cuota_inicial: cuotaInicialParaTabla,
-      plazo_meses: plazoParaTabla,
-      soat: creditoBackend.soat ?? "0",
-      matricula: creditoBackend.matricula ?? "0",
-      impuestos: creditoBackend.impuestos ?? "0",
-      accesorios_total: creditoBackend.accesorios_total ?? "0",
-      precio_seguros: creditoBackend.precio_seguros ?? "0",
-      garantia_extendida_valor:
-        creditoBackend.garantia_extendida_valor ?? "0",
-    }
+        valor_producto: Number(creditoBackend.valor_producto) || 0,
+        cuota_inicial: cuotaInicialParaTabla,
+        plazo_meses: plazoParaTabla,
+        soat: creditoBackend.soat ?? "0",
+        matricula: creditoBackend.matricula ?? "0",
+        impuestos: creditoBackend.impuestos ?? "0",
+        accesorios_total: creditoBackend.accesorios_total ?? "0",
+        precio_seguros: creditoBackend.precio_seguros ?? "0",
+        garantia_extendida_valor: creditoBackend.garantia_extendida_valor ?? "0",
+      }
     : null;
-
 
   const fechaCreacionCredito = creditoBackend?.fecha_creacion ?? undefined;
 
@@ -195,13 +177,9 @@ const InfoProductoFormulario: React.FC = () => {
           Solicitud de crédito - Información del producto
         </div>
 
-        {isLoading && (
-          <div className="text-sm opacity-70">Cargando crédito…</div>
-        )}
+        {isLoading && <div className="text-sm opacity-70">Cargando crédito…</div>}
         {isError && (
-          <div className="text-sm text-error">
-            No se pudo cargar el crédito.
-          </div>
+          <div className="text-sm text-error">No se pudo cargar el crédito.</div>
         )}
 
         <div className={grid}>
@@ -228,9 +206,7 @@ const InfoProductoFormulario: React.FC = () => {
             label="Plazo (Cuotas)"
             control={control}
             options={PLAZO_OPTIONS}
-            rules={{
-              required: "La cantidad de cuotas es obligatoria",
-            }}
+            rules={{ required: "La cantidad de cuotas es obligatoria" }}
           />
 
           <FormInput
@@ -256,10 +232,7 @@ const InfoProductoFormulario: React.FC = () => {
             className="min-h-28"
             rules={{
               required: "La descripción es obligatoria",
-              minLength: {
-                value: 5,
-                message: "Debe tener al menos 5 caracteres",
-              },
+              minLength: { value: 5, message: "Debe tener al menos 5 caracteres" },
             }}
           />
         </div>
@@ -270,11 +243,7 @@ const InfoProductoFormulario: React.FC = () => {
             className="btn btn-ghost"
             onClick={prev}
             disabled={isFirst || isSaving}
-            title={
-              isFirst
-                ? "Ya estás en el primer paso"
-                : "Ir al paso anterior"
-            }
+            title={isFirst ? "Ya estás en el primer paso" : "Ir al paso anterior"}
           >
             ← Anterior
           </button>
