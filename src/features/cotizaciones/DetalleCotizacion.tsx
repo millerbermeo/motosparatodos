@@ -75,6 +75,9 @@ type Motocicleta = {
   gpsMeses?: string | number | null; // puede ser 'no', '12', 12, null
   gpsValor?: number | null;          // puede ser 0, número o null
 
+  // 👇 Póliza adicional
+  polizaCodigo?: string | null;   // LIGHT | TRANQUI | TRANQUI_PLUS | null
+  polizaValor?: number | null;    // valor en COP
 
 
 };
@@ -342,14 +345,22 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
     return Number.isFinite(num) && num > 0 ? num : undefined;
   })();
 
-const totalSinSeguros =
-  Number(data?.[`total_sin_seguros${suffix}`]) ||
-  (precioBase +
-    precioDocumentos +
-    accesoriosYMarcacion +
-    adicionalesTotal -
-    descuentos )
 
+  // 👇 PÓLIZA (NUEVO)
+  const polizaCodigo = data?.[`poliza${suffix}`] ?? null;      // poliza_a / poliza_b
+  const polizaValor = data?.[`valor_poliza${suffix}`] ?? null; // valor_poliza_a / valor_poliza_b
+
+
+  const polizaValorNum = Number(polizaValor) || 0;
+
+  const totalSinSeguros =
+    Number(data?.[`total_sin_seguros${suffix}`]) ||
+    (precioBase +
+      precioDocumentos +
+      accesoriosYMarcacion +
+      adicionalesTotal -
+      descuentos +
+      polizaValorNum);
 
   const total =
     Number(data?.[`precio_total${suffix}`]) ||
@@ -368,6 +379,7 @@ const totalSinSeguros =
 
   // SALDO A FINANCIAR: siempre total - cuota inicial
   const saldoFinanciar = Math.max(total - (cuotas.inicial || 0), 0);
+
 
   return {
     modelo: modeloLabel,
@@ -396,6 +408,8 @@ const totalSinSeguros =
 
     gpsMeses,
     gpsValor,
+    polizaCodigo: polizaCodigo ? String(polizaCodigo) : null,
+    polizaValor: polizaValor !== null && polizaValor !== undefined ? Number(polizaValor) : null,
 
 
   };
@@ -865,6 +879,14 @@ const DetalleCotizacion: React.FC = () => {
                           value={fmtCOP(moto.otrosSeguros || 0)}
                         />
 
+                        {moto.polizaCodigo && (
+                          <>
+                            <DataRowText label="Póliza" value={moto.polizaCodigo} />
+                            <DataRow label="Valor póliza" value={fmtCOP(Number(moto.polizaValor ?? 0))} />
+                          </>
+                        )}
+
+
                         {/* Solo mostrar si aplica */}
                         {moto.cuotas.inicial > 0 && (
                           <DataRow
@@ -904,7 +926,7 @@ const DetalleCotizacion: React.FC = () => {
                           }
                         />
 
-          
+
 
 
                       </div>

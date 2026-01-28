@@ -9,14 +9,15 @@ import { useModalStore } from "../store/modalStore";
 export interface Moto {
   id: number;
   marca: string;
-  estado_moto: 0 | 1; // ✅ ACTIVO/INACTIVO (1/0)
+  estado_moto: 0 | 1;
 
   linea: string;
+  tipo_moto?: "Moto" | "Motocarro" | "Electrica"; // ✅ NUEVO
   modelo: string;
-  estado: string; // p.ej. "Nueva" | "Usada"
-  precio_base: number; // en tu API puede venir string; lo normalizamos a number
+  estado: string;
+  precio_base: number;
   descrip: string;
-  imagen?: any; // URL/filename guardado por el backend
+  imagen?: any;
   empresa?: string;
   subdistribucion: string;
   soat?: string;
@@ -28,6 +29,7 @@ export interface Moto {
   id_empresa?: number;
   id_distribuidora?: number;
 }
+
 
 export type NewMoto = Omit<Moto, "id" | "imagen"> & { imagen?: File | null };
 
@@ -46,6 +48,7 @@ const toFormData = (data: Partial<Moto> & { imagen?: File | null }) => {
   if (data.id != null) fd.append("id", String(data.id));
   if (data.marca != null) fd.append("marca", data.marca);
   if (data.linea != null) fd.append("linea", data.linea);
+  if (data.tipo_moto != null) fd.append("tipo_moto", String(data.tipo_moto));
   if (data.modelo != null) fd.append("modelo", data.modelo);
   if (data.estado != null) fd.append("estado", data.estado);
   if (data.precio_base != null) fd.append("precio_base", String(data.precio_base));

@@ -113,12 +113,8 @@ const FormConfiguracion: React.FC<Props> = ({ mode, initialValues }) => {
           label="Plazo (meses)"
           type="number"
           control={control}
-          placeholder="12"
-          rules={{
-            required: "El plazo es obligatorio",
-            validate: (v) => Number(v) > 0 || "El plazo debe ser mayor a 0",
-          }}
-        />
+   />
+        
 
         {/* TIPO VALOR */}
         <FormSelect<ConfigFormValues>

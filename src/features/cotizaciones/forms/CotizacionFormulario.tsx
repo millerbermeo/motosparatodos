@@ -141,6 +141,12 @@ type FormValues = {
     gps1?: "no" | "12" | "24" | "36";
     gps2?: "no" | "12" | "24" | "36";
 
+    poliza1?: "" | "LIGHT" | "TRANQUI" | "TRANQUI_PLUS"; // Moto A
+    poliza2?: "" | "LIGHT" | "TRANQUI" | "TRANQUI_PLUS"; // Moto B
+
+    valor_poliza_a?: string; // valor calculado A
+    valor_poliza_b?: string; // valor calculado B
+
 
 
 };
@@ -253,6 +259,12 @@ const CotizacionFormulario: React.FC = () => {
             valorDefensas2: "0",
             valorHandSavers2: "0",
             valorOtrosAdicionales2: "0",
+
+            poliza1: "",
+            poliza2: "",
+            valor_poliza_a: "0",
+            valor_poliza_b: "0",
+
 
         },
         mode: "onBlur",
@@ -491,6 +503,9 @@ const CotizacionFormulario: React.FC = () => {
             setValue("soat_a", "0"); setValue("impuestos_a", "0"); setValue("matricula_a", "0");
             setValue("gps1", "no");
             setValue("gps_a", "0");
+            setValue("poliza1", "");
+            setValue("valor_poliza_a", "0");
+
 
 
         }
@@ -508,6 +523,9 @@ const CotizacionFormulario: React.FC = () => {
             setValue("soat_b", "0"); setValue("impuestos_b", "0"); setValue("matricula_b", "0");
             setValue("gps2", "no");
             setValue("gps_b", "0");
+            setValue("poliza2", "");
+            setValue("valor_poliza_b", "0");
+
 
 
         }
@@ -719,18 +737,21 @@ const CotizacionFormulario: React.FC = () => {
     const gpsSel2 = watch("gps2") ?? "no";
     const gpsVal2 = N(watch("gps_b"));
 
+    const polizaVal1 = N(watch("valor_poliza_a"));
+    const polizaVal2 = N(watch("valor_poliza_b"));
 
 
     const totalSinSeguros1 = (showMotos && incluirMoto1)
         ? (
-            (precioBase1) +
+            precioBase1 +
             accesorios1Val +
             documentos1 +
             marcacion1Val -
             descuento1Val +
             (garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0) +
             (gpsSel1 !== "no" ? gpsVal1 : 0) +
-            extrasMoto1
+            extrasMoto1 +
+            polizaVal1
         )
         : 0;
 
@@ -758,16 +779,18 @@ const CotizacionFormulario: React.FC = () => {
 
     const totalSinSeguros2 = (showMotos && incluirMoto2)
         ? (
-            (precioBase2) +
+            precioBase2 +
             accesorios2Val +
             documentos2 +
             marcacion2Val -
             descuento2Val +
             (garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0) +
             (gpsSel2 !== "no" ? gpsVal2 : 0) +
-            extrasMoto2
+            extrasMoto2 +
+            polizaVal2
         )
         : 0;
+
 
     const totalConSeguros2 = totalSinSeguros2 + totalSeguros2;
 
@@ -1095,6 +1118,12 @@ const CotizacionFormulario: React.FC = () => {
             valor_gps_b: incluirMoto2 && (data.gps2 ?? "no") !== "no" ? gpsB : null,
 
 
+            poliza_a: incluirMoto1 ? (data.poliza1 || null) : null,
+            valor_poliza_a: incluirMoto1 ? toNumberSafe(data.valor_poliza_a) : 0,
+
+            poliza_b: incluirMoto2 ? (data.poliza2 || null) : null,
+            valor_poliza_b: incluirMoto2 ? toNumberSafe(data.valor_poliza_b) : null,
+
         };
 
         console.log("SUBMIT (payload EXACTO BD):", payload);
@@ -1314,11 +1343,81 @@ const CotizacionFormulario: React.FC = () => {
     const { data: gps24 } = useConfigPlazoByCodigo("GPS_24");
     const { data: gps36 } = useConfigPlazoByCodigo("GPS_36");
 
+    const { data: polLight } = useConfigPlazoByCodigo("LIGHT");
+    const { data: polTranqui } = useConfigPlazoByCodigo("TRANQUI");
+    const { data: polTranquiPlus } = useConfigPlazoByCodigo("TRANQUI_PLUS");
+
+
+
     const gpsMap = React.useMemo(() => ({
         "12": gps12,
         "24": gps24,
         "36": gps36,
     }), [gps12, gps24, gps36]);
+
+
+    const polizaMap = React.useMemo(() => ({
+        LIGHT: polLight,
+        TRANQUI: polTranqui,
+        TRANQUI_PLUS: polTranquiPlus,
+    }), [polLight, polTranqui, polTranquiPlus]);
+
+
+    const polizaOptions: SelectOption[] = [
+        { value: "", label: "Sin póliza" },
+        { value: "LIGHT", label: "LIGHT (3%)" },
+        { value: "TRANQUI", label: "TRANQUI (10%)" },
+        { value: "TRANQUI_PLUS", label: "TRANQUI PLUS (11%)" },
+    ];
+
+
+
+    const calcPoliza = (precioBase: number, cfg: any | null) => {
+        if (!cfg || precioBase <= 0) return 0;
+
+        const v = Number(cfg.valor) || 0;
+
+        if (cfg.tipo_valor === "%") {
+            return Math.round(precioBase * (v / 100));
+        }
+
+        return Math.round(v); // fijo $
+    };
+
+
+
+    React.useEffect(() => {
+        if (!incluirMoto1) return;
+
+        const sel = watch("poliza1") ?? "";
+        if (!sel) {
+            setValue("valor_poliza_a", "0");
+            return;
+        }
+
+        const cfg = polizaMap[sel as "LIGHT" | "TRANQUI" | "TRANQUI_PLUS"] ?? null;
+        const val = calcPoliza(precioBase1, cfg);
+
+        setValue("valor_poliza_a", String(val), { shouldDirty: true, shouldValidate: true });
+    }, [incluirMoto1, watch("poliza1"), precioBase1, polizaMap, setValue]);
+
+
+
+    React.useEffect(() => {
+        if (!incluirMoto2) return;
+
+        const sel = watch("poliza2") ?? "";
+        if (!sel) {
+            setValue("valor_poliza_b", "0");
+            return;
+        }
+
+        const cfg = polizaMap[sel as "LIGHT" | "TRANQUI" | "TRANQUI_PLUS"] ?? null;
+        const val = calcPoliza(precioBase2, cfg);
+
+        setValue("valor_poliza_b", String(val), { shouldDirty: true, shouldValidate: true });
+    }, [incluirMoto2, watch("poliza2"), precioBase2, polizaMap, setValue]);
+
 
 
     const calcGps = (precioBase: number, cfg: any | null) => {
@@ -1679,6 +1778,27 @@ const CotizacionFormulario: React.FC = () => {
 
 
 
+                                            <FormSelect<FormValues>
+                                                name="poliza1"
+                                                label="Póliza todo riesgo"
+                                                control={control}
+                                                options={polizaOptions}
+                                                placeholder="Seleccione..."
+                                                disabled={!showMotos || !incluirMoto1}
+                                            />
+
+                                            {watch("poliza1") && watch("poliza1") !== "" && (
+                                                <FormInput<FormValues>
+                                                    name="valor_poliza_a"
+                                                    label="Valor póliza A"
+                                                    control={control}
+                                                    type="number"
+                                                    formatThousands
+                                                    disabled
+                                                />
+                                            )}
+
+
 
                                         </>
                                     )}
@@ -2012,6 +2132,14 @@ const CotizacionFormulario: React.FC = () => {
                                                         </div>
                                                     )}
 
+                                                    {watch("poliza1") && watch("poliza1") !== "" && (
+                                                        <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                            <span className="font-medium">Póliza todo riesgo {watch("poliza1")}:</span>
+                                                            <span>{fmt(polizaVal1)}</span>
+                                                        </div>
+                                                    )}
+
+
                                                     {/* Cascos y Accesorios */}
                                                     <div className="flex justify-between bg-blue-50/70 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-medium text-gray-700">Cascos y Accesorios:</span>
@@ -2252,6 +2380,26 @@ const CotizacionFormulario: React.FC = () => {
                                                 />
                                             )}
 
+
+                                            <FormSelect<FormValues>
+                                                name="poliza2"
+                                                 label="Póliza todo riesgo"
+                                                control={control}
+                                                options={polizaOptions}
+                                                placeholder="Seleccione..."
+                                                disabled={!showMotos || !incluirMoto2}
+                                            />
+
+                                            {watch("poliza2") && watch("poliza2") !== "" && (
+                                                <FormInput<FormValues>
+                                                    name="valor_poliza_b"
+                                                    label="Valor póliza B"
+                                                    control={control}
+                                                    type="number"
+                                                    formatThousands
+                                                    disabled
+                                                />
+                                            )}
 
 
                                         </>
@@ -2589,6 +2737,14 @@ const CotizacionFormulario: React.FC = () => {
                                                                 GPS ({gpsSel2} meses):
                                                             </span>
                                                             <span>{fmt(gpsVal2)}</span>
+                                                        </div>
+                                                    )}
+
+
+                                                    {watch("poliza2") && watch("poliza2") !== "" && (
+                                                        <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                            <span className="font-medium">Póliza todo riesgo {watch("poliza2")}:</span>
+                                                            <span>{fmt(polizaVal2)}</span>
                                                         </div>
                                                     )}
 

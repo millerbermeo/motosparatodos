@@ -33,7 +33,18 @@ type Base = {
   // 🔹 NUEVO — IDs reales para edición
   id_empresa?: number;
   id_distribuidora?: number;
+
+  tipo_moto?: "Moto" | "Motocarro" | "Electrica";
+
 };
+
+
+const tipoMotoOptions: SelectOption[] = [
+  { value: "Moto", label: "Moto" },
+  { value: "Motocarro", label: "Motocarro" },
+  { value: "Electrica", label: "Eléctrica" },
+];
+
 
 type Props =
   | { initialValues?: undefined; mode?: "create" }
@@ -50,6 +61,8 @@ type MotoFormValues = {
   subdistribucion?: string;
   id_empresa?: number | string;
   id_distribuidora?: number | string;
+  tipo_moto?: "Moto" | "Motocarro" | "Electrica";
+
 };
 
 const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) => {
@@ -100,6 +113,8 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
       descrip: initialValues?.descrip ?? "",
       empresa: initialValues?.empresa ?? "",
       subdistribucion: initialValues?.subdistribucion ?? "",
+      tipo_moto: (initialValues as any)?.tipo_moto ?? "Moto",
+
     },
     mode: "onBlur",
   });
@@ -114,6 +129,8 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
       descrip: "",
       empresa: "",
       subdistribucion: "",
+      tipo_moto: "Moto",
+
     });
 
     setFile(null);
@@ -136,6 +153,8 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
       descrip: initialValues?.descrip ?? "",
       empresa: initialValues?.empresa ?? "",
       subdistribucion: initialValues?.subdistribucion ?? "",
+      tipo_moto: (initialValues as any)?.tipo_moto ?? "Moto",
+
     });
     setFile(null);
     setPreview(initialValues?.imagen ?? null);
@@ -307,6 +326,7 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
     const payload = {
       marca: values.marca,
       linea: values.linea,
+      tipo_moto: values.tipo_moto ?? null,
       modelo: values.modelo,
       estado: values.estado,
       // ✅ ahora soporta formato (1.000.000) sin romper
@@ -432,6 +452,17 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
           ]}
           rules={{ required: "El estado es obligatorio" }}
         />
+
+        {/* Tipo de moto */}
+<FormSelect<MotoFormValues>
+  name="tipo_moto"
+  label="Tipo de moto"
+  control={control}
+  options={tipoMotoOptions}
+  placeholder="Seleccione el tipo"
+  rules={{ required: "El tipo de moto es obligatorio" }}
+/>
+
 
         {/* Precio base (✅ con formato de miles) */}
         <FormInput<MotoFormValues>

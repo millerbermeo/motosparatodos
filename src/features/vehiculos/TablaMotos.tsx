@@ -370,6 +370,7 @@ const TablaMotos: React.FC = () => {
               <th>Imagen</th>
               <th>Marca</th>
               <th>Línea</th>
+              <th>Tipo</th>
               <th>Modelo</th>
               <th className="hidden md:table-cell">Empresa</th>
               <th className="hidden lg:table-cell">Subdistribucion</th>
@@ -399,6 +400,8 @@ const TablaMotos: React.FC = () => {
                 </td>
                 <td className="font-medium">{m.marca ?? ""}</td>
                 <td>{m.linea ?? ""}</td>
+                <td>{m.tipo_moto ?? ""}</td>
+
                 <td>{m.modelo ?? ""}</td>
                 <td className="hidden md:table-cell">{m.empresa ?? ""}</td>
                 <td className="hidden lg:table-cell">{m.subdistribucion ?? ""}</td>
@@ -464,7 +467,7 @@ const TablaMotos: React.FC = () => {
 
             {!isPending && visible.length === 0 && (
               <tr>
-                <td colSpan={10} className="text-center py-6 opacity-70">
+                <td colSpan={11} className="text-center py-6 opacity-70">
                   No hay resultados con esos filtros.
                 </td>
               </tr>

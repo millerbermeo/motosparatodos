@@ -467,10 +467,15 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
     const gpsMeses = d[`gps_meses${s}`];
     const gpsValor = num(d[`valor_gps${s}`]);
 
+    // 👇 PÓLIZA (NUEVO)
+    const polizaCodigo = d[`poliza${s}`] ?? null;         // poliza_a / poliza_b
+    const polizaValor = num(d[`valor_poliza${s}`]);       // valor_poliza_a / valor_poliza_b
 
-    const totalSinSeguros =
-      num(d[`total_sin_seguros${s}`]) ||
-      (precioBase + docsReal + accesoriosMarcacion + adicionalesTotal - descuentos);
+
+const totalSinSeguros =
+  num(d[`total_sin_seguros${s}`]) ||
+  (precioBase + docsReal + accesoriosMarcacion + adicionalesTotal - descuentos + polizaValor);
+
 
     const total = num(d[`precio_total${s}`]) || (totalSinSeguros + otrosSeguros);
 
@@ -513,6 +518,9 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
       cuotaInicial,
       saldo,
       cuotas,
+      polizaCodigo,
+      polizaValor,
+
     };
   };
 
@@ -603,6 +611,8 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
                     ["Docs (total)", v.docsReal],
                     ["Acc + marcación", v.accesoriosMarcacion],
                     ["Otros seguros", v.otrosSeguros],
+                    ["Póliza", "POLIZATXT"],
+                    ["Valor póliza", v.polizaValor],
                     ["GPS (meses)", "TXT"],
                     ["GPS (valor)", v.gpsValor],
                     // ["Bono ensambladora", "BONO"],  // ❌ eliminado
@@ -619,7 +629,10 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
                             ? geSide.meses > 0
                               ? fmtCOP(geSide.valor)
                               : "—"
-                            : fmtCOP(val)}
+                            : k === "Póliza"
+                              ? (v.polizaCodigo ? String(v.polizaCodigo) : "No aplica")
+                              : fmtCOP(val)}
+
                       </Text>
                     </View>
                   ))}
