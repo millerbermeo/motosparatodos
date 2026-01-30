@@ -2,10 +2,6 @@
 import React from "react";
 import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
 
-/* ============================
-   Helpers
-============================ */
-
 const formatSeguros = (raw: any): string => {
   if (!raw) return "—";
   if (typeof raw === "string" && !raw.includes("[")) return raw.trim();
@@ -43,8 +39,19 @@ const formatSeguros = (raw: any): string => {
   }
 };
 
-export type CotizacionApi = { success: boolean; data: any };
-export type GarantiaExtApi = { success: boolean; data: any };
+/* ============================
+   Tipos
+============================ */
+
+export type CotizacionApi = {
+  success: boolean;
+  data: any;
+};
+
+export type GarantiaExtApi = {
+  success: boolean;
+  data: any;
+};
 
 export type EmpresaInfo = {
   nombre?: string;
@@ -63,107 +70,112 @@ type PropsV2 = {
   motoFotoUrl?: string;
 };
 
+/* ============================
+   Helpers
+============================ */
+
 const ACCENT = "#0f766e";
 const ACCENT_LIGHT = "#ecfdf5";
-const GRAY_BG = "#f3f4f6";
 const BORDER = "#d1d5db";
+const GRAY_BG = "#f3f4f6";
 
 const styles = StyleSheet.create({
+  // ✅ Más grande para ocupar la carta
   page: {
-    paddingTop: 12,
-    paddingBottom: 12,
-    paddingHorizontal: 12,
-    fontSize: 8.0,
+    paddingTop: 16,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    fontSize: 9.0,
     fontFamily: "Helvetica",
     backgroundColor: "#ffffff",
-    lineHeight: 1.08,
+    lineHeight: 1.12,
   },
 
   /* HEADER */
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 5,
+    marginBottom: 7,
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
-    paddingBottom: 5,
+    paddingBottom: 7,
   },
   headerLeft: { flexDirection: "column", maxWidth: "65%" },
   headerRight: { flexDirection: "column", alignItems: "flex-end", maxWidth: "35%" },
-  logo: { width: 74, height: 32, marginBottom: 3, objectFit: "contain" },
-  title: { fontSize: 12.0, fontWeight: "bold", color: ACCENT, marginBottom: 1 },
-  subtitle: { fontSize: 7.5, marginBottom: 1, color: "#4b5563" },
-
-  /* SECTION */
-  sectionTitleWrapper: {
-    backgroundColor: GRAY_BG,
-    borderRadius: 5,
-    paddingVertical: 2.5,
-    paddingHorizontal: 5,
-    marginTop: 4,
-    marginBottom: 3,
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  sectionTitleText: { fontSize: 9.0, fontWeight: "bold", color: "#111827" },
-  sectionTitleTag: { fontSize: 7.4, color: "#6b7280" },
+  logo: { width: 88, height: 38, marginBottom: 3, objectFit: "contain" },
+  title: { fontSize: 14.0, fontWeight: "bold", color: ACCENT, marginBottom: 5 },
+  subtitle: { fontSize: 8.4, marginBottom: 1, color: "#4b5563" },
 
   /* RESUMEN */
   resumenWrapper: {
     flexDirection: "row",
-    borderRadius: 7,
+    borderRadius: 8,
     backgroundColor: ACCENT_LIGHT,
     borderWidth: 1,
     borderColor: "#a7f3d0",
-    paddingVertical: 5,
-    paddingHorizontal: 5,
-    marginBottom: 5,
+    paddingVertical: 7,
+    paddingHorizontal: 7,
+    marginBottom: 7,
   },
-  resumenCol: { flex: 1, paddingRight: 5 },
-  resumenHeader: { fontSize: 8.5, fontWeight: "bold", color: ACCENT, marginBottom: 2 },
-  resumenLine: { fontSize: 7.6, color: "#064e3b", marginBottom: 1 },
+  resumenCol: { flex: 1, paddingRight: 7 },
+  resumenHeader: { fontSize: 9.6, fontWeight: "bold", color: ACCENT, marginBottom: 3 },
+  resumenLine: { fontSize: 8.4, color: "#064e3b", marginBottom: 1 },
+
+  /* SECTION TITLE */
+  sectionTitleWrapper: {
+    backgroundColor: GRAY_BG,
+    borderRadius: 6,
+    paddingVertical: 3,
+    paddingHorizontal: 7,
+    marginTop: 6,
+    marginBottom: 5,
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  sectionTitleText: { fontSize: 10.2, fontWeight: "bold", color: "#111827" },
+  sectionTitleTag: { fontSize: 8.2, color: "#6b7280" },
 
   /* BOX */
   box: {
     borderWidth: 1,
     borderColor: BORDER,
-    borderRadius: 5,
-    padding: 5,
-    marginBottom: 5,
+    borderRadius: 6,
+    padding: 7,
+    marginBottom: 7,
   },
-  row: { flexDirection: "row", marginBottom: 3 },
-  col: { flex: 1, paddingRight: 5 },
-  label: { fontWeight: "bold", color: "#374151", marginBottom: 1, fontSize: 7.6 },
-  value: { fontSize: 7.6, color: "#111827" },
+  row: { flexDirection: "row", marginBottom: 4 },
+  col: { flex: 1, paddingRight: 7 },
+  label: { fontWeight: "bold", color: "#374151", marginBottom: 1, fontSize: 8.4 },
+  value: { fontSize: 8.4, color: "#111827" },
 
-  /* Mini resumen (totales) */
-  miniRow: { flexDirection: "row", gap: 5, marginBottom: 5 },
+  /* Mini resumen */
+  miniRow: { flexDirection: "row", gap: 7, marginBottom: 7 },
   miniBox: {
     flex: 1,
     borderWidth: 1,
     borderColor: "#a7f3d0",
     backgroundColor: ACCENT_LIGHT,
-    borderRadius: 7,
-    paddingVertical: 4,
-    paddingHorizontal: 4,
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 6,
   },
-  miniLabel: { fontSize: 7.0, color: "#064e3b" },
-  miniValue: { fontSize: 9.0, fontWeight: "bold", color: ACCENT, marginTop: 1 },
+  miniLabel: { fontSize: 7.8, color: "#064e3b" },
+  miniValue: { fontSize: 11.4, fontWeight: "bold", color: ACCENT, marginTop: 2 },
 
   /* TABLE */
   table: {
     borderWidth: 1,
     borderColor: BORDER,
-    borderRadius: 5,
+    borderRadius: 6,
     overflow: "hidden",
   },
   tableHeaderRow: { flexDirection: "row", backgroundColor: ACCENT_LIGHT },
   tableRow: { flexDirection: "row" },
   tableCellHeader: {
     flex: 1,
-    paddingVertical: 2.6,
-    paddingHorizontal: 3.5,
-    fontSize: 7.2,
+    paddingVertical: 3.2,
+    paddingHorizontal: 4.2,
+    fontSize: 8.0,
     fontWeight: "bold",
     borderRightWidth: 1,
     borderRightColor: BORDER,
@@ -171,9 +183,9 @@ const styles = StyleSheet.create({
   },
   tableCell: {
     flex: 1,
-    paddingVertical: 2.6,
-    paddingHorizontal: 3.5,
-    fontSize: 7.2,
+    paddingVertical: 3.2,
+    paddingHorizontal: 4.2,
+    fontSize: 8.0,
     borderTopWidth: 1,
     borderTopColor: "#e5e7eb",
     borderRightWidth: 1,
@@ -181,48 +193,92 @@ const styles = StyleSheet.create({
   },
   tableCellLast: { borderRightWidth: 0 },
 
-  /* MOTO - layout horizontal */
+  /* MOTO CARD */
   motoCard: {
     borderWidth: 1,
     borderColor: BORDER,
-    borderRadius: 6,
-    padding: 5,
-    marginBottom: 5,
+    borderRadius: 7,
+    padding: 7,
+    marginBottom: 7,
   },
-  motoHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 3, gap: 6 },
-  motoTitle: { fontSize: 8.6, fontWeight: "bold", color: "#111827", flexGrow: 1 },
-  motoChip: { fontSize: 7.2, color: "#374151" },
+  motoHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 4,
+    gap: 7,
+  },
+  motoTitle: { fontSize: 10.0, fontWeight: "bold", color: "#111827", flexGrow: 1 },
+  motoChip: { fontSize: 8.2, color: "#374151" },
 
-  motoBodyRow: { flexDirection: "row", gap: 5 },
+  motoBodyRow: { flexDirection: "row", gap: 7 },
 
+  // ✅ Más grande para que se vea mejor en carta
   motoLeftCol: {
-    width: 120,
+    width: 170,
     borderWidth: 1,
     borderColor: BORDER,
-    borderRadius: 5,
+    borderRadius: 7,
     backgroundColor: "#f9fafb",
-    padding: 4,
+    padding: 7,
     justifyContent: "center",
     alignItems: "center",
   },
-  motoImage: { width: 110, height: 62, objectFit: "contain" },
-  motoImageLabel: { fontSize: 6.8, color: "#6b7280", marginTop: 2, textAlign: "center" },
-  motoNoImg: { fontSize: 7.0, color: "#6b7280", textAlign: "center" },
+  motoImage: { width: 160, height: 96, objectFit: "contain" },
 
-  motoRightCol: { flex: 1, gap: 5 },
-  motoTablesRow: { flexDirection: "row", gap: 5 },
+  motoImageLabel: { fontSize: 7.8, color: "#6b7280", marginTop: 3, textAlign: "center" },
+  motoNoImg: { fontSize: 8.0, color: "#6b7280", textAlign: "center" },
+
+  motoRightCol: { flex: 1, gap: 7 },
+  motoTablesRow: { flexDirection: "row", gap: 7 },
   half: { flex: 1 },
 
+  /* Cuotas 3 col */
+  table3Header: { flexDirection: "row", backgroundColor: ACCENT_LIGHT },
+  table3Row: { flexDirection: "row" },
+  t3h: {
+    width: "33.33%",
+    paddingVertical: 3.2,
+    paddingHorizontal: 4.2,
+    fontSize: 7.8,
+    fontWeight: "bold",
+    borderRightWidth: 1,
+    borderRightColor: BORDER,
+    color: "#064e3b",
+  },
+  t3c: {
+    width: "33.33%",
+    paddingVertical: 3.2,
+    paddingHorizontal: 4.2,
+    fontSize: 7.8,
+    borderTopWidth: 1,
+    borderTopColor: "#e5e7eb",
+    borderRightWidth: 1,
+    borderRightColor: "#e5e7eb",
+  },
+  t3Last: { borderRightWidth: 0 },
+
   /* HABEAS / FIRMAS */
-  habeasTitle: { fontSize: 7.8, fontWeight: "bold", marginBottom: 2, marginTop: 1, color: "#111827" },
-  habeasText: { fontSize: 6.5, color: "#374151", lineHeight: 1.06, marginBottom: 2 },
-  firmaRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 5 },
-  firmaBox: { width: "45%", borderTopWidth: 1, borderTopColor: "#111827", paddingTop: 3 },
-  firmaLabel: { fontSize: 7.4, color: "#111827" },
+  habeasTitle: {
+    fontSize: 8.8,
+    fontWeight: "bold",
+    marginBottom: 3,
+    marginTop: 1,
+    color: "#111827",
+  },
+  habeasText: {
+    fontSize: 7.4,
+    color: "#374151",
+    lineHeight: 1.12,
+    marginBottom: 3,
+  },
+
+  firmaRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 7 },
+  firmaBox: { width: "45%", borderTopWidth: 1, borderTopColor: "#111827", paddingTop: 4 },
+  firmaLabel: { fontSize: 8.2, color: "#111827" },
 
   /* FOOTER */
-  smallMuted: { fontSize: 6.6, color: "#6b7280", marginTop: 3, lineHeight: 1.1 },
-  smallMutedCenter: { fontSize: 6.6, color: "#374151", marginTop: 2, textAlign: "center" },
+  footer: { fontSize: 7.6, color: "#6b7280", marginTop: 5, lineHeight: 1.2 },
+  footerCenter: { fontSize: 7.6, color: "#374151", marginTop: 3, textAlign: "center" },
 });
 
 const fmtCOP = (v: any) =>
@@ -263,8 +319,6 @@ const fmtDateShort = (raw?: string) => {
 const safe = (v: any, fallback: string = "—") =>
   v === null || v === undefined || v === "" ? fallback : String(v);
 
-/* ====== Imagen helpers ====== */
-
 const BaseUrl =
   (import.meta as any)?.env?.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
 
@@ -279,14 +333,12 @@ const buildAbsUrl = (path?: string | null): string | null => {
 const resolveMotoImg = (d: any, override?: string): string | null => {
   if (override) return override;
 
-  const candidates = [d?.foto, d?.foto_a, d?.product_img, d?.imagen].filter(Boolean) as string[];
+  const candidates = [d?.foto_a, d?.product_img, d?.imagen, d?.foto].filter(Boolean) as string[];
 
   for (const c of candidates) {
     const abs = buildAbsUrl(c);
     if (abs) return abs;
   }
-
-  // En V2 lo dejo null para no forzar una imagen grande si no existe
   return null;
 };
 
@@ -304,9 +356,14 @@ const MiniBox: React.FC<{ label: string; value: string }> = ({ label, value }) =
   </View>
 );
 
-/* ============================
-   PDF V2 COMPACTO (1 moto)
-============================ */
+const fmtGpsMeses = (v: any) => {
+  if (v === null || v === undefined) return "No aplica";
+  const s = String(v).toLowerCase();
+  if (s === "no") return "No";
+  return `${v} meses`;
+};
+
+const pickComentario = (d: any) => safe(d.comentario2 ?? d.comentario ?? "", "—");
 
 export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
   cotizacion,
@@ -322,50 +379,157 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
     .filter(Boolean)
     .join(" ");
 
-  const motoLabel = [d.marca ?? d.marca_a, d.linea ?? d.linea_a, d.modelo ?? d.modelo_a]
-    .filter(Boolean)
-    .join(" ");
+  // ✅ 1 sola moto: usa campos sin suffix si vienen, si no cae a _a
+  const motoLabel = [d.marca ?? d.marca_a, d.linea ?? d.linea_a].filter(Boolean).join(" ");
 
   const fechaCorta = fmtDateShort(d.fecha_creacion);
   const ciudad = empresa?.ciudad || "Cali";
   const almacen = empresa?.almacen || "FERIA DE LA MOVILIDAD";
+  const tipoPago = safe(d.tipo_pago || d.metodo_pago);
 
   const motoImg = resolveMotoImg(d, motoFotoUrl);
 
-  // Económicos
-  const totalSinSeguros = num(d.total_sin_seguros ?? d.total_sin_seguros_a);
-  const total =
-    num(d.precio_total ?? d.precio_total_a) ||
-    totalSinSeguros + num(d.otro_seguro ?? d.otro_seguro_a);
+  const getGE = () => {
+    const meses = num(g?.meses_a ?? g?.meses) || num(d?.garantia_extendida_a ?? d?.garantia_extendida);
+    const valor = num(g?.valor_a ?? g?.valor) || num(d?.valor_garantia_extendida_a ?? d?.valor_garantia_extendida);
+    const plan = safe(g?.garantia_extendida_a ?? g?.garantia_extendida ?? d?.garantia_extendida_a ?? d?.garantia_extendida, "—");
+    return { meses, valor, plan };
+  };
 
-  const cuotaInicial = num(d.cuota_inicial ?? d.cuota_inicial_a);
+  const getMotoValues = () => {
+    const s = "_a";
 
-  const saldoAFinanciar = num(d.saldo_financiar ?? d.saldo_financiar_a) || Math.max(total - cuotaInicial, 0);
+    const precioBase = num(d[`precio_base${s}`] ?? d.precio_base);
+    const descuentos = num(d[`descuentos${s}`] ?? d.descuentos);
 
-  // Detalles base
-  const precioBase = d.precio_base ?? d.precio_base_a;
-  const precioDocumentos = d.precio_documentos ?? d.precio_documentos_a;
-  const accesorios = d.accesorios ?? d.accesorios_a;
-  const otrosSeguros = d.otro_seguro ?? d.otro_seguro_a;
-  const descuentos = d.descuentos ?? d.descuentos_a;
+    const accesorios = num(d[`accesorios${s}`] ?? d.accesorios);
+    const marcacion = num(d[`marcacion${s}`] ?? d.marcacion);
+    const accesoriosMarcacion = accesorios + marcacion;
 
-  const garantia = d.garantia ?? d.garantia_a;
-  const garantiaExtMoto = d.garantia_extendida ?? d.garantia_extendida_a;
+    const otrosSeguros = num(d[`otro_seguro${s}`] ?? d.otro_seguro);
 
-  // Garantía extendida (tabla)
-  const mostrarGarantia =
-    !!garantiaExt &&
-    (g?.moto || g?.moto_a || g?.garantia_extendida || g?.garantia_extendida_a || g?.valor || g?.valor_a);
+    const soat = num(d[`soat${s}`] ?? d.soat);
+    const matricula = num(d[`matricula${s}`] ?? d.matricula);
+    const impuestos = num(d[`impuestos${s}`] ?? d.impuestos);
+    const docsReal = soat + matricula + impuestos;
 
-  const gMoto = g?.moto ?? g?.moto_a ?? motoLabel;
-  const gPlan = g?.garantia_extendida ?? g?.garantia_extendida_a ?? garantiaExtMoto;
-  const gMeses = g?.meses ?? g?.meses_a;
-  const gValor = g?.valor ?? g?.valor_a;
+    const runt = num(d["runt_1"] ?? d.runt);
+    const licencia = num(d["licencia_1"] ?? d.licencia);
+    const defensas = num(d["defensas_1"] ?? d.defensas);
+    const hand = num(d["hand_savers_1"] ?? d.hand_savers);
+    const otrosAd = num(d["otros_adicionales_1"] ?? d.otros_adicionales);
 
-  const tipoPago = safe(d.tipo_pago || d.metodo_pago);
-  const telefonos = `${safe(d.celular)}${empresa?.telefono ? ` · ${empresa.telefono}` : ""}`;
+    const adicionalesTotal = num(d["total_adicionales_1"]) || (runt + licencia + defensas + hand + otrosAd);
 
-  const detSeguros = formatSeguros(d.seguros ?? d.seguros_a);
+    const gpsMeses = d[`gps_meses${s}`] ?? d.gps_meses;
+    const gpsValor = num(d[`valor_gps${s}`] ?? d.valor_gps);
+
+    const polizaCodigo = d[`poliza${s}`] ?? d.poliza ?? null;
+    const polizaValor = num(d[`valor_poliza${s}`] ?? d.valor_poliza);
+
+    const totalSinSeguros =
+      num(d[`total_sin_seguros${s}`] ?? d.total_sin_seguros) ||
+      (precioBase + docsReal + accesoriosMarcacion + adicionalesTotal - descuentos + polizaValor);
+
+    const total = num(d[`precio_total${s}`] ?? d.precio_total) || (totalSinSeguros + otrosSeguros);
+
+    const cuotaInicial = num(d[`cuota_inicial${s}`] ?? d.cuota_inicial);
+    const saldo = Math.max(total - cuotaInicial, 0);
+
+    const cuotas = {
+      c6: num(d[`cuota_6${s}`] ?? d.cuota_6),
+      c12: num(d[`cuota_12${s}`] ?? d.cuota_12),
+      c18: num(d[`cuota_18${s}`] ?? d.cuota_18),
+      c24: num(d[`cuota_24${s}`] ?? d.cuota_24),
+      c30: num(d[`cuota_30${s}`] ?? d.cuota_30),
+      c36: num(d[`cuota_36${s}`] ?? d.cuota_36),
+    };
+
+    return {
+      precioBase,
+      descuentos,
+      accesorios,
+      marcacion,
+      accesoriosMarcacion,
+      otrosSeguros,
+      soat,
+      matricula,
+      impuestos,
+      docsReal,
+      runt,
+      licencia,
+      defensas,
+      hand,
+      otrosAd,
+      adicionalesTotal,
+      gpsMeses,
+      gpsValor,
+      totalSinSeguros,
+      total,
+      cuotaInicial,
+      saldo,
+      cuotas,
+      polizaCodigo,
+      polizaValor,
+    };
+  };
+
+  const ge = getGE();
+  const v = getMotoValues();
+
+  const cuotasList = [
+    ["6", v.cuotas.c6],
+    ["12", v.cuotas.c12],
+    ["18", v.cuotas.c18],
+    ["24", v.cuotas.c24],
+    ["30", v.cuotas.c30],
+    ["36", v.cuotas.c36],
+  ].filter(([, val]) => Number(val) > 0);
+
+  const segurosDetalle = formatSeguros(d.seguros ?? d.seguros_a);
+
+  const renderHabeasFirmasFooter = () => (
+    <>
+      <SectionTitle title="Autorización de habeas data y firmas" />
+      <View style={styles.box} wrap={false}>
+        <Text style={styles.habeasTitle}>Autorización de habeas data:</Text>
+
+        <Text style={styles.habeasText}>
+          Con la firma del presente documento y con el suministro libre, espontáneo y voluntario de sus datos generales de
+          comunicación, entiéndase: nombre completo, cédula de ciudadanía, correo electrónico, número de dispositivo móvil,
+          número de teléfono fijo, whatsapp y todos aquellos que sean utilizados por redes sociales; se entenderá que la
+          empresa queda autorizada para el uso de los datos a fin de suministrar, a través de documentos digitales y/o en
+          físico la información comercial y de venta al consumidor de la siguiente
+        </Text>
+
+        <Text style={styles.habeasText}>
+          También quedan facultadas la empresa y el consumidor para: a) Conocer, actualizar y rectificar en cualquier momento
+          los datos personales; b) Solicitar prueba de la autorización otorgada; c) Ser informado, previa solicitud, respecto
+          del uso que se ha dado a los datos personales; d) Presentar ante la Superintendencia de Industria y Comercio quejas
+          por infracciones de conformidad con la ley; e) Revocar y suspender la autorización y/o solicitar la supresión de un
+          dato cuando en el tratamiento no se respeten las normas; f) Acceder en forma gratuita a los datos personales que
+          hayan sido objeto de tratamiento, y en general todas aquellas facultades consagradas en la Ley 1581 de 2012. Para
+          conocer más detalles de nuestra política de tratamiento y protección de datos personales, consulte nuestro manual de
+          tratamiento en www.tuclickmotos.com
+        </Text>
+
+        <View style={styles.firmaRow} wrap={false}>
+          <View style={styles.firmaBox}>
+            <Text style={styles.firmaLabel}>Firma del cliente</Text>
+          </View>
+          <View style={styles.firmaBox}>
+            <Text style={styles.firmaLabel}>Firma del asesor</Text>
+          </View>
+        </View>
+      </View>
+
+      <Text style={styles.footer}>
+        Precios y promociones sujetos a cambios sin previo aviso o hasta agotar existencias. La información será tratada
+        según Ley 1581 de 2012.
+      </Text>
+      <Text style={styles.footerCenter}>MOTO PARA TODOS S.A.S - Hacemos tu sueño realidad</Text>
+    </>
+  );
 
   return (
     <Document>
@@ -374,10 +538,8 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
         <View style={styles.header} wrap={false}>
           <View style={styles.headerLeft}>
             {logoUrl ? <Image src={logoUrl} style={styles.logo} /> : null}
-            <Text style={styles.title}>Cotización #{safe(d.id, "")}</Text>
-            <Text style={styles.subtitle}>
-              Fecha: {fmtDateTime(d.fecha_creacion)} ({fechaCorta})
-            </Text>
+            <Text style={styles.title}>Cotización #{safe(d.id, "")} · Moto</Text>
+            <Text style={styles.subtitle}>Fecha: {fmtDateTime(d.fecha_creacion)}</Text>
             <Text style={styles.subtitle}>Actualización: {fmtDateTime(d.fecha_actualizacion)}</Text>
           </View>
 
@@ -388,6 +550,7 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
               {almacen} · {ciudad}
             </Text>
             {empresa?.nit ? <Text style={styles.subtitle}>NIT: {empresa.nit}</Text> : null}
+            {empresa?.telefono ? <Text style={styles.subtitle}>Tel: {empresa.telefono}</Text> : null}
             {empresa?.direccion ? <Text style={styles.subtitle}>{empresa.direccion}</Text> : null}
           </View>
         </View>
@@ -397,25 +560,17 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
           <View style={styles.resumenCol}>
             <Text style={styles.resumenHeader}>Cliente</Text>
             <Text style={styles.resumenLine}>{safe(nombreCompletoCliente)}</Text>
-            <Text style={styles.resumenLine}>CC: {safe(d.cedula)} · Tel: {telefonos}</Text>
+            <Text style={styles.resumenLine}>CC: {safe(d.cedula)} · Cel: {safe(d.celular)}</Text>
             <Text style={styles.resumenLine}>Email: {safe(d.email)}</Text>
           </View>
-          <View style={styles.resumenCol}>
-            <Text style={styles.resumenHeader}>Cotización</Text>
-            <Text style={styles.resumenLine}>Moto: {safe(motoLabel)}</Text>
-            <Text style={styles.resumenLine}>
-              Total: {fmtCOP(total)} · Inicial: {fmtCOP(cuotaInicial)}
-            </Text>
-            <Text style={styles.resumenLine}>Saldo: {fmtCOP(saldoAFinanciar)}</Text>
-            <Text style={styles.resumenLine}>Pago: {tipoPago} · Asesor: {safe(d.asesor)}</Text>
-          </View>
-        </View>
 
-        {/* MINI TOTALES (para que el cliente lo vea fácil) */}
-        <View style={styles.miniRow} wrap={false}>
-          <MiniBox label="TOTAL" value={fmtCOP(total)} />
-          <MiniBox label="Cuota inicial" value={fmtCOP(cuotaInicial)} />
-          <MiniBox label="Saldo a financiar" value={fmtCOP(saldoAFinanciar)} />
+          <View style={styles.resumenCol}>
+            <Text style={styles.resumenHeader}>Comercial</Text>
+            <Text style={styles.resumenLine}>Asesor: {safe(d.asesor)}</Text>
+            <Text style={styles.resumenLine}>Tipo pago: {safe(d.tipo_pago || d.metodo_pago)}</Text>
+            <Text style={styles.resumenLine}>Prospecto: {safe(d.prospecto)}</Text>
+            <Text style={styles.resumenLine}>Fecha: {fechaCorta}</Text>
+          </View>
         </View>
 
         {/* INFO CLAVE */}
@@ -423,46 +578,42 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
         <View style={styles.box} wrap={false}>
           <View style={styles.row}>
             <View style={styles.col}>
-              <Text style={styles.label}>Canal</Text>
+              <Text style={styles.label}>Canal de contacto</Text>
               <Text style={styles.value}>{safe(d.canal_contacto)}</Text>
             </View>
-            <View style={styles.col}>
-              <Text style={styles.label}>Prospecto</Text>
-              <Text style={styles.value}>{safe(d.prospecto)}</Text>
-            </View>
-          </View>
-
-          <View style={styles.row}>
             <View style={styles.col}>
               <Text style={styles.label}>Financiera</Text>
               <Text style={styles.value}>{safe(d.financiera)}</Text>
             </View>
-            <View style={styles.col}>
-              <Text style={styles.label}>Motivo / Necesidad</Text>
-              <Text style={styles.value}>{safe(d.pregunta)}</Text>
-            </View>
           </View>
 
           <View style={styles.row}>
             <View style={styles.col}>
-              <Text style={styles.label}>Comentarios</Text>
-              <Text style={styles.value}>{safe(d.comentario2 ?? d.comentario ?? "", "—")}</Text>
+              <Text style={styles.label}>Necesidad / Motivo</Text>
+              <Text style={styles.value}>{safe(d.pregunta)}</Text>
+            </View>
+            <View style={styles.col}>
+              <Text style={styles.label}>Observación</Text>
+              <Text style={styles.value}>{pickComentario(d)}</Text>
             </View>
           </View>
         </View>
 
-        {/* DETALLE MOTO - horizontal (imagen izq + 2 tablas der) */}
-        <SectionTitle title="Detalle de la moto" tag={safe(motoLabel)} />
+        {/* BLOQUE MOTO (1 sola) */}
+        <SectionTitle title="Moto" tag={safe(motoLabel)} />
+
+        <View style={styles.miniRow} wrap={false}>
+          <MiniBox label="TOTAL" value={fmtCOP(v.total)} />
+          <MiniBox label="Cuota inicial" value={fmtCOP(v.cuotaInicial)} />
+          <MiniBox label="Saldo a financiar" value={fmtCOP(v.saldo)} />
+        </View>
+
         <View style={styles.motoCard} wrap={false}>
           <View style={styles.motoHeader} wrap={false}>
             <Text style={styles.motoTitle}>{safe(motoLabel)}</Text>
-            <Text style={styles.motoChip}>
-              Garantía: {safe(garantia, "—")} · Ext: {safe(garantiaExtMoto, "—")}
-            </Text>
           </View>
 
           <View style={styles.motoBodyRow} wrap={false}>
-            {/* Imagen pequeña izquierda */}
             <View style={styles.motoLeftCol} wrap={false}>
               {motoImg ? (
                 <>
@@ -474,10 +625,8 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
               )}
             </View>
 
-            {/* Tablas derecha */}
             <View style={styles.motoRightCol} wrap={false}>
               <View style={styles.motoTablesRow} wrap={false}>
-                {/* Tabla 1 */}
                 <View style={[styles.table, styles.half]} wrap={false}>
                   <View style={styles.tableHeaderRow}>
                     <Text style={styles.tableCellHeader}>Concepto</Text>
@@ -485,20 +634,30 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
                   </View>
 
                   {[
-                    ["Precio público", precioBase],
-                    ["Documentos", precioDocumentos],
-                    ["Accesorios", accesorios],
-                    ["Seguros", otrosSeguros],
-                    ["Descuentos", descuentos],
-                  ].map(([k, v], idx) => (
-                    <View style={styles.tableRow} key={`t1-${String(k)}-${idx}`}>
-                      <Text style={styles.tableCell}>{k as string}</Text>
-                      <Text style={[styles.tableCell, styles.tableCellLast]}>{fmtCOP(v)}</Text>
+                    { k: "Precio base", vv: v.precioBase, type: "money" },
+                    { k: "Docs (total)", vv: v.docsReal, type: "money" },
+                    { k: "Meses (36)", vv: v.cuotas.c36, type: "money" },
+                    { k: "Marcación", vv: v.marcacion, type: "money" },
+                    { k: "Meses (GPS)", vv: v.gpsMeses, type: "gpsMeses" },
+                    { k: "GPS", vv: v.gpsValor, type: "money" },
+                    { k: "Garantía extendida", vv: null, type: "ge" },
+                    { k: "Cuota inicial", vv: v.cuotaInicial, type: "money" },
+                  ].map((item, idx) => (
+                    <View style={styles.tableRow} key={`L-ONE-${item.k}-${idx}`}>
+                      <Text style={styles.tableCell}>{item.k}</Text>
+                      <Text style={[styles.tableCell, styles.tableCellLast]}>
+                        {item.type === "gpsMeses"
+                          ? fmtGpsMeses(item.vv)
+                          : item.type === "ge"
+                            ? ge.meses > 0
+                              ? fmtCOP(ge.valor)
+                              : "—"
+                            : fmtCOP(item.vv)}
+                      </Text>
                     </View>
                   ))}
                 </View>
 
-                {/* Tabla 2 */}
                 <View style={[styles.table, styles.half]} wrap={false}>
                   <View style={styles.tableHeaderRow}>
                     <Text style={styles.tableCellHeader}>Resumen</Text>
@@ -506,32 +665,64 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
                   </View>
 
                   {[
-                    ["Total sin seguros", totalSinSeguros],
-                    ["TOTAL", total],
-                    ["Cuota inicial", cuotaInicial],
-                    ["Saldo a financiar", saldoAFinanciar],
-                  ].map(([k, v], idx) => (
-                    <View style={styles.tableRow} key={`t2-${String(k)}-${idx}`}>
-                      <Text style={styles.tableCell}>{k as string}</Text>
-                      <Text style={[styles.tableCell, styles.tableCellLast]}>{fmtCOP(v)}</Text>
+                    { k: "Seguro todo riesgo adicional", vv: v.otrosSeguros },
+                    { k: "Cascos y accesorios", vv: v.accesorios },
+                    { k: "Descuento / plan de marca", vv: v.descuentos },
+                    { k: "Inscripción RUNT", vv: v.runt },
+                    { k: "Licencias", vv: v.licencia },
+                    { k: "Defensas", vv: v.defensas },
+                    { k: "Hand savers", vv: v.hand },
+                    { k: "Otros adicionales", vv: v.otrosAd },
+                    { k: "TOTAL", vv: v.total },
+                  ].map((item, idx) => (
+                    <View style={styles.tableRow} key={`R-ONE-${item.k}-${idx}`}>
+                      <Text style={styles.tableCell}>{item.k}</Text>
+                      <Text style={[styles.tableCell, styles.tableCellLast]}>{fmtCOP(item.vv)}</Text>
                     </View>
                   ))}
                 </View>
               </View>
 
-              {/* Detalle seguros debajo (si aplica) */}
-              {detSeguros && detSeguros !== "—" ? (
-                <Text style={styles.value}>
+              {cuotasList.length ? (
+                <View wrap={false}>
+                  <Text style={styles.label}>Cuotas</Text>
+                  <View style={styles.table} wrap={false}>
+                    <View style={styles.table3Header}>
+                      <Text style={styles.t3h}>Plazo</Text>
+                      <Text style={styles.t3h}>Valor</Text>
+                      <Text style={[styles.t3h, styles.t3Last]}>Tipo</Text>
+                    </View>
+
+                    {cuotasList.map(([p, val]) => (
+                      <View style={styles.table3Row} key={`C-ONE-${p}`}>
+                        <Text style={styles.t3c}>{p} meses</Text>
+                        <Text style={styles.t3c}>{fmtCOP(val)}</Text>
+                        <Text style={[styles.t3c, styles.t3Last]}>{tipoPago}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
+
+              {segurosDetalle && segurosDetalle !== "—" ? (
+                <Text
+                  style={{
+                    fontSize: 8.0,
+                    color: "#374151",
+                    marginTop: 4,
+                    lineHeight: 1.1,
+                  }}
+                >
                   <Text style={{ fontWeight: "bold" }}>Detalle seguros: </Text>
-                  {detSeguros}
+                  {segurosDetalle}
                 </Text>
               ) : null}
             </View>
           </View>
         </View>
 
-        {/* GARANTÍA EXTENDIDA */}
-        {mostrarGarantia ? (
+        {/* GARANTÍA EXTENDIDA (opcional) */}
+        {ge.meses > 0 ? (
           <>
             <SectionTitle title="Garantía extendida" />
             <View style={styles.box} wrap={false}>
@@ -543,62 +734,18 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
                   <Text style={[styles.tableCellHeader, styles.tableCellLast]}>Valor</Text>
                 </View>
                 <View style={styles.tableRow}>
-                  <Text style={styles.tableCell}>{safe(gMoto)}</Text>
-                  <Text style={styles.tableCell}>{safe(gPlan)}</Text>
-                  <Text style={styles.tableCell}>{safe(gMeses)}</Text>
-                  <Text style={[styles.tableCell, styles.tableCellLast]}>
-                    {gValor != null ? fmtCOP(gValor) : "—"}
-                  </Text>
+                  <Text style={styles.tableCell}>{safe(motoLabel)}</Text>
+                  <Text style={styles.tableCell}>{safe(ge.plan)}</Text>
+                  <Text style={styles.tableCell}>{String(ge.meses)}</Text>
+                  <Text style={[styles.tableCell, styles.tableCellLast]}>{fmtCOP(ge.valor)}</Text>
                 </View>
               </View>
             </View>
           </>
         ) : null}
 
-        {/* HABEAS + FIRMAS */}
-        <SectionTitle title="Autorización de habeas data y firmas" />
-        <View style={styles.box} wrap={false}>
-          <Text style={styles.habeasTitle}>Autorización de habeas data:</Text>
-
-          <Text style={styles.habeasText}>
-            Con la firma del presente documento y con el suministro libre, espontáneo y voluntario de sus datos generales de
-            comunicación, entiéndase: nombre completo, cédula de ciudadanía, correo electrónico, número de dispositivo móvil,
-            número de teléfono fijo, whatsapp y todos aquellos que sean utilizados por redes sociales; se entenderá que la
-            empresa queda autorizada para el uso de los datos a fin de suministrar, a través de documentos digitales y/o en
-            físico la información comercial y de venta al consumidor de la siguiente
-          </Text>
-
-          <Text style={styles.habeasText}>
-            También quedan facultadas la empresa y el consumidor para: a) Conocer, actualizar y rectificar en cualquier momento
-            los datos personales; b) Solicitar prueba de la autorización otorgada; c) Ser informado, previa solicitud, respecto
-            del uso que se ha dado a los datos personales; d) Presentar ante la Superintendencia de Industria y Comercio quejas
-            por infracciones de conformidad con la ley; e) Revocar y suspender la autorización y/o solicitar la supresión de un
-            dato cuando en el tratamiento no se respeten las normas; f) Acceder en forma gratuita a los datos personales que
-            hayan sido objeto de tratamiento, y en general todas aquellas facultades consagradas en la Ley 1581 de 2012.
-          </Text>
-
-          <Text style={styles.habeasText}>
-            Para conocer más detalles de nuestra política de tratamiento y protección de datos personales, consulte nuestro
-            manual de tratamiento en www.tuclickmotos.com
-          </Text>
-
-          <View style={styles.firmaRow} wrap={false}>
-            <View style={styles.firmaBox}>
-              <Text style={styles.firmaLabel}>Firma del cliente</Text>
-            </View>
-            <View style={styles.firmaBox}>
-              <Text style={styles.firmaLabel}>Firma del asesor</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* FOOTER */}
-        <Text style={styles.smallMuted}>
-          Todos los precios y/o promociones publicados en este documento están sujetos a cambio sin previo aviso o hasta
-          agotar existencias. La motocicleta se entrega con kit de herramienta básico. La información suministrada será
-          tratada acorde a lo estipulado por la Ley 1581 de 2012.
-        </Text>
-        <Text style={styles.smallMutedCenter}>MOTO PARA TODOS S.A.S - Hacemos tu sueño realidad</Text>
+        {/* HABEAS + FIRMAS + FOOTER */}
+        {renderHabeasFirmasFooter()}
       </Page>
     </Document>
   );

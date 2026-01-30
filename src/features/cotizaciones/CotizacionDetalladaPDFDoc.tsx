@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   headerLeft: { flexDirection: "column", maxWidth: "65%" },
   headerRight: { flexDirection: "column", alignItems: "flex-end", maxWidth: "35%" },
   logo: { width: 74, height: 32, marginBottom: 3, objectFit: "contain" },
-  title: { fontSize: 12.0, fontWeight: "bold", color: ACCENT, marginBottom: 1 },
+  title: { fontSize: 12.0, fontWeight: "bold", color: ACCENT, marginBottom: 5 },
   subtitle: { fontSize: 7.5, marginBottom: 1, color: "#4b5563" },
 
   /* RESUMEN */
@@ -412,8 +412,8 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
     .filter(Boolean)
     .join(" ");
 
-  const motoALabel = [d.marca_a, d.linea_a, d.modelo_a].filter(Boolean).join(" ");
-  const motoBLabel = [d.marca_b, d.linea_b, d.modelo_b].filter(Boolean).join(" ");
+  const motoALabel = [d.marca_a, d.linea_a].filter(Boolean).join(" ");
+  const motoBLabel = [d.marca_b, d.linea_b].filter(Boolean).join(" ");
   const hayMotoB = !!d.marca_b || !!d.linea_b || !!d.precio_base_b || !!d.precio_total_b;
 
   const fechaCorta = fmtDateShort(d.fecha_creacion);
@@ -472,9 +472,9 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
     const polizaValor = num(d[`valor_poliza${s}`]);       // valor_poliza_a / valor_poliza_b
 
 
-const totalSinSeguros =
-  num(d[`total_sin_seguros${s}`]) ||
-  (precioBase + docsReal + accesoriosMarcacion + adicionalesTotal - descuentos + polizaValor);
+    const totalSinSeguros =
+      num(d[`total_sin_seguros${s}`]) ||
+      (precioBase + docsReal + accesoriosMarcacion + adicionalesTotal - descuentos + polizaValor);
 
 
     const total = num(d[`precio_total${s}`]) || (totalSinSeguros + otrosSeguros);
@@ -530,7 +530,7 @@ const totalSinSeguros =
     const label = side === "A" ? motoALabel : motoBLabel;
     const img = side === "A" ? motoImgA : motoImgB;
 
-    const garantia = side === "A" ? d.garantia_a : d.garantia_b;
+    // const garantia = side === "A" ? d.garantia_a : d.garantia_b;
     const segurosDetalle = formatSeguros(side === "A" ? d.seguros_a : d.seguros_b);
 
     const v = getMotoValues(side);
@@ -558,10 +558,7 @@ const totalSinSeguros =
         <View style={styles.motoCard} wrap={false}>
           <View style={styles.motoHeader} wrap={false}>
             <Text style={styles.motoTitle}>{safe(label)}</Text>
-            <Text style={styles.motoChip}>
-              Garantía: {safe(garantia, "—")} · GE:{" "}
-              {geSide.meses > 0 ? `${geSide.meses}m (${fmtCOP(geSide.valor)})` : "No aplica"}
-            </Text>
+    
           </View>
 
           <View style={styles.motoBodyRow} wrap={false}>
@@ -584,21 +581,31 @@ const totalSinSeguros =
                     <Text style={[styles.tableCellHeader, styles.tableCellLast]}>Valor</Text>
                   </View>
 
+                  {/* ===== TABLA IZQUIERDA: "Concepto" (mismo contenedor) ===== */}
                   {[
-                    ["Precio base", v.precioBase],
-                    ["Descuentos", v.descuentos],
-                    ["Accesorios", v.accesorios],
-                    ["Marcación", v.marcacion],
-                    ["Adicionales", v.adicionalesTotal],
-                    ["SOAT", v.soat],
-                    ["Matrícula", v.matricula],
-                    ["Impuestos", v.impuestos],
-                  ].map(([k, val], idx) => (
-                    <View style={styles.tableRow} key={`L-${side}-${k}-${idx}`}>
-                      <Text style={styles.tableCell}>{k as string}</Text>
-                      <Text style={[styles.tableCell, styles.tableCellLast]}>{fmtCOP(val)}</Text>
+                    { k: "Precio base", v: v.precioBase, type: "money" },
+                    { k: "Docs (total)", v: v.docsReal, type: "money" },            // total en documentos
+                    { k: "Meses (36)", v: v.cuotas.c36, type: "money" },            // cuota 36
+                    { k: "Marcación", v: v.marcacion, type: "money" },
+                    { k: "Meses (36)", v: v.gpsMeses, type: "gpsMeses" },           // meses GPS
+                    { k: "GPS", v: v.gpsValor, type: "money" },                     // valor GPS
+                    { k: "Garantía extendida", v: null, type: "ge" },               // garantía extendida (valor)
+                    { k: "Cuota inicial", v: v.cuotaInicial, type: "money" },
+                  ].map((item, idx) => (
+                    <View style={styles.tableRow} key={`L-${side}-${item.k}-${idx}`}>
+                      <Text style={styles.tableCell}>{item.k}</Text>
+                      <Text style={[styles.tableCell, styles.tableCellLast]}>
+                        {item.type === "gpsMeses"
+                          ? fmtGpsMeses(item.v)
+                          : item.type === "ge"
+                            ? geSide.meses > 0
+                              ? fmtCOP(geSide.valor)
+                              : "—"
+                            : fmtCOP(item.v)}
+                      </Text>
                     </View>
                   ))}
+
                 </View>
 
                 <View style={[styles.table, styles.half]} wrap={false}>
@@ -607,33 +614,21 @@ const totalSinSeguros =
                     <Text style={[styles.tableCellHeader, styles.tableCellLast]}>Valor</Text>
                   </View>
 
+                  {/* ===== TABLA DERECHA: "Resumen" (mismo contenedor) ===== */}
                   {[
-                    ["Docs (total)", v.docsReal],
-                    ["Acc + marcación", v.accesoriosMarcacion],
-                    ["Otros seguros", v.otrosSeguros],
-                    ["Póliza", "POLIZATXT"],
-                    ["Valor póliza", v.polizaValor],
-                    ["GPS (meses)", "TXT"],
-                    ["GPS (valor)", v.gpsValor],
-                    // ["Bono ensambladora", "BONO"],  // ❌ eliminado
-                    ["Garantía extendida", "GEVAL"],
-                    ["Total sin seguros", v.totalSinSeguros],
-                    ["TOTAL", v.total],
-                  ].map(([k, val], idx) => (
-                    <View style={styles.tableRow} key={`R-${side}-${k}-${idx}`}>
-                      <Text style={styles.tableCell}>{k as string}</Text>
-                      <Text style={[styles.tableCell, styles.tableCellLast]}>
-                        {k === "GPS (meses)"
-                          ? fmtGpsMeses(v.gpsMeses)
-                          : k === "Garantía extendida"
-                            ? geSide.meses > 0
-                              ? fmtCOP(geSide.valor)
-                              : "—"
-                            : k === "Póliza"
-                              ? (v.polizaCodigo ? String(v.polizaCodigo) : "No aplica")
-                              : fmtCOP(val)}
-
-                      </Text>
+                    { k: "Seguro todo riesgo adicional", v: v.otrosSeguros },
+                    { k: "Cascos y accesorios", v: v.accesorios },
+                    { k: "Descuento / plan de marca", v: v.descuentos },
+                    { k: "Inscripción RUNT", v: v.runt },
+                    { k: "Licencias", v: v.licencia },
+                    { k: "Defensas", v: v.defensas },
+                    { k: "Hand savers", v: v.hand },
+                    { k: "Otros adicionales", v: v.otrosAd },
+                    { k: "TOTAL", v: v.total },
+                  ].map((item, idx) => (
+                    <View style={styles.tableRow} key={`R-${side}-${item.k}-${idx}`}>
+                      <Text style={styles.tableCell}>{item.k}</Text>
+                      <Text style={[styles.tableCell, styles.tableCellLast]}>{fmtCOP(item.v)}</Text>
                     </View>
                   ))}
 
@@ -678,28 +673,6 @@ const totalSinSeguros =
           </View>
         </View>
 
-        <SectionTitle title="Garantía extendida" />
-        <View style={styles.box} wrap={false}>
-          <View style={styles.table} wrap={false}>
-            <View style={styles.tableHeaderRow}>
-              <Text style={styles.tableCellHeader}>Moto</Text>
-              <Text style={styles.tableCellHeader}>Plan</Text>
-              <Text style={styles.tableCellHeader}>Meses</Text>
-              <Text style={[styles.tableCellHeader, styles.tableCellLast]}>Valor</Text>
-            </View>
-
-            <View style={styles.tableRow}>
-              <Text style={styles.tableCell}>
-                {safe(side === "A" ? g.moto_a ?? motoALabel : g.moto_b ?? motoBLabel)}
-              </Text>
-              <Text style={styles.tableCell}>{safe(geSide.plan)}</Text>
-              <Text style={styles.tableCell}>{geSide.meses > 0 ? String(geSide.meses) : "—"}</Text>
-              <Text style={[styles.tableCell, styles.tableCellLast]}>
-                {geSide.meses > 0 ? fmtCOP(geSide.valor) : "—"}
-              </Text>
-            </View>
-          </View>
-        </View>
       </>
     );
   };

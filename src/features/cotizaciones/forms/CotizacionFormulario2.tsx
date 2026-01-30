@@ -56,6 +56,10 @@ type FormValues = {
     email: string;
     comentario: string;
 
+    gpsContado1?: "si" | "no";
+    gpsContado2?: "si" | "no";
+
+
     incluirMoto1: boolean;
     incluirMoto2: boolean;
 
@@ -141,12 +145,18 @@ type FormValues = {
     gps1?: "no" | "12" | "24" | "36";
     gps2?: "no" | "12" | "24" | "36";
 
+    poliza1?: "" | "LIGHT" | "TRANQUI" | "TRANQUI_PLUS"; // Moto A
+    poliza2?: "" | "LIGHT" | "TRANQUI" | "TRANQUI_PLUS"; // Moto B
+
+    valor_poliza_a?: string; // valor calculado A
+    valor_poliza_b?: string; // valor calculado B
+
 
 
 };
 
 const garantiaExtendidaOptions: SelectOption[] = [
-    { value: "no", label: "No" },
+    { value: "no", label: "-----" },
     { value: "12", label: "12 meses" },
     { value: "24", label: "24 meses" },
     { value: "36", label: "36 meses" },
@@ -154,7 +164,7 @@ const garantiaExtendidaOptions: SelectOption[] = [
 
 
 const gpsOptions: SelectOption[] = [
-    { value: "no", label: "No" },
+    { value: "no", label: "-----" },
     { value: "12", label: "12 meses" },
     { value: "24", label: "24 meses" },
     { value: "36", label: "36 meses" },
@@ -253,6 +263,19 @@ const CotizacionFormulario: React.FC = () => {
             valorDefensas2: "0",
             valorHandSavers2: "0",
             valorOtrosAdicionales2: "0",
+
+            poliza1: "",
+            poliza2: "",
+            valor_poliza_a: "0",
+            valor_poliza_b: "0",
+
+            gpsContado1: "no",
+            gpsContado2: "no",
+            gps_a: "0",
+            gps_b: "0",
+            gps1: "no",
+            gps2: "no",
+
 
         },
         mode: "onBlur",
@@ -383,31 +406,6 @@ const CotizacionFormulario: React.FC = () => {
     }, [watch("moto2"), motos2, metodo, setValue]);
 
 
-    React.useEffect(() => {
-        const sel = watch("moto1");
-        const hayMoto = sel !== undefined && sel !== null && sel !== "";
-        if (!incluirMoto1) return;
-
-        if (hayMoto) {
-            const actual = N(watch("marcacion1"));
-            if (actual <= 0) {
-                setValue("marcacion1", "50000", { shouldDirty: true, shouldValidate: true });
-            }
-        }
-    }, [watch("moto1"), incluirMoto1, setValue]);
-
-    React.useEffect(() => {
-        const sel = watch("moto2");
-        const hayMoto = sel !== undefined && sel !== null && sel !== "";
-        if (!incluirMoto2) return;
-
-        if (hayMoto) {
-            const actual = N(watch("marcacion2"));
-            if (actual <= 0) {
-                setValue("marcacion2", "50000", { shouldDirty: true, shouldValidate: true });
-            }
-        }
-    }, [watch("moto2"), incluirMoto2, setValue]);
 
 
 
@@ -491,6 +489,9 @@ const CotizacionFormulario: React.FC = () => {
             setValue("soat_a", "0"); setValue("impuestos_a", "0"); setValue("matricula_a", "0");
             setValue("gps1", "no");
             setValue("gps_a", "0");
+            setValue("poliza1", "");
+            setValue("valor_poliza_a", "0");
+
 
 
         }
@@ -508,6 +509,9 @@ const CotizacionFormulario: React.FC = () => {
             setValue("soat_b", "0"); setValue("impuestos_b", "0"); setValue("matricula_b", "0");
             setValue("gps2", "no");
             setValue("gps_b", "0");
+            setValue("poliza2", "");
+            setValue("valor_poliza_b", "0");
+
 
 
         }
@@ -719,18 +723,21 @@ const CotizacionFormulario: React.FC = () => {
     const gpsSel2 = watch("gps2") ?? "no";
     const gpsVal2 = N(watch("gps_b"));
 
+    const polizaVal1 = N(watch("valor_poliza_a"));
+    const polizaVal2 = N(watch("valor_poliza_b"));
 
 
     const totalSinSeguros1 = (showMotos && incluirMoto1)
         ? (
-            (precioBase1) +
+            precioBase1 +
             accesorios1Val +
             documentos1 +
             marcacion1Val -
             descuento1Val +
             (garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0) +
             (gpsSel1 !== "no" ? gpsVal1 : 0) +
-            extrasMoto1
+            extrasMoto1 +
+            polizaVal1
         )
         : 0;
 
@@ -758,16 +765,18 @@ const CotizacionFormulario: React.FC = () => {
 
     const totalSinSeguros2 = (showMotos && incluirMoto2)
         ? (
-            (precioBase2) +
+            precioBase2 +
             accesorios2Val +
             documentos2 +
             marcacion2Val -
             descuento2Val +
             (garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0) +
             (gpsSel2 !== "no" ? gpsVal2 : 0) +
-            extrasMoto2
+            extrasMoto2 +
+            polizaVal2
         )
         : 0;
+
 
     const totalConSeguros2 = totalSinSeguros2 + totalSeguros2;
 
@@ -932,6 +941,8 @@ const CotizacionFormulario: React.FC = () => {
         const segurosB = incluirMoto2 ? mapSeguros(data.segurosIds2 as string[], otroSeguro2) : [];
 
 
+        const gpsSelContA = data.gpsContado1 ?? "no";
+        const gpsSelContB = data.gpsContado2 ?? "no";
 
 
         const payload: Record<string, any> = {
@@ -985,8 +996,9 @@ const CotizacionFormulario: React.FC = () => {
             financiera: esFinanciado ? (data.financiera || null) : null,
             cant_cuotas: esFinanciado ? (data.cuotas ? Number(data.cuotas) : null) : null,
 
-            cuota_6_a,
-            cuota_6_b,
+            cuota_6_a: data.metodoPago === "credibike" ? cuota6_a_auto : cuota_6_a,
+            cuota_6_b: data.metodoPago === "credibike" ? cuota6_b_auto : cuota_6_b,
+
 
             cuota_12_a: data.metodoPago === "credibike" ? cuota12_a_auto : cuota_12_a,
             cuota_12_b: data.metodoPago === "credibike" ? cuota12_b_auto : cuota_12_b,
@@ -1087,13 +1099,31 @@ const CotizacionFormulario: React.FC = () => {
                     ? Number(motoB.id_empresa)
                     : null,
 
+            gps_meses_a: incluirMoto1
+                ? (data.metodoPago === "contado" ? gpsSelContA : (data.gps1 ?? "no"))
+                : "no",
 
-            gps_meses_a: incluirMoto1 ? (data.gps1 ?? "no") : "no",
-            gps_meses_b: incluirMoto2 ? (data.gps2 ?? "no") : null,
+            gps_meses_b: incluirMoto2
+                ? (data.metodoPago === "contado" ? gpsSelContB : (data.gps2 ?? "no"))
+                : null,
 
-            valor_gps_a: incluirMoto1 && (data.gps1 ?? "no") !== "no" ? gpsA : 0,
-            valor_gps_b: incluirMoto2 && (data.gps2 ?? "no") !== "no" ? gpsB : null,
+            valor_gps_a: incluirMoto1
+                ? (data.metodoPago === "contado"
+                    ? (gpsSelContA === "si" ? gpsA : 0)
+                    : ((data.gps1 ?? "no") !== "no" ? gpsA : 0))
+                : 0,
 
+            valor_gps_b: incluirMoto2
+                ? (data.metodoPago === "contado"
+                    ? (gpsSelContB === "si" ? gpsB : null)
+                    : ((data.gps2 ?? "no") !== "no" ? gpsB : null))
+                : null,
+
+            poliza_a: incluirMoto1 ? (data.poliza1 || null) : null,
+            valor_poliza_a: incluirMoto1 ? toNumberSafe(data.valor_poliza_a) : 0,
+
+            poliza_b: incluirMoto2 ? (data.poliza2 || null) : null,
+            valor_poliza_b: incluirMoto2 ? toNumberSafe(data.valor_poliza_b) : null,
 
         };
 
@@ -1190,63 +1220,41 @@ const CotizacionFormulario: React.FC = () => {
         return Math.round(saldo * factor);
     };
 
-    // ✅ NUEVO (6 meses)
-    const cuota6_a_auto = metodo === "credibike" && incluirMoto1
-        ? calcCuotaConInteres(saldoFinanciar1, 6, tasaDecimal)
-        : 0;
-
-    const cuota6_b_auto = metodo === "credibike" && incluirMoto2
-        ? calcCuotaConInteres(saldoFinanciar2, 6, tasaDecimal)
-        : 0;
-
-    // ✅ YA EXISTENTES
-    const cuota12_a_auto = metodo === "credibike" && incluirMoto1
-        ? calcCuotaConInteres(saldoFinanciar1, 12, tasaDecimal)
-        : 0;
-
-    const cuota24_a_auto = metodo === "credibike" && incluirMoto1
-        ? calcCuotaConInteres(saldoFinanciar1, 24, tasaDecimal)
-        : 0;
-
-    const cuota36_a_auto = metodo === "credibike" && incluirMoto1
-        ? calcCuotaConInteres(saldoFinanciar1, 36, tasaDecimal)
-        : 0;
-
-    // Moto 2
-    const cuota12_b_auto = metodo === "credibike" && incluirMoto2
-        ? calcCuotaConInteres(saldoFinanciar2, 12, tasaDecimal)
-        : 0;
-
-    const cuota24_b_auto = metodo === "credibike" && incluirMoto2
-        ? calcCuotaConInteres(saldoFinanciar2, 24, tasaDecimal)
-        : 0;
-
-    const cuota36_b_auto = metodo === "credibike" && incluirMoto2
-        ? calcCuotaConInteres(saldoFinanciar2, 36, tasaDecimal)
-        : 0;
 
 
     const fotoMoto1 = watch("foto_a");
     const fotoMoto2 = watch("foto_b");
 
-    const showGarantiaExtendida = showMotos;
+    const hideGarantiaExtendida = metodo === "contado" || metodo === "terceros";
+    const showGarantiaExtendida = showMotos && !hideGarantiaExtendida; // ✅ solo en credibike
+
+    // Labels dinámicos para el bloque de póliza
+    const polizaLabel = hideGarantiaExtendida ? "Garantía extendida" : "Póliza todo riesgo";
+    const polizaValorLabel = hideGarantiaExtendida ? "Valor garantía extendida" : "Valor póliza";
+
     // o si prefieres: const showGarantiaExtendida = showMotos && (metodo !== "terceros" ? true : true);
     // (pero con showMotos es suficiente: si estás en motos, se muestra)
 
     React.useEffect(() => {
         if (metodo === "contado") {
-            // setValue("garantiaExtendida1", "no");
-            // setValue("garantiaExtendida2", "no");
-            // setValue("valor_garantia_extendida_a", "0");
-            // setValue("valor_garantia_extendida_b", "0");
-            // setValue("marcacion1", "0");
-            // setValue("marcacion2", "0");
+            // En contado no usamos meses (12/24/36)
             setValue("gps1", "no");
             setValue("gps2", "no");
-            setValue("gps_a", "0");
-            setValue("gps_b", "0");
+
+            // Si el usuario marca NO, fuerza 0.
+            if ((watch("gpsContado1") ?? "no") === "no") setValue("gps_a", "0");
+            if ((watch("gpsContado2") ?? "no") === "no") setValue("gps_b", "0");
+
+            // Si marca SI, deja el input listo para escribir (vacío)
+            if ((watch("gpsContado1") ?? "no") === "si" && watch("gps_a") === "0") setValue("gps_a", "");
+            if ((watch("gpsContado2") ?? "no") === "si" && watch("gps_b") === "0") setValue("gps_b", "");
+        } else {
+            // En crédito no usamos el select contado
+            setValue("gpsContado1", "no");
+            setValue("gpsContado2", "no");
         }
-    }, [metodo, setValue]);
+    }, [metodo, setValue, watch("gpsContado1"), watch("gpsContado2")]);
+
 
 
     const { data: ge12 } = useConfigPlazoByCodigo("GAR_EXT_12");
@@ -1314,11 +1322,184 @@ const CotizacionFormulario: React.FC = () => {
     const { data: gps24 } = useConfigPlazoByCodigo("GPS_24");
     const { data: gps36 } = useConfigPlazoByCodigo("GPS_36");
 
+    const { data: polLight } = useConfigPlazoByCodigo("LIGHT");
+    const { data: polTranqui } = useConfigPlazoByCodigo("TRANQUI");
+    const { data: polTranquiPlus } = useConfigPlazoByCodigo("TRANQUI_PLUS");
+
+    const { data: marcacionCoti } = useConfigPlazoByCodigo("MARC");
+
+    const { data: segVidaCfg } = useConfigPlazoByCodigo("SEG_VIDA");
+
+
+    const calcSeguroVidaMensual = (saldo: number, cfg: any | null): number => {
+        if (!cfg || saldo <= 0) return 0;
+
+        const v = Number(cfg.valor) || 0;
+
+        // Si el backend lo manda como porcentaje (ej: 0.04% => valor = 0.04)
+        if (cfg.tipo_valor === "%") {
+            return Math.round(saldo * (v / 100));
+        }
+
+        // Si lo manda como "por mil" directo (x1000)
+        // ej: valor=0.4 => $0.4 por cada $1000 financiados
+        return Math.round((saldo / 1000) * v);
+    };
+
+    const segVidaMensualA =
+        metodo === "credibike" && incluirMoto1 ? calcSeguroVidaMensual(saldoFinanciar1, segVidaCfg ?? null) : 0;
+
+    const segVidaMensualB =
+        metodo === "credibike" && incluirMoto2 ? calcSeguroVidaMensual(saldoFinanciar2, segVidaCfg ?? null) : 0;
+
+
+
+    const cuota6_a_auto = metodo === "credibike" && incluirMoto1
+        ? calcCuotaConInteres(saldoFinanciar1, 6, tasaDecimal) + segVidaMensualA
+        : 0;
+
+    const cuota12_a_auto = metodo === "credibike" && incluirMoto1
+        ? calcCuotaConInteres(saldoFinanciar1, 12, tasaDecimal) + segVidaMensualA
+        : 0;
+
+    const cuota24_a_auto = metodo === "credibike" && incluirMoto1
+        ? calcCuotaConInteres(saldoFinanciar1, 24, tasaDecimal) + segVidaMensualA
+        : 0;
+
+    const cuota36_a_auto = metodo === "credibike" && incluirMoto1
+        ? calcCuotaConInteres(saldoFinanciar1, 36, tasaDecimal) + segVidaMensualA
+        : 0;
+
+
+    const cuota6_b_auto = metodo === "credibike" && incluirMoto2
+        ? calcCuotaConInteres(saldoFinanciar2, 6, tasaDecimal) + segVidaMensualB
+        : 0;
+
+    const cuota12_b_auto = metodo === "credibike" && incluirMoto2
+        ? calcCuotaConInteres(saldoFinanciar2, 12, tasaDecimal) + segVidaMensualB
+        : 0;
+
+    const cuota24_b_auto = metodo === "credibike" && incluirMoto2
+        ? calcCuotaConInteres(saldoFinanciar2, 24, tasaDecimal) + segVidaMensualB
+        : 0;
+
+    const cuota36_b_auto = metodo === "credibike" && incluirMoto2
+        ? calcCuotaConInteres(saldoFinanciar2, 36, tasaDecimal) + segVidaMensualB
+        : 0;
+
+
+    React.useEffect(() => {
+        if (metodo === "contado") return; // 👈 clave: en contado queda manual
+        const sel = watch("moto1");
+        const hayMoto = sel !== undefined && sel !== null && sel !== "";
+        if (!incluirMoto1) return;
+
+        if (hayMoto) {
+            const actual = N(watch("marcacion1"));
+            if (actual <= 0) {
+                setValue("marcacion1", String(marcacionCoti?.valor || 0), {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                });
+            }
+        }
+    }, [metodo, watch("moto1"), incluirMoto1, marcacionCoti, setValue]);
+
+    React.useEffect(() => {
+        if (metodo === "contado") {
+            setValue("marcacion1", "0");
+            setValue("marcacion2", "0");
+        }
+    }, [metodo, setValue]);
+
+
+    React.useEffect(() => {
+        if (metodo === "contado") return; // 👈 clave
+        const sel = watch("moto2");
+        const hayMoto = sel !== undefined && sel !== null && sel !== "";
+        if (!incluirMoto2) return;
+
+        if (hayMoto) {
+            const actual = N(watch("marcacion2"));
+            if (actual <= 0) {
+                setValue("marcacion2", String(marcacionCoti?.valor || 0), {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                });
+            }
+        }
+    }, [metodo, watch("moto2"), incluirMoto2, marcacionCoti, setValue]);
+
+
     const gpsMap = React.useMemo(() => ({
         "12": gps12,
         "24": gps24,
         "36": gps36,
     }), [gps12, gps24, gps36]);
+
+
+    const polizaMap = React.useMemo(() => ({
+        LIGHT: polLight,
+        TRANQUI: polTranqui,
+        TRANQUI_PLUS: polTranquiPlus,
+    }), [polLight, polTranqui, polTranquiPlus]);
+
+
+    const polizaOptions: SelectOption[] = [
+        { value: "", label: "-----" },
+        { value: "LIGHT", label: "LIGHT (3%)" },
+        { value: "TRANQUI", label: "TRANQUI (10%)" },
+        { value: "TRANQUI_PLUS", label: "TRANQUI PLUS (11%)" },
+    ];
+
+
+
+    const calcPoliza = (precioBase: number, cfg: any | null) => {
+        if (!cfg || precioBase <= 0) return 0;
+
+        const v = Number(cfg.valor) || 0;
+
+        if (cfg.tipo_valor === "%") {
+            return Math.round(precioBase * (v / 100));
+        }
+
+        return Math.round(v); // fijo $
+    };
+
+
+
+    React.useEffect(() => {
+        if (!incluirMoto1) return;
+
+        const sel = watch("poliza1") ?? "";
+        if (!sel) {
+            setValue("valor_poliza_a", "0");
+            return;
+        }
+
+        const cfg = polizaMap[sel as "LIGHT" | "TRANQUI" | "TRANQUI_PLUS"] ?? null;
+        const val = calcPoliza(precioBase1, cfg);
+
+        setValue("valor_poliza_a", String(val), { shouldDirty: true, shouldValidate: true });
+    }, [incluirMoto1, watch("poliza1"), precioBase1, polizaMap, setValue]);
+
+
+
+    React.useEffect(() => {
+        if (!incluirMoto2) return;
+
+        const sel = watch("poliza2") ?? "";
+        if (!sel) {
+            setValue("valor_poliza_b", "0");
+            return;
+        }
+
+        const cfg = polizaMap[sel as "LIGHT" | "TRANQUI" | "TRANQUI_PLUS"] ?? null;
+        const val = calcPoliza(precioBase2, cfg);
+
+        setValue("valor_poliza_b", String(val), { shouldDirty: true, shouldValidate: true });
+    }, [incluirMoto2, watch("poliza2"), precioBase2, polizaMap, setValue]);
+
 
 
     const calcGps = (precioBase: number, cfg: any | null) => {
@@ -1333,6 +1514,7 @@ const CotizacionFormulario: React.FC = () => {
 
     React.useEffect(() => {
         if (!incluirMoto1) return;
+        if (metodo === "contado") return; // 👈 esto evita autollenado
 
         const sel = watch("gps1") ?? "no";
         if (sel === "no") {
@@ -1349,6 +1531,7 @@ const CotizacionFormulario: React.FC = () => {
 
     React.useEffect(() => {
         if (!incluirMoto2) return;
+        if (metodo === "contado") return;
 
         const sel = watch("gps2") ?? "no";
         if (sel === "no") {
@@ -1361,6 +1544,8 @@ const CotizacionFormulario: React.FC = () => {
 
         setValue("gps_b", String(val), { shouldDirty: true, shouldValidate: true });
     }, [incluirMoto2, watch("gps2"), precioBase2, gpsMap, setValue]);
+
+
 
 
 
@@ -1468,7 +1653,7 @@ const CotizacionFormulario: React.FC = () => {
             </div>
 
             {metodo === "credibike" && (
-                <div className="flex gap-10 bg-white p-3 rounded-xl justify-center">
+                <div className="hidden gap-10 bg-white p-3 rounded-xl justify-center">
                     <label className="label cursor-pointer gap-2">
                         <input type="radio" value="motos" className="radio radio-primary" {...register("categoria", { required: true })} />
                         <span className="label-text">Motocicletas</span>
@@ -1640,45 +1825,101 @@ const CotizacionFormulario: React.FC = () => {
                                                 </>
                                             )}
 
-                                            <FormSelect<FormValues>
-                                                name="gps1"
-                                                label="GPS"
-                                                control={control}
-                                                options={gpsOptions}
-                                                placeholder="Seleccione..."
-                                                disabled={!showMotos || !incluirMoto1}
-                                                rules={{
-                                                    validate: (v) => {
-                                                        if (esCreditoDirecto && incluirMoto1) {
-                                                            return v && v !== "no" ? true : "El GPS es obligatorio para crédito.";
-                                                        }
-                                                        return true;
-                                                    },
-                                                }}
-                                            />
 
 
-                                            {watch("gps1") !== "no" && (
-                                                <FormInput<FormValues>
-                                                    name="gps_a"
-                                                    label="Valor GPS A"
-                                                    type="number"
-                                                    formatThousands
-                                                    control={control}
-                                                    placeholder="0"
-                                                    disabled
-                                                    rules={{
-                                                        validate: (v) => {
-                                                            if (!incluirMoto1) return true;
-                                                            if (watch("gps1") === "no") return true;
-                                                            return N(v) > 0 ? true : "El valor del GPS debe ser mayor a 0.";
-                                                        },
-                                                    }}
-                                                />
+                                            {metodo === "contado" ? (
+                                                <>
+                                                    <FormSelect<FormValues>
+                                                        name="gpsContado1"
+                                                        label="GPS"
+                                                        control={control}
+                                                        options={[
+                                                            { value: "no", label: "No" },
+                                                            { value: "si", label: "Sí" },
+                                                        ]}
+                                                        placeholder="Seleccione..."
+                                                        disabled={!showMotos || !incluirMoto1}
+                                                    />
+
+                                                    {(watch("gpsContado1") ?? "no") === "si" && (
+                                                        <FormInput<FormValues>
+                                                            name="gps_a"
+                                                            label="Valor GPS A"
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="Escribe el valor"
+                                                            disabled={!showMotos || !incluirMoto1}   // ✅ editable
+                                                            rules={{
+                                                                validate: (v) => {
+                                                                    if (!incluirMoto1) return true;
+                                                                    if ((watch("gpsContado1") ?? "no") !== "si") return true;
+                                                                    return N(v) > 0 ? true : "El valor del GPS debe ser mayor a 0.";
+                                                                },
+                                                            }}
+                                                        />
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <FormSelect<FormValues>
+                                                        name="gps1"
+                                                        label="GPS"
+                                                        control={control}
+                                                        options={gpsOptions}  // 12/24/36/no
+                                                        placeholder="Seleccione..."
+                                                        disabled={!showMotos || !incluirMoto1}
+                                                        rules={{
+                                                            validate: (v) => {
+                                                                if (esCreditoDirecto && incluirMoto1) {
+                                                                    return v && v !== "no" ? true : "El GPS es obligatorio para crédito.";
+                                                                }
+                                                                return true;
+                                                            },
+                                                        }}
+                                                    />
+
+                                                    {watch("gps1") !== "no" && (
+                                                        <FormInput<FormValues>
+                                                            name="gps_a"
+                                                            label="Valor GPS A"
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled   // ✅ calculado en crédito
+                                                        />
+                                                    )}
+                                                </>
                                             )}
 
 
 
+                                            {!esCreditoDirecto2 && (
+                                                <>
+                                                    <FormSelect<FormValues>
+                                                        name="poliza1"
+                                                        label={polizaLabel}
+                                                        control={control}
+                                                        options={polizaOptions}
+                                                        placeholder="Seleccione..."
+                                                        disabled={!showMotos || !incluirMoto1}
+                                                    />
+
+                                                    {watch("poliza1") && watch("poliza1") !== "" && (
+                                                        <FormInput<FormValues>
+                                                            name="valor_poliza_a"
+                                                            label={`${polizaValorLabel} A`}
+                                                            control={control}
+                                                            type="number"
+                                                            formatThousands
+                                                            disabled
+                                                        />
+                                                    )}
+
+
+                                                </ >
+                                            )}
 
                                         </>
                                     )}
@@ -2012,6 +2253,14 @@ const CotizacionFormulario: React.FC = () => {
                                                         </div>
                                                     )}
 
+                                                    {watch("poliza1") && watch("poliza1") !== "" && (
+                                                        <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                            <span className="font-medium">{polizaLabel} {watch("poliza1")}:</span>
+                                                            <span>{fmt(polizaVal1)}</span>
+                                                        </div>
+                                                    )}
+
+
                                                     {/* Cascos y Accesorios */}
                                                     <div className="flex justify-between bg-blue-50/70 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-medium text-gray-700">Cascos y Accesorios:</span>
@@ -2058,13 +2307,9 @@ const CotizacionFormulario: React.FC = () => {
                                                         <span className="font-extrabold">{fmt(precioBase1)}</span>
                                                     </div>
 
-                                                    <div className="flex justify-between items-center bg-warning/10 px-4 py-2 rounded-md border border-warning/30 shadow-sm">
-                                                        <span className="font-semibold text-warning">TOTAL SIN SEGUROS:</span>
-                                                        <span className="font-bold">{fmt(totalSinSeguros1)}</span>
-                                                    </div>
 
                                                     <div className="flex justify-between items-center bg-success/10 px-4 py-2 rounded-md border border-success/30 shadow-sm">
-                                                        <span className="font-bold text-success">TOTAL CON SEGUROS:</span>
+                                                        <span className="font-bold text-success">TOTAL:</span>
                                                         <span className="text-success font-extrabold text-lg">{fmt(totalConSeguros1)}</span>
                                                     </div>
 
@@ -2080,6 +2325,13 @@ const CotizacionFormulario: React.FC = () => {
                                                     {metodo === "credibike" && incluirMoto1 && saldoFinanciar1 > 0 && (
                                                         <div className="mt-3 bg-base-100 border border-base-300 rounded-lg p-3 space-y-1">
                                                             <p className="font-semibold text-sm">Cuotas proyectadas</p>
+
+                                                            <div className="flex justify-between text-sm">
+                                                                <span>Seguro de vida mensual:</span>
+                                                                <span>{fmt(segVidaMensualA)}</span>
+                                                            </div>
+
+
                                                             <div className="flex justify-between text-sm">
                                                                 <span>6 meses:</span>
                                                                 <span>{fmt(cuota6_a_auto)}</span>
@@ -2216,43 +2468,88 @@ const CotizacionFormulario: React.FC = () => {
                                                 </>
                                             )}
 
-                                            <FormSelect<FormValues>
-                                                name="gps2"
-                                                label="GPS"
-                                                control={control}
-                                                options={gpsOptions}
-                                                placeholder="Seleccione..."
-                                                disabled={!showMotos || !incluirMoto2}
-                                                rules={{
-                                                    validate: (v) => {
-                                                        if (esCreditoDirecto && incluirMoto2) {
-                                                            return v && v !== "no" ? true : "El GPS es obligatorio para crédito.";
-                                                        }
-                                                        return true;
-                                                    },
-                                                }}
-                                            />
+                                            {metodo === "contado" ? (
+                                                <>
+                                                    <FormSelect<FormValues>
+                                                        name="gpsContado2"
+                                                        label="GPS"
+                                                        control={control}
+                                                        options={[
+                                                            { value: "no", label: "No" },
+                                                            { value: "si", label: "Sí" },
+                                                        ]}
+                                                        placeholder="Seleccione..."
+                                                        disabled={!showMotos || !incluirMoto2}
+                                                    />
 
-                                            {watch("gps2") !== "no" && (
-                                                <FormInput<FormValues>
-                                                    name="gps_b"
-                                                    label="Valor GPS B"
-                                                    type="number"
-                                                    formatThousands
-                                                    control={control}
-                                                    placeholder="0"
-                                                    disabled
-                                                    rules={{
-                                                        validate: (v) => {
-                                                            if (!incluirMoto2) return true;
-                                                            if (watch("gps2") === "no") return true;
-                                                            return N(v) > 0 ? true : "El valor del GPS debe ser mayor a 0.";
-                                                        },
-                                                    }}
-                                                />
+                                                    {(watch("gpsContado2") ?? "no") === "si" && (
+                                                        <FormInput<FormValues>
+                                                            name="gps_b"
+                                                            label="Valor GPS B"
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="Escriba el valor"
+                                                            disabled={!showMotos || !incluirMoto2}   // ✅ editable
+                                                            rules={{
+                                                                validate: (v) => {
+                                                                    if (!incluirMoto2) return true;
+                                                                    if ((watch("gpsContado2") ?? "no") !== "si") return true;
+                                                                    return N(v) > 0 ? true : "El valor del GPS debe ser mayor a 0.";
+                                                                },
+                                                            }}
+                                                        />
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <FormSelect<FormValues>
+                                                        name="gps2"
+                                                        label="GPS"
+                                                        control={control}
+                                                        options={gpsOptions}
+                                                        placeholder="Seleccione..."
+                                                        disabled={!showMotos || !incluirMoto2}
+                                                    />
+
+                                                    {watch("gps2") !== "no" && (
+                                                        <FormInput<FormValues>
+                                                            name="gps_b"
+                                                            label="Valor GPS B"
+                                                            type="number"
+                                                            formatThousands
+                                                            control={control}
+                                                            placeholder="0"
+                                                            disabled   // calculado automático en crédito
+                                                        />
+                                                    )}
+                                                </>
                                             )}
 
+                                            {!esCreditoDirecto2 && (
+                                                <>
 
+                                                    <FormSelect<FormValues>
+                                                        name="poliza2"
+                                                        label={polizaLabel}                 // ✅ dinámico
+                                                        control={control}
+                                                        options={polizaOptions}
+                                                        placeholder="Seleccione..."
+                                                        disabled={!showMotos || !incluirMoto2}
+                                                    />
+
+                                                    {watch("poliza2") && watch("poliza2") !== "" && (
+                                                        <FormInput<FormValues>
+                                                            name="valor_poliza_b"
+                                                            label={`${polizaValorLabel} B`}    // ✅ dinámico
+                                                            control={control}
+                                                            type="number"
+                                                            formatThousands
+                                                            disabled
+                                                        />
+                                                    )}
+
+                                                </>)}
 
                                         </>
                                     )}
@@ -2593,6 +2890,14 @@ const CotizacionFormulario: React.FC = () => {
                                                     )}
 
 
+                                                    {watch("poliza2") && watch("poliza2") !== "" && (
+                                                        <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                            <span className="font-medium">{polizaLabel} {watch("poliza2")}:</span>
+                                                            <span>{fmt(polizaVal2)}</span>
+                                                        </div>
+                                                    )}
+
+
                                                     {/* Cascos y Accesorios */}
                                                     <div className="flex justify-between bg-blue-50/70 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-medium text-gray-700">Cascos y Accesorios:</span>
@@ -2621,10 +2926,7 @@ const CotizacionFormulario: React.FC = () => {
                                                         </div>
                                                     )}
 
-
-
                                                 </div>
-
 
 
                                                 {/* Totales */}
@@ -2635,13 +2937,8 @@ const CotizacionFormulario: React.FC = () => {
                                                         <span className="font-extrabold">{fmt(precioBase2)}</span>
                                                     </div>
 
-                                                    <div className="flex justify-between items-center bg-warning/10 px-4 py-2 rounded-md border border-warning/30 shadow-sm">
-                                                        <span className="font-semibold text-warning">TOTAL SIN SEGUROS:</span>
-                                                        <span className="font-bold">{fmt(totalSinSeguros2)}</span>
-                                                    </div>
-
                                                     <div className="flex justify-between items-center bg-success/10 px-4 py-2 rounded-md border border-success/30 shadow-sm">
-                                                        <span className="font-bold text-success">TOTAL CON SEGUROS:</span>
+                                                        <span className="font-bold text-success">TOTAL:</span>
                                                         <span className="text-success font-extrabold text-lg">{fmt(totalConSeguros2)}</span>
                                                     </div>
 
@@ -2656,6 +2953,14 @@ const CotizacionFormulario: React.FC = () => {
                                                     {metodo === "credibike" && incluirMoto2 && saldoFinanciar2 > 0 && (
                                                         <div className="mt-3 bg-base-100 border border-base-300 rounded-lg p-3 space-y-1">
                                                             <p className="font-semibold text-sm">Cuotas proyectadas</p>
+
+
+                                                            <div className="flex justify-between text-sm">
+                                                                <span>Seguro de vida mensual:</span>
+                                                                <span>{fmt(segVidaMensualB)}</span>
+                                                            </div>
+
+
                                                             <div className="flex justify-between text-sm">
                                                                 <span>6 meses:</span>
                                                                 <span>{fmt(cuota6_b_auto)}</span>
@@ -2721,7 +3026,7 @@ const CotizacionFormulario: React.FC = () => {
 
             {/* OTROS PRODUCTOS */}
             {showProductos && (
-                <div className="flex gap-6 flex-col w-full bg-white p-3 rounded-xl">
+                <div className=" gap-6 hidden flex-col w-full bg-white p-3 rounded-xl">
                     <div className="badge text-xl badge-success text-white">Otros productos</div>
                     <div className="grid grid-cols-1 md-grid-cols-2 md:grid-cols-2 gap-6">
 

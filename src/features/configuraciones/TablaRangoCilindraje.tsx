@@ -73,7 +73,7 @@ const TablaRangoCilindraje: React.FC = () => {
                <th className="text-right pr-4">Editar</th>
               <th>Descripción</th>
               <th>Cilindraje</th>
-              <th className="text-right pr-4">Precio base</th>
+              {/* <th className="text-right pr-4">Precio base</th> */}
               <th className="text-right pr-4">SOAT</th>
               <th className="text-right pr-4">Matr. crédito</th>
               <th className="text-right pr-4">Matr. contado</th>
@@ -98,9 +98,9 @@ const TablaRangoCilindraje: React.FC = () => {
                 </td>
                 <td className="font-medium">{r.descripcion}</td>
                 <td>{formatRango(r)}</td>
-                <td className="text-right pr-4 font-mono text-xs">
+                {/* <td className="text-right pr-4 font-mono text-xs">
                   {formatMoney(r.precio)}
-                </td>
+                </td> */}
                 <td className="text-right pr-4 font-mono text-xs">
                   {formatMoney(r.soat)}
                 </td>

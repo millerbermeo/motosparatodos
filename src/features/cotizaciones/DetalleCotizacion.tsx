@@ -49,7 +49,11 @@ type Motocicleta = {
   accesoriosYMarcacion: number;    // accesorios + marcación
   seguros: number;                 // TOTAL seguros (ya viene sumado, aunque no lo mostramos)
   garantia: boolean;               // si/no
-  garantiaExtendidaMeses?: number; // meses de garantía extendida
+
+  // Garantía extendida (solo se usa/mostraría en crédito propio)
+  garantiaExtendidaMeses?: number | null; // meses de garantía extendida o null
+  garantiaExtendidaValor?: number | null; // valor garantía extendida
+
   totalSinSeguros: number;         // backend o calculado (con docs + adicionales, pero sin seguros)
   total: number;
   cuotas: Cuotas;
@@ -69,17 +73,17 @@ type Motocicleta = {
 
   // Saldo a financiar
   saldoFinanciar: number;
+
   // 👇 NUEVO
   otrosSeguros?: number;
+
   // 👇 GPS
-  gpsMeses?: string | number | null; // puede ser 'no', '12', 12, null
+  gpsMeses?: string | number | null; // puede ser 'no' | 'si' | '12' | 12 | null
   gpsValor?: number | null;          // puede ser 0, número o null
 
-  // 👇 Póliza adicional
+  // 👇 Póliza / (renombrable a "Garantía extendida" en contado/terceros)
   polizaCodigo?: string | null;   // LIGHT | TRANQUI | TRANQUI_PLUS | null
   polizaValor?: number | null;    // valor en COP
-
-
 };
 
 type Evento = {
@@ -273,6 +277,13 @@ const numOrUndef = (v: any) => {
   return Number.isFinite(n) && n > 0 ? n : undefined;
 };
 
+const normalizeLower = (v: any) =>
+  String(v ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '');
+
 /* =======================
    Mapeo de API -> UI
    ======================= */
@@ -300,59 +311,58 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
   const accesorios = Number(data?.[`accesorios${suffix}`]) || 0;
   const marcacion = Number(data?.[`marcacion${suffix}`]) || 0;
   const accesoriosYMarcacion = accesorios + marcacion;
+
+  // Otros seguros (en formulario quedó como "Seguro todo riesgo" => otroSeguro1/2 => otro_seguro_a/b)
   const otrosSeguros = Number(data?.[`otro_seguro${suffix}`]) || 0;
 
-  // Seguros (aunque ya no los mostramos)
+  // Seguros (aunque ya no los mostramos como “lista”, usamos el total)
   const seguros = otrosSeguros;
-
 
   const soat = Number(data?.[`soat${suffix}`]) || 0;
   const matricula = Number(data?.[`matricula${suffix}`]) || 0;
   const impuestos = Number(data?.[`impuestos${suffix}`]) || 0;
 
-  // Adicionales (RUNT, licencias, defensas, etc.) vienen como _1 o _2
+  // ====== Adicionales (en tu formulario: valorRunt1/2, valorLicencia1/2, etc.) ======
   const isA = lado === 'A';
 
-  const adicionalesRunt = Number(data?.[isA ? 'runt_1' : 'runt_2']) || 0;
-  const adicionalesLicencia = Number(data?.[isA ? 'licencia_1' : 'licencia_2']) || 0;
-  const adicionalesDefensas = Number(data?.[isA ? 'defensas_1' : 'defensas_2']) || 0;
-  const adicionalesHandSavers = Number(data?.[isA ? 'hand_savers_1' : 'hand_savers_2']) || 0;
-  const adicionalesOtros = Number(data?.[isA ? 'otros_adicionales_1' : 'otros_adicionales_2']) || 0;
+  const adicionalesRunt = Number(data?.[isA ? 'valorRunt1' : 'valorRunt2']) || 0;
+  const adicionalesLicencia = Number(data?.[isA ? 'valorLicencia1' : 'valorLicencia2']) || 0;
+  const adicionalesDefensas = Number(data?.[isA ? 'valorDefensas1' : 'valorDefensas2']) || 0;
+  const adicionalesHandSavers = Number(data?.[isA ? 'valorHandSavers1' : 'valorHandSavers2']) || 0;
+  const adicionalesOtros = Number(data?.[isA ? 'valorOtrosAdicionales1' : 'valorOtrosAdicionales2']) || 0;
 
+  const adicionalesTotal =
+    adicionalesRunt +
+    adicionalesLicencia +
+    adicionalesDefensas +
+    adicionalesHandSavers +
+    adicionalesOtros;
+
+  // ====== GPS ======
   const gpsMeses = data?.[`gps_meses${suffix}`] ?? null;
   const gpsValor = data?.[`valor_gps${suffix}`] ?? null;
 
-
-  const adicionalesTotal =
-    Number(data?.[isA ? 'total_adicionales_1' : 'total_adicionales_2']) ||
-    (adicionalesRunt +
-      adicionalesLicencia +
-      adicionalesDefensas +
-      adicionalesHandSavers +
-      adicionalesOtros);
-
-  // Garantía si/no
-  const garantiaStr = String(data?.[`garantia${suffix}`] ?? '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '');
+  // ====== Garantía si/no ======
+  const garantiaStr = normalizeLower(data?.[`garantia${suffix}`]);
   const garantia = garantiaStr === 'si' || garantiaStr === 'sí' || garantiaStr === 'true' || garantiaStr === '1';
 
-  // Garantía extendida (meses)
-  const geRaw = data?.[`garantia_extendida${suffix}`];
-  const garantiaExtendidaMeses = (() => {
-    const num = Number(geRaw);
-    return Number.isFinite(num) && num > 0 ? num : undefined;
-  })();
+  // ====== Garantía extendida (del formulario: garantia_extendida_a/b + valor_garantia_extendida_a/b) ======
+  const geMesesRaw = data?.[`garantia_extendida${suffix}`];
+  const geValorRaw = data?.[`valor_garantia_extendida${suffix}`];
 
+  const geMesesNorm = normalizeLower(geMesesRaw);
+  const garantiaExtendidaMeses =
+    !geMesesNorm || geMesesNorm === 'no' ? null : (Number(geMesesRaw) || null);
 
-  // 👇 PÓLIZA (NUEVO)
-  const polizaCodigo = data?.[`poliza${suffix}`] ?? null;      // poliza_a / poliza_b
-  const polizaValor = data?.[`valor_poliza${suffix}`] ?? null; // valor_poliza_a / valor_poliza_b
+  const garantiaExtendidaValor =
+    garantiaExtendidaMeses ? (Number(geValorRaw) || 0) : 0;
 
-
+  // ====== Póliza (poliza_a/b + valor_poliza_a/b) ======
+  const polizaCodigo = data?.[`poliza${suffix}`] ?? null;
+  const polizaValor = data?.[`valor_poliza${suffix}`] ?? null;
   const polizaValorNum = Number(polizaValor) || 0;
 
+  // total_sin_seguros: si backend lo trae, lo usamos; si no, calculamos fallback.
   const totalSinSeguros =
     Number(data?.[`total_sin_seguros${suffix}`]) ||
     (precioBase +
@@ -360,7 +370,9 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
       accesoriosYMarcacion +
       adicionalesTotal -
       descuentos +
-      polizaValorNum);
+      polizaValorNum +
+      (garantiaExtendidaValor || 0) +
+      (Number(gpsValor) || 0));
 
   const total =
     Number(data?.[`precio_total${suffix}`]) ||
@@ -380,7 +392,6 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
   // SALDO A FINANCIAR: siempre total - cuota inicial
   const saldoFinanciar = Math.max(total - (cuotas.inicial || 0), 0);
 
-
   return {
     modelo: modeloLabel,
     precioBase,
@@ -390,6 +401,7 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
     seguros,
     garantia,
     garantiaExtendidaMeses,
+    garantiaExtendidaValor,
     totalSinSeguros,
     total,
     cuotas,
@@ -405,13 +417,10 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
     adicionalesTotal,
     saldoFinanciar,
     otrosSeguros,
-
     gpsMeses,
     gpsValor,
     polizaCodigo: polizaCodigo ? String(polizaCodigo) : null,
     polizaValor: polizaValor !== null && polizaValor !== undefined ? Number(polizaValor) : null,
-
-
   };
 };
 
@@ -487,12 +496,11 @@ const DetalleCotizacion: React.FC = () => {
     [payload]
   );
 
-
   const rawIdEmpresa =
     payload?.id_empresa_a ??
     payload?.id_empresa_b;
 
-  console.log(rawIdEmpresa)
+  console.log(rawIdEmpresa);
 
   const idEmpresa = Number(rawIdEmpresa);
 
@@ -522,7 +530,6 @@ const DetalleCotizacion: React.FC = () => {
     };
   }, [empresaSeleccionada]);
 
-
   const logoUrl = React.useMemo(() => {
     // foto viene de la BD, ej: "img_empresa/loquesea.png"
     const fromEmpresa = empresaSeleccionada?.foto
@@ -532,8 +539,6 @@ const DetalleCotizacion: React.FC = () => {
     // Si no hay logo en la empresa, usa uno por defecto
     return fromEmpresa || "/moto3.png";
   }, [empresaSeleccionada]);
-
-
 
   const { data: actividades = [], isLoading: loadingAct } = useCotizacionActividades(id);
 
@@ -575,6 +580,19 @@ const DetalleCotizacion: React.FC = () => {
       typeof c.meses36 === 'number'
     );
   }, [moto]);
+
+  // ====== Flags según tipo de pago (para ocultar/renombrar sin tocar estilos) ======
+  const tipoPagoNorm = normalizeLower(q?.comercial?.tipo_pago);
+  const isContado = tipoPagoNorm.includes('contado');
+  const isCreditoPropio = tipoPagoNorm.includes('directo') || tipoPagoNorm.includes('credibike');
+  const isCreditoTerceros = tipoPagoNorm.includes('terceros');
+
+  // En tu requerimiento: NO mostrar garantía extendida (select/valor) en contado ni terceros
+  const showGarantiaExtendida = isCreditoPropio;
+
+  // En contado/terceros: el bloque de “póliza” cambia de nombre a “Garantía extendida”
+  // (solo cambia texto; no estilos)
+  const polizaLabel = (isContado || isCreditoTerceros) ? 'Garantía extendida' : 'Póliza';
 
   // Loader global
   const { show, hide } = useLoaderStore();
@@ -847,14 +865,17 @@ const DetalleCotizacion: React.FC = () => {
                         value={moto.garantia ? 'Sí' : 'No'}
                       />
 
-                      <DataRowText
-                        label="Garantía extendida"
-                        value={
-                          typeof moto.garantiaExtendidaMeses === 'number'
-                            ? `${moto.garantiaExtendidaMeses} meses`
-                            : 'No aplica'
-                        }
-                      />
+                      {/* 🔒 Requerimiento: NO mostrar garantía extendida en contado ni crédito de terceros */}
+                      {showGarantiaExtendida && (
+                        <DataRowText
+                          label="Garantía extendida"
+                          value={
+                            typeof moto.garantiaExtendidaMeses === 'number' && (moto.garantiaExtendidaMeses ?? 0) > 0
+                              ? `${moto.garantiaExtendidaMeses} meses`
+                              : 'No aplica'
+                          }
+                        />
+                      )}
 
                       {/* Totales sin/ con documentos y adicionales */}
                       <div className="mt-2 pt-2 border-t border-dashed border-base-300/80 space-y-1.5">
@@ -873,26 +894,25 @@ const DetalleCotizacion: React.FC = () => {
                           strong
                         />
 
-                        {/* 👇 NUEVO: mostrar otros seguros */}
+                        {/* mostrar otros seguros */}
                         <DataRow
                           label="Otros seguros"
                           value={fmtCOP(moto.otrosSeguros || 0)}
                         />
 
-                        {moto.polizaCodigo && (
+                        {/* Póliza (y en contado/terceros cambia el nombre a “Garantía extendida”) */}
+                        {(Number(moto.polizaValor ?? 0) > 0 || (moto.polizaCodigo && moto.polizaCodigo !== '0')) && (
                           <>
-                            <DataRowText label="Póliza" value={moto.polizaCodigo} />
-                            <DataRow label="Valor póliza" value={fmtCOP(Number(moto.polizaValor ?? 0))} />
+                            <DataRowText label={polizaLabel} value={moto.polizaCodigo || '—'} />
+                            <DataRow label={`Valor ${polizaLabel.toLowerCase()}`} value={fmtCOP(Number(moto.polizaValor ?? 0))} />
                           </>
                         )}
-
 
                         {/* Solo mostrar si aplica */}
                         {moto.cuotas.inicial > 0 && (
                           <DataRow
                             label="Cuota inicial"
                             value={fmtCOP(moto.cuotas.inicial)}
-
                             valueClass="text-error font-semibold"
                           />
                         )}
@@ -904,31 +924,36 @@ const DetalleCotizacion: React.FC = () => {
                           valueClass="text-success font-bold"
                         />
 
+                        {/* GPS: en contado puede venir si/no; en créditos meses */}
                         <DataRowText
-                          label="GPS (meses)"
-                          value={
-                            moto.gpsMeses === null
-                              ? 'No aplica'
-                              : String(moto.gpsMeses).toLowerCase() === 'no'
-                                ? 'No'
-                                : `${moto.gpsMeses} meses`
-                          }
+                          label={isContado ? 'GPS' : 'GPS (meses)'}
+                          value={(() => {
+                            if (moto.gpsMeses === null) return 'No aplica';
+                            const v = normalizeLower(moto.gpsMeses);
+                            if (!v || v === 'no' || v === '0') return 'No';
+                            if (v === 'si' || v === 'sí') return 'Sí';
+                            return `${moto.gpsMeses} meses`;
+                          })()}
                         />
 
                         <DataRow
                           label="Valor GPS"
-                          value={
-                            moto.gpsMeses === null
-                              ? '—'
-                              : String(moto.gpsMeses).toLowerCase() === 'no'
-                                ? fmtCOP(0)
-                                : fmtCOP(Number(moto.gpsValor ?? 0))
-                          }
+                          value={(() => {
+                            if (moto.gpsMeses === null) return '—';
+                            const v = normalizeLower(moto.gpsMeses);
+                            if (!v || v === 'no' || v === '0') return fmtCOP(0);
+                            // si 'si' o meses => mostrar valor
+                            return fmtCOP(Number(moto.gpsValor ?? 0));
+                          })()}
                         />
 
-
-
-
+                        {/* Si quieres ver el valor de garantía extendida SOLO en crédito propio, mantenemos el estilo y no rompemos nada */}
+                        {showGarantiaExtendida && (
+                          <DataRow
+                            label="Valor garantía extendida"
+                            value={fmtCOP(Number(moto.garantiaExtendidaValor ?? 0))}
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -951,95 +976,88 @@ const DetalleCotizacion: React.FC = () => {
         </section>
 
         {/* ======================= Garantía extendida (toggle A/B) ======================= */}
-        <section className="card bg-base-100 border border-base-300/60 shadow-sm rounded-2xl">
-          <div className="card-body">
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <div className="flex items-center gap-2">
-                <BadgeCheck className="w-5 h-5" />
-                <h2 className="card-title text-lg">Garantía extendida</h2>
-                {geLoading && <span className="loading loading-spinner loading-xs" />}
+        {/* 🔒 Requerimiento: ocultar esta sección en contado y crédito de terceros */}
+        {showGarantiaExtendida && (
+          <section className="card bg-base-100 border border-base-300/60 shadow-sm rounded-2xl">
+            <div className="card-body">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                  <BadgeCheck className="w-5 h-5" />
+                  <h2 className="card-title text-lg">Garantía extendida</h2>
+                  {geLoading && <span className="loading loading-spinner loading-xs" />}
+                </div>
+
+                {/* Toggle A/B reutilizando el mismo estado `tab` */}
+                {q.motoB && (
+                  <div role="tablist" className="tabs tabs-boxed">
+                    <button
+                      role="tab"
+                      className={`tab rounded-lg px-4 py-2 ${tab === 'A'
+                        ? 'tab-active bg-green-500 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                      onClick={() => setTab('A')}
+                    >
+                      Moto A
+                    </button>
+                    <button
+                      role="tab"
+                      className={`tab rounded-lg px-4 py-2 ml-2 ${tab === 'B'
+                        ? 'tab-active bg-green-500 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                      onClick={() => setTab('B')}
+                    >
+                      Moto B
+                    </button>
+                  </div>
+                )}
               </div>
 
-              {/* Toggle A/B reutilizando el mismo estado `tab` */}
-              {q.motoB && (
-                <div role="tablist" className="tabs tabs-boxed">
-                  <button
-                    role="tab"
-                    className={`tab rounded-lg px-4 py-2 ${tab === 'A'
-                      ? 'tab-active bg-green-500 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    onClick={() => setTab('A')}
-                  >
-                    Moto A
-                  </button>
-                  <button
-                    role="tab"
-                    className={`tab rounded-lg px-4 py-2 ml-2 ${tab === 'B'
-                      ? 'tab-active bg-green-500 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    onClick={() => setTab('B')}
-                  >
-                    Moto B
-                  </button>
-                </div>
-              )}
-            </div>
+              {/* Contenido según tab */}
+              {(() => {
+                const isA = tab === 'A';
 
-            {/* Contenido según tab */}
-            {(() => {
-              const isA = tab === 'A';
-              const meses = isA
-                ? (ge?.meses_a ?? (q?.motoA?.garantiaExtendidaMeses ?? null))
-                : (ge?.meses_b ?? (q?.motoB?.garantiaExtendidaMeses ?? null));
+                // meses/valor: prioridad 1 => servicio garantíaExt por cotización; prioridad 2 => payload (buildMoto)
+                const meses =
+                  isA
+                    ? (ge?.meses_a ?? (q?.motoA?.garantiaExtendidaMeses ?? null))
+                    : (ge?.meses_b ?? (q?.motoB?.garantiaExtendidaMeses ?? null));
 
-              const valor = isA ? ge?.valor_a : ge?.valor_b;
+                const valor =
+                  isA
+                    ? (ge?.valor_a ?? (q?.motoA?.garantiaExtendidaValor ?? 0))
+                    : (ge?.valor_b ?? (q?.motoB?.garantiaExtendidaValor ?? 0));
 
-              // const plan = isA
-              //   ? (ge?.garantia_extendida_a ??
-              //     (typeof q?.motoA?.garantiaExtendidaMeses === 'number'
-              //       ? `${q?.motoA?.garantiaExtendidaMeses}m` : '—'))
-              //   : (ge?.garantia_extendida_b ??
-              //     (typeof q?.motoB?.garantiaExtendidaMeses === 'number'
-              //       ? `${q?.motoB?.garantiaExtendidaMeses}m` : '—'));
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="badge badge-ghost">{isA ? 'Moto A' : 'Moto B'}</div>
 
-              return (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <div className="badge badge-ghost">{isA ? 'Moto A' : 'Moto B'}</div>
+                      <DataRowText
+                        label="Meses"
+                        value={typeof meses === 'number' && meses > 0 ? `${meses} meses` : 'No aplica'}
+                      />
 
-                    <DataRowText
-                      label="Meses"
-                      value={typeof meses === 'number' && meses > 0 ? `${meses} meses` : 'No aplica'}
-                    />
-
-                    <DataRow
-                      label="Valor garantía extendida"
-                      value={
-                        typeof valor === 'number'
-                          ? fmtCOP(valor)
-                          : (typeof meses === 'number' && meses > 0 ? fmtCOP(0) : '—')
-                      }
-                    />
-
-
-
-
-                    {/* <DataRowText
-                      label="Plan"
-                      value={plan || '—'}
-                    /> */}
+                      <DataRow
+                        label="Valor garantía extendida"
+                        value={
+                          typeof meses === 'number' && meses > 0
+                            ? fmtCOP(Number(valor ?? 0))
+                            : '—'
+                        }
+                      />
+                    </div>
                   </div>
-                </div>
-              );
-            })()}
-          </div>
-        </section>
+                );
+              })()}
+            </div>
+          </section>
+        )}
 
         {/* Cuotas – solo de la moto seleccionada en el tab (oculto, pero lo dejo armado) */}
-        {moto && hasCuotas && (
-          <section className="card hidden bg-base-100 border border-base-300/60 shadow-sm rounded-2xl">
+{moto && hasCuotas && (isCreditoPropio || isCreditoTerceros) && (
+          <section className="card flex bg-base-100 border border-base-300/60 shadow-sm rounded-2xl">
             <div className="card-body">
               <div className="flex items-center gap-2 mb-2">
                 <Calculator className="w-5 h-5" />
@@ -1049,7 +1067,7 @@ const DetalleCotizacion: React.FC = () => {
               </div>
 
               <>
-                <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-3">
+                <div className=" grid-cols-1 hidden md:grid-cols-3 xl:grid-cols-4 gap-3">
                   {typeof moto.cuotas.inicial === 'number' && moto.cuotas.inicial > 0 && (
                     <StatTile
                       label="Cuota inicial"
