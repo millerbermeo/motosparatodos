@@ -2326,10 +2326,10 @@ const CotizacionFormulario: React.FC = () => {
                                                         <div className="mt-3 bg-base-100 border border-base-300 rounded-lg p-3 space-y-1">
                                                             <p className="font-semibold text-sm">Cuotas proyectadas</p>
 
-                                                            <div className="flex justify-between text-sm">
+                                                            {/* <div className="flex justify-between text-sm">
                                                                 <span>Seguro de vida mensual:</span>
                                                                 <span>{fmt(segVidaMensualA)}</span>
-                                                            </div>
+                                                            </div> */}
 
 
                                                             <div className="flex justify-between text-sm">

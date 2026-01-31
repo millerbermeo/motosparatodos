@@ -585,9 +585,9 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
                   {[
                     { k: "Precio base", v: v.precioBase, type: "money" },
                     { k: "Docs (total)", v: v.docsReal, type: "money" },            // total en documentos
-                    { k: "Meses (36)", v: v.cuotas.c36, type: "money" },            // cuota 36
+                    { k: "Cuota (plazo 36)", v: v.cuotas.c36, type: "money" },
                     { k: "Marcación", v: v.marcacion, type: "money" },
-                    { k: "Meses (36)", v: v.gpsMeses, type: "gpsMeses" },           // meses GPS
+                    { k: "GPS (meses)", v: v.gpsMeses, type: "gpsMeses" },
                     { k: "GPS", v: v.gpsValor, type: "money" },                     // valor GPS
                     { k: "Garantía extendida", v: null, type: "ge" },               // garantía extendida (valor)
                     { k: "Cuota inicial", v: v.cuotaInicial, type: "money" },
@@ -681,25 +681,11 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
     <>
       <SectionTitle title="Autorización de habeas data y firmas" />
       <View style={styles.box} wrap={false}>
-        <Text style={styles.habeasTitle}>Autorización de habeas data:</Text>
+        <Text style={styles.habeasTitle}>Autorización de tratamiento de datos personales (Habeas Data)</Text>
 
         <Text style={styles.habeasText}>
-          Con la firma del presente documento y con el suministro libre, espontáneo y voluntario de sus datos generales de
-          comunicación, entiéndase: nombre completo, cédula de ciudadanía, correo electrónico, número de dispositivo móvil,
-          número de teléfono fijo, whatsapp y todos aquellos que sean utilizados por redes sociales; se entenderá que la
-          empresa queda autorizada para el uso de los datos a fin de suministrar, a través de documentos digitales y/o en
-          físico la información comercial y de venta al consumidor de la siguiente
-        </Text>
-
-        <Text style={styles.habeasText}>
-          También quedan facultadas la empresa y el consumidor para: a) Conocer, actualizar y rectificar en cualquier momento
-          los datos personales; b) Solicitar prueba de la autorización otorgada; c) Ser informado, previa solicitud, respecto
-          del uso que se ha dado a los datos personales; d) Presentar ante la Superintendencia de Industria y Comercio quejas
-          por infracciones de conformidad con la ley; e) Revocar y suspender la autorización y/o solicitar la supresión de un
-          dato cuando en el tratamiento no se respeten las normas; f) Acceder en forma gratuita a los datos personales que
-          hayan sido objeto de tratamiento, y en general todas aquellas facultades consagradas en la Ley 1581 de 2012. Para
-          conocer más detalles de nuestra política de tratamiento y protección de datos personales, consulte nuestro manual de
-          tratamiento en www.tuclickmotos.com
+        Con la firma del presente documento, el cliente autoriza de manera libre, previa, expresa e informada a Moto Para Todos S.A.S. para recolectar, almacenar, usar y tratar sus datos personales suministrados por medios físicos o digitales, con el fin de gestionar la cotización, venta, financiación, contacto comercial y envío de información relacionada con sus productos y servicios.
+        Los datos tratados incluyen, entre otros, información de identificación y contacto. El titular declara conocer que, de conformidad con la Ley 1581 de 2012, puede conocer, actualizar, rectificar y solicitar la supresión de sus datos, así como revocar esta autorización cuando no se respeten las disposiciones legales.
         </Text>
 
         <View style={styles.firmaRow} wrap={false}>
