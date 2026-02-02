@@ -976,7 +976,7 @@ const CreditoDetalle: React.FC = () => {
                 </section>
 
                 {/* Acciones */}
-                <section className="rounded-2xl flex gap-5 p-6 border border-slate-200 bg-white shadow-sm">
+                <section className="rounded-2xl flex gap-5 p-6 border flex-wrap border-slate-200 bg-white shadow-sm">
                     <button
                         className="btn bg-success hover:bg-green-500 text-white flex items-center gap-2"
                         onClick={abrirFormularioComentario}

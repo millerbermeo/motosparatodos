@@ -96,13 +96,13 @@ const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito, id_cotizacio
     showConfirmButton: false,
     willClose: () =>
       navigate(
-        `/creditos/detalle/facturar-credito/${id_cotizacion}/${codigo_credito}`
+        `/creditos/detalle/facturar-credito/${codigo_credito}/${id_cotizacion}`
       ),
   });
 
   // Fallback, por si el willClose no dispara
   navigate(
-    `/creditos/detalle/facturar-credito/${id_cotizacion}/${codigo_credito}`
+        `/creditos/detalle/facturar-credito/${codigo_credito}/${id_cotizacion}`
   );
 }
 

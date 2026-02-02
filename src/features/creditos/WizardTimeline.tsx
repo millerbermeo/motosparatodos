@@ -30,6 +30,11 @@ const WizardTimeline: React.FC<WizardProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(steps.map(s => s.id)), initialStepId]);
 
+    // ✅ scroll arriba cuando cambia el step
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' }); // o behavior: 'auto'
+  }, [idx]); // también podrías usar [activeId]
+  
   // notificar cambios al padre (opcional)
   useEffect(() => {
     if (onChangeStep && activeId) onChangeStep(activeId);
