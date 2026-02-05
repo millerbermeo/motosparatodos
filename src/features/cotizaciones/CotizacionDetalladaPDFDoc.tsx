@@ -384,12 +384,12 @@ const MiniBox: React.FC<{ label: string; value: string }> = ({ label, value }) =
   </View>
 );
 
-const fmtGpsMeses = (v: any) => {
-  if (v === null || v === undefined) return "No aplica";
-  const s = String(v).toLowerCase();
-  if (s === "no") return "No";
-  return `${v} meses`;
-};
+// const fmtGpsMeses = (v: any) => {
+//   if (v === null || v === undefined) return "No aplica";
+//   const s = String(v).toLowerCase();
+//   if (s === "no") return "No";
+//   return `${v} meses`;
+// };
 
 const pickComentario = (d: any) => safe(d.comentario2 ?? d.comentario ?? "", "—");
 
@@ -558,7 +558,7 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
         <View style={styles.motoCard} wrap={false}>
           <View style={styles.motoHeader} wrap={false}>
             <Text style={styles.motoTitle}>{safe(label)}</Text>
-    
+
           </View>
 
           <View style={styles.motoBodyRow} wrap={false}>
@@ -581,30 +581,45 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
                     <Text style={[styles.tableCellHeader, styles.tableCellLast]}>Valor</Text>
                   </View>
 
-                  {/* ===== TABLA IZQUIERDA: "Concepto" (mismo contenedor) ===== */}
                   {[
                     { k: "Precio base", v: v.precioBase, type: "money" },
-                    { k: "Docs (total)", v: v.docsReal, type: "money" },            // total en documentos
-                    { k: "Cuota (plazo 36)", v: v.cuotas.c36, type: "money" },
+                    { k: "Docs (total)", v: v.docsReal, type: "money" },
                     { k: "Marcación", v: v.marcacion, type: "money" },
-                    { k: "GPS (meses)", v: v.gpsMeses, type: "gpsMeses" },
-                    { k: "GPS", v: v.gpsValor, type: "money" },                     // valor GPS
-                    { k: "Garantía extendida", v: null, type: "ge" },               // garantía extendida (valor)
+
+                    // ✅ GPS (24 meses) -> $valor
+                    {
+                      k:
+                        Number(v.gpsMeses) > 0
+                          ? `GPS (${Number(v.gpsMeses)} meses)`
+                          : "GPS",
+                      v: v.gpsValor,
+                      type: "money",
+                    },
+
+                    // ✅ Garantía extendida (24 meses) -> $valor
+                    {
+                      k:
+                        geSide.meses > 0
+                          ? `Garantía extendida (${geSide.meses} meses)`
+                          : "Garantía extendida",
+                      v: geSide.meses > 0 ? geSide.valor : null,
+                      type: "moneyOrDash",
+                    },
+
                     { k: "Cuota inicial", v: v.cuotaInicial, type: "money" },
                   ].map((item, idx) => (
                     <View style={styles.tableRow} key={`L-${side}-${item.k}-${idx}`}>
                       <Text style={styles.tableCell}>{item.k}</Text>
                       <Text style={[styles.tableCell, styles.tableCellLast]}>
-                        {item.type === "gpsMeses"
-                          ? fmtGpsMeses(item.v)
-                          : item.type === "ge"
-                            ? geSide.meses > 0
-                              ? fmtCOP(geSide.valor)
-                              : "—"
-                            : fmtCOP(item.v)}
+                        {item.type === "money"
+                          ? fmtCOP(item.v)
+                          : item.type === "moneyOrDash"
+                            ? item.v ? fmtCOP(item.v) : "—"
+                            : "—"}
                       </Text>
                     </View>
                   ))}
+
 
                 </View>
 
@@ -684,8 +699,8 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
         <Text style={styles.habeasTitle}>Autorización de tratamiento de datos personales (Habeas Data)</Text>
 
         <Text style={styles.habeasText}>
-        Con la firma del presente documento, el cliente autoriza de manera libre, previa, expresa e informada a Moto Para Todos S.A.S. para recolectar, almacenar, usar y tratar sus datos personales suministrados por medios físicos o digitales, con el fin de gestionar la cotización, venta, financiación, contacto comercial y envío de información relacionada con sus productos y servicios.
-        Los datos tratados incluyen, entre otros, información de identificación y contacto. El titular declara conocer que, de conformidad con la Ley 1581 de 2012, puede conocer, actualizar, rectificar y solicitar la supresión de sus datos, así como revocar esta autorización cuando no se respeten las disposiciones legales.
+          Con la firma del presente documento, el cliente autoriza de manera libre, previa, expresa e informada a Moto Para Todos S.A.S. para recolectar, almacenar, usar y tratar sus datos personales suministrados por medios físicos o digitales, con el fin de gestionar la cotización, venta, financiación, contacto comercial y envío de información relacionada con sus productos y servicios.
+          Los datos tratados incluyen, entre otros, información de identificación y contacto. El titular declara conocer que, de conformidad con la Ley 1581 de 2012, puede conocer, actualizar, rectificar y solicitar la supresión de sus datos, así como revocar esta autorización cuando no se respeten las disposiciones legales.
         </Text>
 
         <View style={styles.firmaRow} wrap={false}>

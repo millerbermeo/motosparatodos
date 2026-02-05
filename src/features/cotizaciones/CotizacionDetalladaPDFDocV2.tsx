@@ -356,13 +356,6 @@ const MiniBox: React.FC<{ label: string; value: string }> = ({ label, value }) =
   </View>
 );
 
-const fmtGpsMeses = (v: any) => {
-  if (v === null || v === undefined) return "No aplica";
-  const s = String(v).toLowerCase();
-  if (s === "no") return "No";
-  return `${v} meses`;
-};
-
 const pickComentario = (d: any) => safe(d.comentario2 ?? d.comentario ?? "", "—");
 
 export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
@@ -619,30 +612,39 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
                     <Text style={styles.tableCellHeader}>Concepto</Text>
                     <Text style={[styles.tableCellHeader, styles.tableCellLast]}>Valor</Text>
                   </View>
+{[
+  { k: "Precio base", vv: v.precioBase, type: "money" },
+  { k: "Docs (total)", vv: v.docsReal, type: "money" },
+  { k: "Marcación", vv: v.marcacion, type: "money" },
 
-                  {[
-                    { k: "Precio base", vv: v.precioBase, type: "money" },
-                    { k: "Docs (total)", vv: v.docsReal, type: "money" },
-                    { k: "Meses (36)", vv: v.cuotas.c36, type: "money" },
-                    { k: "Marcación", vv: v.marcacion, type: "money" },
-                    { k: "Meses (GPS)", vv: v.gpsMeses, type: "gpsMeses" },
-                    { k: "GPS", vv: v.gpsValor, type: "money" },
-                    { k: "Garantía extendida", vv: null, type: "ge" },
-                    { k: "Cuota inicial", vv: v.cuotaInicial, type: "money" },
-                  ].map((item, idx) => (
-                    <View style={styles.tableRow} key={`L-ONE-${item.k}-${idx}`}>
-                      <Text style={styles.tableCell}>{item.k}</Text>
-                      <Text style={[styles.tableCell, styles.tableCellLast]}>
-                        {item.type === "gpsMeses"
-                          ? fmtGpsMeses(item.vv)
-                          : item.type === "ge"
-                            ? ge.meses > 0
-                              ? fmtCOP(ge.valor)
-                              : "—"
-                            : fmtCOP(item.vv)}
-                      </Text>
-                    </View>
-                  ))}
+  // ✅ GPS (24 meses) -> $valor
+  {
+    k: Number(v.gpsMeses) > 0 ? `GPS (${Number(v.gpsMeses)} meses)` : "GPS",
+    vv: v.gpsValor,
+    type: "money",
+  },
+
+  // ✅ Garantía extendida (24 meses) -> $valor
+  {
+    k: ge.meses > 0 ? `Garantía extendida (${ge.meses} meses)` : "Garantía extendida",
+    vv: ge.meses > 0 ? ge.valor : null,
+    type: "moneyOrDash",
+  },
+
+  { k: "Cuota inicial", vv: v.cuotaInicial, type: "money" },
+].map((item, idx) => (
+  <View style={styles.tableRow} key={`L-ONE-${item.k}-${idx}`}>
+    <Text style={styles.tableCell}>{item.k}</Text>
+    <Text style={[styles.tableCell, styles.tableCellLast]}>
+      {item.type === "money"
+        ? fmtCOP(item.vv)
+        : item.type === "moneyOrDash"
+          ? item.vv ? fmtCOP(item.vv) : "—"
+          : "—"}
+    </Text>
+  </View>
+))}
+
                 </View>
 
                 <View style={[styles.table, styles.half]} wrap={false}>
