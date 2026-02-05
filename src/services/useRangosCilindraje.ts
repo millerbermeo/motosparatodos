@@ -11,7 +11,6 @@ export interface RangoCilindraje {
   descripcion: string;
   cilindraje_min: number | null;
   cilindraje_max: number | null;
-  precio: number;
   soat: number;
   matricula_credito: number;
   matricula_contado: number;
@@ -49,7 +48,6 @@ const normalizeRango = (t: any): RangoCilindraje => ({
   descripcion: String(t.descripcion ?? ""),
   cilindraje_min: toNumberOrNull(t.cilindraje_min),
   cilindraje_max: toNumberOrNull(t.cilindraje_max),
-  precio: Number(t.precio ?? 0),
   soat: Number(t.soat ?? 0),
   matricula_credito: Number(t.matricula_credito ?? 0),
   matricula_contado: Number(t.matricula_contado ?? 0),
@@ -106,7 +104,6 @@ export const useCreateRangoCilindraje = () => {
         descripcion: payload.descripcion,
         cilindraje_min: toNumberOrNull(payload.cilindraje_min),
         cilindraje_max: toNumberOrNull(payload.cilindraje_max),
-        precio: Number(payload.precio),
         soat: Number(payload.soat ?? 0),
         matricula_credito: Number(payload.matricula_credito ?? 0),
         matricula_contado: Number(payload.matricula_contado ?? 0),
@@ -145,7 +142,6 @@ export const useUpdateRangoCilindraje = () => {
         descripcion: payload.descripcion,
         cilindraje_min: toNumberOrNull(payload.cilindraje_min),
         cilindraje_max: toNumberOrNull(payload.cilindraje_max),
-        precio: Number(payload.precio),
         soat: Number(payload.soat ?? 0),
         matricula_credito: Number(payload.matricula_credito ?? 0),
         matricula_contado: Number(payload.matricula_contado ?? 0),
@@ -218,5 +214,22 @@ export const useRangoMotocarro = (enabled = true) => {
       if (!data.rango) return null;
       return normalizeRango(data.rango);
     }
+  });
+};
+
+// Buscar rango de Eléctrica
+export const useRangoElectrica = (enabled = true) => {
+  return useQuery<RangoCilindraje | null, AxiosError<ServerError>>({
+    queryKey: ["rango-cilindraje", "buscar", "electrica"],
+    enabled,
+    queryFn: async () => {
+      const { data } = await api.get<BuscarRangoCilindrajeResponse>(
+        "/buscar_cilindraje.php",
+        { params: { electrica: 1 } }
+      );
+
+      if (!data.rango) return null;
+      return normalizeRango(data.rango);
+    },
   });
 };

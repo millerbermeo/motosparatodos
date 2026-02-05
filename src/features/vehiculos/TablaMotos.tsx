@@ -82,6 +82,8 @@ const TablaMotos: React.FC = () => {
   // ✅ IMPORTANTE: ahora useMotos recibe filtros (pero si lo llamas sin filtros también sirve)
   const { data, isPending, isError } = useMotos(filters);
 
+  console.log("🚀 ~ file: TablaMotos.tsx:134 ~ TablaMotos ~ data:", data);
+
   const deleteMoto = useDeleteMoto();
   const toggleEstado = useToggleEstadoMoto();
 
@@ -370,6 +372,7 @@ const TablaMotos: React.FC = () => {
               <th>Imagen</th>
               <th>Marca</th>
               <th>Línea</th>
+              <th>Cilindraje</th>
               <th>Tipo</th>
               <th>Modelo</th>
               <th className="hidden md:table-cell">Empresa</th>
@@ -400,6 +403,7 @@ const TablaMotos: React.FC = () => {
                 </td>
                 <td className="font-medium">{m.marca ?? ""}</td>
                 <td>{m.linea ?? ""}</td>
+                <td>{m.cilindraje != null ? `${m.cilindraje} CC` : "-"}</td>
                 <td>{m.tipo_moto ?? ""}</td>
 
                 <td>{m.modelo ?? ""}</td>

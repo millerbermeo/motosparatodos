@@ -85,20 +85,20 @@ const DescuentosMotosFormulario: React.FC<Props> = ({ initialValues }) => {
 
       <FormInput<DescuentosFormValues>
         name="descuento_empresa"
-        label="Descuento empresa (opcional)"
+        label="Descuento / Plan de marca (opcional)"
         control={control}
         placeholder="Ej. 500.000"
         // ❗ sin required; valida solo si hay algo
         type="number"
       />
 
-      <FormInput<DescuentosFormValues>
+      {/* <FormInput<DescuentosFormValues>
         name="descuento_ensambladora"
         label="Descuento ensambladora (opcional)"
         control={control}
         placeholder="Ej. 80.000"
         type="number"
-      />
+      /> */}
 
       <div className="flex justify-end gap-2">
         <button className="btn btn-primary" type="submit" disabled={busy}>

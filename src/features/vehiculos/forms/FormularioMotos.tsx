@@ -14,6 +14,7 @@ import Swal from "sweetalert2";
 import {
   useRangoPorCilindraje,
   useRangoMotocarro,
+  useRangoElectrica,
   type RangoCilindraje,
 } from "../../../services/useRangosCilindraje";
 
@@ -27,24 +28,20 @@ type Base = {
   descrip: string;
   imagen?: string;
 
-  empresa?: string; // nombre (lo que ya existía)
-  subdistribucion?: string; // nombre (lo que ya existía)
+  empresa?: string;
+  subdistribucion?: string;
 
-  // 🔹 NUEVO — IDs reales para edición
   id_empresa?: number;
   id_distribuidora?: number;
 
   tipo_moto?: "Moto" | "Motocarro" | "Electrica";
-
 };
-
 
 const tipoMotoOptions: SelectOption[] = [
   { value: "Moto", label: "Moto" },
   { value: "Motocarro", label: "Motocarro" },
   { value: "Electrica", label: "Eléctrica" },
 ];
-
 
 type Props =
   | { initialValues?: undefined; mode?: "create" }
@@ -55,15 +52,112 @@ type MotoFormValues = {
   linea: string;
   modelo: string;
   estado: "Nueva" | "Usada";
-  precio_base: number | string; // ✅ lo dejamos así para permitir el formato
+  precio_base: number | string;
   descrip: string;
   empresa: string;
   subdistribucion?: string;
   id_empresa?: number | string;
   id_distribuidora?: number | string;
   tipo_moto?: "Moto" | "Motocarro" | "Electrica";
-
 };
+
+/* =========================
+   Helpers
+========================= */
+
+// ✅ 1) CONVERSIÓN PARA BUSCAR (backend recibe ENTEROS)
+const cilindrajeEnteroParaBusqueda = (raw: number): number => {
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return 99; // 99.9 conceptual
+  if (n <= 99) return 99;                       // 99.9 conceptual
+  if (n <= 124) return 124;                     // 124.9 conceptual
+  if (n <= 199) return 199;                     // 199.9 conceptual
+  return 201;                                   // >=200 => rango mayor (>=201)
+};
+
+// ✅ 2) Visual: interpretar lo que devuelve backend
+const normalizarCilindrajeMaxVisual = (max: number | null): number | null => {
+  if (max === null || max === undefined) return null;
+  const n = Number(max);
+  if (!Number.isFinite(n)) return null;
+
+  if (n === 99) return 99.9;
+  if (n === 124) return 124.9;
+  if (n === 200) return 199.9;
+
+  return n;
+};
+
+// ✅ helper para dinero
+const unformatNumber = (v: string | number | null | undefined): string => {
+  if (v === null || v === undefined) return "";
+  return String(v).replace(/[^\d-]/g, "");
+};
+
+const toNumberSafe = (v: string | number | null | undefined): number => {
+  const raw = unformatNumber(v);
+  return raw ? Number(raw) : 0;
+};
+
+// ✅ compresión de imagen a máximo ~70KB
+const MAX_IMAGE_BYTES = 70 * 1024;
+
+async function compressImageToMax70KB(inputFile: File): Promise<File> {
+  if (!inputFile.type.startsWith("image/")) return inputFile;
+  if (inputFile.size <= MAX_IMAGE_BYTES) return inputFile;
+
+  const bitmap = await createImageBitmap(inputFile);
+
+  const maxSide = 1024;
+  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+  const targetW = Math.max(1, Math.round(bitmap.width * scale));
+  const targetH = Math.max(1, Math.round(bitmap.height * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = targetW;
+  canvas.height = targetH;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return inputFile;
+
+  ctx.drawImage(bitmap, 0, 0, targetW, targetH);
+
+  const tryTypes = ["image/webp", "image/jpeg"];
+  let bestBlob: Blob | null = null;
+
+  for (const mime of tryTypes) {
+    let quality = 0.85;
+
+    while (quality >= 0.35) {
+      const blob: Blob | null = await new Promise((resolve) =>
+        canvas.toBlob((b) => resolve(b), mime, quality)
+      );
+
+      if (!blob) break;
+
+      if (blob.size <= MAX_IMAGE_BYTES) {
+        bestBlob = blob;
+        break;
+      }
+
+      if (!bestBlob || blob.size < bestBlob.size) bestBlob = blob;
+
+      quality -= 0.1;
+    }
+
+    if (bestBlob && bestBlob.size <= MAX_IMAGE_BYTES) break;
+  }
+
+  if (!bestBlob) return inputFile;
+
+  const ext = bestBlob.type === "image/webp" ? "webp" : "jpg";
+  const baseName = inputFile.name.replace(/\.[^/.]+$/, "");
+  const outName = `${baseName}.${ext}`;
+
+  return new File([bestBlob], outName, { type: bestBlob.type });
+}
+
+const norm = (s: any) => String(s ?? "").trim().toLowerCase();
 
 const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) => {
   const create = useCreateMoto();
@@ -73,48 +167,23 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
   const { data: empresas, isPending: loadingEmpresas } = useEmpresasSelect();
   const { data: subdistribs, isPending: loadingSubd } = useSubDistribucion();
 
-  // archivo y preview se manejan fuera de RHF (file inputs no controlados)
   const [file, setFile] = React.useState<File | null>(null);
   const [preview, setPreview] = React.useState<string | null>(initialValues?.imagen ?? null);
 
-  // 🔹 para cálculo de rango SOLO en create
+  // 🔹 ENTERO para búsqueda
   const [cilindrajeBusqueda, setCilindrajeBusqueda] = React.useState<number | null>(null);
-  const [esMotocarro, setEsMotocarro] = React.useState(false);
 
-  // ===== helper para dinero (igual idea que en cotizaciones) =====
-  const unformatNumber = React.useCallback((v: string | number | null | undefined): string => {
-    if (v === null || v === undefined) return "";
-    return String(v).replace(/[^\d-]/g, "");
-  }, []);
-
-  const toNumberSafe = React.useCallback(
-    (v: string | number | null | undefined): number => {
-      const raw = unformatNumber(v);
-      return raw ? Number(raw) : 0;
-    },
-    [unformatNumber]
-  );
-
-  const {
-    control,
-    handleSubmit,
-    setValue,
-    watch,
-    reset,
-  } = useForm<MotoFormValues>({
+  const { control, handleSubmit, setValue, watch, reset } = useForm<MotoFormValues>({
     defaultValues: {
       marca: initialValues?.marca ?? "",
       linea: initialValues?.linea ?? "",
       modelo: initialValues?.modelo ?? "",
       estado: (initialValues?.estado as "Nueva" | "Usada") ?? "Nueva",
-      // ✅ guardamos como string para que el FormInput formatee sin problemas
-      precio_base:
-        initialValues?.precio_base != null ? String(initialValues.precio_base) : "0",
+      precio_base: initialValues?.precio_base != null ? String(initialValues.precio_base) : "0",
       descrip: initialValues?.descrip ?? "",
       empresa: initialValues?.empresa ?? "",
       subdistribucion: initialValues?.subdistribucion ?? "",
       tipo_moto: (initialValues as any)?.tipo_moto ?? "Moto",
-
     },
     mode: "onBlur",
   });
@@ -130,60 +199,50 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
       empresa: "",
       subdistribucion: "",
       tipo_moto: "Moto",
-
     });
 
     setFile(null);
     setPreview(null);
-
-    // también reinicia variables del rango (por si el usuario crea otra moto)
     setCilindrajeBusqueda(null);
-    setEsMotocarro(false);
   }, [reset]);
 
-  // cuando cambien los props, rehidrata el form
   React.useEffect(() => {
     reset({
       marca: initialValues?.marca ?? "",
       linea: initialValues?.linea ?? "",
       modelo: initialValues?.modelo ?? "",
       estado: (initialValues?.estado as "Nueva" | "Usada") ?? "Nueva",
-      precio_base:
-        initialValues?.precio_base != null ? String(initialValues.precio_base) : "0",
+      precio_base: initialValues?.precio_base != null ? String(initialValues.precio_base) : "0",
       descrip: initialValues?.descrip ?? "",
       empresa: initialValues?.empresa ?? "",
       subdistribucion: initialValues?.subdistribucion ?? "",
       tipo_moto: (initialValues as any)?.tipo_moto ?? "Moto",
-
     });
+
     setFile(null);
     setPreview(initialValues?.imagen ?? null);
+    setCilindrajeBusqueda(null);
   }, [initialValues, mode, reset]);
 
   const selectedMarca = watch("marca");
   const selectedLineaNombre = watch("linea");
+  const tipoMoto = (watch("tipo_moto") ?? "Moto") as "Moto" | "Motocarro" | "Electrica";
 
-  // filtra líneas según marca seleccionada
   const lineasFiltradas = React.useMemo(() => {
     if (!lineas) return [];
     if (!selectedMarca) return lineas;
-    return lineas.filter((l: any) => l.marca === selectedMarca);
+    return (lineas as any[]).filter((l) => l.marca === selectedMarca);
   }, [lineas, selectedMarca]);
 
-  // ✅ FIX: Solo resetear línea cuando el usuario CAMBIA marca en CREATE.
-  // En EDIT no debemos borrar la línea del registro.
+  // ✅ en create limpia linea al cambiar marca
   React.useEffect(() => {
     if (mode === "create") {
       setValue("linea", "");
     } else {
-      // en edit, si viene initialValues.linea, asegúrate de mantenerla
-      if (initialValues?.linea) {
-        setValue("linea", initialValues.linea);
-      }
+      if (initialValues?.linea) setValue("linea", initialValues.linea);
     }
   }, [selectedMarca, setValue, mode, initialValues?.linea]);
 
-  // preview de imagen
   React.useEffect(() => {
     if (!file) return;
     const url = URL.createObjectURL(file);
@@ -191,92 +250,68 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  // 🔹 calcular cilindraje / motocarro al seleccionar línea (solo create)
+  // ✅ calcular cilindraje SOLO si tipo = Moto
   React.useEffect(() => {
     if (mode !== "create") {
       setCilindrajeBusqueda(null);
-      setEsMotocarro(false);
+      return;
+    }
+
+    if (tipoMoto === "Motocarro" || tipoMoto === "Electrica") {
+      setCilindrajeBusqueda(null);
       return;
     }
 
     if (!selectedLineaNombre || !lineas) {
       setCilindrajeBusqueda(null);
-      setEsMotocarro(false);
       return;
     }
 
     const lineaObj = (lineas as any[]).find((l) => l.linea === selectedLineaNombre);
     if (!lineaObj) {
       setCilindrajeBusqueda(null);
-      setEsMotocarro(false);
       return;
     }
 
-    // detectar motocarro por nombre / campos
-    const lineaLower = String(lineaObj.linea ?? "").toLowerCase();
-    const descLower = String(lineaObj.descripcion ?? "").toLowerCase();
-    const isMotocarro =
-      lineaLower.includes("motocarro") ||
-      descLower.includes("motocarro") ||
-      lineaLower.includes("motocarros") ||
-      descLower.includes("motocarros") ||
-      lineaObj.tipo === "Motocarro" ||
-      Boolean(lineaObj.es_motocarro);
-
-    setEsMotocarro(isMotocarro);
-
-    if (isMotocarro) {
-      console.log("[MOTOS] Línea detectada como Motocarro:", lineaObj);
-      setCilindrajeBusqueda(null);
-      return;
-    }
-
-    const cilindraje =
+    const rawCil =
       lineaObj.cilindraje !== null &&
       lineaObj.cilindraje !== undefined &&
       lineaObj.cilindraje !== ""
         ? Number(lineaObj.cilindraje)
         : 124;
 
-    console.log("[MOTOS] Línea seleccionada:", lineaObj);
-    console.log("[MOTOS] Cilindraje calculado para búsqueda:", cilindraje);
+    const cilBusqueda = cilindrajeEnteroParaBusqueda(rawCil);
+    setCilindrajeBusqueda(cilBusqueda);
+  }, [selectedLineaNombre, lineas, mode, tipoMoto]);
 
-    setCilindrajeBusqueda(cilindraje);
-  }, [selectedLineaNombre, lineas, mode]);
-
-  // 🔹 hooks de rango (solo activos en create)
+  // 🔹 hooks de rango
   const rangoPorCilindrajeQuery = useRangoPorCilindraje(
     cilindrajeBusqueda,
-    mode === "create" && !esMotocarro && cilindrajeBusqueda !== null
+    mode === "create" && tipoMoto === "Moto" && cilindrajeBusqueda !== null
   );
+  const rangoMotocarroQuery = useRangoMotocarro(mode === "create" && tipoMoto === "Motocarro");
+  const rangoElectricaQuery = useRangoElectrica(mode === "create" && tipoMoto === "Electrica");
 
-  const rangoMotocarroQuery = useRangoMotocarro(mode === "create" && esMotocarro);
+  // ✅ rango seleccionado + cilindraje_max visual
+  const rangoSeleccionado: RangoCilindraje | null = React.useMemo(() => {
+    if (mode !== "create") return null;
 
-  const rangoSeleccionado: RangoCilindraje | null =
-    mode === "create"
-      ? esMotocarro
+    const base =
+      tipoMoto === "Motocarro"
         ? rangoMotocarroQuery.data ?? null
-        : rangoPorCilindrajeQuery.data ?? null
-      : null;
+        : tipoMoto === "Electrica"
+        ? rangoElectricaQuery.data ?? null
+        : rangoPorCilindrajeQuery.data ?? null;
 
-  // 🔹 LOG para ver siempre qué devuelve el hook
-  React.useEffect(() => {
-    if (mode !== "create") return;
+    if (!base) return null;
 
-    console.log("[MOTOS] Estado búsqueda rango:", {
-      esMotocarro,
-      cilindrajeBusqueda,
-      rangoPorCilindraje: rangoPorCilindrajeQuery.data,
-      rangoMotocarro: rangoMotocarroQuery.data,
-      rangoSeleccionado,
-    });
+    return { ...base, cilindraje_max: normalizarCilindrajeMaxVisual(base.cilindraje_max) };
   }, [
     mode,
-    esMotocarro,
-    cilindrajeBusqueda,
-    rangoPorCilindrajeQuery.data,
+    tipoMoto,
     rangoMotocarroQuery.data,
-    rangoSeleccionado,
+    rangoElectricaQuery.data,
+    rangoPorCilindrajeQuery.data,
   ]);
 
   const mostrarError = (err: any, fallback: string) => {
@@ -287,26 +322,34 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
       fallback;
 
     const arr = Array.isArray(raw) ? raw : [raw];
-
-    Swal.fire({
-      icon: "error",
-      title: "Error",
-      html: arr.join("<br/>"),
-    });
+    Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
   };
 
   const onSubmit = (values: MotoFormValues) => {
-    // 🔹 buscamos la empresa seleccionada para obtener su id
+    // ✅ find robusto por nombre (trim/lower)
     const empresaSeleccionada = (empresas as any[])?.find(
-      (e: any) => (e.nombre_empresa ?? e.nombre) === values.empresa
+      (e: any) => norm(e.nombre_empresa ?? e.nombre) === norm(values.empresa)
     );
 
-    // 🔹 buscamos la subdistribución seleccionada para obtener su id (si viene como objeto)
     const subdistribSeleccionada = (subdistribs as any[])?.find(
-      (s: any) => (s.nombre ?? s) === values.subdistribucion
+      (s: any) => norm(s.nombre ?? s) === norm(values.subdistribucion)
     );
 
-    // 🔹 Armamos un objeto con los datos del rango SOLO en create
+    // ✅ FIX: en edit, si no matchea el nombre, usamos el id que ya traía la moto
+    const idEmpresaFinal =
+      empresaSeleccionada?.id != null
+        ? Number(empresaSeleccionada.id)
+        : initialValues?.id_empresa != null
+        ? Number(initialValues.id_empresa)
+        : null;
+
+    const idDistribuidoraFinal =
+      subdistribSeleccionada?.id != null
+        ? Number(subdistribSeleccionada.id)
+        : initialValues?.id_distribuidora != null
+        ? Number(initialValues.id_distribuidora)
+        : null;
+
     let rangoPayload: {
       soat?: string;
       matricula_contado?: string;
@@ -329,46 +372,33 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
       tipo_moto: values.tipo_moto ?? null,
       modelo: values.modelo,
       estado: values.estado,
-      // ✅ ahora soporta formato (1.000.000) sin romper
       precio_base: toNumberSafe(values.precio_base),
       descrip: values.descrip,
       imagen: file ?? null,
 
       empresa: values.empresa,
-      id_empresa: empresaSeleccionada ? Number(empresaSeleccionada.id) : null,
+      id_empresa: idEmpresaFinal,
 
       subdistribucion: values.subdistribucion || null,
-      id_distribuidora:
-        subdistribSeleccionada && subdistribSeleccionada.id != null
-          ? Number(subdistribSeleccionada.id)
-          : null,
+      id_distribuidora: idDistribuidoraFinal,
 
       ...(mode === "create" ? rangoPayload : {}),
     };
 
-    console.log("[MOTOS] onSubmit - rangoSeleccionado:", rangoSeleccionado);
-    console.log("[MOTOS] onSubmit - payload enviado:", payload);
+    console.log("[MOTOS] payload enviado:", payload);
 
     if (mode === "edit" && initialValues?.id != null) {
       update.mutate(
         { id: initialValues.id, ...payload, nuevaImagen: file ?? null } as any,
         {
-          onSuccess: () => {
-            limpiarFormulario();
-          },
-          onError: (err) => {
-            mostrarError(err, "Error al actualizar la moto");
-          },
+          onSuccess: () => limpiarFormulario(),
+          onError: (err) => mostrarError(err, "Error al actualizar la moto"),
         }
       );
     } else {
       create.mutate(payload as any, {
-        onSuccess: () => {
-          limpiarFormulario();
-        },
-        onError: (err) => {
-          mostrarError(err, "Error al crear la moto");
-        },
+        onSuccess: () => limpiarFormulario(),
+        onError: (err) => mostrarError(err, "Error al crear la moto"),
       });
     }
   };
@@ -377,22 +407,24 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
     create.isPending ||
     update.isPending ||
     (mode === "create" &&
-      (rangoPorCilindrajeQuery.isLoading || rangoMotocarroQuery.isLoading));
+      (rangoPorCilindrajeQuery.isLoading ||
+        rangoMotocarroQuery.isLoading ||
+        rangoElectricaQuery.isLoading));
 
   const marcaOptions: SelectOption[] =
-    marcas?.map((m: any) => ({ value: m.marca, label: m.marca })) ?? [];
+    (marcas as any[])?.map((m: any) => ({ value: m.marca, label: m.marca })) ?? [];
 
   const lineaOptions: SelectOption[] =
-    lineasFiltradas?.map((l: any) => ({ value: l.linea, label: l.linea })) ?? [];
+    (lineasFiltradas as any[])?.map((l: any) => ({ value: l.linea, label: l.linea })) ?? [];
 
   const empresaOptions: SelectOption[] =
-    empresas?.map((e: any) => ({
+    (empresas as any[])?.map((e: any) => ({
       value: e.nombre_empresa ?? e.nombre,
       label: e.nombre_empresa ?? e.nombre,
     })) ?? [];
 
   const subdistribOptions: SelectOption[] =
-    subdistribs?.map((s: any) => ({
+    (subdistribs as any[])?.map((s: any) => ({
       value: s.nombre ?? s,
       label: s.nombre ?? s,
     })) ?? [];
@@ -400,7 +432,6 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* Marca */}
         <FormSelect<MotoFormValues>
           name="marca"
           label="Marca"
@@ -411,7 +442,6 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
           rules={{ required: "La marca es obligatoria" }}
         />
 
-        {/* Línea */}
         <FormSelect<MotoFormValues>
           name="linea"
           label="Línea"
@@ -428,20 +458,18 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
           rules={{ required: "La línea es obligatoria" }}
         />
 
-        {/* Modelo */}
         <FormInput<MotoFormValues>
           name="modelo"
           label="Modelo"
           className="mt-6"
           control={control}
-          placeholder="Ej. 500R3234"
+          placeholder="Ej. 2026"
           rules={{
             required: "El modelo es obligatorio",
             minLength: { value: 2, message: "Mínimo 2 caracteres" },
           }}
         />
 
-        {/* Estado */}
         <FormSelect<MotoFormValues>
           name="estado"
           label="Estado"
@@ -453,18 +481,15 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
           rules={{ required: "El estado es obligatorio" }}
         />
 
-        {/* Tipo de moto */}
-<FormSelect<MotoFormValues>
-  name="tipo_moto"
-  label="Tipo de moto"
-  control={control}
-  options={tipoMotoOptions}
-  placeholder="Seleccione el tipo"
-  rules={{ required: "El tipo de moto es obligatorio" }}
-/>
+        <FormSelect<MotoFormValues>
+          name="tipo_moto"
+          label="Tipo de moto"
+          control={control}
+          options={tipoMotoOptions}
+          placeholder="Seleccione el tipo"
+          rules={{ required: "El tipo de moto es obligatorio" }}
+        />
 
-
-        {/* Precio base (✅ con formato de miles) */}
         <FormInput<MotoFormValues>
           name="precio_base"
           label="Precio base"
@@ -474,15 +499,13 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
           placeholder="0"
           formatThousands
           rules={{
-            required: "El precio base es obligatorio",
+            required: "El precio base es obligatoria",
             validate: (v) =>
               toNumberSafe(v) >= 0 || "El precio debe ser un número mayor o igual a 0",
-            // ✅ evitar NaN cuando viene "1.000.000"
             setValueAs: (v) => (v === "" ? "" : String(v)),
           }}
         />
 
-        {/* Empresa */}
         <FormSelect<MotoFormValues>
           name="empresa"
           label="Empresa"
@@ -493,7 +516,6 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
           rules={{ required: "La empresa es obligatoria" }}
         />
 
-        {/* Subdistribución */}
         <FormSelect<MotoFormValues>
           name="subdistribucion"
           label="Subdistribución"
@@ -503,27 +525,55 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
           disabled={loadingSubd}
         />
 
-        {/* Imagen */}
+        {/* Imagen (<=70KB) */}
         <label className="form-control w-full">
           <span className="label-text">Imagen</span>
           <input
             type="file"
             accept="image/*"
             className="file-input file-input-bordered w-full"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            onChange={async (e) => {
+              const picked = e.target.files?.[0] ?? null;
+              if (!picked) {
+                setFile(null);
+                return;
+              }
+
+              try {
+                const compressed = await compressImageToMax70KB(picked);
+
+                if (compressed.size > MAX_IMAGE_BYTES) {
+                  Swal.fire({
+                    icon: "warning",
+                    title: "Imagen muy pesada",
+                    text: "No se pudo comprimir a 70KB. Prueba con una imagen más liviana.",
+                  });
+                }
+
+                setFile(compressed);
+                e.target.value = "";
+              } catch (err) {
+                console.error(err);
+                Swal.fire({
+                  icon: "error",
+                  title: "Error",
+                  text: "No se pudo procesar la imagen.",
+                });
+              }
+            }}
           />
           {preview && (
             <div className="mt-2">
-              <img
-                src={preview}
-                alt="Preview"
-                className="h-24 rounded-md object-cover"
-              />
+              <img src={preview} alt="Preview" className="h-24 rounded-md object-cover" />
+              {file && (
+                <div className="text-xs opacity-70 mt-1">
+                  Tamaño: {(file.size / 1024).toFixed(1)} KB
+                </div>
+              )}
             </div>
           )}
         </label>
 
-        {/* Descripción */}
         <div className="md:col-span-2">
           <FormInput<MotoFormValues>
             name="descrip"

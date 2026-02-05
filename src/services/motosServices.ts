@@ -28,6 +28,8 @@ export interface Moto {
   descuento_ensambladora?: string;
   id_empresa?: number;
   id_distribuidora?: number;
+  cilindraje?: number | null;
+
 }
 
 

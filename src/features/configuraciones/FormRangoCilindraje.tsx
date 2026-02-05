@@ -12,7 +12,6 @@ type Base = {
   descripcion: string;
   cilindraje_min: number | null;
   cilindraje_max: number | null;
-  precio: number;
   soat: number;
   matricula_credito: number;
   matricula_contado: number;
@@ -27,7 +26,6 @@ type FormValues = {
   descripcion: string;
   cilindraje_min: number | string | null;
   cilindraje_max: number | string | null;
-  precio: number | string;
   soat: number | string;
   matricula_credito: number | string;
   matricula_contado: number | string;
@@ -51,7 +49,6 @@ const FormRangoCilindraje: React.FC<Props> = ({ mode, initialValues }) => {
         initialValues?.cilindraje_min ?? (initialValues?.cilindraje_min === 0 ? 0 : ""),
       cilindraje_max:
         initialValues?.cilindraje_max ?? (initialValues?.cilindraje_max === 0 ? 0 : ""),
-      precio: initialValues?.precio ?? "",
       soat: initialValues?.soat ?? "",
       matricula_credito: initialValues?.matricula_credito ?? "",
       matricula_contado: initialValues?.matricula_contado ?? "",
@@ -66,7 +63,6 @@ const FormRangoCilindraje: React.FC<Props> = ({ mode, initialValues }) => {
         descripcion: "",
         cilindraje_min: "",
         cilindraje_max: "",
-        precio: "",
         soat: "",
         matricula_credito: "",
         matricula_contado: "",
@@ -81,7 +77,6 @@ const FormRangoCilindraje: React.FC<Props> = ({ mode, initialValues }) => {
         initialValues.cilindraje_min ?? (initialValues.cilindraje_min === 0 ? 0 : ""),
       cilindraje_max:
         initialValues.cilindraje_max ?? (initialValues.cilindraje_max === 0 ? 0 : ""),
-      precio: initialValues.precio ?? "",
       soat: initialValues.soat ?? "",
       matricula_credito: initialValues.matricula_credito ?? "",
       matricula_contado: initialValues.matricula_contado ?? "",
@@ -94,7 +89,6 @@ const FormRangoCilindraje: React.FC<Props> = ({ mode, initialValues }) => {
       descripcion: values.descripcion.trim(),
       cilindraje_min: toNumberOrNull(values.cilindraje_min),
       cilindraje_max: toNumberOrNull(values.cilindraje_max),
-      precio: Number(values.precio) || 0,
       soat: Number(values.soat) || 0,
       matricula_credito: Number(values.matricula_credito) || 0,
       matricula_contado: Number(values.matricula_contado) || 0,
@@ -152,19 +146,7 @@ const FormRangoCilindraje: React.FC<Props> = ({ mode, initialValues }) => {
           }}
         />
 
-        {/* PRECIO BASE */}
-        <FormInput<FormValues>
-          name="precio"
-          label="Precio base"
-          type="number"
-          control={control}
-          placeholder="770000"
-          rules={{
-            required: "El precio base es obligatorio",
-            validate: (v) =>
-              Number(v) >= 0 || "El precio debe ser mayor o igual a 0",
-          }}
-        />
+    
 
         {/* SOAT */}
         <FormInput<FormValues>

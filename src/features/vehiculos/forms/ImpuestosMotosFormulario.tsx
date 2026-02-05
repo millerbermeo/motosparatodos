@@ -183,6 +183,7 @@ const ImpuestosMotosFormulario: React.FC<Props> = ({ initialValues }) => {
       <FormInput<ImpuestosFormValues>
         name="soat"
         label="SOAT"
+        disabled
         control={control}
         placeholder="Ej. 458.000,50"
         rules={{
@@ -199,6 +200,7 @@ const ImpuestosMotosFormulario: React.FC<Props> = ({ initialValues }) => {
       <FormInput<ImpuestosFormValues>
         name="matricula_contado"
         label="Matrícula (contado)"
+          disabled
         control={control}
         placeholder="Ej. 4.548.000,50"
         rules={{
@@ -215,6 +217,7 @@ const ImpuestosMotosFormulario: React.FC<Props> = ({ initialValues }) => {
       <FormInput<ImpuestosFormValues>
         name="matricula_credito"
         label="Matrícula (crédito)"
+          disabled
         control={control}
         placeholder="Ej. 4.538.000,50"
         rules={{
@@ -232,6 +235,7 @@ const ImpuestosMotosFormulario: React.FC<Props> = ({ initialValues }) => {
         name="impuestos"
         label="Impuestos"
         control={control}
+          disabled
         placeholder="Ej. 150.000,50"
         rules={{
           required: "Los impuestos son obligatorios",
@@ -245,7 +249,7 @@ const ImpuestosMotosFormulario: React.FC<Props> = ({ initialValues }) => {
       />
 
       <div className="flex justify-end gap-2">
-        <button className="btn btn-primary" type="submit" disabled={busy}>
+        <button className="btn hidden btn-primary" type="submit" disabled={busy}>
           Guardar cambios
         </button>
       </div>
