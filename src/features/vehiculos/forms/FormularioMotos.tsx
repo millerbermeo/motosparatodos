@@ -72,7 +72,7 @@ const cilindrajeEnteroParaBusqueda = (raw: number): number => {
   if (n <= 99) return 99;                       // 99.9 conceptual
   if (n <= 124) return 124;                     // 124.9 conceptual
   if (n <= 199) return 199;                     // 199.9 conceptual
-  return 201;                                   // >=200 => rango mayor (>=201)
+  return 200;                               // >=200 => rango mayor (>=201)
 };
 
 // ✅ 2) Visual: interpretar lo que devuelve backend
