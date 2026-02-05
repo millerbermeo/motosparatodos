@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
   firmaLabel: { fontSize: 8.2, color: "#111827" },
 
   /* FOOTER */
-  footer: { fontSize: 7.6, color: "#6b7280", marginTop: 5, lineHeight: 1.2 },
+  footer: { fontSize: 7.6, color: "#6b7280", marginTop: 5, lineHeight: 1.2, textAlign: "center" },
   footerCenter: { fontSize: 7.6, color: "#374151", marginTop: 3, textAlign: "center" },
 });
 
