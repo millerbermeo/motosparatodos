@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
 
-  firmaRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 5 },
+  firmaRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 35},
   firmaBox: { width: "45%", borderTopWidth: 1, borderTopColor: "#111827", paddingTop: 3 },
   firmaLabel: { fontSize: 7.4, color: "#111827" },
 
@@ -734,7 +734,6 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
         </View>
 
         <View style={styles.headerRight}>
-          <Text style={styles.subtitle}>Estado: {safe(d.estado, "Sin estado")}</Text>
           {empresa?.nombre ? <Text style={styles.subtitle}>{empresa.nombre}</Text> : null}
           <Text style={styles.subtitle}>
             {almacen} · {ciudad}
@@ -809,7 +808,6 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
         </View>
 
         <View style={styles.headerRight}>
-          <Text style={styles.subtitle}>Estado: {safe(d.estado, "Sin estado")}</Text>
           {empresa?.nombre ? <Text style={styles.subtitle}>{empresa.nombre}</Text> : null}
         </View>
       </View>
