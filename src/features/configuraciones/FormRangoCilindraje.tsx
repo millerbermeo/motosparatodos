@@ -104,6 +104,7 @@ const FormRangoCilindraje: React.FC<Props> = ({ mode, initialValues }) => {
   };
 
   const busy = create.isPending || update.isPending;
+  const isEdit = mode === "edit";
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -113,6 +114,7 @@ const FormRangoCilindraje: React.FC<Props> = ({ mode, initialValues }) => {
           name="descripcion"
           label="Descripción"
           control={control}
+          disabled={isEdit}
           placeholder='Ej. "Hasta 99 CC", "Motocarros"'
           rules={{
             required: "La descripción es obligatoria",
@@ -127,6 +129,7 @@ const FormRangoCilindraje: React.FC<Props> = ({ mode, initialValues }) => {
           type="number"
           control={control}
           placeholder="Ej. 0"
+          disabled={isEdit}
           rules={{
             validate: (v) =>
               v === "" || !Number.isNaN(Number(v)) || "Debe ser un número válido",
@@ -140,6 +143,7 @@ const FormRangoCilindraje: React.FC<Props> = ({ mode, initialValues }) => {
           type="number"
           control={control}
           placeholder="Ej. 99"
+          disabled={isEdit}
           rules={{
             validate: (v) =>
               v === "" || !Number.isNaN(Number(v)) || "Debe ser un número válido",
