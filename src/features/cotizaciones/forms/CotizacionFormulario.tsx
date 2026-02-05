@@ -1700,11 +1700,12 @@ const CotizacionFormulario: React.FC = () => {
                         rules={{
                             required: "El celular es obligatorio.",
                             pattern: {
-                                value: /^[0-9]{10}$/,
-                                message: "Debe tener exactamente 10 números."
+                                value: /^[0-9]{7,15}$/,
+                                message: "Debe tener entre 7 y 15 números."
                             }
                         }}
                     />
+
                     <FormInput<FormValues>
                         name="email"
                         label="Email"

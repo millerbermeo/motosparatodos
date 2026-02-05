@@ -489,8 +489,8 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
 
 
         <Text style={styles.habeasText}>
-        Con la firma del presente documento, el cliente autoriza de manera libre, previa, expresa e informada a Moto Para Todos S.A.S. para recolectar, almacenar, usar y tratar sus datos personales suministrados por medios físicos o digitales, con el fin de gestionar la cotización, venta, financiación, contacto comercial y envío de información relacionada con sus productos y servicios.
-        Los datos tratados incluyen, entre otros, información de identificación y contacto. El titular declara conocer que, de conformidad con la Ley 1581 de 2012, puede conocer, actualizar, rectificar y solicitar la supresión de sus datos, así como revocar esta autorización cuando no se respeten las disposiciones legales.
+          Con la firma del presente documento, el cliente autoriza de manera libre, previa, expresa e informada a Moto Para Todos S.A.S. para recolectar, almacenar, usar y tratar sus datos personales suministrados por medios físicos o digitales, con el fin de gestionar la cotización, venta, financiación, contacto comercial y envío de información relacionada con sus productos y servicios.
+          Los datos tratados incluyen, entre otros, información de identificación y contacto. El titular declara conocer que, de conformidad con la Ley 1581 de 2012, puede conocer, actualizar, rectificar y solicitar la supresión de sus datos, así como revocar esta autorización cuando no se respeten las disposiciones legales.
         </Text>
 
         <View style={styles.firmaRow} wrap={false}>
@@ -611,38 +611,38 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
                     <Text style={styles.tableCellHeader}>Concepto</Text>
                     <Text style={[styles.tableCellHeader, styles.tableCellLast]}>Valor</Text>
                   </View>
-{[
-  { k: "Precio base", vv: v.precioBase, type: "money" },
-  { k: "Docs (total)", vv: v.docsReal, type: "money" },
-  { k: "Marcación", vv: v.marcacion, type: "money" },
+                  {[
+                    { k: "Precio base", vv: v.precioBase, type: "money" },
+                    { k: "Docs (total)", vv: v.docsReal, type: "money" },
+                    { k: "Marcación", vv: v.marcacion, type: "money" },
 
-  // ✅ GPS (24 meses) -> $valor
-  {
-    k: Number(v.gpsMeses) > 0 ? `GPS (${Number(v.gpsMeses)} meses)` : "GPS",
-    vv: v.gpsValor,
-    type: "money",
-  },
+                    // ✅ GPS (24 meses) -> $valor
+                    {
+                      k: Number(v.gpsMeses) > 0 ? `GPS (${Number(v.gpsMeses)} meses)` : "GPS",
+                      vv: v.gpsValor,
+                      type: "money",
+                    },
 
-  // ✅ Garantía extendida (24 meses) -> $valor
-  {
-    k: ge.meses > 0 ? `Garantía extendida (${ge.meses} meses)` : "Garantía extendida",
-    vv: ge.meses > 0 ? ge.valor : null,
-    type: "moneyOrDash",
-  },
+                    // ✅ Garantía extendida (24 meses) -> $valor
+                    {
+                      k: ge.meses > 0 ? `Garantía extendida (${ge.meses} meses)` : "Garantía extendida",
+                      vv: ge.meses > 0 ? ge.valor : null,
+                      type: "moneyOrDash",
+                    },
 
-  { k: "Cuota inicial", vv: v.cuotaInicial, type: "money" },
-].map((item, idx) => (
-  <View style={styles.tableRow} key={`L-ONE-${item.k}-${idx}`}>
-    <Text style={styles.tableCell}>{item.k}</Text>
-    <Text style={[styles.tableCell, styles.tableCellLast]}>
-      {item.type === "money"
-        ? fmtCOP(item.vv)
-        : item.type === "moneyOrDash"
-          ? item.vv ? fmtCOP(item.vv) : "—"
-          : "—"}
-    </Text>
-  </View>
-))}
+                    { k: "Cuota inicial", vv: v.cuotaInicial, type: "money" },
+                  ].map((item, idx) => (
+                    <View style={styles.tableRow} key={`L-ONE-${item.k}-${idx}`}>
+                      <Text style={styles.tableCell}>{item.k}</Text>
+                      <Text style={[styles.tableCell, styles.tableCellLast]}>
+                        {item.type === "money"
+                          ? fmtCOP(item.vv)
+                          : item.type === "moneyOrDash"
+                            ? item.vv ? fmtCOP(item.vv) : "—"
+                            : "—"}
+                      </Text>
+                    </View>
+                  ))}
 
                 </View>
 
