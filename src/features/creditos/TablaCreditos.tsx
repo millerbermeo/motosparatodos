@@ -254,7 +254,7 @@ const TablaCreditos: React.FC = () => {
                         {visible.map((c: any) => (
                             <tr key={c.id}>
                                 <td>{c.id || "-"}</td>
-                                <td className="flex gap-3">
+                                <td className="flex h-full pt-5 items-end gap-3">
 
                                     {(
                                         useAuthStore.getState().user?.rol === "Administrador" ||
