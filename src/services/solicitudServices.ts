@@ -26,6 +26,9 @@ export interface SolicitudFacturacionApi {
   fecha_creacion: string;           // "YYYY-MM-DD HH:mm:ss"
   actualizado: string;              // idem
   id_cotizacion?: number
+    facturaPath?: string | null;
+
+  
 }
 
 /* ===== Tipos normalizados para tu app ===== */
@@ -50,6 +53,8 @@ export interface SolicitudFacturacion {
   fechaCreacion: string;
   actualizado: string;
   id_cotizacion?: number
+    facturaPath?: string | null;
+
 }
 
 /* ===== Normalizador ===== */
@@ -77,6 +82,8 @@ export const normalizeSolicitud = (r: SolicitudFacturacionApi): SolicitudFactura
   fechaCreacion: r.fecha_creacion,
   actualizado: r.actualizado,
     id_cotizacion: r.id_cotizacion,
+      facturaPath: (r as any).factura ?? null,
+
 });
 
 
@@ -709,6 +716,53 @@ export const useActualizarDescuentosContraentrega = (opts?: {
         title: "Error",
         html: arr.join("<br/>"),
       });
+    },
+  });
+};
+
+
+
+
+
+export interface GetSolicitudPorCotizacionResponse {
+  success: boolean;
+  data?: SolicitudFacturacionApi;
+  error?: string;
+}
+
+export const useSolicitudFacturacionPorIdCotizacion = (
+  idCotizacion?: string | number,
+  opts?: {
+    endpoint?: string; // por defecto el PHP nuevo
+    token?: string;    // si no usas interceptor
+    enabled?: boolean;
+  }
+) => {
+  return useQuery<SolicitudFacturacion | null, AxiosError>({
+    queryKey: ["solicitud-facturacion", "por-id-cotizacion", idCotizacion],
+    enabled: (opts?.enabled ?? true) && !!idCotizacion,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
+      try {
+        const { data } = await api.get<GetSolicitudPorCotizacionResponse>(
+          opts?.endpoint ?? "/solicitar_estado_facturacion.php",
+          {
+            params: { id_cotizacion: idCotizacion },
+            headers: opts?.token
+              ? { Authorization: `Bearer ${opts.token}` }
+              : undefined,
+          }
+        );
+
+        if (!data?.success || !data.data) return null;
+
+        return normalizeSolicitud(data.data);
+      } catch (err) {
+        const e = err as AxiosError;
+        if (e.response?.status === 404) return null;
+        throw e;
+      }
     },
   });
 };

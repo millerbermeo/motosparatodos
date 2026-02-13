@@ -25,6 +25,8 @@ import { useLoaderStore } from '../../store/loader.store';
 import { useGarantiaExtByCotizacionId } from '../../services/garantiaExtServices';
 import { CotizacionDetalladaPDFDoc } from './CotizacionDetalladaPDFDoc';
 import { useEmpresaById } from '../../services/empresasServices';
+import { useSolicitudFacturacionPorIdCotizacion } from '../../services/solicitudServices';
+import { VehiculoCamposCollapse } from '../../shared/components/VehiculoCamposCollapse';
 
 const BaseUrl = import.meta.env.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
 
@@ -500,11 +502,20 @@ const DetalleCotizacion: React.FC = () => {
     payload?.id_empresa_a ??
     payload?.id_empresa_b;
 
-  console.log(rawIdEmpresa);
-
   const idEmpresa = Number(rawIdEmpresa);
 
   const { data: empresaSeleccionada, isLoading: loadingEmpresa } = useEmpresaById(idEmpresa);
+
+
+  const { data: solicitudFact } = useSolicitudFacturacionPorIdCotizacion(id, {
+    enabled: !!id, // 👈 clave
+  });
+
+  const facturaUrl = React.useMemo(() => {
+    const path = solicitudFact?.facturaPath; // 👈 ojo con el nombre real
+    if (!path) return null;
+    return buildImageUrl(path);
+  }, [solicitudFact?.facturaPath]);
 
   // Objeto que espera el PDF
   const empresaPDF = React.useMemo(() => {
@@ -633,6 +644,10 @@ const DetalleCotizacion: React.FC = () => {
       </main>
     );
   }
+
+const isFacturado = normalizeLower(q.estado).includes("facturado");
+const tipoVehiculo = (isCreditoPropio || isCreditoTerceros) ? (1 as const) : (2 as const);
+
 
   return (
     <main className="w-full.min-h-screen px-4 md:px-6 pb-6">
@@ -1142,9 +1157,31 @@ const DetalleCotizacion: React.FC = () => {
         </section>
       </div>
 
+{isFacturado && (
+  <VehiculoCamposCollapse
+    idCotizacion={id}
+    tipo={tipoVehiculo}
+    titulo={tipoVehiculo === 1 ? "Datos vehículo (Crédito)" : "Datos vehículo (Facturación)"}
+  />
+)}
+
       {/* Barra de acciones (inferior) – PDF detallado */}
       <section className="sticky bottom-0 mt-4 bg-base-100/90 backdrop-blur border-t border-base-300 px-4 py-3">
         <div className="max-w-full mx-auto flex flex-wrap items-center justify-end gap-2">
+
+          {facturaUrl && (
+  <button
+    type="button"
+    className="btn btn-info btn-sm"
+    onClick={() => window.open(facturaUrl, "_blank", "noopener,noreferrer")}
+    title="Ver factura"
+  >
+    <FileDown className="w-4 h-4" />
+    Ver factura
+  </button>
+)}
+
+
           {payload && (
             <PDFDownloadLink
               document={
