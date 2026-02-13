@@ -781,6 +781,9 @@ const DetallesFacturacion: React.FC = () => {
 
   // ===================== HANDLERS FACTURA =====================
 
+  const tieneManifiesto = !!manifiestoUrlFinal;
+
+
   const handleFacturaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
     setFacturaFile(file || null);
@@ -1175,15 +1178,17 @@ const DetallesFacturacion: React.FC = () => {
                       </div>
                     </div>
 
-                    <ManifiestoUploader
-                      idSolicitud={idSolicitud}
-                      idCotizacion={id_cotizacion}
-                      manifiestoUrlFinal={manifiestoUrlFinal}
-                      onUploaded={() => {
-                        // refresca para que ya aparezca el link y se oculte el uploader
-                        refetch();
-                      }}
-                    />
+                    
+{!tieneManifiesto && !!idSolicitud && (
+  <ManifiestoUploader
+    idSolicitud={idSolicitud}
+    idCotizacion={id_cotizacion}
+    manifiestoUrlFinal={manifiestoUrlFinal}
+    onUploaded={() => {
+      refetch();
+    }}
+  />
+)}
 
                     {/* Carga de factura: SOLO si aún NO hay factura */}
                     {!tieneFactura && (
