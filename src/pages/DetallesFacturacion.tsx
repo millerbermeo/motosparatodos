@@ -19,6 +19,7 @@ import Swal from "sweetalert2";
 import DescuentosContraentregaPanel from "../shared/components/DescuentosContraentregaPanel";
 import SolicitudFacturaPDF2 from "../features/creditos/pdf/SolicitudFacturaPDF2";
 import { useEmpresaById } from "../services/empresasServices";
+import ManifiestoUploader from "../shared/components/ManifiestoUploader";
 
 type Num = number | undefined | null;
 
@@ -1148,6 +1149,16 @@ const DetallesFacturacion: React.FC = () => {
 
                       </div>
                     </div>
+
+<ManifiestoUploader
+  idSolicitud={idSolicitud}
+  idCotizacion={id_cotizacion}
+  manifiestoUrlFinal={manifiestoUrlFinal}
+  onUploaded={() => {
+    // refresca para que ya aparezca el link y se oculte el uploader
+    refetch();
+  }}
+/>
 
                     {/* Carga de factura: SOLO si aún NO hay factura */}
                     {!tieneFactura && (

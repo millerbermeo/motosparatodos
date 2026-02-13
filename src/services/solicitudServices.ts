@@ -766,3 +766,58 @@ export const useSolicitudFacturacionPorIdCotizacion = (
     },
   });
 };
+
+export interface SubirManifiestoResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+  manifiesto_nuevo?: string; // opcional si tu backend lo devuelve
+}
+export const useSubirManifiestoSolicitud = (opts?: { endpoint?: string }) => {
+  const qc = useQueryClient();
+
+  return useMutation<SubirManifiestoResponse, AxiosError<ServerError>, FormData>({
+    mutationFn: async (fd) => {
+      const { data } = await api.post<SubirManifiestoResponse>(
+        opts?.endpoint ?? "/actualizar_manifiesto.php", // o actualizar_manifiesto.php
+        fd,
+        {
+          // ✅ IGUAL QUE TU FORM
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+      return data;
+    },
+
+    onSuccess: async (resp, fd) => {
+      const idCot = fd.get("id_cotizacion")?.toString();
+
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["solicitudes-facturacion"] }),
+        idCot
+          ? qc.invalidateQueries({
+              queryKey: ["solicitud-facturacion", "ultima-por-id-cotizacion", idCot],
+            })
+          : Promise.resolve(),
+      ]);
+
+      Swal.fire({
+        icon: "success",
+        title: "Manifiesto cargado",
+        text: resp?.message ?? "El manifiesto se cargó correctamente",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    },
+
+    onError: (error) => {
+      const raw =
+        (error.response?.data as any)?.message ??
+        (error.response?.data as any)?.error ??
+        "No se pudo subir el manifiesto";
+      const arr = Array.isArray(raw) ? raw : [raw];
+
+      Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
+    },
+  });
+};
