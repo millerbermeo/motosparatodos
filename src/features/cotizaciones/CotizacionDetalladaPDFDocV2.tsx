@@ -279,6 +279,27 @@ const styles = StyleSheet.create({
   /* FOOTER */
   footer: { fontSize: 7.6, color: "#6b7280", marginTop: 5, lineHeight: 1.2, textAlign: "center" },
   footerCenter: { fontSize: 7.6, color: "#374151", marginTop: 3, textAlign: "center" },
+
+    observacionesBox: {
+    marginTop: 6,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: BORDER,
+    backgroundColor: "#f3f4f6",
+    borderRadius: 4,
+    padding: 4,
+    minHeight: 75, // ≈ 2 cm
+  },
+  observacionesLabel: {
+    fontSize: 7.2,
+    fontWeight: "bold",
+    color: "#374151",
+    marginBottom: 2,
+  },
+  observacionesText: {
+    fontSize: 7.0,
+    color: "#111827",
+  },
 });
 
 const fmtCOP = (v: any) =>
@@ -483,6 +504,14 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
 
   const renderHabeasFirmasFooter = () => (
     <>
+
+        {/* Observaciones */}
+          <View style={styles.observacionesBox} wrap={false}>
+            <Text style={styles.observacionesLabel}>Observaciones</Text>
+    
+          </View>
+    
+
       <SectionTitle title="Autorización de habeas data y firmas" />
       <View style={styles.box} wrap={false}>
         <Text style={styles.habeasTitle}>Autorización de tratamiento de datos personales (Habeas Data)</Text>

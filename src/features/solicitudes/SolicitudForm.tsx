@@ -581,45 +581,55 @@ const SolicitudForm: React.FC = () => {
               </div>
             </div>
 
-            <div className={`p-4 md:p-6 ${grid}`}>
-              <FormInput
-                name="numeroChasis"
-                label="Número de chasis*"
-                control={control}
-                placeholder="Ingrese número de chasis"
-                rules={{ required: "Requerido" }}
-              />
-              <FormInput
-                name="numeroMotor"
-                label="Número de motor*"
-                control={control}
-                placeholder="Ingrese número de motor"
-                rules={{ required: "Requerido" }}
-              />
-              <FormInput
-                name="color"
-                label="Color"
-                control={control}
-                placeholder="Ingrese color"
-                rules={{
-                  pattern: { value: soloLetras, message: "Solo letras y espacios" },
-                }}
-              />
-              <FormInput
-                name="placa"
-                label="Placa"
-                control={control}
-                placeholder="Ingrese placa"
-                rules={{
-                  required: "Requerido",
-                  pattern: {
-                    value: placaRegex, // /^[A-Z0-9]{6}$/
-                    message: "Debe tener exactamente 6 caracteres (letras y números en mayúscula)",
-                  },
-                }}
-              />
+  <div className={`p-4 md:p-6 ${grid}`}>
+  {/* OPCIONAL */}
+  <FormInput
+    name="numeroChasis"
+    label="Número de chasis"
+    control={control}
+    placeholder="Ingrese número de chasis"
+  />
 
-            </div>
+  {/* OPCIONAL */}
+  <FormInput
+    name="numeroMotor"
+    label="Número de motor"
+    control={control}
+    placeholder="Ingrese número de motor"
+  />
+
+  {/* OBLIGATORIO */}
+  <FormInput
+    name="color"
+    label="Color*"
+    control={control}
+    placeholder="Ingrese color"
+    rules={{
+      required: "Requerido",
+      pattern: { value: soloLetras, message: "Solo letras y espacios" },
+    }}
+  />
+
+ {/* OPCIONAL, PERO VALIDADO SI HAY TEXTO */}
+  <FormInput
+    name="placa"
+    label="Placa"
+    control={control}
+    placeholder="Ingrese placa"
+    rules={{
+      validate: (value) => {
+        const v = String(value ?? "").trim();
+        if (!v) return true; // opcional
+        return (
+          placaRegex.test(v) ||
+          "Debe tener exactamente 6 caracteres (letras y números en mayúscula)"
+        );
+      },
+    }}
+  />
+  
+</div>
+
           </section>
 
           {/* ================== Acciones ================== */}

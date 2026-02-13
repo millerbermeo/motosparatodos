@@ -142,6 +142,7 @@ const tipoReferenciaOptions: SelectOption[] = [
 ];
 
 const fincaRaizOptions: SelectOption[] = [
+  { value: "No", label: "No" },
   { value: "Casa", label: "Casa" },
   { value: "Apartamento", label: "Apartamento" },
   { value: "Lote", label: "Lote" },
@@ -683,7 +684,6 @@ const InfoPersonalFormulario: React.FC = () => {
             label="Finca raíz*"
             control={control}
             options={fincaRaizOptions}
-            rules={{ required: "Requerido" }}
           />
         </div>
       </section>

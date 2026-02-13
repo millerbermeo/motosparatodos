@@ -10,6 +10,9 @@ type Docs = {
   cedula_url?: string | null;
   factura_url?: string | null;
   carta_url?: string | null;
+
+  // ✅ NUEVO: otros documentos (varios)
+  otros_documentos?: (string | null | undefined)[] | null;
 };
 
 type Props = {
@@ -21,10 +24,8 @@ type Props = {
   onVolver?: () => void;
   onAprobado?: (id: string | number) => void; // callback opcional
   estadoCotizacion?: string; // 👈 NUEVO: estado actual de la cotización
-    finalizado?: number | boolean | string; // 👈 NUEVO
-      tiene_factura?: boolean; // 👈 NUEVO
-
-
+  finalizado?: number | boolean | string; // 👈 NUEVO
+  tiene_factura?: boolean; // 👈 NUEVO
 };
 
 // Backend base (env o fallback fijo)
@@ -51,10 +52,8 @@ const DocumentosSolicitud: React.FC<Props> = ({
   onVolver,
   onAprobado,
   estadoCotizacion,
-    finalizado, // 👈 NUEVO
-    tiene_factura
-    
-
+  finalizado, // 👈 NUEVO
+  tiene_factura,
 }) => {
   const open = useModalStore((s) => s.open);
 
@@ -64,11 +63,8 @@ const DocumentosSolicitud: React.FC<Props> = ({
     window.open(finalUrl, "_blank", "noopener,noreferrer");
   };
 
-
-    const estaFinalizado =
-    finalizado === 1 ||
-    finalizado === "1" ||
-    finalizado === true; // 👈 lo convertimos a booleano
+  const estaFinalizado =
+    finalizado === 1 || finalizado === "1" || finalizado === true;
 
   // ✅ Nuevo flujo:
   // 1) Clic en "Aceptar" -> abre modal global con el formulario del acta
@@ -87,18 +83,18 @@ const DocumentosSolicitud: React.FC<Props> = ({
       { size: "5xl", position: "center" }
     );
   };
-  console.log(estadoCotizacion)
 
-  // 👇 Si la cotización está en "Facturado", NO mostramos el botón Aceptar
-  // const isFacturado =
-  //   estadoCotizacion &&
-  //   estadoCotizacion.toString().toLowerCase() === "facturado";
+  console.log(estadoCotizacion);
 
   // 👇 Solo mostramos el botón si NO está facturado y NO está finalizado
   const puedeMostrarEntrega = !!tiene_factura && !estaFinalizado;
 
   console.log({ tiene_factura });
 
+  // ✅ NUEVO: lista limpia de otros docs
+  const otrosDocs = (docs.otros_documentos ?? [])
+    .filter(Boolean)
+    .map(String);
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
@@ -108,7 +104,7 @@ const DocumentosSolicitud: React.FC<Props> = ({
         </h3>
       </div>
 
-        <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-3 gap-4">
         <DownloadButton
           label="Descargar manifiesto"
           onClick={() => abrir(docs.manifiesto_url)}
@@ -137,6 +133,34 @@ const DocumentosSolicitud: React.FC<Props> = ({
           disabled={loading || !docs.factura_url}
           hint={!docs.factura_url ? "Falta la factura" : undefined}
         />
+
+        {/* ✅ NUEVO: Otros documentos (varios) */}
+        {otrosDocs.length > 0 ? (
+          otrosDocs.map((u, idx) => (
+            <DownloadButton
+              key={`${u}-${idx}`}
+              label={`Descargar otro documento #${idx + 1}`}
+              onClick={() => abrir(u)}
+              disabled={loading}
+            />
+          ))
+        ) : (
+          <div className="flex flex-col gap-1">
+            <button
+              type="button"
+              className="w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2
+                         bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
+              disabled
+              title="Otros documentos"
+            >
+              <FileDown className="w-4 h-4" />
+              Otros documentos
+            </button>
+            <span className="text-xs text-slate-500 text-center">
+              No disponibles
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="px-6 py-4 flex items-center justify-between border-t border-slate-200 bg-slate-50">
@@ -150,7 +174,6 @@ const DocumentosSolicitud: React.FC<Props> = ({
           ← Volver
         </button>
 
-        {/* Solo mostramos "Aceptar" si NO está facturado */}
         {puedeMostrarEntrega && (
           <button
             type="button"

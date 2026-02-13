@@ -297,13 +297,35 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
 
-  firmaRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 35},
+  firmaRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 35 },
   firmaBox: { width: "45%", borderTopWidth: 1, borderTopColor: "#111827", paddingTop: 3 },
   firmaLabel: { fontSize: 7.4, color: "#111827" },
 
   /* FOOTER */
   footer: { fontSize: 6.6, color: "#6b7280", marginTop: 3, lineHeight: 1.1, textAlign: "center" },
   footerCenter: { fontSize: 6.6, color: "#374151", marginTop: 2, textAlign: "center" },
+
+  observacionesBox: {
+    marginTop: 6,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: BORDER,
+    backgroundColor: "#f3f4f6",
+    borderRadius: 4,
+    padding: 4,
+    minHeight: 75, // ≈ 2 cm
+  },
+  observacionesLabel: {
+    fontSize: 7.2,
+    fontWeight: "bold",
+    color: "#374151",
+    marginBottom: 2,
+  },
+  observacionesText: {
+    fontSize: 7.0,
+    color: "#111827",
+  },
+
 });
 
 const fmtCOP = (v: any) =>
@@ -694,6 +716,12 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
 
   const renderHabeasFirmasFooter = () => (
     <>
+      {/* Observaciones */}
+      <View style={styles.observacionesBox} wrap={false}>
+        <Text style={styles.observacionesLabel}>Observaciones</Text>
+
+      </View>
+
       <SectionTitle title="Autorización de habeas data y firmas" />
       <View style={styles.box} wrap={false}>
         <Text style={styles.habeasTitle}>Autorización de tratamiento de datos personales (Habeas Data)</Text>
@@ -749,7 +777,9 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
         <View style={styles.resumenCol}>
           <Text style={styles.resumenHeader}>Cliente</Text>
           <Text style={styles.resumenLine}>{safe(nombreCompletoCliente)}</Text>
-          <Text style={styles.resumenLine}>CC: {safe(d.cedula)} · Cel: {safe(d.celular)}</Text>
+          <Text style={styles.resumenLine}>CC: {safe(d.cedula)}</Text>
+          <Text style={styles.resumenLine}>Cel: {safe(d.celular)}</Text>
+
           <Text style={styles.resumenLine}>Email: {safe(d.email)}</Text>
         </View>
 

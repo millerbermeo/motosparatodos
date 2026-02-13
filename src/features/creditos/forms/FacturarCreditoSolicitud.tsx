@@ -10,6 +10,17 @@ import { useDistribuidoras } from '../../../services/distribuidoraServices'; // 
 import FacturaFinalDownload from '../pdf/FacturaFinal';
 import ButtonLink from '../../../shared/components/ButtonLink';
 
+const fmtSize = (bytes: number) => {
+  if (!Number.isFinite(bytes)) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(1)} KB`;
+  const mb = kb / 1024;
+  return `${mb.toFixed(1)} MB`;
+};
+
+const isImage = (file: File) => file.type.startsWith('image/');
+
 type MaybeNum = number | undefined | null;
 
 const fmtCOP = (v?: MaybeNum) =>
@@ -67,11 +78,8 @@ const FacturarCreditoSolicitud: React.FC = () => {
   const codigo_credito = String(codigoFromUrl ?? '');
 
   // NUEVO ENDPOINT: Única fuente de verdad
-  const {
-    data: SolicitudFacturacion,
-    isLoading,
-    error,
-  } = useUltimaSolicitudYCotizacion(codigo_credito);
+  const { data: SolicitudFacturacion, isLoading, error } =
+    useUltimaSolicitudYCotizacion(codigo_credito);
 
   // 👇 Cargamos distribuidoras desde backend (hasta 200; ajusta si necesitas más)
   const { data: distsResp, isLoading: loadingDists } = useDistribuidoras({
@@ -108,6 +116,9 @@ const FacturarCreditoSolicitud: React.FC = () => {
   const clienteTelefono = safeStr(cotizacion?.celular);
   const clienteCorreo = safeStr(cotizacion?.email);
 
+  // 👇 NUEVO: otros docs múltiples
+  const [otrosDocs, setOtrosDocs] = useState<File[]>([]);
+
   // Moto (desde COTIZACIÓN)
   const motoNombre = [safeStr(cotizacion?.marca_a), safeStr(cotizacion?.linea_a)]
     .filter(Boolean)
@@ -141,7 +152,12 @@ const FacturarCreditoSolicitud: React.FC = () => {
       : undefined;
 
   // Lista de seguros (viene como string JSON)
-  type SeguroItem = { id: number; nombre: string; tipo: string | null; valor: number };
+  type SeguroItem = {
+    id: number;
+    nombre: string;
+    tipo: string | null;
+    valor: number;
+  };
   const segurosLista: SeguroItem[] = parseJSON<SeguroItem[]>(
     cotizacion?.seguros_a,
     []
@@ -157,7 +173,11 @@ const FacturarCreditoSolicitud: React.FC = () => {
 
   // Bruto + IVA de la moto (asumiendo 19%)
   const { valorBruto, ivaCalc } = useMemo(() => {
-    if (typeof valorMoto === 'number' && Number.isFinite(valorMoto) && valorMoto > 0) {
+    if (
+      typeof valorMoto === 'number' &&
+      Number.isFinite(valorMoto) &&
+      valorMoto > 0
+    ) {
       const bruto = Math.round(valorMoto / 1.19);
       const iva = Math.max(valorMoto - bruto, 0);
       return { valorBruto: bruto, ivaCalc: iva };
@@ -218,7 +238,8 @@ const FacturarCreditoSolicitud: React.FC = () => {
   }, [valorMoto, soat, matricula, impuestos, accesoriosYSeguros]);
 
   // Metadatos
-  const fechaCreacion = safeStr(cotizacion?.fecha_creacion) || safeStr(solicitud?.fechaCreacion);
+  const fechaCreacion =
+    safeStr(cotizacion?.fecha_creacion) || safeStr(solicitud?.fechaCreacion);
   const asesor = safeStr(cotizacion?.asesor) || '—';
   const numeroSolicitud = cotizacion?.id || codigo_credito;
 
@@ -239,9 +260,7 @@ const FacturarCreditoSolicitud: React.FC = () => {
 
   // Nombre del usuario logueado (ajusta a tu auth real)
   const loggedUserName =
-    (window as any)?.auth?.user?.name ||
-    (window as any)?.user?.name ||
-    'Usuario';
+    (window as any)?.auth?.user?.name || (window as any)?.user?.name || 'Usuario';
 
   const { mutate: registrarSolicitud, isPending } = useRegistrarSolicitudFacturacion();
 
@@ -253,9 +272,9 @@ const FacturarCreditoSolicitud: React.FC = () => {
 
   // 1) Normaliza el catálogo a tu misma forma { value, label }
   const DISTRIBUIDORAS = useMemo(() => {
-    const items = (distsResp?.data ?? []).map((d) => ({
+    const items = (distsResp?.data ?? []).map((d: any) => ({
       value: slugify(d.nombre), // mantiene "value" como slug
-      label: d.nombre,          // muestra el nombre real
+      label: d.nombre, // muestra el nombre real
     }));
     // si quieres fallback a unos estáticos cuando no llegue nada, puedes agregar aquí
     return PLACEHOLDER_OPTION.concat(items);
@@ -264,7 +283,7 @@ const FacturarCreditoSolicitud: React.FC = () => {
   // 2) Mapa slug → id (para armar distribuidora_id en el submit)
   const distSlugToId = useMemo(() => {
     const map = new Map<string, number>();
-    (distsResp?.data ?? []).forEach((d) => map.set(slugify(d.nombre), d.id));
+    (distsResp?.data ?? []).forEach((d: any) => map.set(slugify(d.nombre), d.id));
     return map;
   }, [distsResp]);
 
@@ -293,7 +312,7 @@ const FacturarCreditoSolicitud: React.FC = () => {
 
       const fd = new FormData();
       fd.append('agencia', agenciaRandom);
-      fd.append('distribuidora', selectedLabel);         // 👈 nombre para backend
+      fd.append('distribuidora', selectedLabel); // 👈 nombre para backend
       fd.append('distribuidora_id', String(selectedId)); // 👈 ID real desde BD
       fd.append('codigo_solicitud', codigo4);
       fd.append('codigo_credito', codigo_credito);
@@ -310,6 +329,11 @@ const FacturarCreditoSolicitud: React.FC = () => {
       if (cedulaFile) fd.append('cedula', cedulaFile);
       if (manifiestoFile) fd.append('manifiesto', manifiestoFile);
 
+      // ✅ NUEVO: adjuntar múltiples documentos
+      otrosDocs.forEach((file) => {
+        fd.append('otros_documentos', file);
+      });
+
       submitFormData(fd);
     },
     [
@@ -320,6 +344,7 @@ const FacturarCreditoSolicitud: React.FC = () => {
       observaciones,
       cedulaFile,
       manifiestoFile,
+      otrosDocs,
       codigo_credito,
       clienteNombre,
       loggedUserName,
@@ -328,8 +353,7 @@ const FacturarCreditoSolicitud: React.FC = () => {
   );
 
   const BaseUrl =
-    import.meta.env.VITE_API_URL ??
-    'https://tuclick.vozipcolombia.net.co/motos/back';
+    import.meta.env.VITE_API_URL ?? 'https://tuclick.vozipcolombia.net.co/motos/back';
 
   return (
     <main className="min-h-screen w-full bg-slate-50">
@@ -449,7 +473,9 @@ const FacturarCreditoSolicitud: React.FC = () => {
               <RowRight
                 label="Valor bruto:"
                 value={fmtOptCOP(
-                  accesoriosYSeguros ? Math.round((accesoriosYSeguros as number) / 1.19) : undefined
+                  accesoriosYSeguros
+                    ? Math.round((accesoriosYSeguros as number) / 1.19)
+                    : undefined
                 )}
               />
               <RowRight
@@ -472,7 +498,8 @@ const FacturarCreditoSolicitud: React.FC = () => {
                   {segurosLista.map((s) => (
                     <li key={`${s.id}-${s.nombre}-${s.tipo}`}>
                       {s.nombre}
-                      {s.tipo ? ` — ${s.tipo}` : ''}: <span className="font-medium">{fmtCOP(s.valor)}</span>
+                      {s.tipo ? ` — ${s.tipo}` : ''}:{' '}
+                      <span className="font-medium">{fmtCOP(s.valor)}</span>
                     </li>
                   ))}
                 </ul>
@@ -506,13 +533,20 @@ const FacturarCreditoSolicitud: React.FC = () => {
           <h3 className="font-semibold text-slate-900 mb-4">Observaciones</h3>
           <ul className="list-disc pl-6 text-sm leading-7 text-slate-700 space-y-1">
             <li>
-              Tipo de pago: <span className="font-semibold text-slate-900">{safeStr(cotizacion?.tipo_pago) || 'Contado'}</span>
+              Tipo de pago:{' '}
+              <span className="font-semibold text-slate-900">
+                {safeStr(cotizacion?.tipo_pago) || 'Contado'}
+              </span>
             </li>
             <li>
-              Saldo a financiar: <span className="font-semibold text-slate-900">{fmtOptCOP(saldoFinanciar)}</span>
+              Saldo a financiar:{' '}
+              <span className="font-semibold text-slate-900">{fmtOptCOP(saldoFinanciar)}</span>
             </li>
             <li>
-              Estado cotización: <span className="font-semibold text-slate-900">{safeStr(cotizacion?.estado)}</span>
+              Estado cotización:{' '}
+              <span className="font-semibold text-slate-900">
+                {safeStr(cotizacion?.estado)}
+              </span>
             </li>
           </ul>
         </section>
@@ -526,9 +560,7 @@ const FacturarCreditoSolicitud: React.FC = () => {
 
             <form className="grid grid-cols-1 md:grid-cols-2 gap-5" onSubmit={handleSubmit}>
               <div className="flex flex-col gap-1">
-                <label className="text-sm text-slate-600">
-                  Distribuidora
-                </label>
+                <label className="text-sm text-slate-600">Distribuidora</label>
                 <select
                   className="select select-bordered w-full focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500"
                   value={distribuidora}
@@ -572,19 +604,117 @@ const FacturarCreditoSolicitud: React.FC = () => {
                   onChange={(e) => setCedulaFile(e.target.files?.[0] ?? null)}
                   required
                 />
+
+                {/* ✅ Vista pequeña + quitar cédula */}
+                {cedulaFile && (
+                  <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-slate-800 truncate">
+                        {cedulaFile.name}
+                      </p>
+                      <p className="text-[11px] text-slate-500">{fmtSize(cedulaFile.size)}</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-ghost"
+                      onClick={() => setCedulaFile(null)}
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-sm text-slate-600">
-                  Manifiesto <span className="text-rose-600">*</span>
-                </label>
+                <label className="text-sm text-slate-600">Manifiesto</label>
                 <input
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                   className="file-input file-input-bordered w-full"
                   onChange={(e) => setManifiestoFile(e.target.files?.[0] ?? null)}
-                  required
                 />
+
+                {/* ✅ Vista pequeña + quitar manifiesto */}
+                {manifiestoFile && (
+                  <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-slate-800 truncate">
+                        {manifiestoFile.name}
+                      </p>
+                      <p className="text-[11px] text-slate-500">{fmtSize(manifiestoFile.size)}</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-ghost"
+                      onClick={() => setManifiestoFile(null)}
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* ✅ NUEVO: Otros documentos (múltiples) + vista pequeña + quitar */}
+              <div className="md:col-span-2 flex flex-col gap-1">
+                <label className="text-sm text-slate-600">
+                  Otros documentos <span className="text-slate-400">(opcional)</span>
+                </label>
+
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  className="file-input file-input-bordered w-full"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files ?? []);
+                    if (files.length) {
+                      setOtrosDocs((prev) => [...prev, ...files]); // 👈 acumula (no borra)
+                    }
+                    // permite volver a seleccionar el mismo archivo
+                    (e.target as HTMLInputElement).value = '';
+                  }}
+                />
+
+                {otrosDocs.length > 0 && (
+                  <div className="mt-2 space-y-2">
+                    {otrosDocs.map((f, i) => (
+                      <div
+                        key={`${f.name}-${i}`}
+                        className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          {isImage(f) ? (
+                            <img
+                              src={URL.createObjectURL(f)}
+                              alt={f.name}
+                              className="h-8 w-8 rounded object-cover border border-slate-200"
+                              onLoad={(ev) =>
+                                URL.revokeObjectURL((ev.target as HTMLImageElement).src)
+                              }
+                            />
+                          ) : (
+                            <div className="h-8 w-8 rounded border border-slate-200 bg-white flex items-center justify-center text-[10px] text-slate-500">
+                              DOC
+                            </div>
+                          )}
+
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium text-slate-800 truncate">{f.name}</p>
+                            <p className="text-[11px] text-slate-500">{fmtSize(f.size)}</p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          className="btn btn-xs btn-ghost"
+                          onClick={() => setOtrosDocs((prev) => prev.filter((_, idx) => idx !== i))}
+                        >
+                          Quitar
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="md:col-span-2 flex flex-col gap-1">
@@ -656,21 +786,27 @@ const FacturarCreditoSolicitud: React.FC = () => {
                   <KV k="Recibo pago" v={solicitud?.numeroRecibo} />
                   <KV
                     k="Autorizado"
-                    v={<span className={estadoBadge(solicitud?.autorizado).clase}>
-                      {estadoBadge(solicitud?.autorizado).texto}
-                    </span>}
+                    v={
+                      <span className={estadoBadge(solicitud?.autorizado).clase}>
+                        {estadoBadge(solicitud?.autorizado).texto}
+                      </span>
+                    }
                   />
                   <KV
                     k="Facturado"
-                    v={<span className={estadoBadge(solicitud?.facturado).clase}>
-                      {estadoBadge(solicitud?.facturado).texto}
-                    </span>}
+                    v={
+                      <span className={estadoBadge(solicitud?.facturado).clase}>
+                        {estadoBadge(solicitud?.facturado).texto}
+                      </span>
+                    }
                   />
                   <KV
                     k="Entrega autorizada"
-                    v={<span className={estadoBadge(solicitud?.entregaAutorizada).clase}>
-                      {estadoBadge(solicitud?.entregaAutorizada).texto}
-                    </span>}
+                    v={
+                      <span className={estadoBadge(solicitud?.entregaAutorizada).clase}>
+                        {estadoBadge(solicitud?.entregaAutorizada).texto}
+                      </span>
+                    }
                   />
                   <KV k="Creado" v={solicitud?.fechaCreacion} />
                   <KV k="Actualizado" v={solicitud?.actualizado} />
@@ -762,12 +898,12 @@ const FacturarCreditoSolicitud: React.FC = () => {
 };
 
 /** Helpers visuales */
-const RowRight: React.FC<{ label: string; value?: string; bold?: boolean; badge?: string }> = ({
-  label,
-  value = '',
-  bold,
-  badge = '',
-}) => (
+const RowRight: React.FC<{
+  label: string;
+  value?: string;
+  bold?: boolean;
+  badge?: string;
+}> = ({ label, value = '', bold, badge = '' }) => (
   <div className="px-5 py-3 grid grid-cols-12 items-center text-sm">
     <div className="col-span-8 sm:col-span-10 text-slate-700">{label}</div>
     <div

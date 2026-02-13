@@ -1236,7 +1236,7 @@ const CotizacionFormulario: React.FC = () => {
     // (pero con showMotos es suficiente: si estás en motos, se muestra)
 
     React.useEffect(() => {
-        if (metodo === "contado") {
+  if (metodo === "contado" || metodo === "terceros") {
             // En contado no usamos meses (12/24/36)
             setValue("gps1", "no");
             setValue("gps2", "no");
@@ -1618,8 +1618,8 @@ const CotizacionFormulario: React.FC = () => {
                                         message: "La cantidad mínima es 1 cuota",
                                     },
                                     max: {
-                                        value: 40,
-                                        message: "La cantidad máxima es 40 cuotas",
+                                        value: 100,
+                                        message: "La cantidad máxima es 100 cuotas",
                                     },
                                     validate: (value) =>
                                         Number.isInteger(Number(value)) || "Solo se permiten números enteros",
@@ -1827,7 +1827,7 @@ const CotizacionFormulario: React.FC = () => {
 
 
 
-                                            {metodo === "contado" ? (
+                                            {metodo === "contado" || metodo === "terceros" ? (
                                                 <>
                                                     <FormSelect<FormValues>
                                                         name="gpsContado1"
@@ -2468,7 +2468,7 @@ const CotizacionFormulario: React.FC = () => {
                                                 </>
                                             )}
 
-                                            {metodo === "contado" ? (
+                                            {metodo === "contado" || metodo === "terceros" ? (
                                                 <>
                                                     <FormSelect<FormValues>
                                                         name="gpsContado2"

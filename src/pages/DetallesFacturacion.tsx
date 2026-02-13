@@ -302,7 +302,7 @@ const DetallesFacturacion: React.FC = () => {
   const user = useAuthStore((s) => s.user);
 
 
-    // ===================== EMPRESA (igual que en DetalleCotizacion) =====================
+  // ===================== EMPRESA (igual que en DetalleCotizacion) =====================
   const rawIdEmpresa =
     cot?.id_empresa_a ??
     cot?.id_empresa_b ??
@@ -428,20 +428,20 @@ const DetallesFacturacion: React.FC = () => {
       : undefined;
 
 
-      const finalizadoActaRaw =
-  (sol as any)?.is_final_acta ??
-  (sol as any)?.is_final ??
-  (ultimaSolRegistro as any)?.is_final_acta ??
-  (ultimaSolRegistro as any)?.is_final ??
-  0;
+  const finalizadoActaRaw =
+    (sol as any)?.is_final_acta ??
+    (sol as any)?.is_final ??
+    (ultimaSolRegistro as any)?.is_final_acta ??
+    (ultimaSolRegistro as any)?.is_final ??
+    0;
 
-console.log("DEBUG finalizadoActaRaw", {
-  sol_is_final_acta: (sol as any)?.is_final_acta,
-  sol_is_final: (sol as any)?.is_final,
-  ultima_is_final_acta: (ultimaSolRegistro as any)?.is_final_acta,
-  ultima_is_final: (ultimaSolRegistro as any)?.is_final,
-  finalizadoActaRaw,
-});
+  console.log("DEBUG finalizadoActaRaw", {
+    sol_is_final_acta: (sol as any)?.is_final_acta,
+    sol_is_final: (sol as any)?.is_final,
+    ultima_is_final_acta: (ultimaSolRegistro as any)?.is_final_acta,
+    ultima_is_final: (ultimaSolRegistro as any)?.is_final,
+    finalizadoActaRaw,
+  });
 
   const isFinalAutorizacion: boolean = (() => {
     if (!ultimaSolRegistro) return false;
@@ -716,6 +716,42 @@ console.log("DEBUG finalizadoActaRaw", {
 
   const cartaPathUlt: string | null =
     (ultimaSolRegistro && ultimaSolRegistro.carta) ?? null;
+
+
+  // ===== NUEVO: otros_documentos (vienen como JSON en TEXT) =====
+  const otrosDocsRaw: any =
+    (ultimaSolRegistro && (ultimaSolRegistro.otros_documentos_rutas ?? ultimaSolRegistro.otros_documentos)) ??
+    (sol as any)?.otros_documentos_rutas ??
+    (sol as any)?.otros_documentos ??
+    null;
+
+  const otrosDocsPaths: string[] = useMemo(() => {
+    if (!otrosDocsRaw) return [];
+    if (Array.isArray(otrosDocsRaw)) return otrosDocsRaw.filter(Boolean).map(String);
+
+    if (typeof otrosDocsRaw === "string") {
+      const t = otrosDocsRaw.trim();
+      if (!t) return [];
+      try {
+        const parsed = JSON.parse(t);
+        if (Array.isArray(parsed)) return parsed.filter(Boolean).map(String);
+        // si no es array, lo tratamos como 1 solo path
+        return [t];
+      } catch {
+        // si NO es JSON válido, tratamos como path único
+        return [t];
+      }
+    }
+
+    return [];
+  }, [otrosDocsRaw]);
+
+  const otrosDocsUrls: string[] = useMemo(() => {
+    return otrosDocsPaths
+      .map((p) => buildUrlFromBase(p))
+      .filter((u): u is string => !!u);
+  }, [otrosDocsPaths]);
+
 
   const cedulaUrlFinal =
     buildUrlFromBase(cedulaPathUlt) || buildUrlFromBase(cedula_url);
@@ -1066,6 +1102,26 @@ console.log("DEBUG finalizadoActaRaw", {
                           {manifiestoUrlFinal ? "" : "(no disponible)"}
                         </a>
 
+                        {/* ✅ NUEVO: Otros documentos (pueden ser varios) */}
+                        {otrosDocsUrls.length > 0 ? (
+                          otrosDocsUrls.map((url, idx) => (
+                            <a
+                              key={url}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-xs border bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+                            >
+                              Otro documento #{idx + 1}
+                            </a>
+                          ))
+                        ) : (
+                          <span className="text-xs text-slate-400">
+                            Otros documentos (no disponibles)
+                          </span>
+                        )}
+
+
                         {/* Factura: mostramos botón solo si existe */}
                         {facturaUrlFinal && (
                           <a
@@ -1189,18 +1245,20 @@ console.log("DEBUG finalizadoActaRaw", {
               <DocumentosSolicitud
                 id_factura={Number(id_cotizacion)}
                 id={id_cotizacion}
-                    tiene_factura={tieneFactura} // 👈 NUEVO
+                tiene_factura={tieneFactura} // 👈 NUEVO
 
                 docs={{
                   manifiesto_url: manifiestoUrlFinal,
                   cedula_url: cedulaUrlFinal,
                   factura_url: facturaUrlFinal,
                   carta_url: cartaUrlFinal,
+                  otros_documentos: otrosDocsUrls,
+
                 }}
                 onVolver={() => {
                   volverAtras();
                 }}
-  finalizado={finalizadoActaRaw}   // 👈 AQUÍ EL CAMBIO
+                finalizado={finalizadoActaRaw}   // 👈 AQUÍ EL CAMBIO
                 estadoCotizacion={estadoCotizacion}
                 onAprobado={() => {
                   if (!tieneFactura) {
@@ -1230,82 +1288,82 @@ console.log("DEBUG finalizadoActaRaw", {
                   Ver acta de entrega
                 </Link>
 
-              <PDFDownloadLink
-  fileName={`solicitud_factura_${codigoSolicitud}.pdf`}
-  document={
-    <SolicitudFacturaPDF2
-      // 👇 NUEVO: empresa + logo dinámico
-      empresa={empresaPDF}
-      logoDataUrl={logoUrl}
+                <PDFDownloadLink
+                  fileName={`solicitud_factura_${codigoSolicitud}.pdf`}
+                  document={
+                    <SolicitudFacturaPDF2
+                      // 👇 NUEVO: empresa + logo dinámico
+                      empresa={empresaPDF}
+                      logoDataUrl={logoUrl}
 
-      // ENCABEZADO
-      codigoFactura={codigoSolicitud || ""}
-      codigoCredito={cred?.codigo_credito ?? ""}
-      fecha={fmtDate(fechaCreacion)}
-      agencia={cot?.canal_contacto ?? ""}
+                      // ENCABEZADO
+                      codigoFactura={codigoSolicitud || ""}
+                      codigoCredito={cred?.codigo_credito ?? ""}
+                      fecha={fmtDate(fechaCreacion)}
+                      agencia={cot?.canal_contacto ?? ""}
 
-      // DEUDOR
-      cedula={clienteDocumento || ""}
-      nombre={clienteNombre || ""}
-      telefono={clienteTelefono || ""}
-      direccion={
-        cot?.direccion_residencia ??
-        sol?.direccion_residencia ??
-        ""
-      }
+                      // DEUDOR
+                      cedula={clienteDocumento || ""}
+                      nombre={clienteNombre || ""}
+                      telefono={clienteTelefono || ""}
+                      direccion={
+                        cot?.direccion_residencia ??
+                        sol?.direccion_residencia ??
+                        ""
+                      }
 
-      // DETALLE DE LA VENTA
-      reciboPago={
-        numeroReciboSolicitud ??
-        (cot as any)?.numero_recibo ??
-        ""
-      }
-      motocicleta={marcaLinea || ""}
-      modelo={
-        pick<string>(
-          sol?.modelo,
-          (pickMotoField("modelo") as string | undefined),
-          cot?.modelo_a
-        ) ?? ""
-      }
-      numeroMotor={numeroMotor || ""}
-      numeroChasis={numeroChasis || ""}
-      color={color || ""}
+                      // DETALLE DE LA VENTA
+                      reciboPago={
+                        numeroReciboSolicitud ??
+                        (cot as any)?.numero_recibo ??
+                        ""
+                      }
+                      motocicleta={marcaLinea || ""}
+                      modelo={
+                        pick<string>(
+                          sol?.modelo,
+                          (pickMotoField("modelo") as string | undefined),
+                          cot?.modelo_a
+                        ) ?? ""
+                      }
+                      numeroMotor={numeroMotor || ""}
+                      numeroChasis={numeroChasis || ""}
+                      color={color || ""}
 
-      // CONDICIONES DEL NEGOCIO
-      cn_valor_moto={cn_total}
-      cn_descuento={0}
-      cn_desc_auto={0}
-      cn_valorMotoDesc={cn_total}
-      cn_valorBruto={cn_bruto}
-      cn_iva={cn_iva}
-      cn_total={cn_total}
+                      // CONDICIONES DEL NEGOCIO
+                      cn_valor_moto={cn_total}
+                      cn_descuento={0}
+                      cn_desc_auto={0}
+                      cn_valorMotoDesc={cn_total}
+                      cn_valorBruto={cn_bruto}
+                      cn_iva={cn_iva}
+                      cn_total={cn_total}
 
-      // DOCUMENTOS
-      soat={soat}
-      matricula={matricula}
-      impuestos={impuestos}
+                      // DOCUMENTOS
+                      soat={soat}
+                      matricula={matricula}
+                      impuestos={impuestos}
 
-      // ACCESORIOS / SEGUROS
-      accesorios_bruto={accesorios_bruto}
-      accesorios_iva={acc_iva_accesorios}
-      accesorios_total={accesorios_total}
-      seguros_total={seguros_total}
+                      // ACCESORIOS / SEGUROS
+                      accesorios_bruto={accesorios_bruto}
+                      accesorios_iva={acc_iva_accesorios}
+                      accesorios_total={accesorios_total}
+                      seguros_total={seguros_total}
 
-      // TOTAL GENERAL
-      totalGeneral={totalGeneral}
-    />
-  }
->
-  {({ loading }) => (
-    <button
-      className="btn btn-sm bg-sky-600 hover:bg-sky-700 text-white border-sky-600"
-      disabled={loading || loadingEmpresa} // opcional, para esperar empresa
-    >
-      {loading ? "Generando…" : "Descargar PDF"}
-    </button>
-  )}
-</PDFDownloadLink>
+                      // TOTAL GENERAL
+                      totalGeneral={totalGeneral}
+                    />
+                  }
+                >
+                  {({ loading }) => (
+                    <button
+                      className="btn btn-sm bg-sky-600 hover:bg-sky-700 text-white border-sky-600"
+                      disabled={loading || loadingEmpresa} // opcional, para esperar empresa
+                    >
+                      {loading ? "Generando…" : "Descargar PDF"}
+                    </button>
+                  )}
+                </PDFDownloadLink>
 
               </div>
             </section>
