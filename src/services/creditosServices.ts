@@ -462,6 +462,10 @@ export interface CreditoLine {
   soportes?: any;
   formato_referencia?: any;
   formato_datacredito: any;
+
+  color?: string | null;
+  capacidad?: string | null;
+  
 }
 
 

@@ -5,23 +5,21 @@ import { FormInput } from "../../../shared/components/FormInput";
 import { useCerrarCredito } from "../../../services/creditosServices";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
-
 export type CerrarCreditoValues = {
   cerrar_credito: boolean;
   color: string;
-  capacidad: string;     // Ej: "125 c.c."
+  capacidad: string;
   numero_motor: string;
   numero_chasis: string;
   placa: string;
 };
 
-
 type Props = {
   codigo_credito: string | number;
-  id_cotizacion: string | number;   // 👈 agregamos esta prop
+  id_cotizacion: string | number;
+  initialValues?: Partial<Omit<CerrarCreditoValues, "cerrar_credito">>;
 };
-
-const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito, id_cotizacion }) => {
+const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito, id_cotizacion, initialValues }) => {
   const cerrar = useCerrarCredito();
 
   const {
@@ -29,6 +27,7 @@ const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito, id_cotizacio
     handleSubmit,
     watch,
     setValue,
+        reset,
     formState: { isSubmitting },
   } = useForm<CerrarCreditoValues>({
     defaultValues: {
@@ -41,6 +40,27 @@ const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito, id_cotizacio
     },
     mode: "onBlur",
   });
+
+
+    React.useEffect(() => {
+    if (!initialValues) return;
+
+    reset({
+      cerrar_credito: true,
+      color: initialValues.color ?? "",
+      capacidad: initialValues.capacidad ?? "",
+      numero_motor: initialValues.numero_motor ?? "",
+      numero_chasis: initialValues.numero_chasis ?? "",
+      placa: initialValues.placa ?? "",
+    });
+  }, [
+    initialValues?.color,
+    initialValues?.capacidad,
+    initialValues?.numero_motor,
+    initialValues?.numero_chasis,
+    initialValues?.placa,
+    reset,
+  ]);
 
   const enabled = watch("cerrar_credito");
   const navigate = useNavigate();
@@ -87,37 +107,37 @@ const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito, id_cotizacio
     });
 
     // Si el usuario confirmó y la mutación fue OK:
-  if (result.isConfirmed) {
-  await Swal.fire({
-    icon: "success",
-    title: "Crédito cerrado",
-    text: "Se guardó la información del cierre.",
-    timer: 1500,
-    showConfirmButton: false,
-    willClose: () =>
+    if (result.isConfirmed) {
+      await Swal.fire({
+        icon: "success",
+        title: "Crédito cerrado",
+        text: "Se guardó la información del cierre.",
+        timer: 1500,
+        showConfirmButton: false,
+        willClose: () =>
+          navigate(
+            `/creditos/detalle/facturar-credito/${codigo_credito}/${id_cotizacion}`
+          ),
+      });
+
+      // Fallback, por si el willClose no dispara
       navigate(
         `/creditos/detalle/facturar-credito/${codigo_credito}/${id_cotizacion}`
-      ),
-  });
-
-  // Fallback, por si el willClose no dispara
-  navigate(
-        `/creditos/detalle/facturar-credito/${codigo_credito}/${id_cotizacion}`
-  );
-}
+      );
+    }
 
   };
 
   // 🔵 Convertir la PLACA a MAYÚSCULAS mientras la escriben
-React.useEffect(() => {
-  const placa = watch("placa");
-  if (typeof placa === "string") {
-    const upper = placa.toUpperCase();
-    if (upper !== placa) {
-      setValue("placa", upper, { shouldValidate: true });
+  React.useEffect(() => {
+    const placa = watch("placa");
+    if (typeof placa === "string") {
+      const upper = placa.toUpperCase();
+      if (upper !== placa) {
+        setValue("placa", upper, { shouldValidate: true });
+      }
     }
-  }
-}, [watch("placa")]);
+  }, [watch("placa")]);
 
 
   return (
@@ -146,7 +166,7 @@ React.useEffect(() => {
         <div className={`grid grid-cols-1 md:grid-cols-2 overflow-hidden gap-3 p-1`}>
           <FormInput<CerrarCreditoValues>
             name="color"
-            label="Color*"
+            label="Color"
             control={control}
             placeholder="Color de la motocicleta"
             disabled={!enabled}
@@ -156,75 +176,40 @@ React.useEffect(() => {
                 : undefined
             }
           />
-<FormInput<CerrarCreditoValues>
-  name="capacidad"
-  label="Capacidad*"
-  control={control}
-  placeholder="Solo números"
-  disabled={!enabled}
-  type="number"              // 👈 SOLO PERMITE NÚMEROS
-  rules={
-    enabled
-      ? {
-          required: "La capacidad es obligatoria",
-        }
-      : undefined
-  }
-/>
+          <FormInput<CerrarCreditoValues>
+            name="capacidad"
+            label="Capacidad (opcional)"
+            control={control}
+            placeholder="Solo números"
+            disabled={!enabled}
+            type="number"              // 👈 SOLO PERMITE NÚMEROS
+  
+          />
 
 
           <FormInput<CerrarCreditoValues>
             name="numero_motor"
-            label="Número de motor*"
+            label="Número de motor (opcional)"
             control={control}
             placeholder="Número de motor"
             disabled={!enabled}
-            rules={
-              enabled
-                ? {
-                  required: "El número de motor es obligatorio",
-                  pattern: { value: /^[A-Z0-9-]{5,}$/i, message: "Solo letras, números o guiones (mín. 5)" },
-                }
-                : undefined
-            }
           />
 
           <FormInput<CerrarCreditoValues>
             name="numero_chasis"
-            label="Número de chasis*"
+            label="Número de chasis (opcional)"
             control={control}
             placeholder="Número de chasis"
             disabled={!enabled}
-            rules={
-              enabled
-                ? {
-                  required: "El número de chasis es obligatorio",
-                  pattern: { value: /^[A-Z0-9-]{5,}$/i, message: "Solo letras, números o guiones (mín. 5)" },
-                }
-                : undefined
-            }
           />
 
           <div className="md:col-span-2">
             <FormInput<CerrarCreditoValues>
               name="placa"
-              label="Placa"
+              label="Placa (opcional)"
               control={control}
               placeholder="Placa"
               disabled={!enabled}
-          rules={
-  enabled
-    ? {
-        required: "La placa es obligatoria",
-        pattern: {
-          value: /^[A-Z0-9]{6}$/i,
-          message: "La placa debe tener exactamente 6 caracteres (solo letras y números)",
-        },
-        minLength: { value: 6, message: "Debe tener exactamente 6 caracteres" },
-        maxLength: { value: 6, message: "Debe tener exactamente 6 caracteres" },
-      }
-    : undefined
-}
 
             />
           </div>

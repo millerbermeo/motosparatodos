@@ -1,24 +1,22 @@
-import React, { useMemo, useState, useCallback, useEffect } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import React, { useMemo, useState, useEffect } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { useCredito, useDeudor } from '../../../services/creditosServices';
 import { CalendarDays, User2 } from 'lucide-react';
 import {
-  useRegistrarSolicitudFacturacion,
   useSolicitudesPorCodigoCredito,
 } from '../../../services/solicitudServices';
 import FacturaFinalDownload from '../pdf/FacturaFinal';
 import ButtonLink from '../../../shared/components/ButtonLink';
 import { useDistribuidoras } from '../../../services/distribuidoraServices';
-import { useAuthStore } from '../../../store/auth.store';
 
 // 🔹 NUEVOS: endpoint full + IVA
 import { useCotizacionFullById } from '../../../services/fullServices';
 import { useIvaDecimal } from '../../../services/ivaServices';
+import FacturarCreditoForm from '../../../shared/components/credito/FacturarCreditoForm';
 
 type MaybeNum = number | undefined | null;
 
 // -------------------- Constantes --------------------
-const AGENCIAS = ['Sucursal Norte', 'Sucursal Centro', 'Sucursal Sur'];
 
 // --- Helpers de formato / casting ---
 const toNum = (v: unknown): number | undefined => {
@@ -71,8 +69,6 @@ const FacturarCredito: React.FC = () => {
   } = useIvaDecimal();
   const IVA_DEC = ivaLoading || ivaError ? 0.19 : ivaDecimal ?? 0.19;
 
-  const navigate = useNavigate();
-
   // ➕ Consultar si ya hay solicitud para este crédito
   const { data: solicitudesCredito, isLoading: loadingSolic } =
     useSolicitudesPorCodigoCredito(codigo_credito);
@@ -99,35 +95,7 @@ const FacturarCredito: React.FC = () => {
     [distribuidorasResponse]
   );
 
-  // -------------------- Estado del formulario --------------------
-  const [distribuidoraId, setDistribuidoraId] = useState<string>('');
-  const [numeroRecibo, setNumeroRecibo] = useState<string>('');
-  const [observaciones, setObservaciones] = useState<string>('');
-  const [cedulaFile, setCedulaFile] = useState<File | null>(null);
-  const [manifiestoFile, setManifiestoFile] = useState<File | null>(null);
 
-  // Para el nombre del usuario logueado
-  const loggedUserName =
-    (window as any)?.auth?.user?.name || (window as any)?.user?.name || 'Usuario';
-
-  const { mutate: registrarSolicitud, isPending } = useRegistrarSolicitudFacturacion();
-  const user = useAuthStore((state) => state.user);
-
-  const submitFormData = (fd: FormData) => {
-    registrarSolicitud(fd, {
-      onSuccess: () => {
-        if (
-          user?.rol === "Administrador" ||
-          user?.rol === "Lider_credito_cartera" ||
-          user?.rol === "Aux_cartera"
-        ) {
-          navigate('/solicitudes');
-        } else {
-          navigate(`/creditos/detalle/facturar-credito/${codigo_credito}`);
-        }
-      },
-    });
-  };
 
   // Fuente de verdad (mismo criterio que usas en otras vistas)
   const deudorData = (deudor as any)?.data ?? (datos as any)?.data ?? {};
@@ -301,62 +269,7 @@ const FacturarCredito: React.FC = () => {
     (credito as any)?.garantia_extendida_valor
   );
 
-  // -------------------- Submit --------------------
-  const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault();
-
-      // Buscar distribuidora seleccionada desde el hook
-      const distribuidoraSeleccionada = distribuidorasActivas.find(
-        (d: any) => String(d.id) === distribuidoraId
-      );
-
-      if (!distribuidoraSeleccionada) {
-        alert('Debe seleccionar una distribuidora válida.');
-        return;
-      }
-
-      const agenciaRandom = AGENCIAS[Math.floor(Math.random() * AGENCIAS.length)];
-      const distLabel = distribuidoraSeleccionada.nombre;
-      const codigo4 = String(Math.floor(1000 + Math.random() * 9000)); // 1000..9999
-
-      const fd = new FormData();
-      fd.append('agencia', agenciaRandom);
-      fd.append('distribuidora', distLabel);
-      fd.append('distribuidora_id', String(distribuidoraSeleccionada.id));
-      fd.append('codigo_solicitud', codigo4);
-      fd.append('codigo_credito', codigo_credito);
-      if (id_cotizacion) fd.append('id_cotizacion', id_cotizacion);
-      fd.append('nombre_cliente', clienteNombre);
-      fd.append('tipo_solicitud', 'Crédito directo');
-      fd.append('numero_recibo', numeroRecibo);
-      fd.append('resibo_pago', '');
-      fd.append('facturador', loggedUserName);
-      fd.append('autorizado', 'Si');
-      fd.append('facturado', 'No');
-      fd.append('entrega_autorizada', 'No');
-      fd.append('observaciones', observaciones);
-
-      if (cedulaFile) fd.append('cedula', cedulaFile);
-      if (manifiestoFile) fd.append('manifiesto', manifiestoFile);
-
-      submitFormData(fd);
-    },
-    [
-      distribuidorasActivas,
-      distribuidoraId,
-      numeroRecibo,
-      observaciones,
-      cedulaFile,
-      manifiestoFile,
-      codigo_credito,
-      id_cotizacion,
-      clienteNombre,
-      loggedUserName,
-      submitFormData,
-    ]
-  );
-
+ 
   const BaseUrl =
     import.meta.env.VITE_API_URL ??
     'https://tuclick.vozipcolombia.net.co/motos/back';
@@ -582,115 +495,16 @@ const FacturarCredito: React.FC = () => {
         </section>
 
         {/* Formulario inferior */}
-        {!yaRegistrada ? (
-          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="text-center text-slate-900 font-semibold mb-6">
-              Complete la siguiente información
-            </h3>
-
-            <form
-              className="grid grid-cols-1 md:grid-cols-2 gap-5"
-              onSubmit={handleSubmit}
-            >
-              <div className="flex flex-col gap-1">
-                <label className="text-sm text-slate-600">
-                  Distribuidora <span className="text-rose-600">*</span>
-                </label>
-                <select
-                  className="select select-bordered w-full focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500"
-                  value={distribuidoraId}
-                  onChange={(e) => setDistribuidoraId(e.target.value)}
-                  required
-                  disabled={loadingDistribuidoras || !!errorDistribuidoras}
-                >
-                  <option value="">Seleccione…</option>
-                  {distribuidorasActivas.map((d: any) => (
-                    <option key={d.id} value={d.id}>
-                      {d.nombre}
-                    </option>
-                  ))}
-                </select>
-                {loadingDistribuidoras && (
-                  <span className="text-xs text-slate-400 mt-1">
-                    Cargando distribuidoras…
-                  </span>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-sm text-slate-600">
-                  Recibo de pago N° <span className="text-rose-600">*</span>
-                </label>
-                <input
-                  type="text"
-                  className="input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500"
-                  placeholder="Digite el número de recibo de pago"
-                  value={numeroRecibo}
-                  onChange={(e) => setNumeroRecibo(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-sm text-slate-600">
-                  Copia de la cédula <span className="text-rose-600">*</span>
-                </label>
-                <input
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                  className="file-input file-input-bordered w-full"
-                  onChange={(e) => setCedulaFile(e.target.files?.[0] ?? null)}
-                  required
-                />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-sm text-slate-600">
-                  Manifiesto <span className="text-rose-600">*</span>
-                </label>
-                <input
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                  className="file-input file-input-bordered w-full"
-                  onChange={(e) => setManifiestoFile(e.target.files?.[0] ?? null)}
-                  required
-                />
-              </div>
-
-              <div className="md:col-span-2 flex flex-col gap-1">
-                <label className="text-sm text-slate-600">Observaciones</label>
-                <textarea
-                  className="textarea textarea-bordered w-full focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500"
-                  rows={4}
-                  placeholder="Observaciones"
-                  value={observaciones}
-                  onChange={(e) => setObservaciones(e.target.value)}
-                  required
-                ></textarea>
-              </div>
-
-              <div className="md:col-span-2 mt-2 flex items-center justify-between">
-                <Link to={`/creditos/detalle/${codigo_credito}`}>
-                  <button
-                    type="button"
-                    className="btn border-slate-300 bg-white hover:bg-slate-50 text-slate-700"
-                  >
-                    ⟵ Volver
-                  </button>
-                </Link>
-                <button
-                  type="submit"
-                  disabled={
-                    isPending || loadingDistribuidoras || !!errorDistribuidoras
-                  }
-                  className="btn bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600"
-                >
-                  {isPending ? 'Enviando…' : '✓ Aceptar'}
-                </button>
-              </div>
-            </form>
-          </section>
-        ) : (
+{!yaRegistrada ? (
+  <FacturarCreditoForm
+    codigoCredito={codigo_credito}
+    idCotizacion={id_cotizacion}
+    clienteNombre={clienteNombre}
+    distribuidorasActivas={distribuidorasActivas}
+    loadingDistribuidoras={loadingDistribuidoras}
+    errorDistribuidoras={errorDistribuidoras}
+  />
+) : (
           /* Si hay solicitud registrada, mostramos el detalle */
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             {/* Encabezado */}

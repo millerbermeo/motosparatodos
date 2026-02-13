@@ -70,6 +70,9 @@ const CreditoDetalleAsesor: React.FC = () => {
     // Dato principal (puede ser undefined mientras carga)
     const credito = datos?.creditos?.[0];
 
+
+    console.log("este es el credito", credito)
+
     // Fallbacks seguros para evitar crasheos
     // Asignación directa sin fallbacks
     const estado = credito?.estado;
@@ -250,7 +253,13 @@ const CreditoDetalleAsesor: React.FC = () => {
                             {/* CERRAR CREDITO */}
 
                             <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
-                                <CerrarCreditoFormulario codigo_credito={codigo_credito} id_cotizacion={id_cotizacion} />
+                                <CerrarCreditoFormulario   initialValues={{
+    color: credito?.color ?? "",
+    capacidad: credito?.capacidad ?? "",
+    numero_motor: credito?.numero_motor ?? "",
+    numero_chasis: credito?.numero_chasis ?? "",
+    placa: credito?.placa ?? "",
+  }} codigo_credito={codigo_credito} id_cotizacion={id_cotizacion} />
                             </section>
 
                         </>
