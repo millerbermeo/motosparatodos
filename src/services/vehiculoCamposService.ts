@@ -9,11 +9,16 @@ export type VehiculoTipo = 1 | 2;
 export interface VehiculoCamposApi {
   id: number | string;
   id_cotizacion: number;
+
   numero_motor?: string | null;
   numero_chasis?: string | null;
   color?: string | null;
   placa?: string | null;
   observacion_final?: string | null;
+
+  beneficiario_nombre?: string | null;
+  beneficiario_cedula?: string | null;
+  beneficiario_parentesco?: string | null;
 }
 
 export interface VehiculoCamposResponse {
@@ -62,10 +67,7 @@ export const useVehiculoCampos = (
         const { data } = await api.get<VehiculoCamposResponse>(
           opts?.endpoint ?? "/vehiculo_campos.php",
           {
-            params: {
-              tipo,
-              id_cotizacion: idCotizacion,
-            },
+            params: { tipo, id_cotizacion: idCotizacion },
             headers: opts?.token
               ? { Authorization: `Bearer ${opts.token}` }
               : undefined,
@@ -87,11 +89,16 @@ export const useVehiculoCampos = (
 export type ActualizarVehiculoCamposPayload = {
   tipo: VehiculoTipo;
   id_cotizacion: number | string;
+
   numero_motor?: string | null;
   numero_chasis?: string | null;
   color?: string | null;
   placa?: string | null;
   observacion_final?: string | null;
+
+  beneficiario_nombre?: string | null;
+  beneficiario_cedula?: string | null;
+  beneficiario_parentesco?: string | null;
 };
 
 /** =========================
@@ -111,10 +118,8 @@ export const useActualizarVehiculoCampos = (opts?: { endpoint?: string }) => {
       fd.append("tipo", String(payload.tipo));
       fd.append("id_cotizacion", String(payload.id_cotizacion));
 
-      // Solo mandamos campos si existen (para no pisar con vacío)
       const addIfDefined = (k: string, v: any) => {
         if (v === undefined) return;
-        // si viene null, mandamos vacío para "limpiar" si lo deseas
         fd.append(k, v === null ? "" : String(v));
       };
 
@@ -124,17 +129,25 @@ export const useActualizarVehiculoCampos = (opts?: { endpoint?: string }) => {
       addIfDefined("placa", payload.placa);
       addIfDefined("observacion_final", payload.observacion_final);
 
+      // ✅ Beneficiario vida
+      addIfDefined("beneficiario_nombre", payload.beneficiario_nombre);
+      addIfDefined("beneficiario_cedula", payload.beneficiario_cedula);
+      addIfDefined("beneficiario_parentesco", payload.beneficiario_parentesco);
+
       const { data } = await api.post<ActualizarVehiculoCamposResponse>(
         opts?.endpoint ?? "/vehiculo_campos.php",
         fd,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
+
       return data;
     },
     onSuccess: async (resp, payload) => {
       await Promise.all([
-        qc.invalidateQueries({ queryKey: ["vehiculo-campos", payload.tipo, payload.id_cotizacion] }),
-        qc.invalidateQueries({ queryKey: ["vehiculo-campos"] }), // por si hay pantallas que usan lista general
+        qc.invalidateQueries({
+          queryKey: ["vehiculo-campos", payload.tipo, payload.id_cotizacion],
+        }),
+        qc.invalidateQueries({ queryKey: ["vehiculo-campos"] }),
       ]);
 
       Swal.fire({
