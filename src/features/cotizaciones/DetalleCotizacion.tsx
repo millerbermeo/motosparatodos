@@ -30,6 +30,12 @@ import { VehiculoCamposCollapse } from '../../shared/components/VehiculoCamposCo
 
 const BaseUrl = import.meta.env.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
 
+const nOrU = (v: any): number | undefined => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
+};
+
+
 /* =======================
    Tipos
    ======================= */
@@ -304,7 +310,6 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
   const modeloLabel = [marca, linea].filter(Boolean).join(' ').trim() || '—';
 
   const precioBase = Number(data?.[`precio_base${suffix}`]) || 0;
-  const precioDocumentos = Number(data?.[`precio_documentos${suffix}`]) || 0;
 
   // Descuentos
   const descuentos = Number(data?.[`descuentos${suffix}`]) || 0;
@@ -323,22 +328,28 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
   const soat = Number(data?.[`soat${suffix}`]) || 0;
   const matricula = Number(data?.[`matricula${suffix}`]) || 0;
   const impuestos = Number(data?.[`impuestos${suffix}`]) || 0;
+  const precioDocumentos = soat + matricula + impuestos;
 
   // ====== Adicionales (en tu formulario: valorRunt1/2, valorLicencia1/2, etc.) ======
-  const isA = lado === 'A';
+const isA = lado === 'A';
 
-  const adicionalesRunt = Number(data?.[isA ? 'valorRunt1' : 'valorRunt2']) || 0;
-  const adicionalesLicencia = Number(data?.[isA ? 'valorLicencia1' : 'valorLicencia2']) || 0;
-  const adicionalesDefensas = Number(data?.[isA ? 'valorDefensas1' : 'valorDefensas2']) || 0;
-  const adicionalesHandSavers = Number(data?.[isA ? 'valorHandSavers1' : 'valorHandSavers2']) || 0;
-  const adicionalesOtros = Number(data?.[isA ? 'valorOtrosAdicionales1' : 'valorOtrosAdicionales2']) || 0;
+const adicionalesRunt = Number(data?.[isA ? "runt_1" : "runt_2"]) || 0;
+const adicionalesLicencia = Number(data?.[isA ? "licencia_1" : "licencia_2"]) || 0;
+const adicionalesDefensas = Number(data?.[isA ? "defensas_1" : "defensas_2"]) || 0;
+const adicionalesHandSavers = Number(data?.[isA ? "hand_savers_1" : "hand_savers_2"]) || 0;
+const adicionalesOtros = Number(data?.[isA ? "otros_adicionales_1" : "otros_adicionales_2"]) || 0;
 
-  const adicionalesTotal =
-    adicionalesRunt +
-    adicionalesLicencia +
-    adicionalesDefensas +
-    adicionalesHandSavers +
-    adicionalesOtros;
+const adicionalesSum =
+  adicionalesRunt +
+  adicionalesLicencia +
+  adicionalesDefensas +
+  adicionalesHandSavers +
+  adicionalesOtros;
+
+// si existe total_adicionales_1/2 úsalo aunque sea 0
+const adicionalesFromTotal = nOrU(data?.[isA ? "total_adicionales_1" : "total_adicionales_2"]);
+const adicionalesTotal = adicionalesFromTotal ?? adicionalesSum;
+
 
   // ====== GPS ======
   const gpsMeses = data?.[`gps_meses${suffix}`] ?? null;
@@ -365,8 +376,8 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
   const polizaValorNum = Number(polizaValor) || 0;
 
   // total_sin_seguros: si backend lo trae, lo usamos; si no, calculamos fallback.
-  const totalSinSeguros =
-    Number(data?.[`total_sin_seguros${suffix}`]) ||
+const totalSinSeguros =
+  (nOrU(data?.[`total_sin_seguros${suffix}`]) ??
     (precioBase +
       precioDocumentos +
       accesoriosYMarcacion +
@@ -374,11 +385,10 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
       descuentos +
       polizaValorNum +
       (garantiaExtendidaValor || 0) +
-      (Number(gpsValor) || 0));
+      (Number(gpsValor) || 0)));
 
-  const total =
-    Number(data?.[`precio_total${suffix}`]) ||
-    (totalSinSeguros + seguros);
+const total =
+  (nOrU(data?.[`precio_total${suffix}`]) ?? (totalSinSeguros + seguros));
 
   // Cuotas
   const cuotas: Cuotas = {
@@ -577,6 +587,31 @@ const DetalleCotizacion: React.FC = () => {
 
   const moto = tab === 'A' ? q?.motoA : q?.motoB;
 
+  const totalConTodo = React.useMemo(() => {
+    if (!moto) return 0;
+
+    const docs = (moto.soat || 0) + (moto.matricula || 0) + (moto.impuestos || 0);
+
+    return (
+      (moto.precioBase || 0) -
+      (moto.descuentos || 0) +
+      (moto.accesoriosYMarcacion || 0) +
+      docs +
+      (moto.adicionalesTotal || 0) +
+      Number(moto.polizaValor ?? 0) +
+      Number(moto.garantiaExtendidaValor ?? 0) +
+      Number(moto.gpsValor ?? 0) +
+      Number(moto.otrosSeguros ?? 0)
+    );
+  }, [moto]);
+
+  const saldoConTodo = React.useMemo(() => {
+    if (!moto) return 0;
+    const inicial = Number(moto.cuotas?.inicial ?? 0);
+    return Math.max(totalConTodo - inicial, 0);
+  }, [moto, totalConTodo]);
+
+
   // Determinar si la moto seleccionada tiene cuotas
   const hasCuotas = React.useMemo(() => {
     if (!moto) return false;
@@ -645,8 +680,8 @@ const DetalleCotizacion: React.FC = () => {
     );
   }
 
-const isFacturado = normalizeLower(q.estado).includes("facturado");
-const tipoVehiculo = (isCreditoPropio || isCreditoTerceros) ? (1 as const) : (2 as const);
+  const isFacturado = normalizeLower(q.estado).includes("facturado");
+  const tipoVehiculo = (isCreditoPropio || isCreditoTerceros) ? (1 as const) : (2 as const);
 
 
   return (
@@ -905,9 +940,10 @@ const tipoVehiculo = (isCreditoPropio || isCreditoTerceros) ? (1 as const) : (2 
 
                         <DataRow
                           label="Total con documentos / adicionales / accesorios /  seguros"
-                          value={fmtCOP(moto.totalSinSeguros + (moto.seguros || 0))}
+                          value={fmtCOP(totalConTodo)}
                           strong
                         />
+
 
                         {/* mostrar otros seguros */}
                         <DataRow
@@ -934,7 +970,7 @@ const tipoVehiculo = (isCreditoPropio || isCreditoTerceros) ? (1 as const) : (2 
 
                         <DataRow
                           label="Saldo a financiar"
-                          value={fmtCOP(moto.saldoFinanciar)}
+                          value={fmtCOP(saldoConTodo)}
                           strong
                           valueClass="text-success font-bold"
                         />
@@ -1071,7 +1107,7 @@ const tipoVehiculo = (isCreditoPropio || isCreditoTerceros) ? (1 as const) : (2 
         )}
 
         {/* Cuotas – solo de la moto seleccionada en el tab (oculto, pero lo dejo armado) */}
-{moto && hasCuotas && (isCreditoPropio || isCreditoTerceros) && (
+        {moto && hasCuotas && (isCreditoPropio || isCreditoTerceros) && (
           <section className="card flex bg-base-100 border border-base-300/60 shadow-sm rounded-2xl">
             <div className="card-body">
               <div className="flex items-center gap-2 mb-2">
@@ -1157,29 +1193,29 @@ const tipoVehiculo = (isCreditoPropio || isCreditoTerceros) ? (1 as const) : (2 
         </section>
       </div>
 
-{isFacturado && (
-  <VehiculoCamposCollapse
-    idCotizacion={id}
-    tipo={tipoVehiculo}
-    titulo={tipoVehiculo === 1 ? "Datos vehículo (Crédito)" : "Datos vehículo (Facturación)"}
-  />
-)}
+      {isFacturado && (
+        <VehiculoCamposCollapse
+          idCotizacion={id}
+          tipo={tipoVehiculo}
+          titulo={tipoVehiculo === 1 ? "Datos vehículo (Crédito)" : "Datos vehículo (Facturación)"}
+        />
+      )}
 
       {/* Barra de acciones (inferior) – PDF detallado */}
       <section className="sticky bottom-0 mt-4 bg-base-100/90 backdrop-blur border-t border-base-300 px-4 py-3">
         <div className="max-w-full mx-auto flex flex-wrap items-center justify-end gap-2">
 
           {facturaUrl && (
-  <button
-    type="button"
-    className="btn btn-info btn-sm"
-    onClick={() => window.open(facturaUrl, "_blank", "noopener,noreferrer")}
-    title="Ver factura"
-  >
-    <FileDown className="w-4 h-4" />
-    Ver factura
-  </button>
-)}
+            <button
+              type="button"
+              className="btn btn-info btn-sm"
+              onClick={() => window.open(facturaUrl, "_blank", "noopener,noreferrer")}
+              title="Ver factura"
+            >
+              <FileDown className="w-4 h-4" />
+              Ver factura
+            </button>
+          )}
 
 
           {payload && (
@@ -1332,7 +1368,7 @@ const DataRow: React.FC<{ label: string; value: React.ReactNode; strong?: boolea
 }) => (
   <div className="flex items-center justify-between bg-[#3498DB]/70 text-white px-3 py-2 rounded-md">
     <span className="font-medium">{label}</span>
-    <span className={strong ? 'font-bold' : valueClass || ''}>{value}</span>
+    <span className={`${strong ? 'font-bold' : ''} ${valueClass || ''}`}>{value}</span>
   </div>
 );
 

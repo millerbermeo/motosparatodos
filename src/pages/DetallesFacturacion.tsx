@@ -116,6 +116,8 @@ const desglosarConIva = (
     };
   }
 
+
+
   // Si tengo total y base => IVA = total - base
   if (total !== undefined && base !== undefined) {
     const ivaCalc = max0(total - base);
@@ -184,7 +186,7 @@ const buildMotoFromCotizacion = (cot: any, lado: "A" | "B"): MotoCot | undefined
   const precioBase = Number(cot?.[`precio_base${suffix}`]) || 0;
   const precioDocumentos = Number(cot?.[`precio_documentos${suffix}`]) || 0;
 
-  const descuentos = Number(cot?.[`descuentos${suffix}`]) || 0;
+  const descuentos = Math.abs(Number(cot?.[`descuentos${suffix}`]) || 0);
 
   const accesorios = Number(cot?.[`accesorios${suffix}`]) || 0;
   const marcacion = Number(cot?.[`marcacion${suffix}`]) || 0;
@@ -234,6 +236,8 @@ const buildMotoFromCotizacion = (cot: any, lado: "A" | "B"): MotoCot | undefined
     adicionalesDefensas +
     adicionalesHandSavers +
     adicionalesOtros;
+
+
 
   const totalSinSeguros =
     Number(cot?.[`total_sin_seguros${suffix}`]) ||
@@ -398,6 +402,20 @@ const DetallesFacturacion: React.FC = () => {
     [cot, ladoMoto]
   );
 
+
+  const descuentos = useMemo(() => {
+    if (motoCot) return motoCot.descuentos ?? 0;
+
+    const raw =
+      motoSeleccionada === "b"
+        ? (cot as any)?.descuentos_b
+        : (cot as any)?.descuentos_a;
+
+    return Number(raw) || 0;
+  }, [motoCot, cot, motoSeleccionada]);
+
+
+
   // ===================== ESTADO / CLIENTE =====================
 
   const estadoCotizacion: string | undefined =
@@ -543,36 +561,28 @@ const DetallesFacturacion: React.FC = () => {
       ? (motoCot.soat || 0) + (motoCot.matricula || 0) + (motoCot.impuestos || 0)
       : toNum((sol as any)?.tot_documentos) ?? sum(soat, matricula, impuestos);
 
-  // Accesorios y adicionales: usamos total de accesorios+adicionales de la moto de cotización
-  const extrasTotalCot = motoCot
-    ? (motoCot.accesoriosYMarcacion || 0) +
-    (motoCot.adicionalesTotal || 0)
-    : undefined;
-
-  const rawAccTotal = extrasTotalCot ?? toNum(pick(sol?.acc_total, cred?.accesorios_total));
-  const rawAccBruto = extrasTotalCot !== undefined ? undefined : toNum(sol?.acc_valor_bruto);
-  const rawAccIva = extrasTotalCot !== undefined ? undefined : toNum(sol?.acc_iva);
-
-  const {
-    total: accesorios_total,
-    bruto: accesorios_bruto,
-    iva: acc_iva_accesorios,
-  } = desglosarConIva(rawAccTotal, rawAccBruto, rawAccIva, IVA_DEC);
-
-
-  // =========================
-  // EXTRAS SEPARADOS
-  // =========================
-
+  // === EXTRAS (Accesorios + Adicionales) ===
+  // Si hay motoCot: estos valores SON SIN IVA (brutos)
   const accesoriosBrutos = motoCot?.accesoriosYMarcacion ?? 0;
   const adicionalesBrutos = motoCot?.adicionalesTotal ?? 0;
-
-  // Suma total de los valores originales
   const extrasBrutosTotal = accesoriosBrutos + adicionalesBrutos;
 
-  const accesorios_iva = Math.round(accesoriosBrutos * IVA_DEC);
-  const adicionales_iva = Math.round(adicionalesBrutos * IVA_DEC);
-  const iva_extras_total = accesorios_iva + adicionales_iva;
+  // IVA extras (siempre calculado)
+  const iva_extras_total = Math.round(extrasBrutosTotal * IVA_DEC);
+  const extras_total_con_iva = extrasBrutosTotal + iva_extras_total;
+
+  // Para PDF/UI: si hay motoCot usamos estos; si NO hay motoCot usamos lo que venga del backend
+  const accesorios_bruto = motoCot
+    ? extrasBrutosTotal
+    : toNum(sol?.acc_valor_bruto) ?? 0;
+
+  const acc_iva_accesorios = motoCot
+    ? iva_extras_total
+    : toNum(sol?.acc_iva) ?? 0;
+
+  const accesorios_total = motoCot
+    ? extras_total_con_iva
+    : toNum(pick(sol?.acc_total, cred?.accesorios_total)) ?? 0;
 
 
   // Seguros (preferimos lo que trae la cotización, igual que en DetalleCotizacion)
@@ -586,7 +596,7 @@ const DetallesFacturacion: React.FC = () => {
         )
       );
 
-  const acc_seg_total = sum(accesorios_total, seguros_total);
+  const acc_seg_total = (accesorios_total || 0) + (seguros_total || 0);
 
   // ===================== VALOR DEL VEHÍCULO (SOLO MOTO) =====================
 
@@ -612,46 +622,39 @@ const DetallesFacturacion: React.FC = () => {
     valorMoto = toNum(pickMotoField("precio_base"));
   }
 
-  // ===================== CONDICIONES DEL NEGOCIO (IVA) =====================
 
-  // Total vehículo con IVA:
-  // Si tenemos motoCot, calculamos:
-  //   totalVehiculo = moto.total - documentos - accesorios - seguros
-  const rawVehiculoTotal =
-    motoCot
-      ? motoCot.total -
-      (subtotalDocs || 0) -
-      (accesorios_total || 0) -
-      (seguros_total || 0)
-      : toNum(sol?.cn_total) ??
-      toNum(sol?.tot_general) ??
-      valorMoto ??
-      toNum(pickMotoField("precio_base"));
+  // === TOTAL VEHÍCULO (con IVA) ===
+  // Si hay motoCot: asumimos que motoCot.total es el TOTAL GENERAL de la cotización (ya con descuento aplicado)
+  const cn_total_calc = motoCot
+    ? (motoCot.total || 0) - (subtotalDocs || 0) - (accesorios_total || 0) - (seguros_total || 0)
+    : toNum(sol?.cn_total) ??
+    toNum(sol?.tot_general) ??
+    valorMoto ??
+    toNum(pickMotoField("precio_base")) ??
+    0;
 
-  const {
-    total: cn_total,
-    bruto: cn_bruto,
-    iva: cn_iva,
-  } = desglosarConIva(rawVehiculoTotal, undefined, undefined, IVA_DEC);
+  const { total: cn_total, bruto: cn_bruto, iva: cn_iva } =
+    desglosarConIva(cn_total_calc, undefined, undefined, IVA_DEC);
 
   // ===================== TOTAL GENERAL =====================
 
   // Si tenemos motoCot, su total es la verdad (igual que en DetalleCotizacion)
-  const totalGeneral =
-    motoCot
-      ? motoCot.total
-      : sum(cn_total, subtotalDocs, acc_seg_total) ??
-      sum(
-        valorMoto,
-        soat,
-        matricula,
-        impuestos,
-        accesorios_total,
-        seguros_total
-      ) ??
-      toNum(sol?.tot_general);
+  const totalGeneral = motoCot
+    ? (motoCot.total || 0)
+    : (cn_total || 0) + (subtotalDocs || 0) + (accesorios_total || 0) + (seguros_total || 0);
 
   // ===================== CRÉDITO (POR SI APLICA) =====================
+
+  const cn_total_sin_iva = cn_bruto; // ya viene con descuento aplicado
+
+  // const extras_sin_iva = extrasBrutosTotal; // ya lo tienes como bruto total
+
+  // const total_general_sin_iva =
+  //   (cn_total_sin_iva || 0) +
+  //   (subtotalDocs || 0) +
+  //   (extras_sin_iva || 0) +
+  //   (seguros_total || 0);
+
 
   // 1) Cuota inicial desde el crédito (si existe registro en la tabla de créditos)
   const cuotaInicialCredito = toNum(cred?.cuota_inicial);
@@ -832,6 +835,7 @@ const DetallesFacturacion: React.FC = () => {
     navigate("/solicitudes");
   };
 
+
   return (
     <main className="min-h-screen w-full bg-slate-50">
       <header className="border-b border-slate-200 bg-white/70 backdrop-blur">
@@ -981,15 +985,26 @@ const DetallesFacturacion: React.FC = () => {
                   value={fmtCOP(cn_bruto)}
                 />
                 <RowRight
+                  label="Total vehículo (sin IVA):"
+                  value={fmtCOP(cn_total_sin_iva)}
+                  bold
+                />
+                <RowRight
                   label={`IVA vehículo (${IVA_PCT}%):`}
                   value={fmtCOP(cn_iva)}
                 />
+                <RowRight
+                  label="Descuento (ya incluido):"
+                  value={fmtCOP(-Math.abs(descuentos))}
+                />
+
                 <RowRight
                   label="Total vehículo:"
                   value={fmtCOP(cn_total)}
                   bold
                   badge="inline-block rounded-full bg-emerald-50 border-emerald-200 text-emerald-700 px-2 py-0.5"
                 />
+
               </div>
               <div className="px-5 pb-3 pt-1 text-[11px] text-slate-500">
                 IVA calculado automáticamente a partir del total del vehículo
@@ -1023,7 +1038,17 @@ const DetallesFacturacion: React.FC = () => {
                   <RowRight label="Accesorios (bruto):" value={fmtCOP(accesoriosBrutos)} />
 
                   <RowRight label="Adicionales (bruto):" value={fmtCOP(adicionalesBrutos)} />
-                  <RowRight badge="red-500" label="Extras Total sin IVA:" value={fmtCOP(extrasBrutosTotal)} />
+                  <RowRight
+                    badge="text-red-500 font-semibold"
+                    label="Extras Total sin IVA:"
+                    value={fmtCOP(extrasBrutosTotal)}
+                  />
+
+                  <RowRight
+                    label="Extras Total con IVA:"
+                    value={fmtCOP(extras_total_con_iva)}
+                    bold
+                  />
 
                   <RowRight label={`IVA extras (${IVA_PCT}%):`} value={fmtCOP(iva_extras_total)} bold />
 
@@ -1150,15 +1175,15 @@ const DetallesFacturacion: React.FC = () => {
                       </div>
                     </div>
 
-<ManifiestoUploader
-  idSolicitud={idSolicitud}
-  idCotizacion={id_cotizacion}
-  manifiestoUrlFinal={manifiestoUrlFinal}
-  onUploaded={() => {
-    // refresca para que ya aparezca el link y se oculte el uploader
-    refetch();
-  }}
-/>
+                    <ManifiestoUploader
+                      idSolicitud={idSolicitud}
+                      idCotizacion={id_cotizacion}
+                      manifiestoUrlFinal={manifiestoUrlFinal}
+                      onUploaded={() => {
+                        // refresca para que ya aparezca el link y se oculte el uploader
+                        refetch();
+                      }}
+                    />
 
                     {/* Carga de factura: SOLO si aún NO hay factura */}
                     {!tieneFactura && (
