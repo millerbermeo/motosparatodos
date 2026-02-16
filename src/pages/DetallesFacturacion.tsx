@@ -11,6 +11,7 @@ import { useAuthStore } from "../store/auth.store";
 import {
   useUltimaSolicitudPorIdCotizacion,
   useActualizarFacturaSolicitud,
+  useDescuentosContraentrega
 } from "../services/solicitudServices";
 
 import Swal from "sweetalert2";
@@ -194,12 +195,10 @@ const buildMotoFromCotizacion = (cot: any, lado: "A" | "B"): MotoCot | undefined
 
   let seguros = 0;
 
-  // 1) Campo numérico directo: otro_seguro_a / otro_seguro_b
-  const otroSeguro = Number(cot?.[`otro_seguro${suffix}`]) || 0;
-  seguros += otroSeguro;
-
-  // 2) Campo JSON: seguros_a / seguros_b  (ej: [{"id":-1,"nombre":"Otros seguros","valor":200000}, ...])
+  // 1) Campo JSON: seguros_a / seguros_b
   const segurosRaw = cot?.[`seguros${suffix}`];
+  let jsonIncluyeOtros = false;
+
   if (typeof segurosRaw === "number") {
     seguros += segurosRaw;
   } else if (typeof segurosRaw === "string" && segurosRaw.trim()) {
@@ -207,14 +206,22 @@ const buildMotoFromCotizacion = (cot: any, lado: "A" | "B"): MotoCot | undefined
       const arr = JSON.parse(segurosRaw);
       if (Array.isArray(arr)) {
         seguros += arr.reduce((acc, item) => {
+          const nombre = String(item?.nombre ?? "").toLowerCase();
+          if (nombre.includes("otros seguros")) jsonIncluyeOtros = true;
+
           const v = Number(item?.valor ?? 0);
           return acc + (Number.isFinite(v) ? v : 0);
         }, 0);
       }
     } catch {
-      // si falla el JSON, simplemente lo ignoramos
+      // ignore
     }
   }
+
+  // 2) Campo directo: otro_seguro_a / otro_seguro_b
+  // ✅ Solo se suma si NO venía ya en el JSON (para no duplicar)
+  const otroSeguro = Number(cot?.[`otro_seguro${suffix}`]) || 0;
+  if (!jsonIncluyeOtros) seguros += otroSeguro;
 
   const soat = Number(cot?.[`soat${suffix}`]) || 0;
   const matricula = Number(cot?.[`matricula${suffix}`]) || 0;
@@ -285,6 +292,8 @@ const DetallesFacturacion: React.FC = () => {
     isPending: isSubiendoFactura,
   } = useActualizarFacturaSolicitud();
 
+
+
   // Estado local para el archivo de factura
   const [facturaFile, setFacturaFile] = useState<File | null>(null);
 
@@ -295,6 +304,9 @@ const DetallesFacturacion: React.FC = () => {
     isLoading: ivaLoading,
     error: ivaError,
   } = useIvaDecimal();
+
+
+
 
   const IVA_DEC = ivaLoading || ivaError ? 0.19 : ivaDecimal ?? 0.19;
   const IVA_PCT = ivaLoading || ivaError ? 19 : Number(porcentaje ?? 19);
@@ -416,6 +428,25 @@ const DetallesFacturacion: React.FC = () => {
 
 
 
+  // ✅ Garantía extendida (hoy viene como "póliza")
+  const garantiaExtendidaValor = useMemo(() => {
+    if (!cot) return 0;
+
+    const vA =
+      Number((cot as any)?.valor_poliza_a ?? (cot as any)?.valor_garantia_extendida_a ?? 0) || 0;
+
+    const vB =
+      Number((cot as any)?.valor_poliza_b ?? (cot as any)?.valor_garantia_extendida_b ?? 0) || 0;
+
+    // Si ya decidiste moto A/B:
+    if (motoSeleccionada === "a") return Math.max(vA, 0);
+    if (motoSeleccionada === "b") return Math.max(vB, 0);
+
+    // fallback (si no se detectó moto)
+    return Math.max(vA || vB, 0);
+  }, [cot, motoSeleccionada]);
+
+
   // ===================== ESTADO / CLIENTE =====================
 
   const estadoCotizacion: string | undefined =
@@ -446,6 +477,10 @@ const DetallesFacturacion: React.FC = () => {
       ? Number(ultimaSolRegistro.id)
       : undefined;
 
+  const { data: descuentosCE } = useDescuentosContraentrega(idSolicitud, {
+    enabled: !!idSolicitud,
+  });
+
 
   const finalizadoActaRaw =
     (sol as any)?.is_final_acta ??
@@ -471,6 +506,26 @@ const DetallesFacturacion: React.FC = () => {
     const n = Number(raw);
     return Number.isFinite(n) && n === 1;
   })();
+
+
+  const aplicaDescuentosAutorizados =
+    !!descuentosCE?.isFinal || isFinalAutorizacion; // por si el flag viene desde otra parte
+
+  const descuentoAutorizadoB = aplicaDescuentosAutorizados
+    ? Math.abs(Number(descuentosCE?.descuentoAutorizadoB ?? 0))
+    : 0;
+
+  const saldoContraentregaB = aplicaDescuentosAutorizados
+    ? Math.abs(Number(descuentosCE?.saldoContraentregaB ?? 0))
+    : 0;
+
+  // ✅ total a restar (los “dos campos”)
+  const descuentoAutorizadoTotal = descuentoAutorizadoB + saldoContraentregaB;
+
+  const mostrarSeccionDescuentosAutorizar =
+    aplicaDescuentosAutorizados && (descuentoAutorizadoTotal ?? 0) > 0;
+
+
 
   const clienteNombre = useMemo(
     () =>
@@ -625,27 +680,53 @@ const DetallesFacturacion: React.FC = () => {
 
   // === TOTAL VEHÍCULO (con IVA) ===
   // Si hay motoCot: asumimos que motoCot.total es el TOTAL GENERAL de la cotización (ya con descuento aplicado)
-  const cn_total_calc = motoCot
-    ? (motoCot.total || 0) - (subtotalDocs || 0) - (accesorios_total || 0) - (seguros_total || 0)
+  const cn_total_calc_base = motoCot
+    ? (motoCot.total || 0) -
+    (subtotalDocs || 0) -
+    (extrasBrutosTotal || 0) -  // ✅ extras SIN IVA
+    (seguros_total || 0)
     : toNum(sol?.cn_total) ??
     toNum(sol?.tot_general) ??
     valorMoto ??
     toNum(pickMotoField("precio_base")) ??
     0;
 
-  const { total: cn_total, bruto: cn_bruto, iva: cn_iva } =
-    desglosarConIva(cn_total_calc, undefined, undefined, IVA_DEC);
+
+  // ✅ ahora sí: restar autorización (solo cuando aplica)
+  const cn_total_calc = (cn_total_calc_base || 0);
+
+  const totalVehiculoConIva = motoCot
+    ? (motoCot.precioBase || 0) // ✅ solo precio base
+    : (cn_total_calc || 0);
+
+  const { bruto: cn_bruto, iva: cn_iva } =
+    desglosarConIva(totalVehiculoConIva, undefined, undefined, IVA_DEC);
+
+  const cn_total_base =
+    typeof cn_bruto === "number" && typeof cn_iva === "number"
+      ? cn_bruto + cn_iva
+      : undefined;
+
+  const cn_total =
+    typeof cn_total_base === "number"
+      ? Math.max(cn_total_base - Math.abs(descuentos || 0), 0)
+      : undefined;
+
 
   // ===================== TOTAL GENERAL =====================
 
   // Si tenemos motoCot, su total es la verdad (igual que en DetalleCotizacion)
-  const totalGeneral = motoCot
-    ? (motoCot.total || 0)
-    : (cn_total || 0) + (subtotalDocs || 0) + (accesorios_total || 0) + (seguros_total || 0);
+  const totalGeneral =
+    (cn_total || 0) +
+    (subtotalDocs || 0) +
+    (accesorios_total || 0) +
+    (seguros_total || 0) +
+    (garantiaExtendidaValor || 0) - // ✅ aquí entra
+    (aplicaDescuentosAutorizados ? (descuentoAutorizadoTotal || 0) : 0);
 
   // ===================== CRÉDITO (POR SI APLICA) =====================
 
-  const cn_total_sin_iva = cn_bruto; // ya viene con descuento aplicado
+  // const cn_total_sin_iva = cn_bruto; // ya viene con descuento aplicado
 
   // const extras_sin_iva = extrasBrutosTotal; // ya lo tienes como bruto total
 
@@ -951,7 +1032,7 @@ const DetallesFacturacion: React.FC = () => {
 
             {/* Motocicleta */}
             <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-              <div className="bg-gradient-to-r from-sky-600 to-emerald-600 text-white font-semibold px-5 py-2.5 text-sm">
+              <div className="bg-linear-to-r from-sky-600 to-emerald-600 text-white font-semibold px-5 py-2.5 text-sm">
                 <div className="grid grid-cols-12 items-center">
                   <div className="col-span-3"># Pago</div>
                   <div className="col-span-3">Motocicleta</div>
@@ -987,17 +1068,25 @@ const DetallesFacturacion: React.FC = () => {
                   label="Valor bruto vehículo:"
                   value={fmtCOP(cn_bruto)}
                 />
-                <RowRight
+                {/* <RowRight
                   label="Total vehículo (sin IVA):"
                   value={fmtCOP(cn_total_sin_iva)}
                   bold
-                />
+                /> */}
                 <RowRight
                   label={`IVA vehículo (${IVA_PCT}%):`}
                   value={fmtCOP(cn_iva)}
                 />
                 <RowRight
-                  label="Descuento (ya incluido):"
+                  label="Total vehículo sin descuento:"
+                  value={fmtCOP((cn_total ?? 0) + Math.abs(descuentos ?? 0))}
+                  bold
+                  badge="inline-block rounded-full bg-emerald-50 border-emerald-200 text-emerald-700 px-2 py-0.5"
+                />
+
+
+                <RowRight
+                  label="Total vehículo con descuento:"
                   value={fmtCOP(-Math.abs(descuentos))}
                 />
 
@@ -1009,11 +1098,49 @@ const DetallesFacturacion: React.FC = () => {
                 />
 
               </div>
-              <div className="px-5 pb-3 pt-1 text-[11px] text-slate-500">
+              {/* <div className="px-5 pb-3 pt-1 text-[11px] text-slate-500">
                 IVA calculado automáticamente a partir del total del vehículo
                 cuando no viene informado en la solicitud.
-              </div>
+              </div> */}
             </section>
+
+
+            {mostrarSeccionDescuentosAutorizar && (
+
+              <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+                <div className="bg-emerald-600 text-white font-semibold px-5 py-2.5 text-sm flex items-center justify-between">
+                  <span>Descuentos Autorizar</span>
+                  <span>Costos</span>
+                </div>
+                <div className="divide-y divide-slate-200">
+
+
+                  <RowRight
+                    label="Descuento autorizado:"
+                    value={aplicaDescuentosAutorizados ? fmtCOP(-descuentoAutorizadoB) : "—"}
+                  />
+
+                  <RowRight
+                    label="Saldo contraentrega autorizado:"
+                    value={aplicaDescuentosAutorizados ? fmtCOP(-saldoContraentregaB) : "—"}
+                  />
+
+                  <RowRight
+                    label="Total a descontar (autorización):"
+                    value={aplicaDescuentosAutorizados ? fmtCOP(-descuentoAutorizadoTotal) : "—"}
+                    bold
+                    badge="inline-block rounded-full bg-red-50 border-red-200 text-red-700 px-2 py-0.5"
+
+                  />
+
+
+
+                </div>
+              </section>
+
+            )}
+
+
 
             {/* Documentos */}
             <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
@@ -1028,34 +1155,51 @@ const DetallesFacturacion: React.FC = () => {
                   label="Subtotal documentos:"
                   value={fmtCOP(subtotalDocs)}
                   bold
+                  badge="inline-block rounded-full bg-emerald-50 border-emerald-200 text-emerald-700 px-2 py-0.5"
+
                 />
               </div>
             </section>
 
             {/* Seguros, accesorios y total */}
             <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
               <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
                 <div className="bg-sky-600 text-white font-semibold px-5 py-2.5 text-sm">
                   Adicionales y accesorios                </div>
                 <div className="divide-y divide-slate-200">
-                  <RowRight label="Accesorios (bruto):" value={fmtCOP(accesoriosBrutos)} />
-
-                  <RowRight label="Adicionales (bruto):" value={fmtCOP(adicionalesBrutos)} />
                   <RowRight
-                    badge="text-red-500 font-semibold"
-                    label="Extras Total sin IVA:"
-                    value={fmtCOP(extrasBrutosTotal)}
+                    label="Accesorios (bruto):"
+                    value={fmtCOP(accesoriosBrutos)}
                   />
 
                   <RowRight
-                    label="Extras Total con IVA:"
-                    value={fmtCOP(extras_total_con_iva)}
+                    label="Adicionales (bruto):"
+                    value={fmtCOP(adicionalesBrutos)}
+                  />
+
+                  <RowRight
+                    badge="inline-block rounded-full bg-red-50 border-red-200 text-red-700 px-2 py-0.5"
+                    label="Extras total sin IVA:"
+                    value={fmtCOP(extrasBrutosTotal)}
+
+                  />
+
+                  <RowRight
+                    label={`IVA extras (${IVA_PCT}%):`}
+                    value={fmtCOP(iva_extras_total)}
                     bold
                   />
 
-                  <RowRight label={`IVA extras (${IVA_PCT}%):`} value={fmtCOP(iva_extras_total)} bold />
+                  <RowRight
+                    label="Extras total con IVA:"
+                    value={fmtCOP(extras_total_con_iva)}
+                    bold
+                    badge="inline-block rounded-full bg-emerald-50 border-emerald-200 text-emerald-700 px-2 py-0.5"
 
+                  />
                 </div>
+
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
@@ -1072,9 +1216,26 @@ const DetallesFacturacion: React.FC = () => {
                     value={fmtCOP(subtotalDocs)}
                   />
                   <RowRight
-                    label="Seguros + Accesorios:"
+                    label="Seguros + (Accesorios + IVA):"
                     value={fmtCOP(acc_seg_total)}
                   />
+
+                  {mostrarSeccionDescuentosAutorizar && (
+
+                    <RowRight
+                      label="Total a descontar (autorización):"
+                      value={aplicaDescuentosAutorizados ? fmtCOP(-descuentoAutorizadoTotal) : "—"}
+                      bold
+                      badge="inline-block rounded-full bg-red-50 border-red-200 text-red-700 px-2 py-0.5"
+
+                    />
+                  )}
+                  <RowRight
+                    label="Valor Garantía"
+                    value={fmtCOP(garantiaExtendidaValor)}
+                  />
+
+
                   <RowRight
                     label="TOTAL GENERAL:"
                     value={fmtCOP(totalGeneral)}
@@ -1178,17 +1339,17 @@ const DetallesFacturacion: React.FC = () => {
                       </div>
                     </div>
 
-                    
-{!tieneManifiesto && !!idSolicitud && (
-  <ManifiestoUploader
-    idSolicitud={idSolicitud}
-    idCotizacion={id_cotizacion}
-    manifiestoUrlFinal={manifiestoUrlFinal}
-    onUploaded={() => {
-      refetch();
-    }}
-  />
-)}
+
+                    {!tieneManifiesto && !!idSolicitud && (
+                      <ManifiestoUploader
+                        idSolicitud={idSolicitud}
+                        idCotizacion={id_cotizacion}
+                        manifiestoUrlFinal={manifiestoUrlFinal}
+                        onUploaded={() => {
+                          refetch();
+                        }}
+                      />
+                    )}
 
                     {/* Carga de factura: SOLO si aún NO hay factura */}
                     {!tieneFactura && (
@@ -1373,9 +1534,10 @@ const DetallesFacturacion: React.FC = () => {
 
                       // CONDICIONES DEL NEGOCIO
                       cn_valor_moto={cn_total}
-                      cn_descuento={0}
-                      cn_desc_auto={0}
-                      cn_valorMotoDesc={cn_total}
+                      cn_descuento={-Math.abs(descuentos)} // el descuento normal (ya incluido)
+                      cn_desc_auto={-(descuentoAutorizadoTotal || 0)} // autorizado + contraentrega
+                      cn_valorMotoDesc={cn_total} // ya viene con la resta aplicada
+
                       cn_valorBruto={cn_bruto}
                       cn_iva={cn_iva}
                       cn_total={cn_total}

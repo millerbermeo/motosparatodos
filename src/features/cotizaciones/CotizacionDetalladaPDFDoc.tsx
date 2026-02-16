@@ -39,6 +39,19 @@ const formatSeguros = (raw: any): string => {
   }
 };
 
+const normalizeLower = (v: any) =>
+  String(v ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
+
+const isGpsActive = (gpsMeses: any) => {
+  const v = normalizeLower(gpsMeses);
+  if (!v || v === "no" || v === "0" || v === "null" || v === "undefined") return false;
+  return true; // "si", "sí", "12", 12, etc.
+};
+
 /* ============================
    Tipos
 ============================ */
@@ -302,7 +315,13 @@ const styles = StyleSheet.create({
   firmaLabel: { fontSize: 7.4, color: "#111827" },
 
   /* FOOTER */
-  footer: { fontSize: 6.6, color: "#6b7280", marginTop: 3, lineHeight: 1.1, textAlign: "center" },
+  footer: {
+    fontSize: 6.6,
+    color: "#6b7280",
+    marginTop: 3,
+    lineHeight: 1.1,
+    textAlign: "center",
+  },
   footerCenter: { fontSize: 6.6, color: "#374151", marginTop: 2, textAlign: "center" },
 
   observacionesBox: {
@@ -325,7 +344,6 @@ const styles = StyleSheet.create({
     fontSize: 7.0,
     color: "#111827",
   },
-
 });
 
 const fmtCOP = (v: any) =>
@@ -406,13 +424,6 @@ const MiniBox: React.FC<{ label: string; value: string }> = ({ label, value }) =
   </View>
 );
 
-// const fmtGpsMeses = (v: any) => {
-//   if (v === null || v === undefined) return "No aplica";
-//   const s = String(v).toLowerCase();
-//   if (s === "no") return "No";
-//   return `${v} meses`;
-// };
-
 const pickComentario = (d: any) => safe(d.comentario2 ?? d.comentario ?? "", "—");
 
 /* ============================
@@ -443,6 +454,16 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
   const almacen = empresa?.almacen || "FERIA DE LA MOVILIDAD";
   const tipoPago = safe(d.tipo_pago || d.metodo_pago);
 
+  // ===== reglas UI -> PDF =====
+  const tipoPagoNorm = normalizeLower(d.tipo_pago || d.metodo_pago);
+  const isContado = tipoPagoNorm.includes("contado");
+  const isCreditoPropio = tipoPagoNorm.includes("directo") || tipoPagoNorm.includes("credibike");
+  const isCreditoTerceros = tipoPagoNorm.includes("terceros");
+
+  // Igual que UI:
+  const showGarantiaExtendida = isCreditoPropio;
+  const polizaLabel = (isContado || isCreditoTerceros) ? "Garantía extendida" : "Póliza";
+
   const motoImgA = resolveMotoImg(d, "A", motoFotoAUrl);
   const motoImgB = hayMotoB ? resolveMotoImg(d, "B", motoFotoBUrl) : null;
 
@@ -464,7 +485,7 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
     const isA = side === "A";
 
     const precioBase = num(d[`precio_base${s}`]);
-    const descuentos = num(d[`descuentos${s}`]);
+    const descuentos = Math.abs(num(d[`descuentos${s}`])); // siempre positivo, se resta
 
     const accesorios = num(d[`accesorios${s}`]);
     const marcacion = num(d[`marcacion${s}`]);
@@ -486,20 +507,47 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
       num(d[isA ? "total_adicionales_1" : "total_adicionales_2"]) ||
       (runt + licencia + defensas + hand + otrosAd);
 
+    // ===== GPS (no sumar si viene "no") =====
     const gpsMeses = d[`gps_meses${s}`];
-    const gpsValor = num(d[`valor_gps${s}`]);
+    const gpsValorRaw = num(d[`valor_gps${s}`]);
+    const gpsValor = isGpsActive(gpsMeses) ? gpsValorRaw : 0;
 
-    // 👇 PÓLIZA (NUEVO)
-    const polizaCodigo = d[`poliza${s}`] ?? null;         // poliza_a / poliza_b
-    const polizaValor = num(d[`valor_poliza${s}`]);       // valor_poliza_a / valor_poliza_b
+    // ===== PÓLIZA =====
+    const polizaCodigo = d[`poliza${s}`] ?? null; // poliza_a / poliza_b
+    const polizaValor = num(d[`valor_poliza${s}`]); // valor_poliza_a / valor_poliza_b
 
+    // ===== Garantía extendida (solo crédito propio) =====
+    const geSide = getGE(side);
+    const geMeses = num(geSide.meses);
+    const geValor = (showGarantiaExtendida && geMeses > 0) ? num(geSide.valor) : 0;
 
+    // ===== Totales =====
+    const totalSinSegurosApi = num(d[`total_sin_seguros${s}`]);
+    const totalApi = num(d[`precio_total${s}`]);
+
+    // Igual que UI: base - descuentos + accesorios + docs + adicionales + poliza + ge + gps + otrosSeguros
+    const totalSinSegurosCalc =
+      precioBase +
+      docsReal +
+      accesoriosMarcacion +
+      adicionalesTotal +
+      polizaValor +
+      geValor +
+      gpsValor -
+      descuentos;
+
+    const totalCalc = totalSinSegurosCalc + otrosSeguros;
+
+    // Usa API solo si cuadra
     const totalSinSeguros =
-      num(d[`total_sin_seguros${s}`]) ||
-      (precioBase + docsReal + accesoriosMarcacion + adicionalesTotal - descuentos + polizaValor);
+      totalSinSegurosApi > 0 && Math.abs(totalSinSegurosApi - totalSinSegurosCalc) < 2
+        ? totalSinSegurosApi
+        : totalSinSegurosCalc;
 
-
-    const total = num(d[`precio_total${s}`]) || (totalSinSeguros + otrosSeguros);
+    const total =
+      totalApi > 0 && Math.abs(totalApi - totalCalc) < 2
+        ? totalApi
+        : totalCalc;
 
     const cuotaInicial = num(d[`cuota_inicial${s}`]);
     const saldo = Math.max(total - cuotaInicial, 0);
@@ -535,14 +583,18 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
 
       gpsMeses,
       gpsValor,
+
+      geMeses,
+      geValor,
+
       totalSinSeguros,
       total,
       cuotaInicial,
       saldo,
       cuotas,
+
       polizaCodigo,
       polizaValor,
-
     };
   };
 
@@ -552,11 +604,9 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
     const label = side === "A" ? motoALabel : motoBLabel;
     const img = side === "A" ? motoImgA : motoImgB;
 
-    // const garantia = side === "A" ? d.garantia_a : d.garantia_b;
     const segurosDetalle = formatSeguros(side === "A" ? d.seguros_a : d.seguros_b);
 
     const v = getMotoValues(side);
-    const geSide = getGE(side);
 
     const cuotasList = [
       ["6", v.cuotas.c6],
@@ -566,6 +616,56 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
       ["30", v.cuotas.c30],
       ["36", v.cuotas.c36],
     ].filter(([, val]) => Number(val) > 0);
+
+    type RowItem =
+      | { k: string; v: any; type: "money" }
+      | { k: string; v: any; type: "moneyOrDash" }
+      | { k: string; v: any; type: "text" };
+
+    const leftRows: RowItem[] = [
+      { k: "Precio base", v: v.precioBase, type: "money" },
+      { k: "Docs (total)", v: v.docsReal, type: "money" },
+      { k: "Marcación", v: v.marcacion, type: "money" },
+
+      // GPS (si viene "no", mostramos 0 y NO suma en total)
+      {
+        k: isGpsActive(v.gpsMeses)
+          ? (Number(v.gpsMeses) > 0 ? `GPS (${Number(v.gpsMeses)} meses)` : "GPS")
+          : "GPS",
+        v: v.gpsValor,
+        type: "money",
+      },
+    ];
+
+    // Garantía extendida: SOLO crédito propio
+    if (showGarantiaExtendida) {
+      leftRows.push({
+        k: v.geMeses > 0 ? `Garantía extendida (${v.geMeses} meses)` : "Garantía extendida",
+        v: v.geMeses > 0 ? v.geValor : null,
+        type: "moneyOrDash",
+      });
+    }
+
+    // Póliza: se renombra a "Garantía extendida" en contado/terceros (solo texto/cálculo)
+    if (num(v.polizaValor) > 0 || (v.polizaCodigo && String(v.polizaCodigo) !== "0")) {
+      leftRows.push({ k: polizaLabel, v: safe(v.polizaCodigo, "—"), type: "text" });
+      leftRows.push({ k: `Valor ${polizaLabel.toLowerCase()}`, v: v.polizaValor, type: "money" });
+    }
+
+    leftRows.push({ k: "Cuota inicial", v: v.cuotaInicial, type: "money" });
+
+    const rightRows = [
+      { k: "Seguro todo riesgo adicional", v: v.otrosSeguros },
+      { k: "Cascos y accesorios", v: v.accesorios },
+      // Descuento negativo (solo visual)
+      { k: "Descuento / plan de marca", v: -Math.abs(v.descuentos) },
+      { k: "Inscripción RUNT", v: v.runt },
+      { k: "Licencias", v: v.licencia },
+      { k: "Defensas", v: v.defensas },
+      { k: "Hand savers", v: v.hand },
+      { k: "Otros adicionales", v: v.otrosAd },
+      { k: "TOTAL", v: v.total },
+    ];
 
     return (
       <>
@@ -580,7 +680,6 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
         <View style={styles.motoCard} wrap={false}>
           <View style={styles.motoHeader} wrap={false}>
             <Text style={styles.motoTitle}>{safe(label)}</Text>
-
           </View>
 
           <View style={styles.motoBodyRow} wrap={false}>
@@ -603,46 +702,18 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
                     <Text style={[styles.tableCellHeader, styles.tableCellLast]}>Valor</Text>
                   </View>
 
-                  {[
-                    { k: "Precio base", v: v.precioBase, type: "money" },
-                    { k: "Docs (total)", v: v.docsReal, type: "money" },
-                    { k: "Marcación", v: v.marcacion, type: "money" },
-
-                    // ✅ GPS (24 meses) -> $valor
-                    {
-                      k:
-                        Number(v.gpsMeses) > 0
-                          ? `GPS (${Number(v.gpsMeses)} meses)`
-                          : "GPS",
-                      v: v.gpsValor,
-                      type: "money",
-                    },
-
-                    // ✅ Garantía extendida (24 meses) -> $valor
-                    {
-                      k:
-                        geSide.meses > 0
-                          ? `Garantía extendida (${geSide.meses} meses)`
-                          : "Garantía extendida",
-                      v: geSide.meses > 0 ? geSide.valor : null,
-                      type: "moneyOrDash",
-                    },
-
-                    { k: "Cuota inicial", v: v.cuotaInicial, type: "money" },
-                  ].map((item, idx) => (
+                  {leftRows.map((item, idx) => (
                     <View style={styles.tableRow} key={`L-${side}-${item.k}-${idx}`}>
                       <Text style={styles.tableCell}>{item.k}</Text>
                       <Text style={[styles.tableCell, styles.tableCellLast]}>
                         {item.type === "money"
                           ? fmtCOP(item.v)
                           : item.type === "moneyOrDash"
-                            ? item.v ? fmtCOP(item.v) : "—"
-                            : "—"}
+                          ? item.v ? fmtCOP(item.v) : "—"
+                          : safe(item.v)}
                       </Text>
                     </View>
                   ))}
-
-
                 </View>
 
                 <View style={[styles.table, styles.half]} wrap={false}>
@@ -651,24 +722,12 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
                     <Text style={[styles.tableCellHeader, styles.tableCellLast]}>Valor</Text>
                   </View>
 
-                  {/* ===== TABLA DERECHA: "Resumen" (mismo contenedor) ===== */}
-                  {[
-                    { k: "Seguro todo riesgo adicional", v: v.otrosSeguros },
-                    { k: "Cascos y accesorios", v: v.accesorios },
-                    { k: "Descuento / plan de marca", v: v.descuentos },
-                    { k: "Inscripción RUNT", v: v.runt },
-                    { k: "Licencias", v: v.licencia },
-                    { k: "Defensas", v: v.defensas },
-                    { k: "Hand savers", v: v.hand },
-                    { k: "Otros adicionales", v: v.otrosAd },
-                    { k: "TOTAL", v: v.total },
-                  ].map((item, idx) => (
+                  {rightRows.map((item, idx) => (
                     <View style={styles.tableRow} key={`R-${side}-${item.k}-${idx}`}>
                       <Text style={styles.tableCell}>{item.k}</Text>
                       <Text style={[styles.tableCell, styles.tableCellLast]}>{fmtCOP(item.v)}</Text>
                     </View>
                   ))}
-
                 </View>
               </View>
 
@@ -709,7 +768,6 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
             </View>
           </View>
         </View>
-
       </>
     );
   };
@@ -719,16 +777,26 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
       {/* Observaciones */}
       <View style={styles.observacionesBox} wrap={false}>
         <Text style={styles.observacionesLabel}>Observaciones</Text>
-
+        {/* Si quieres imprimir comentario, descomenta:
+        <Text style={styles.observacionesText}>{pickComentario(d)}</Text>
+        */}
       </View>
 
       <SectionTitle title="Autorización de habeas data y firmas" />
       <View style={styles.box} wrap={false}>
-        <Text style={styles.habeasTitle}>Autorización de tratamiento de datos personales (Habeas Data)</Text>
+        <Text style={styles.habeasTitle}>
+          Autorización de tratamiento de datos personales (Habeas Data)
+        </Text>
 
         <Text style={styles.habeasText}>
-          Con la firma del presente documento, el cliente autoriza de manera libre, previa, expresa e informada a Moto Para Todos S.A.S. para recolectar, almacenar, usar y tratar sus datos personales suministrados por medios físicos o digitales, con el fin de gestionar la cotización, venta, financiación, contacto comercial y envío de información relacionada con sus productos y servicios.
-          Los datos tratados incluyen, entre otros, información de identificación y contacto. El titular declara conocer que, de conformidad con la Ley 1581 de 2012, puede conocer, actualizar, rectificar y solicitar la supresión de sus datos, así como revocar esta autorización cuando no se respeten las disposiciones legales.
+          Con la firma del presente documento, el cliente autoriza de manera libre, previa, expresa e
+          informada a Moto Para Todos S.A.S. para recolectar, almacenar, usar y tratar sus datos
+          personales suministrados por medios físicos o digitales, con el fin de gestionar la
+          cotización, venta, financiación, contacto comercial y envío de información relacionada con
+          sus productos y servicios. Los datos tratados incluyen, entre otros, información de
+          identificación y contacto. El titular declara conocer que, de conformidad con la Ley 1581
+          de 2012, puede conocer, actualizar, rectificar y solicitar la supresión de sus datos, así
+          como revocar esta autorización cuando no se respeten las disposiciones legales.
         </Text>
 
         <View style={styles.firmaRow} wrap={false}>
@@ -742,8 +810,8 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
       </View>
 
       <Text style={styles.footer}>
-        Precios y promociones sujetos a cambios sin previo aviso o hasta agotar existencias. La información será tratada
-        según Ley 1581 de 2012.
+        Precios y promociones sujetos a cambios sin previo aviso o hasta agotar existencias. La
+        información será tratada según Ley 1581 de 2012.
       </Text>
       <Text style={styles.footerCenter}>MOTO PARA TODOS S.A.S - Hacemos tu sueño realidad</Text>
     </>
@@ -779,7 +847,6 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
           <Text style={styles.resumenLine}>{safe(nombreCompletoCliente)}</Text>
           <Text style={styles.resumenLine}>CC: {safe(d.cedula)}</Text>
           <Text style={styles.resumenLine}>Cel: {safe(d.celular)}</Text>
-
           <Text style={styles.resumenLine}>Email: {safe(d.email)}</Text>
         </View>
 
@@ -842,7 +909,7 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
         </View>
       </View>
 
-      {/* SOLO bloque Moto B (y su GE) */}
+      {/* SOLO bloque Moto B */}
       {renderMotoBlock("B", { bigger: true })}
 
       {/* ✅ SIEMPRE al final del documento cuando hay 2 motos */}

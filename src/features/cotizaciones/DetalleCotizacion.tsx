@@ -260,6 +260,7 @@ const getFotoUrl = (payload: any, lado: 'A' | 'B'): string | undefined => {
   return buildImageUrl(payload?.[key]);
 };
 
+
 // "2025-08-19 05:53:12" -> "19 de agosto de 2025, 5:53 a. m."
 const fmtFecha = (isoLike?: string) => {
   if (!isoLike) return '';
@@ -312,7 +313,7 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
   const precioBase = Number(data?.[`precio_base${suffix}`]) || 0;
 
   // Descuentos
-  const descuentos = Number(data?.[`descuentos${suffix}`]) || 0;
+  const descuentos = Math.abs(Number(data?.[`descuentos${suffix}`]) || 0);
 
   // Accesorios + marcación
   const accesorios = Number(data?.[`accesorios${suffix}`]) || 0;
@@ -331,24 +332,24 @@ const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
   const precioDocumentos = soat + matricula + impuestos;
 
   // ====== Adicionales (en tu formulario: valorRunt1/2, valorLicencia1/2, etc.) ======
-const isA = lado === 'A';
+  const isA = lado === 'A';
 
-const adicionalesRunt = Number(data?.[isA ? "runt_1" : "runt_2"]) || 0;
-const adicionalesLicencia = Number(data?.[isA ? "licencia_1" : "licencia_2"]) || 0;
-const adicionalesDefensas = Number(data?.[isA ? "defensas_1" : "defensas_2"]) || 0;
-const adicionalesHandSavers = Number(data?.[isA ? "hand_savers_1" : "hand_savers_2"]) || 0;
-const adicionalesOtros = Number(data?.[isA ? "otros_adicionales_1" : "otros_adicionales_2"]) || 0;
+  const adicionalesRunt = Number(data?.[isA ? "runt_1" : "runt_2"]) || 0;
+  const adicionalesLicencia = Number(data?.[isA ? "licencia_1" : "licencia_2"]) || 0;
+  const adicionalesDefensas = Number(data?.[isA ? "defensas_1" : "defensas_2"]) || 0;
+  const adicionalesHandSavers = Number(data?.[isA ? "hand_savers_1" : "hand_savers_2"]) || 0;
+  const adicionalesOtros = Number(data?.[isA ? "otros_adicionales_1" : "otros_adicionales_2"]) || 0;
 
-const adicionalesSum =
-  adicionalesRunt +
-  adicionalesLicencia +
-  adicionalesDefensas +
-  adicionalesHandSavers +
-  adicionalesOtros;
+  const adicionalesSum =
+    adicionalesRunt +
+    adicionalesLicencia +
+    adicionalesDefensas +
+    adicionalesHandSavers +
+    adicionalesOtros;
 
-// si existe total_adicionales_1/2 úsalo aunque sea 0
-const adicionalesFromTotal = nOrU(data?.[isA ? "total_adicionales_1" : "total_adicionales_2"]);
-const adicionalesTotal = adicionalesFromTotal ?? adicionalesSum;
+  // si existe total_adicionales_1/2 úsalo aunque sea 0
+  const adicionalesFromTotal = nOrU(data?.[isA ? "total_adicionales_1" : "total_adicionales_2"]);
+  const adicionalesTotal = adicionalesFromTotal ?? adicionalesSum;
 
 
   // ====== GPS ======
@@ -376,19 +377,19 @@ const adicionalesTotal = adicionalesFromTotal ?? adicionalesSum;
   const polizaValorNum = Number(polizaValor) || 0;
 
   // total_sin_seguros: si backend lo trae, lo usamos; si no, calculamos fallback.
-const totalSinSeguros =
-  (nOrU(data?.[`total_sin_seguros${suffix}`]) ??
-    (precioBase +
-      precioDocumentos +
-      accesoriosYMarcacion +
-      adicionalesTotal -
-      descuentos +
-      polizaValorNum +
-      (garantiaExtendidaValor || 0) +
-      (Number(gpsValor) || 0)));
+  const totalSinSeguros =
+    (nOrU(data?.[`total_sin_seguros${suffix}`]) ??
+      (precioBase +
+        precioDocumentos +
+        accesoriosYMarcacion +
+        adicionalesTotal -
+        descuentos +
+        polizaValorNum +
+        (garantiaExtendidaValor || 0) +
+        (Number(gpsValor) || 0)));
 
-const total =
-  (nOrU(data?.[`precio_total${suffix}`]) ?? (totalSinSeguros + seguros));
+  const total =
+    (nOrU(data?.[`precio_total${suffix}`]) ?? (totalSinSeguros + seguros));
 
   // Cuotas
   const cuotas: Cuotas = {
@@ -495,6 +496,7 @@ const mapApiToCotizacion = (data: any): Cotizacion => {
   };
 };
 
+
 /* =======================
    Componente
    ======================= */
@@ -592,17 +594,25 @@ const DetalleCotizacion: React.FC = () => {
 
     const docs = (moto.soat || 0) + (moto.matricula || 0) + (moto.impuestos || 0);
 
+    const gpsAplicado = (() => {
+  const v = normalizeLower(moto.gpsMeses);
+  if (!v || v === "no" || v === "0") return 0;
+  return Number(moto.gpsValor ?? 0);
+})();
+
+
     return (
-      (moto.precioBase || 0) -
-      (moto.descuentos || 0) +
-      (moto.accesoriosYMarcacion || 0) +
-      docs +
-      (moto.adicionalesTotal || 0) +
-      Number(moto.polizaValor ?? 0) +
-      Number(moto.garantiaExtendidaValor ?? 0) +
-      Number(moto.gpsValor ?? 0) +
-      Number(moto.otrosSeguros ?? 0)
-    );
+  (moto.precioBase || 0) -
+  (moto.descuentos || 0) +
+  (moto.accesoriosYMarcacion || 0) +
+  docs +
+  (moto.adicionalesTotal || 0) +
+  Number(moto.polizaValor ?? 0) +
+  Number(moto.garantiaExtendidaValor ?? 0) +
+  gpsAplicado +                   // 👈 aquí
+  Number(moto.otrosSeguros ?? 0)
+);
+
   }, [moto]);
 
   const saldoConTodo = React.useMemo(() => {
@@ -692,7 +702,7 @@ const DetalleCotizacion: React.FC = () => {
       </div>
 
       <section className="w-full mb-6">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 rounded-2xl bg-gradient-to-r from-slate-50 to-slate-100 border border-info p-6">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 rounded-2xl bg-linear-to-r from-slate-50 to-slate-100 border border-info p-6">
           {/* Título y estado */}
           <div className="flex flex-col md:flex-row md:items-center md:gap-6 w-full">
             <div>
@@ -810,9 +820,10 @@ const DetalleCotizacion: React.FC = () => {
                   />
                   <DataRow
                     label="Descuentos"
-                    value={fmtCOP(moto.descuentos)}
+                    value={fmtCOP(-Math.abs(moto.descuentos || 0))}
                     valueClass="text-error font-semibold"
                   />
+
                   <DataRow
                     label="Precio neto vehículo"
                     value={fmtCOP((moto.precioBase || 0) - (moto.descuentos || 0))}
@@ -932,11 +943,10 @@ const DetalleCotizacion: React.FC = () => {
                         <DataRow
                           label="Total sin documentos / adicionales / accesorios / seguros"
                           value={fmtCOP(
-                            (moto.precioBase || 0) -
-                            (moto.descuentos || 0) +
-                            (moto.accesoriosYMarcacion || 0)
+                            (moto.precioBase || 0) - (moto.descuentos || 0)
                           )}
                         />
+
 
                         <DataRow
                           label="Total con documentos / adicionales / accesorios /  seguros"
@@ -972,7 +982,7 @@ const DetalleCotizacion: React.FC = () => {
                           label="Saldo a financiar"
                           value={fmtCOP(saldoConTodo)}
                           strong
-                          valueClass="text-success font-bold"
+                          valueClass="text-black font-bold"
                         />
 
                         {/* GPS: en contado puede venir si/no; en créditos meses */}
