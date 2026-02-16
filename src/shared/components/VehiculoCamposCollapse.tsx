@@ -76,33 +76,39 @@ export const VehiculoCamposCollapse: React.FC<Props> = ({
     });
   }, [data, reset]);
 
-  const onSubmit = (values: VehiculoCamposForm) => {
-    if (!enabled) return;
+const onSubmit = (values: VehiculoCamposForm) => {
+  if (!enabled) return;
 
-    guardar({
-      tipo,
-      id_cotizacion: idCotizacion,
+  guardar({
+    tipo,
+    id_cotizacion: idCotizacion,
 
-      numero_motor: values.numero_motor,
-      numero_chasis: values.numero_chasis,
-      color: values.color,
-      placa: values.placa,
-      observacion_final: values.observacion_final,
+    numero_motor: values.numero_motor,
+    numero_chasis: values.numero_chasis,
+    color: values.color,
+    placa: values.placa,
+    observacion_final: values.observacion_final,
 
-      beneficiario_nombre: values.beneficiario_nombre,
-      beneficiario_cedula: values.beneficiario_cedula,
-      beneficiario_parentesco: values.beneficiario_parentesco,
-    } as any);
-  };
+    ...(tipo === 1
+      ? {
+          beneficiario_nombre: values.beneficiario_nombre,
+          beneficiario_cedula: values.beneficiario_cedula,
+          beneficiario_parentesco: values.beneficiario_parentesco,
+        }
+      : {}),
+  } as any);
+};
 
   // ✅ AHORA sí: renders condicionales DESPUÉS de los hooks
   if (!enabled) return null;
 
   // Si quieres ocultarlo cuando no existe registro (pero sin romper hooks):
   if (!isLoading && !isError && !data) return null;
+  const showBeneficiario = tipo === 1;
+
 
   return (
-    <div className="card border bg-[#F1FCF6] mt-5 border-base-300/60 shadow-sm rounded-2xl">
+    <div className="flex mt-5 flex-col md:flex-row items-center justify-between gap-6  bg-linear-to-r from-slate-50 to-slate-100 border border-info p-3 shadow-sm rounded-2xl">
       <div className="card-body">
         <div className="flex items-center gap-2 mb-2">
           <div className="text-lg font-semibold">{label}</div>
@@ -154,40 +160,44 @@ export const VehiculoCamposCollapse: React.FC<Props> = ({
             </div>
           </div>
 
-          <div>
-            <div className="text-sm font-semibold opacity-70 mb-2">
-              Beneficiario (Seguro de vida)
-            </div>
+          {showBeneficiario && (
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="md:col-span-2">
+
+            <div>
+              <div className="text-sm font-semibold opacity-70 mb-2">
+                Beneficiario (Seguro de vida)
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="md:col-span-2">
+                  <FormInput<VehiculoCamposForm>
+                    name="beneficiario_nombre"
+                    label="Nombre del beneficiario"
+                    control={control}
+                    disabled={isPending}
+                    className="bg-white"
+                  />
+                </div>
+
                 <FormInput<VehiculoCamposForm>
-                  name="beneficiario_nombre"
-                  label="Nombre del beneficiario"
+                  name="beneficiario_cedula"
+                  label="Cédula del beneficiario"
                   control={control}
                   disabled={isPending}
                   className="bg-white"
                 />
+
+                <FormInput<VehiculoCamposForm>
+                  name="beneficiario_parentesco"
+                  label="Parentesco"
+                  control={control}
+                  disabled={isPending}
+                  placeholder="Ej: Hijo, Esposa, Madre..."
+                  className="bg-white"
+                />
               </div>
-
-              <FormInput<VehiculoCamposForm>
-                name="beneficiario_cedula"
-                label="Cédula del beneficiario"
-                control={control}
-                disabled={isPending}
-                className="bg-white"
-              />
-
-              <FormInput<VehiculoCamposForm>
-                name="beneficiario_parentesco"
-                label="Parentesco"
-                control={control}
-                disabled={isPending}
-                placeholder="Ej: Hijo, Esposa, Madre..."
-                className="bg-white"
-              />
             </div>
-          </div>
+          )}
 
           <div className="flex justify-end">
             <button
@@ -201,6 +211,8 @@ export const VehiculoCamposCollapse: React.FC<Props> = ({
           </div>
         </form>
       </div>
+
     </div>
+
   );
 };

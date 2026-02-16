@@ -293,7 +293,36 @@ const normalizeLower = (v: any) =>
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '');
 
-/* =======================
+
+
+const getGpsValorAplicado = (moto?: Motocicleta | null) => {
+  if (!moto) return 0;
+  const valor = Number(moto.gpsValor ?? 0);
+  return Number.isFinite(valor) && valor > 0 ? valor : 0;
+};
+
+const getGpsTexto = (moto?: Motocicleta | null, isContado?: boolean) => {
+  if (!moto) return 'No aplica';
+
+  const valor = Number(moto.gpsValor ?? 0);
+  if (!(Number.isFinite(valor) && valor > 0)) return 'No';
+
+  // Si hay valor, mostramos algo coherente
+  const v = normalizeLower(moto.gpsMeses);
+
+  // contado: normalmente es Sí/No
+  if (isContado) return 'Sí';
+
+  // crédito: si viene meses, los mostramos
+  if (!v || v === 'si' || v === 'sí') return 'Sí';
+  if (v === 'no' || v === '0') return 'Sí'; // viene "no" pero hay valor => igual aplica
+  return `${moto.gpsMeses} meses`;
+};
+
+
+/* ===========
+============
+
    Mapeo de API -> UI
    ======================= */
 const buildMoto = (data: any, lado: 'A' | 'B'): Motocicleta | undefined => {
@@ -594,24 +623,21 @@ const DetalleCotizacion: React.FC = () => {
 
     const docs = (moto.soat || 0) + (moto.matricula || 0) + (moto.impuestos || 0);
 
-    const gpsAplicado = (() => {
-  const v = normalizeLower(moto.gpsMeses);
-  if (!v || v === "no" || v === "0") return 0;
-  return Number(moto.gpsValor ?? 0);
-})();
+    const gpsAplicado = getGpsValorAplicado(moto);
+
 
 
     return (
-  (moto.precioBase || 0) -
-  (moto.descuentos || 0) +
-  (moto.accesoriosYMarcacion || 0) +
-  docs +
-  (moto.adicionalesTotal || 0) +
-  Number(moto.polizaValor ?? 0) +
-  Number(moto.garantiaExtendidaValor ?? 0) +
-  gpsAplicado +                   // 👈 aquí
-  Number(moto.otrosSeguros ?? 0)
-);
+      (moto.precioBase || 0) -
+      (moto.descuentos || 0) +
+      (moto.accesoriosYMarcacion || 0) +
+      docs +
+      (moto.adicionalesTotal || 0) +
+      Number(moto.polizaValor ?? 0) +
+      Number(moto.garantiaExtendidaValor ?? 0) +
+      gpsAplicado +                   // 👈 aquí
+      Number(moto.otrosSeguros ?? 0)
+    );
 
   }, [moto]);
 
@@ -691,7 +717,7 @@ const DetalleCotizacion: React.FC = () => {
   }
 
   const isFacturado = normalizeLower(q.estado).includes("facturado");
-  const tipoVehiculo = (isCreditoPropio || isCreditoTerceros) ? (1 as const) : (2 as const);
+  const tipoVehiculo = isCreditoPropio ? (1 as const) : (2 as const);
 
 
   return (
@@ -988,24 +1014,13 @@ const DetalleCotizacion: React.FC = () => {
                         {/* GPS: en contado puede venir si/no; en créditos meses */}
                         <DataRowText
                           label={isContado ? 'GPS' : 'GPS (meses)'}
-                          value={(() => {
-                            if (moto.gpsMeses === null) return 'No aplica';
-                            const v = normalizeLower(moto.gpsMeses);
-                            if (!v || v === 'no' || v === '0') return 'No';
-                            if (v === 'si' || v === 'sí') return 'Sí';
-                            return `${moto.gpsMeses} meses`;
-                          })()}
+                          value={getGpsTexto(moto, isContado)}
                         />
+
 
                         <DataRow
                           label="Valor GPS"
-                          value={(() => {
-                            if (moto.gpsMeses === null) return '—';
-                            const v = normalizeLower(moto.gpsMeses);
-                            if (!v || v === 'no' || v === '0') return fmtCOP(0);
-                            // si 'si' o meses => mostrar valor
-                            return fmtCOP(Number(moto.gpsValor ?? 0));
-                          })()}
+                          value={fmtCOP(getGpsValorAplicado(moto))}
                         />
 
                         {/* Si quieres ver el valor de garantía extendida SOLO en crédito propio, mantenemos el estilo y no rompemos nada */}

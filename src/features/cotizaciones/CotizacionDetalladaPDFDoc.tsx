@@ -46,11 +46,26 @@ const normalizeLower = (v: any) =>
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "");
 
-const isGpsActive = (gpsMeses: any) => {
-  const v = normalizeLower(gpsMeses);
-  if (!v || v === "no" || v === "0" || v === "null" || v === "undefined") return false;
-  return true; // "si", "sí", "12", 12, etc.
+
+
+ const getGpsValorAplicado = (gpsValorRaw: any) => {
+  const valor = Number(gpsValorRaw ?? 0);
+  if (!Number.isFinite(valor) || valor <= 0) return 0;
+  return valor;
 };
+
+const getGpsLabel = (gpsMeses: any, isContado: boolean) => {
+
+  // contado: solo "GPS"
+  if (isContado) return "GPS";
+
+  // crédito: si viene número de meses, lo mostramos
+  const mesesNum = Number(gpsMeses);
+  if (Number.isFinite(mesesNum) && mesesNum > 0) return `GPS (${mesesNum} meses)`;
+
+  return "GPS";
+};
+
 
 /* ============================
    Tipos
@@ -507,10 +522,15 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
       num(d[isA ? "total_adicionales_1" : "total_adicionales_2"]) ||
       (runt + licencia + defensas + hand + otrosAd);
 
+
+
+
     // ===== GPS (no sumar si viene "no") =====
-    const gpsMeses = d[`gps_meses${s}`];
-    const gpsValorRaw = num(d[`valor_gps${s}`]);
-    const gpsValor = isGpsActive(gpsMeses) ? gpsValorRaw : 0;
+// ===== GPS (aplica si hay valor > 0) =====
+const gpsMeses = d[`gps_meses${s}`];
+const gpsValorRaw = num(d[`valor_gps${s}`]);
+const gpsValor = getGpsValorAplicado(gpsValorRaw);
+
 
     // ===== PÓLIZA =====
     const polizaCodigo = d[`poliza${s}`] ?? null; // poliza_a / poliza_b
@@ -628,13 +648,12 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
       { k: "Marcación", v: v.marcacion, type: "money" },
 
       // GPS (si viene "no", mostramos 0 y NO suma en total)
-      {
-        k: isGpsActive(v.gpsMeses)
-          ? (Number(v.gpsMeses) > 0 ? `GPS (${Number(v.gpsMeses)} meses)` : "GPS")
-          : "GPS",
-        v: v.gpsValor,
-        type: "money",
-      },
+ {
+  k: getGpsLabel(v.gpsMeses, isContado),
+  v: v.gpsValor,
+  type: "money",
+},
+
     ];
 
     // Garantía extendida: SOLO crédito propio

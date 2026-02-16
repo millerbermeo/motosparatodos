@@ -171,6 +171,8 @@ type MotoCot = {
   adicionalesTotal: number;
   totalSinSeguros: number;
   total: number;
+    gpsValor?: number;
+
 };
 
 const buildMotoFromCotizacion = (cot: any, lado: "A" | "B"): MotoCot | undefined => {
@@ -192,6 +194,7 @@ const buildMotoFromCotizacion = (cot: any, lado: "A" | "B"): MotoCot | undefined
   const accesorios = Number(cot?.[`accesorios${suffix}`]) || 0;
   const marcacion = Number(cot?.[`marcacion${suffix}`]) || 0;
   const accesoriosYMarcacion = accesorios + marcacion;
+const gpsValor = Number(cot?.[`valor_gps${suffix}`]) || 0;
 
   let seguros = 0;
 
@@ -269,6 +272,7 @@ const buildMotoFromCotizacion = (cot: any, lado: "A" | "B"): MotoCot | undefined
     adicionalesTotal,
     totalSinSeguros,
     total,
+    gpsValor,
   };
 };
 
@@ -620,7 +624,8 @@ const DetallesFacturacion: React.FC = () => {
   // Si hay motoCot: estos valores SON SIN IVA (brutos)
   const accesoriosBrutos = motoCot?.accesoriosYMarcacion ?? 0;
   const adicionalesBrutos = motoCot?.adicionalesTotal ?? 0;
-  const extrasBrutosTotal = accesoriosBrutos + adicionalesBrutos;
+const gpsBruto = motoCot?.gpsValor ?? 0;
+const extrasBrutosTotal = accesoriosBrutos + adicionalesBrutos + gpsBruto;
 
   // IVA extras (siempre calculado)
   const iva_extras_total = Math.round(extrasBrutosTotal * IVA_DEC);
@@ -1168,6 +1173,15 @@ const DetallesFacturacion: React.FC = () => {
                 <div className="bg-sky-600 text-white font-semibold px-5 py-2.5 text-sm">
                   Adicionales y accesorios                </div>
                 <div className="divide-y divide-slate-200">
+
+                  {gpsBruto > 0 && (
+  <RowRight
+    label="GPS:"
+    value={fmtCOP(gpsBruto)}
+  />
+)}
+
+
                   <RowRight
                     label="Accesorios (bruto):"
                     value={fmtCOP(accesoriosBrutos)}
