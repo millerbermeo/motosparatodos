@@ -140,14 +140,17 @@ export const useDeleteEmpresa = () => {
 
 // Trae UNA empresa por id (toda la data de la tabla)
 export const useEmpresaById = (id?: number) => {
+  const enabled = Number.isFinite(id) && (id as number) > 0;
+
   return useQuery<any | null>({
     queryKey: ["empresa-by-id", id],
-    enabled: !!id, // solo consulta si hay id
+    enabled,
     queryFn: async () => {
       const { data } = await api.get<any>("/empresas_id_full.php", {
         params: { id },
       });
-      return data.empresa ?? null;
+
+      return data?.empresa ?? null;
     },
   });
 };

@@ -68,13 +68,22 @@ export const useVehiculoCampos = (
           opts?.endpoint ?? "/vehiculo_campos.php",
           {
             params: { tipo, id_cotizacion: idCotizacion },
-            headers: opts?.token
-              ? { Authorization: `Bearer ${opts.token}` }
-              : undefined,
+            headers: opts?.token ? { Authorization: `Bearer ${opts.token}` } : undefined,
           }
         );
 
-        if (!data?.success || !data.data) return null;
+        // ✅ Caso "no existe": lo tratamos como "sin datos", NO error
+        const errTxt = (data?.error ?? "").toLowerCase();
+        if (errTxt.includes("no se encontró registro") || errTxt.includes("no se encontro registro")) {
+          return null;
+        }
+
+        // ✅ Si no fue éxito real, también devolvemos null (o puedes throw si quieres)
+        if (!data?.success) return null;
+
+        // ✅ éxito pero sin data => null
+        if (!data.data) return null;
+
         return data.data;
       } catch (err) {
         const e = err as AxiosError;

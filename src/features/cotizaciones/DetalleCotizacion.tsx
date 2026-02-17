@@ -549,14 +549,11 @@ const DetalleCotizacion: React.FC = () => {
     [payload]
   );
 
-  const rawIdEmpresa =
-    payload?.id_empresa_a ??
-    payload?.id_empresa_b;
+const rawIdEmpresa = payload?.id_empresa_a ?? payload?.id_empresa_b;
+const idEmpresa = Number(rawIdEmpresa);
 
-  const idEmpresa = Number(rawIdEmpresa);
-
-  const { data: empresaSeleccionada, isLoading: loadingEmpresa } = useEmpresaById(idEmpresa);
-
+const { data: empresaSeleccionada, isLoading: loadingEmpresa } =
+  useEmpresaById(idEmpresa);
 
   const { data: solicitudFact } = useSolicitudFacturacionPorIdCotizacion(id, {
     enabled: !!id, // 👈 clave

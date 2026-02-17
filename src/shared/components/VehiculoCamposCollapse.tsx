@@ -33,7 +33,7 @@ export const VehiculoCamposCollapse: React.FC<Props> = ({
 }) => {
   const enabled = Boolean(idCotizacion) && Boolean(tipo);
 
-  const { data, isLoading, isError } = useVehiculoCampos(
+  const { data, isLoading } = useVehiculoCampos(
     { tipo, idCotizacion },
     { enabled }
   );
@@ -103,7 +103,8 @@ const onSubmit = (values: VehiculoCamposForm) => {
   if (!enabled) return null;
 
   // Si quieres ocultarlo cuando no existe registro (pero sin romper hooks):
-  if (!isLoading && !isError && !data) return null;
+const noExiste = !isLoading && data === null;
+if (noExiste) return null; // o muestra "No hay registro, puedes crearlo"
   const showBeneficiario = tipo === 1;
 
 
