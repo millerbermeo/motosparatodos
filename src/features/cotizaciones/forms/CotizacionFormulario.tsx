@@ -297,6 +297,7 @@ const CotizacionFormulario: React.FC = () => {
     const showMotos = isMotos || metodo === "terceros";
 
     const name = useAuthStore((s) => s.user?.name);
+    const telefonoAsesor = useAuthStore((s) => s.user?.telefono) ?? "";
 
     const { data: canales, isPending: loadingCanales } = useCanales();
     const { data: preguntas, isPending: loadingPregs } = usePreguntas();
@@ -814,6 +815,7 @@ const CotizacionFormulario: React.FC = () => {
 
         console.log(motoA)
 
+        const gpsComoContado = data.metodoPago === "contado" || data.metodoPago === "terceros";
 
         // Validaciones con SweetAlert2
         const mustHaveMoto1 = showMotos && incluirMoto1;
@@ -943,6 +945,7 @@ const CotizacionFormulario: React.FC = () => {
 
         const gpsSelContA = data.gpsContado1 ?? "no";
         const gpsSelContB = data.gpsContado2 ?? "no";
+
 
 
         const payload: Record<string, any> = {
@@ -1099,25 +1102,31 @@ const CotizacionFormulario: React.FC = () => {
                     ? Number(motoB.id_empresa)
                     : null,
 
-            gps_meses_a: incluirMoto1
-                ? (data.metodoPago === "contado" ? gpsSelContA : (data.gps1 ?? "no"))
-                : "no",
 
-            gps_meses_b: incluirMoto2
-                ? (data.metodoPago === "contado" ? gpsSelContB : (data.gps2 ?? "no"))
-                : null,
+            // gps_meses_a: incluirMoto1
+            //     ? (gpsComoContado
+            //         ? (gpsSelContA === "si" ? "12" : "no") // o "si" si tu BD lo espera así
+            //         : (data.gps1 ?? "no"))
+            //     : "no",
+
+            // gps_meses_b: incluirMoto2
+            //     ? (gpsComoContado
+            //         ? (gpsSelContB === "si" ? "12" : "no")
+            //         : (data.gps2 ?? "no"))
+            //     : null,
 
             valor_gps_a: incluirMoto1
-                ? (data.metodoPago === "contado"
+                ? (gpsComoContado
                     ? (gpsSelContA === "si" ? gpsA : 0)
                     : ((data.gps1 ?? "no") !== "no" ? gpsA : 0))
                 : 0,
 
             valor_gps_b: incluirMoto2
-                ? (data.metodoPago === "contado"
-                    ? (gpsSelContB === "si" ? gpsB : null)
-                    : ((data.gps2 ?? "no") !== "no" ? gpsB : null))
-                : null,
+                ? (gpsComoContado
+                    ? (gpsSelContB === "si" ? gpsB : 0)
+                    : ((data.gps2 ?? "no") !== "no" ? gpsB : 0))
+                : 0,
+
 
             poliza_a: incluirMoto1 ? (data.poliza1 || null) : null,
             valor_poliza_a: incluirMoto1 ? toNumberSafe(data.valor_poliza_a) : 0,
@@ -1125,7 +1134,21 @@ const CotizacionFormulario: React.FC = () => {
             poliza_b: incluirMoto2 ? (data.poliza2 || null) : null,
             valor_poliza_b: incluirMoto2 ? toNumberSafe(data.valor_poliza_b) : null,
 
+            telefono_asesor: telefonoAsesor,
+
+
         };
+
+        if (!gpsComoContado) {
+            payload.gps_meses_a = incluirMoto1 ? (data.gps1 ?? "no") : "no";
+            payload.gps_meses_b = incluirMoto2 ? (data.gps2 ?? "no") : null;
+        }
+
+        // ❌ si es contado o terceros, te aseguras que NO existan
+        if (gpsComoContado) {
+            delete payload.gps_meses_a;
+            delete payload.gps_meses_b;
+        }
 
         console.log("SUBMIT (payload EXACTO BD):", payload);
 
@@ -1235,25 +1258,29 @@ const CotizacionFormulario: React.FC = () => {
     // o si prefieres: const showGarantiaExtendida = showMotos && (metodo !== "terceros" ? true : true);
     // (pero con showMotos es suficiente: si estás en motos, se muestra)
 
+
     React.useEffect(() => {
-  if (metodo === "contado" || metodo === "terceros") {
-            // En contado no usamos meses (12/24/36)
+        const gpsComoContado = metodo === "contado" || metodo === "terceros";
+
+        if (gpsComoContado) {
+            // en contado/terceros NO usamos meses
             setValue("gps1", "no");
             setValue("gps2", "no");
 
-            // Si el usuario marca NO, fuerza 0.
-            if ((watch("gpsContado1") ?? "no") === "no") setValue("gps_a", "0");
-            if ((watch("gpsContado2") ?? "no") === "no") setValue("gps_b", "0");
+            const c1 = watch("gpsContado1") ?? "no";
+            const c2 = watch("gpsContado2") ?? "no";
 
-            // Si marca SI, deja el input listo para escribir (vacío)
-            if ((watch("gpsContado1") ?? "no") === "si" && watch("gps_a") === "0") setValue("gps_a", "");
-            if ((watch("gpsContado2") ?? "no") === "si" && watch("gps_b") === "0") setValue("gps_b", "");
+            if (c1 === "no") setValue("gps_a", "0");
+            if (c2 === "no") setValue("gps_b", "0");
+
+            if (c1 === "si" && watch("gps_a") === "0") setValue("gps_a", "");
+            if (c2 === "si" && watch("gps_b") === "0") setValue("gps_b", "");
         } else {
-            // En crédito no usamos el select contado
+            // credibike: no select si/no
             setValue("gpsContado1", "no");
             setValue("gpsContado2", "no");
         }
-    }, [metodo, setValue, watch("gpsContado1"), watch("gpsContado2")]);
+    }, [metodo, setValue, watch("gpsContado1"), watch("gpsContado2"), watch("gps_a"), watch("gps_b")]);
 
 
 
@@ -1514,7 +1541,7 @@ const CotizacionFormulario: React.FC = () => {
 
     React.useEffect(() => {
         if (!incluirMoto1) return;
-        if (metodo === "contado") return; // 👈 esto evita autollenado
+        if (metodo === "contado" || metodo === "terceros") return; // ✅
 
         const sel = watch("gps1") ?? "no";
         if (sel === "no") {
@@ -1526,12 +1553,12 @@ const CotizacionFormulario: React.FC = () => {
         const val = calcGps(precioBase1, cfg);
 
         setValue("gps_a", String(val), { shouldDirty: true, shouldValidate: true });
-    }, [incluirMoto1, watch("gps1"), precioBase1, gpsMap, setValue]);
+    }, [incluirMoto1, watch("gps1"), precioBase1, gpsMap, setValue, metodo]); // ✅ agrega metodo
 
 
     React.useEffect(() => {
         if (!incluirMoto2) return;
-        if (metodo === "contado") return;
+        if (metodo === "contado" || metodo === "terceros") return; // ✅
 
         const sel = watch("gps2") ?? "no";
         if (sel === "no") {
@@ -1543,8 +1570,7 @@ const CotizacionFormulario: React.FC = () => {
         const val = calcGps(precioBase2, cfg);
 
         setValue("gps_b", String(val), { shouldDirty: true, shouldValidate: true });
-    }, [incluirMoto2, watch("gps2"), precioBase2, gpsMap, setValue]);
-
+    }, [incluirMoto2, watch("gps2"), precioBase2, gpsMap, setValue, metodo]); // ✅ agrega metodo
 
 
 

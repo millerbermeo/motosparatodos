@@ -551,7 +551,7 @@ const CreditoDetalle: React.FC = () => {
 
 
     return (
-        <main className="min-h-screen w-full bg-gradient-to-b from-white to-slate-50">
+        <main className="min-h-screen w-full bg-linear-to-b from-white to-slate-50">
             {/* Header */}
             <header className="sticky top-0 z-10 backdrop-blur px-3 bg-slate-100 border border-white">
 
@@ -900,7 +900,7 @@ const CreditoDetalle: React.FC = () => {
                                                             >
                                                                 {fileName}
                                                             </p>
-                                                            <p className="text-xs text-slate-500 break-words">{s}</p>
+                                                            <p className="text-xs text-slate-500 wrap-break-word">{s}</p>
                                                         </div>
                                                     </div>
 
@@ -961,7 +961,7 @@ const CreditoDetalle: React.FC = () => {
                         </summary>
                         <div className="collapse-content text-sm">
 
-                            <div className="sticky mb-5 top-0 z-10 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 ">
+                            <div className="sticky mb-5 top-0 z-10 bg-white/80 backdrop-blur supports-backdrop-filter:bg-white/60">
                                 <div className="px-6 mt-2">
                                     <div className="grid grid-cols-2 text-center text-xs sm:text-sm font-medium text-neutral-600">
                                         <div className="py-1 rounded-lg bg-neutral-100">Usuario</div>

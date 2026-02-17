@@ -171,7 +171,7 @@ type MotoCot = {
   adicionalesTotal: number;
   totalSinSeguros: number;
   total: number;
-    gpsValor?: number;
+  gpsValor?: number;
 
 };
 
@@ -194,7 +194,7 @@ const buildMotoFromCotizacion = (cot: any, lado: "A" | "B"): MotoCot | undefined
   const accesorios = Number(cot?.[`accesorios${suffix}`]) || 0;
   const marcacion = Number(cot?.[`marcacion${suffix}`]) || 0;
   const accesoriosYMarcacion = accesorios + marcacion;
-const gpsValor = Number(cot?.[`valor_gps${suffix}`]) || 0;
+  const gpsValor = Number(cot?.[`valor_gps${suffix}`]) || 0;
 
   let seguros = 0;
 
@@ -486,6 +486,12 @@ const DetallesFacturacion: React.FC = () => {
   });
 
 
+  const observacionesSolicitud: string =
+  (ultimaSolRegistro?.observaciones ??
+    (sol as any)?.observaciones ??
+    "")?.toString();
+
+
   const finalizadoActaRaw =
     (sol as any)?.is_final_acta ??
     (sol as any)?.is_final ??
@@ -624,8 +630,8 @@ const DetallesFacturacion: React.FC = () => {
   // Si hay motoCot: estos valores SON SIN IVA (brutos)
   const accesoriosBrutos = motoCot?.accesoriosYMarcacion ?? 0;
   const adicionalesBrutos = motoCot?.adicionalesTotal ?? 0;
-const gpsBruto = motoCot?.gpsValor ?? 0;
-const extrasBrutosTotal = accesoriosBrutos + adicionalesBrutos + gpsBruto;
+  const gpsBruto = motoCot?.gpsValor ?? 0;
+  const extrasBrutosTotal = accesoriosBrutos + adicionalesBrutos + gpsBruto;
 
   // IVA extras (siempre calculado)
   const iva_extras_total = Math.round(extrasBrutosTotal * IVA_DEC);
@@ -1035,6 +1041,20 @@ const extrasBrutosTotal = accesoriosBrutos + adicionalesBrutos + gpsBruto;
               </div>
             </section>
 
+{observacionesSolicitud && (
+  <section className="rounded-xl border border-amber-200 bg-amber-50 shadow-sm">
+    <div className="p-6">
+      <h3 className="text-base font-semibold text-amber-900">
+        Observaciones
+      </h3>
+      <p className="mt-2 text-sm text-amber-900 whitespace-pre-wrap">
+        {observacionesSolicitud}
+      </p>
+    </div>
+  </section>
+)}
+
+
             {/* Motocicleta */}
             <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
               <div className="bg-linear-to-r from-sky-600 to-emerald-600 text-white font-semibold px-5 py-2.5 text-sm">
@@ -1061,6 +1081,7 @@ const extrasBrutosTotal = accesoriosBrutos + adicionalesBrutos + gpsBruto;
                 </div>
               </div>
             </section>
+
 
             {/* Condiciones del negocio */}
             <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
@@ -1175,11 +1196,11 @@ const extrasBrutosTotal = accesoriosBrutos + adicionalesBrutos + gpsBruto;
                 <div className="divide-y divide-slate-200">
 
                   {gpsBruto > 0 && (
-  <RowRight
-    label="GPS:"
-    value={fmtCOP(gpsBruto)}
-  />
-)}
+                    <RowRight
+                      label="GPS:"
+                      value={fmtCOP(gpsBruto)}
+                    />
+                  )}
 
 
                   <RowRight

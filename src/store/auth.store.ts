@@ -32,6 +32,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           name: data.name,
           rol: data.rol,
           modules,
+          telefono: data.telefono
         };
 
         set({ user, token });

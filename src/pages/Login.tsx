@@ -44,9 +44,9 @@ const Login: React.FC = () => {
   };
 
   return (
-    <main className="h-screen max-h-screen overflow-hidden w-full bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200">
+    <main className="h-screen max-h-screen overflow-hidden w-full bg-linear-to-br from-slate-50 via-slate-100 to-slate-200">
       <div className="pointer-events-none absolute -top-24 -left-24 size-72 rounded-full bg-sky-500/50 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-0 -right-0 size-72 rounded-full bg-red-400/50 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-0 right-0 size-72 rounded-full bg-red-400/50 blur-3xl" />
       <div className="mx-auto grid min-h-svh max-w-7xl grid-cols-1 lg:grid-cols-2">
         {/* Panel visual izquierdo */}
         <aside className="relative hidden items-center justify-center overflow-hidden lg:flex">
@@ -186,7 +186,7 @@ const Login: React.FC = () => {
             <button
               type="submit"
               disabled={isPending}
-              className="group inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 px-6 py-3 font-semibold text-white shadow-lg transition enabled:hover:from-cyan-500 enabled:hover:to-blue-500 enabled:active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-60"
+              className="group inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-linear-to-r from-cyan-600 to-blue-600 px-6 py-3 font-semibold text-white shadow-lg transition enabled:hover:from-cyan-500 enabled:hover:to-blue-500 enabled:active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isPending ? (
                 <>

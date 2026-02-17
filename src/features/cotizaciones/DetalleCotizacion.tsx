@@ -17,6 +17,7 @@ import {
   BadgeCheck,
   Edit,
   X,
+  Phone,
 } from 'lucide-react';
 import ButtonLink from '../../shared/components/ButtonLink';
 import { PDFDownloadLink } from "@react-pdf/renderer";
@@ -121,10 +122,13 @@ type Cotizacion = {
     tipo_pago?: string | null;
     prospecto?: string | null;
     pregunta?: string | null;
+    telefono_asesor?: string;
+
   };
   motoA?: Motocicleta;
   motoB?: Motocicleta;
   actividad: Evento[];
+  
 };
 
 type MotoImageProps = {
@@ -476,6 +480,9 @@ const mapApiToCotizacion = (data: any): Cotizacion => {
   const comentario2 = data?.comentario2 && data.comentario2 !== '' ? String(data.comentario2) : undefined;
   const cedula = data?.cedula || undefined;
 
+  const telAsesor = sanitizePhone(data?.telefono_asesor);
+
+  
   // Comercial
   const comercial = {
     asesor: data?.asesor || undefined,
@@ -484,6 +491,8 @@ const mapApiToCotizacion = (data: any): Cotizacion => {
     tipo_pago: data?.tipo_pago ?? data?.metodo_pago ?? null,
     prospecto: data?.prospecto ?? null,
     pregunta: data?.pregunta ?? null,
+      telefono_asesor: telAsesor,
+
   };
 
   // Motos
@@ -778,7 +787,21 @@ const DetalleCotizacion: React.FC = () => {
 
             {/* Datos comerciales */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-2 mt-2">
-              <InfoPill icon={<UserCircle2 className="w-4 h-4" />} label="Asesor" value={q.comercial?.asesor || '—'} />
+<InfoPill icon={<UserCircle2 className="w-4 h-4" />} label="Asesor" value={q.comercial?.asesor || '—'} />
+
+<InfoPill
+  icon={<Phone className="w-4 h-4" />}
+  label="Teléfono asesor"
+  value={
+    q.comercial?.telefono_asesor ? (
+      <a className="link link-primary" href={`tel:${q.comercial.telefono_asesor}`}>
+        {q.comercial.telefono_asesor}
+      </a>
+    ) : (
+      '—'
+    )
+  }
+/>
               <InfoPill icon={<Fingerprint className="w-4 h-4" />} label="Tipo de pago" value={q.comercial?.tipo_pago || '—'} />
               <InfoPill icon={<MessageSquareQuote className="w-4 h-4" />} label="Canal de contacto" value={q.comercial?.canal_contacto || '—'} />
               <InfoPill icon={<BadgeCheck className="w-4 h-4" />} label="Prospecto" value={q.comercial?.prospecto || '—'} />

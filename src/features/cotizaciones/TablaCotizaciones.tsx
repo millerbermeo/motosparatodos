@@ -54,6 +54,10 @@ const btnGhost = `${btnBase} btn-ghost bg-base-200 text-base-content/70 hover:bg
 const btnActive = `${btnBase} bg-[#3498DB] text-primary-content`;
 const btnEllipsis = 'btn btn-xs rounded-xl min-w-8 h-8 px-3 bg-base-200 text-base-content/60 pointer-events-none';
 
+const estadoLabel = (estado?: string) => {
+  if (!estado || estado === 'Sin estado') return 'Sin revisar';
+  return estado;
+};
 
 /* =======================
    Utils de presentación
@@ -225,7 +229,7 @@ const TablaCotizaciones: React.FC = () => {
             <div className="px-4 pt-4 flex flex-wrap items-center justify-between gap-4 my-3">
 
                 {/* Filtros */}
-                <div className="flex flex-wrap gap-3 flex-1 min-w-[250px]">
+                <div className="flex flex-wrap gap-3 flex-1 min-w-62.5">
                     <SelectCotizaciones
                         onSelect={(id: string | number | null) => {
                             if (id === null || id === '') return setCotizacionId(null);
@@ -235,12 +239,12 @@ const TablaCotizaciones: React.FC = () => {
                     />
 
                     <select
-                        className="select select-bordered select-md min-w-[180px] max-w-[200px] flex-1"
+                        className="select select-bordered select-md min-w-45 max-w-50 flex-1"
                         value={estadoFilter}
                         onChange={(e) => setEstadoFilter(e.target.value)}
                     >
                         <option value="">Todos los estados</option>
-                        <option value="Sin estado">Sin estado</option>
+                        <option value="Sin estado">Sin revisar</option>
                         <option value="Sin interés">Sin interés</option>
                         <option value="Continúa interesado">Continúa interesado</option>
                         <option value="Alto interés">Alto interés</option>
@@ -251,14 +255,14 @@ const TablaCotizaciones: React.FC = () => {
 
                     <button
                         onClick={cleanFilters}
-                        className="btn btn-accent min-w-[150px]"
+                        className="btn btn-accent min-w-37.5"
                     >
                         Limpiar Filtros
                     </button>
                 </div>
 
                 {/* Opciones de paginación y crear */}
-                <div className="flex flex-wrap items-center gap-3 min-w-[220px] justify-end">
+                <div className="flex flex-wrap items-center gap-3 min-w-55 justify-end">
                     <label className="text-xs opacity-70">Filas:</label>
                     <select
                         className="select select-accent select-sm select-bordered w-20"
@@ -279,7 +283,7 @@ const TablaCotizaciones: React.FC = () => {
 
                     {user?.rol === "Asesor" && (
                         <Link to="/cotizaciones/crear-cotizaciones">
-                            <button className="btn bg-[#2BB352] text-white min-w-[160px]">
+                            <button className="btn bg-[#2BB352] text-white min-w-40">
                                 Crear Cotización
                             </button>
                         </Link>
@@ -289,8 +293,8 @@ const TablaCotizaciones: React.FC = () => {
 
 
             <div className="relative overflow-x-auto max-w-full px-4">
-                <table className="table table-zebra table-pin-rows min-w-[1000px]">
-                    <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
+                <table className="table table-zebra table-pin-rows min-w-250">
+                    <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-backdrop-filter:backdrop-blur-md">
                         <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
                             <th>Item</th>
                             <th>Acciones</th>
@@ -323,7 +327,7 @@ const TablaCotizaciones: React.FC = () => {
                                             r?.estado === "Alto interés" ||
                                             r?.estado === "Continúa interesado" ||
                                             r?.estado === "Sin interés" ||
-                                              r?.is_state === 1
+                                            r?.is_state === 1
                                         ) && (
                                                 <>
 
@@ -349,7 +353,7 @@ const TablaCotizaciones: React.FC = () => {
                                 <td>{r.tipo_pago}</td>
                                 <td className="whitespace-nowrap">
                                     <span className={`badge whitespace-nowrap ${estadoBadgeClass(r?.estado)}`}>
-                                        {r?.estado || 'Sin estado'}
+{estadoLabel(r?.estado)}
                                     </span>
                                 </td>
 
