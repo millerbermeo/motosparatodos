@@ -167,7 +167,7 @@ const TablaCreditos: React.FC = () => {
         <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
             {/* Toolbar */}
             <div className="px-4 pt-4 my-3 justify-between flex flex-wrap gap-3">
-                <div className="flex flex-wrap gap-3 flex-1 min-w-[250px]">
+                <div className="flex flex-wrap gap-3 flex-1 min-w-62.5">
                     {/* Selector que setea el ID → modo detalle */}
                     <SelectCreditos onSelect={(id) => { setCreditoId(id ?? null); }} />
 
@@ -195,12 +195,12 @@ const TablaCreditos: React.FC = () => {
                         </>
                     )}
 
-                    <button onClick={cleanFilters} className="btn btn-accent min-w-[150px]">
+                    <button onClick={cleanFilters} className="btn btn-accent min-w-37.5">
                         Limpiar Filtros
                     </button>
                 </div>
 
-                <div className="flex items-center gap-3 min-w-[220px] justify-end">
+                <div className="flex items-center gap-3 min-w-55 justify-end">
                     {!isDetail && (
                         <>
                             <label className="text-xs opacity-70">Filas:</label>
@@ -224,15 +224,15 @@ const TablaCreditos: React.FC = () => {
 
             {/* Tabla */}
             <div className="relative overflow-x-auto max-w-full px-4">
-                <table className="table table-zebra table-pin-rows min-w-[1100px]">
-                    <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
+                <table className="table table-zebra table-pin-rows min-w-275">
+                    <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-backdrop-filter:backdrop-blur-md">
                         <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
                             <th>Id</th>
                             <th className="text-center">Acciones</th>
                             <th>Asesor</th>
                             <th>Código del crédito</th>
                             <th>Nombre cliente</th>
-                            <th>Producto</th>
+                            <th className="min-w-80">Producto</th>
                             <th>Valor producto</th>
                             <th>Plazo(meses)</th>
                             <th>Estado</th>

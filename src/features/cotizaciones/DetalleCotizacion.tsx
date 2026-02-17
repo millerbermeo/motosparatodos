@@ -28,6 +28,7 @@ import { CotizacionDetalladaPDFDoc } from './CotizacionDetalladaPDFDoc';
 import { useEmpresaById } from '../../services/empresasServices';
 import { useSolicitudFacturacionPorIdCotizacion } from '../../services/solicitudServices';
 import { VehiculoCamposCollapse } from '../../shared/components/VehiculoCamposCollapse';
+import { DocumentosFacturacionCards } from '../../shared/components/DocumentosFacturacionCards';
 
 const BaseUrl = import.meta.env.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
 
@@ -1241,13 +1242,20 @@ const DetalleCotizacion: React.FC = () => {
         </section>
       </div>
 
-      {isFacturado && (
-        <VehiculoCamposCollapse
-          idCotizacion={id}
-          tipo={tipoVehiculo}
-          titulo={tipoVehiculo === 1 ? "Datos vehículo (Crédito)" : "Datos vehículo (Facturación)"}
-        />
-      )}
+{isFacturado && (
+  <>
+    <VehiculoCamposCollapse
+      idCotizacion={id}
+      tipo={tipoVehiculo}
+      titulo={tipoVehiculo === 1 ? "Datos vehículo (Crédito)" : "Datos vehículo (Facturación)"}
+    />
+
+    <div className="mt-4">
+      <DocumentosFacturacionCards title="Documentos de facturación" />
+    </div>
+  </>
+)}
+
 
       {/* Barra de acciones (inferior) – PDF detallado */}
       <section className="sticky bottom-0 mt-4 bg-base-100/90 backdrop-blur border-t border-base-300 px-4 py-3">

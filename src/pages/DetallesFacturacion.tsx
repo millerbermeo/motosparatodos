@@ -487,9 +487,11 @@ const DetallesFacturacion: React.FC = () => {
 
 
   const observacionesSolicitud: string =
-  (ultimaSolRegistro?.observaciones ??
-    (sol as any)?.observaciones ??
-    "")?.toString();
+    (ultimaSolRegistro?.observaciones ??
+      (sol as any)?.observaciones ??
+      "")?.toString();
+
+      
 
 
   const finalizadoActaRaw =
@@ -534,6 +536,28 @@ const DetallesFacturacion: React.FC = () => {
 
   const mostrarSeccionDescuentosAutorizar =
     aplicaDescuentosAutorizados && (descuentoAutorizadoTotal ?? 0) > 0;
+
+
+
+    // ✅ Observación de autorización (viene en descuentosCE)
+const observacionAutorizacion = (descuentosCE?.observacion2 ?? "").toString().trim();
+
+// ✅ texto final: junta ambas si aplica
+const observacionesFinal = useMemo(() => {
+  const o1 = (observacionesSolicitud ?? "").toString().trim();
+  const o2 = observacionAutorizacion;
+
+  // solo mostrar observacion2 si aplica autorización final
+  const aplicaObs2 = aplicaDescuentosAutorizados && o2.length > 0;
+
+  if (o1 && aplicaObs2) {
+    return `${o1}\n\n\nObservación de autorización:\n${o2}`;
+  }
+  if (!o1 && aplicaObs2) {
+    return `Observación de autorización:\n${o2}`;
+  }
+  return o1; // solo observación normal
+}, [observacionesSolicitud, observacionAutorizacion, aplicaDescuentosAutorizados]);
 
 
 
@@ -1041,14 +1065,12 @@ const DetallesFacturacion: React.FC = () => {
               </div>
             </section>
 
-{observacionesSolicitud && (
+  {observacionesFinal && (
   <section className="rounded-xl border border-amber-200 bg-amber-50 shadow-sm">
     <div className="p-6">
-      <h3 className="text-base font-semibold text-amber-900">
-        Observaciones
-      </h3>
+      <h3 className="text-base font-semibold text-amber-900">Observaciones</h3>
       <p className="mt-2 text-sm text-amber-900 whitespace-pre-wrap">
-        {observacionesSolicitud}
+        {observacionesFinal}
       </p>
     </div>
   </section>
