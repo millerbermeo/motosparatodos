@@ -4,7 +4,6 @@ import {
     FileDown, FileMinusIcon, FileSignature, History, Info, LibraryBig,
     MessageCircle,
     MessageSquarePlus,
-    Pencil,
     ShieldCheck, User2, Wrench,
     X,
 } from 'lucide-react';
@@ -35,6 +34,7 @@ import { PaqueteCreditoPDFDoc } from './pdf/PaqueteCreditoPDF';
 import { CotizacionSingleMotoPDFButton } from '../cotizaciones/CotizacionSingleMotoPDFButton';
 import { useCotizacionById } from '../../services/cotizacionesServices';
 import { useEmpresaById } from '../../services/empresasServices';
+import CambiarEstadoCredito from './forms/CambiarEstadoCredito';
 
 const fmtCOP = (v: number) =>
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
@@ -71,6 +71,11 @@ const Row: React.FC<{ label: string; value?: React.ReactNode, color?: string, va
         <span className={`text-sm font-medium  text-right ${val}`}>{value ?? 'Crédito no facturado actualmente'}</span>
     </div>
 );
+
+const isNonEmpty = (v?: string | number | null) =>
+    v !== undefined && v !== null && String(v).trim().length > 0;
+
+
 
 
 const CreditoDetalle: React.FC = () => {
@@ -546,6 +551,12 @@ const CreditoDetalle: React.FC = () => {
             alert('No fue posible generar el paquete de crédito.');
         }
     };
+
+       const nombresOk =
+        isNonEmpty(informacion_personal?.primer_nombre)
+
+
+    const camposCompletosMinimos = nombresOk
 
 
 
@@ -1028,22 +1039,8 @@ const CreditoDetalle: React.FC = () => {
 
 
 
-                                {(
-                                    useAuthStore.getState().user?.rol === "Administrador" ||
-                                    useAuthStore.getState().user?.rol === "Lider_marca" ||
-                                    useAuthStore.getState().user?.rol === "Lider_punto"
-                                ) && estado !== "Aprobado" && (
-                                        <Link to={`/creditos/detalle/cambiar-estado/${codigo_credito}`}>
+         
 
-                                            <button
-                                                className="btn btn-warning text-white flex items-center gap-2"
-                                            >
-                                                <Pencil className="w-4 h-4" />
-
-                                                Cambiar Estado
-                                            </button>
-                                        </Link>
-                                    )}
                             </>
                         )}
 
@@ -1066,6 +1063,28 @@ const CreditoDetalle: React.FC = () => {
                         )}
                 </section>
 
+
+                   
+                {(
+                    useAuthStore.getState().user?.rol === "Administrador" ||
+                    useAuthStore.getState().user?.rol === "Lider_marca" ||
+                    useAuthStore.getState().user?.rol === "Lider_punto"
+                ) && estado !== "Aprobado" && (
+                        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
+                            {camposCompletosMinimos ? (
+                                <CambiarEstadoCredito codigo_credito={codigo_credito} data={{
+                                    informacion_personal,
+                                    moto,
+                                    credito, // si prefieres, puedes enviar solo { estado: credito?.estado, ... }
+                                }} />
+                            ) : (
+                                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800 text-sm">
+                                    Para habilitar el cambio de estado, completa la información primero:
+                                </div>
+                            )}
+                        </section>
+                    )}
+                    
             </div>
         </main>
     );
