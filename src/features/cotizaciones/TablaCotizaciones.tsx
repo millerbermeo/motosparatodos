@@ -55,8 +55,8 @@ const btnActive = `${btnBase} bg-[#3498DB] text-primary-content`;
 const btnEllipsis = 'btn btn-xs rounded-xl min-w-8 h-8 px-3 bg-base-200 text-base-content/60 pointer-events-none';
 
 const estadoLabel = (estado?: string) => {
-  if (!estado || estado === 'Sin estado') return 'Sin revisar';
-  return estado;
+    if (!estado || estado === 'Sin estado') return 'Sin revisar';
+    return estado;
 };
 
 /* =======================
@@ -337,11 +337,26 @@ const TablaCotizaciones: React.FC = () => {
                                                         title="Cambiar estado"
                                                     >
                                                         <div className='text-warning'>
-                                                            <ScanEye size="18px" />
+                                                            <Eye size="18px" />
                                                         </div>
                                                     </Link>
                                                 </>
                                             )}
+
+
+                                        {user?.rol === "Asesor" &&
+                                            r?.estado === "Solicitar facturación" && (
+                                                <Link
+                                                    to={`/solicitudes/${r.id}`}
+                                                    className="btn btn-sm bg-white btn-circle"
+                                                    title="Cambiar estado"
+                                                >
+                                                    <div className='text-warning'>
+                                                        <ScanEye size="18px" />
+                                                    </div>
+                                                </Link>
+                                            )}
+
 
 
                                     </div>
@@ -353,7 +368,7 @@ const TablaCotizaciones: React.FC = () => {
                                 <td>{r.tipo_pago}</td>
                                 <td className="whitespace-nowrap">
                                     <span className={`badge whitespace-nowrap ${estadoBadgeClass(r?.estado)}`}>
-{estadoLabel(r?.estado)}
+                                        {estadoLabel(r?.estado)}
                                     </span>
                                 </td>
 

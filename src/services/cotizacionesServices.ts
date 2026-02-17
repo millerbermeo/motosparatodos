@@ -223,3 +223,32 @@ export const useCotizacionByCodigoCredito = (codigoCredito: string | undefined) 
 
   });
 };
+
+
+// ===== Actualizar SOLO estado de la cotización =====
+export const useUpdateEstadoCotizacion = () => {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: { id_cotizacion: number | string; estado: string }) => {
+      const { data } = await api.post("/actualizar_estado_cotizacion.php", {
+        id_cotizacion: Number(payload.id_cotizacion),
+        estado: payload.estado,
+      });
+      return data;
+    },
+    onSuccess: async (_data, variables) => {
+      const id = Number(variables.id_cotizacion);
+
+      // refresca listas + detalle
+      await qc.invalidateQueries({ queryKey: ["cotizaciones"] });
+      await qc.invalidateQueries({ queryKey: ["cotizacion-id", `${id}`] });
+    },
+    onError: (error: AxiosError<ServerError>) => {
+      const raw =
+        error.response?.data?.message ?? "Error al actualizar el estado de la cotización";
+      const arr = Array.isArray(raw) ? raw : [raw];
+      Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
+    },
+  });
+};

@@ -871,8 +871,8 @@ const gpsValor = getGpsValorAplicado(gpsValorRaw);
 
         <View style={styles.resumenCol}>
           <Text style={styles.resumenHeader}>Comercial</Text>
-          <Text style={styles.resumenLine}>Asesor: {safe(d.asesor)}</Text>
-          <Text style={styles.resumenLine}>Tipo pago: {safe(d.tipo_pago || d.metodo_pago)}</Text>
+<Text style={styles.resumenLine}>Asesor: {safe(d.asesor)}</Text>
+<Text style={styles.resumenLine}>Tel asesor: {safe(d.telefono_asesor)}</Text>          <Text style={styles.resumenLine}>Tipo pago: {safe(d.tipo_pago || d.metodo_pago)}</Text>
           <Text style={styles.resumenLine}>Prospecto: {safe(d.prospecto)}</Text>
           <Text style={styles.resumenLine}>Fecha: {fechaCorta}</Text>
         </View>

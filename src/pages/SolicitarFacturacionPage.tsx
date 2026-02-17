@@ -91,8 +91,8 @@ const Box = ({
     tone === "sky"
       ? "bg-linear-to-r from-sky-600 to-sky-700"
       : tone === "slate"
-      ? "bg-linear-to-r from-slate-700 to-slate-800"
-      : "bg-linear-to-r from-emerald-600 to-emerald-700";
+        ? "bg-linear-to-r from-slate-700 to-slate-800"
+        : "bg-linear-to-r from-emerald-600 to-emerald-700";
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
@@ -137,17 +137,15 @@ const Row = ({
     {cols.map((c, i) => (
       <div
         key={i}
-        className={`px-3 py-2 text-xs md:text-sm ${
-          i === 0
+        className={`px-3 py-2 text-xs md:text-sm ${i === 0
             ? "col-span-6 md:col-span-6 font-medium text-slate-600"
-            : `col-span-6 md:col-span-6 text-right ${
-                emphasis === "success"
-                  ? "text-emerald-700 font-semibold"
-                  : emphasis === "danger"
-                  ? "text-rose-600 font-semibold"
-                  : "text-slate-800"
-              }`
-        } border-r border-slate-100 last:border-r-0`}
+            : `col-span-6 md:col-span-6 text-right ${emphasis === "success"
+              ? "text-emerald-700 font-semibold"
+              : emphasis === "danger"
+                ? "text-rose-600 font-semibold"
+                : "text-slate-800"
+            }`
+          } border-r border-slate-100 last:border-r-0`}
       >
         {c}
       </div>
@@ -293,10 +291,10 @@ const buildMotoFromCotizacion = (
   const adicionalesTotal =
     Number(cot?.[isA ? "total_adicionales_1" : "total_adicionales_2"]) ||
     adicionalesRunt +
-      adicionalesLicencia +
-      adicionalesDefensas +
-      adicionalesHandSavers +
-      adicionalesOtros;
+    adicionalesLicencia +
+    adicionalesDefensas +
+    adicionalesHandSavers +
+    adicionalesOtros;
 
   const totalSinSeguros =
     Number(cot?.[`total_sin_seguros${suffix}`]) ||
@@ -380,6 +378,8 @@ const SolicitarFacturacionPage: React.FC = () => {
     handleSubmit,
     watch,
     setValue,
+    reset,
+
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     mode: "onChange",
@@ -392,6 +392,23 @@ const SolicitarFacturacionPage: React.FC = () => {
       observaciones: "",
     },
   });
+
+  React.useEffect(() => {
+    // cada vez que cambia el codigo o llega nueva data, resetea el formulario
+    reset({
+      documentos: "Si",
+      distribuidora: "",
+      reciboPago: "",
+      descuentoAut: "0",
+      saldoContraentrega: "0",
+      observaciones: "",
+      cedulaFile: undefined,
+      manifiestoFile: undefined,
+      cartaFile: undefined,
+      otrosDocumentosFile: undefined,
+    });
+  }, [codigo, data?.idPrimaria, reset]);
+
 
   const docValue = watch("documentos");
   const descuentoAutForm = parseCOPInput(watch("descuentoAut"));
@@ -475,6 +492,26 @@ const SolicitarFacturacionPage: React.FC = () => {
     [cotF, ladoMoto]
   );
 
+
+  const motoNombre = React.useMemo(() => {
+    if (!cotF || !ladoMoto) return "—";
+    const s = ladoMoto === "A" ? "_a" : "_b";
+
+    const marca = (cotF as any)[`marca${s}`];
+    const linea = (cotF as any)[`linea${s}`];
+
+    // Ej: "KYMCO AGILITY FUSION CBS - 2026"
+    const full = [marca, linea].filter(Boolean).join(" ");
+    return full || "—";
+  }, [cotF, ladoMoto]);
+
+  const motoModelo = React.useMemo(() => {
+    if (!cotF || !ladoMoto) return "—";
+    const s = ladoMoto === "A" ? "_a" : "_b";
+    return (cotF as any)[`modelo${s}`] ? String((cotF as any)[`modelo${s}`]) : "—";
+  }, [cotF, ladoMoto]);
+
+
   const soatNum = motoCot?.soat ?? 0;
   const matriculaNum = motoCot?.matricula ?? 0;
   const impuestosNum = motoCot?.impuestos ?? 0;
@@ -502,10 +539,10 @@ const SolicitarFacturacionPage: React.FC = () => {
   // ✅ Total vehículo = total cotización - docs - extras(con IVA) - seguros - descuentos
   const cn_total_calc = motoCot
     ? (motoCot.total || 0) -
-      (subtotalDocs || 0) -
-      (accesorios_total || 0) -
-      (segurosTotal || 0) -
-      (totalDescuentos || 0)
+    (subtotalDocs || 0) -
+    (accesorios_total || 0) -
+    (segurosTotal || 0) -
+    (totalDescuentos || 0)
     : 0;
 
   const { total: cn_total, bruto: cn_bruto, iva: cn_iva } = desglosarConIva(
@@ -609,8 +646,8 @@ const SolicitarFacturacionPage: React.FC = () => {
             {esCreditoTercerosCot
               ? "Crédito de terceros"
               : esContado
-              ? "Contado"
-              : cotF?.tipo_pago || cotF?.metodo_pago || "—"}
+                ? "Contado"
+                : cotF?.tipo_pago || cotF?.metodo_pago || "—"}
           </span>
         </span>
       </div>
@@ -725,11 +762,13 @@ const SolicitarFacturacionPage: React.FC = () => {
             <HeadRow cols={["Motocicleta", "Modelo", "# Motor", "# Chasis", "Color", "Placa"]} />
             <div className="grid grid-cols-12 text-xs md:text-sm">
               <div className="col-span-12 p-3 md:col-span-2 px-3 py-2 border-r border-slate-100">
-                {safe((data as any).motocicleta)}
+                {motoNombre}
               </div>
+
               <div className="col-span-6 p-3 md:col-span-2 px-3 py-2 border-r border-slate-100">
-                {safe((data as any).modelo)}
+                {motoModelo}
               </div>
+
               <div className="col-span-6 p-3 md:col-span-2 px-3 py-2 border-r border-slate-100">
                 {safe((data as any).numero_motor)}
               </div>

@@ -413,7 +413,7 @@ const SolicitudForm: React.FC = () => {
   
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 px-4 py-6 md:py-10">
+    <main className="min-h-screen bg-linear-to-br from-slate-50 via-slate-100 to-slate-200 px-4 py-6 md:py-10">
       <div className="max-w-9xl mx-auto space-y-6">
         {/* Encabezado / contexto de la solicitud */}
         <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -423,7 +423,7 @@ const SolicitudForm: React.FC = () => {
             </div>
             <div>
               <h1 className="text-xl md:text-2xl font-semibold text-slate-900">
-                Registro de solicitud al contado
+                Registro de solicitud
               </h1>
               <p className="text-sm text-slate-500 mt-0.5">
                 Diligencia la información del cliente y del vehículo para continuar con la facturación.
@@ -461,7 +461,7 @@ const SolicitudForm: React.FC = () => {
           className="space-y-8 bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-slate-200/70 px-4 py-5 md:px-8 md:py-8"
         >
           {/* ================== Información del cliente ================== */}
-          <section className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-sm overflow-hidden">
+          <section className="rounded-2xl border border-slate-200 bg-linear-to-br from-white to-slate-50 shadow-sm overflow-hidden">
             <div className="flex items-center gap-2 border-b border-slate-200 bg-sky-500 text-white px-4 py-3 md:px-6">
               <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
                 <UserRound className="w-4 h-4" />
@@ -566,7 +566,7 @@ const SolicitudForm: React.FC = () => {
           </section>
 
           {/* ================== Información del producto ================== */}
-          <section className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-sm overflow-hidden">
+          <section className="rounded-2xl border border-slate-200 bg-linear-to-br from-white to-slate-50 shadow-sm overflow-hidden">
             <div className="flex items-center gap-2 border-b border-slate-200 bg-emerald-500 text-white px-4 py-3 md:px-6">
               <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
                 <Bike className="w-4 h-4" />
@@ -657,7 +657,7 @@ const SolicitudForm: React.FC = () => {
                 disabled={!isValid || isSubmitting || isPending}
                 onClick={handleSubmit(onSubmit)}
               >
-                {isSubmitting || isPending ? "Procesando..." : "Aceptar"}
+                {isSubmitting || isPending ? "Procesando..." : "Continuar"}
               </button>
             </div>
           </div>

@@ -1,7 +1,7 @@
 // src/pages/DetalleCambiarEstado.tsx
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useCotizacionById } from '../../services/cotizacionesServices';
+import { useCotizacionById, useUpdateEstadoCotizacion } from '../../services/cotizacionesServices';
 import { api } from '../../services/axiosInstance';
 import Swal from 'sweetalert2';
 import { UserRound, CalendarDays, Mail, Phone, BadgeInfo, Bike } from 'lucide-react';
@@ -247,9 +247,9 @@ const buildMotoCalc = (row: any, side: 'a' | 'b'): MotoCalc => {
     typeof segurosFromJson === 'number'
       ? segurosFromJson
       : (Number(row?.[`seguro_vida${sfx}`]) || 0) +
-        (Number(row?.[`seguro_mascota_s${sfx}`]) || 0) +
-        (Number(row?.[`seguro_mascota_a${sfx}`]) || 0) +
-        (Number(row?.[`otro_seguro${sfx}`]) || 0);
+      (Number(row?.[`seguro_mascota_s${sfx}`]) || 0) +
+      (Number(row?.[`seguro_mascota_a${sfx}`]) || 0) +
+      (Number(row?.[`otro_seguro${sfx}`]) || 0);
 
   const gStr = String(row?.[`garantia${sfx}`] ?? '')
     .toLowerCase()
@@ -266,8 +266,8 @@ const buildMotoCalc = (row: any, side: 'a' | 'b'): MotoCalc => {
     gpsMesesRaw === null || gpsMesesRaw === undefined || String(gpsMesesRaw).trim() === ''
       ? null
       : String(gpsMesesRaw).trim().toLowerCase() === 'no'
-      ? 'no'
-      : String(gpsMesesRaw).trim();
+        ? 'no'
+        : String(gpsMesesRaw).trim();
 
   const gpsValor = Number(row?.[`valor_gps${sfx}`]) || 0;
 
@@ -386,9 +386,9 @@ const buildMotoUI = (row: any, side: 'a' | 'b'): MotoUI => {
     typeof segurosFromJson === 'number'
       ? segurosFromJson
       : (Number(row?.[`seguro_vida${sfx}`]) || 0) +
-        (Number(row?.[`seguro_mascota_s${sfx}`]) || 0) +
-        (Number(row?.[`seguro_mascota_a${sfx}`]) || 0) +
-        (Number(row?.[`otro_seguro${sfx}`]) || 0);
+      (Number(row?.[`seguro_mascota_s${sfx}`]) || 0) +
+      (Number(row?.[`seguro_mascota_a${sfx}`]) || 0) +
+      (Number(row?.[`otro_seguro${sfx}`]) || 0);
 
   const polizaCodigoRaw = row?.[`poliza${sfx}`] ?? null;
   const polizaCodigo = polizaCodigoRaw ? String(polizaCodigoRaw).trim() : null;
@@ -482,24 +482,24 @@ const buildSolicitudState = (row: any) => {
 
   const motoA = showA
     ? {
-        modelo: modeloMoto(row, 'a'),
-        ...buildMotoCalc(row, 'a'),
-        foto: safe(row?.foto_a) || undefined,
-        marca: safe(row?.marca_a) || undefined,
-        linea: safe(row?.linea_a) || undefined,
-        garantiaExtendidaMeses: Number(row?.garantia_extendida_a) || undefined,
-      }
+      modelo: modeloMoto(row, 'a'),
+      ...buildMotoCalc(row, 'a'),
+      foto: safe(row?.foto_a) || undefined,
+      marca: safe(row?.marca_a) || undefined,
+      linea: safe(row?.linea_a) || undefined,
+      garantiaExtendidaMeses: Number(row?.garantia_extendida_a) || undefined,
+    }
     : null;
 
   const motoB = showB
     ? {
-        modelo: modeloMoto(row, 'b'),
-        ...buildMotoCalc(row, 'b'),
-        foto: safe(row?.foto_b) || undefined,
-        marca: safe(row?.marca_b) || undefined,
-        linea: safe(row?.linea_b) || undefined,
-        garantiaExtendidaMeses: Number(row?.garantia_extendida_b) || undefined,
-      }
+      modelo: modeloMoto(row, 'b'),
+      ...buildMotoCalc(row, 'b'),
+      foto: safe(row?.foto_b) || undefined,
+      marca: safe(row?.marca_b) || undefined,
+      linea: safe(row?.linea_b) || undefined,
+      garantiaExtendidaMeses: Number(row?.garantia_extendida_b) || undefined,
+    }
     : null;
 
   const comercial = {
@@ -536,11 +536,22 @@ const DetalleCambiarEstado: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [motoSeleccion, setMotoSeleccion] = React.useState<'' | 'A' | 'B'>('');
 
+
+  const updateEstado = useUpdateEstadoCotizacion();
+
   React.useEffect(() => {
     if (isLoading) return;
     if (!row || !id) return;
 
     const isState = Number((row as any).is_state ?? 0);
+    const estado = String((row as any).estado ?? '').trim()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .toLowerCase();
+
+    const esFacturacion = estado === 'solicitar facturacion';
+
+    // ✅ 1) PRIORIDAD: ya existe solicitud
     if (isState === 1) {
       Swal.fire({
         icon: 'info',
@@ -549,12 +560,27 @@ const DetalleCambiarEstado: React.FC = () => {
         timer: 1200,
         showConfirmButton: false,
       }).then(() => {
-        navigate(`/solicitudes/${id}`, {
-          state: buildSolicitudState(row),
-        });
+        navigate(`/solicitudes/${id}`, { state: buildSolicitudState(row) });
       });
+      return;
+    }
+
+    // ✅ 2) NO existe solicitud, pero estado ya está en "Solicitar facturación"
+    //    Igual lo mandamos a la vista para que cree/complete la solicitud.
+    if (esFacturacion) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Continuar solicitud de facturación',
+        text: 'Te llevaremos al registro para completar la solicitud.',
+        timer: 1200,
+        showConfirmButton: false,
+      }).then(() => {
+        navigate(`/solicitudes/${id}`, { state: buildSolicitudState(row) });
+      });
+      return;
     }
   }, [row, id, isLoading, navigate]);
+
 
   React.useEffect(() => {
     if (!row) return;
@@ -613,15 +639,15 @@ const DetalleCambiarEstado: React.FC = () => {
     const motoSel =
       motoSeleccion === 'A'
         ? {
-            modelo: modeloMoto(row, 'a'),
-            ...buildMotoCalc(row, 'a'),
-            foto: safe(row?.foto_a) || undefined,
-            marca: safe(row?.marca_a) || undefined,
-            linea: safe(row?.linea_a) || undefined,
-            garantiaExtendidaMeses: Number(row?.garantia_extendida_a) || undefined,
-          }
+          modelo: modeloMoto(row, 'a'),
+          ...buildMotoCalc(row, 'a'),
+          foto: safe(row?.foto_a) || undefined,
+          marca: safe(row?.marca_a) || undefined,
+          linea: safe(row?.linea_a) || undefined,
+          garantiaExtendidaMeses: Number(row?.garantia_extendida_a) || undefined,
+        }
         : motoSeleccion === 'B'
-        ? {
+          ? {
             modelo: modeloMoto(row, 'b'),
             ...buildMotoCalc(row, 'b'),
             foto: safe(row?.foto_b) || undefined,
@@ -629,24 +655,45 @@ const DetalleCambiarEstado: React.FC = () => {
             linea: safe(row?.linea_b) || undefined,
             garantiaExtendidaMeses: Number(row?.garantia_extendida_b) || undefined,
           }
-        : null;
+          : null;
 
     if (esSolicitarFacturacion(estadoNombre)) {
-      await Swal.fire({
-        icon: 'info',
-        title: 'Abrir solicitud de facturación',
-        text: 'Te llevaremos al registro para facturar.',
-        timer: 1200,
-        showConfirmButton: false,
-      });
+      try {
+        setLoading(true);
 
-      navigate(`/solicitudes/${id}`, {
-        state: {
-          ...buildSolicitudState(row),
-          motoSeleccion,
-          motos: { seleccionada: motoSel },
-        },
-      });
+        // 1) Actualiza estado en backend
+        await updateEstado.mutateAsync({
+          id_cotizacion: Number(id),
+          estado: estadoNombre, // "Solicitar facturación"
+        });
+
+        // 2) Mensaje (opcional si ya lo muestra el hook, puedes quitarlo)
+        await Swal.fire({
+          icon: 'info',
+          title: 'Abrir solicitud de facturación',
+          text: 'Te llevaremos al registro para facturar.',
+          timer: 1200,
+          showConfirmButton: false,
+        });
+
+        // 3) Navega como antes
+        navigate(`/solicitudes/${id}`, {
+          state: {
+            ...buildSolicitudState(row),
+            motoSeleccion,
+            motos: { seleccionada: motoSel },
+          },
+        });
+      } catch (err: any) {
+        const msg =
+          err?.response?.data?.message ||
+          err?.message ||
+          'No se pudo actualizar el estado a Solicitar facturación.';
+        Swal.fire({ icon: 'error', title: 'Error', text: String(msg) });
+      } finally {
+        setLoading(false);
+      }
+
       return;
     }
 
@@ -1137,7 +1184,8 @@ const DetalleCambiarEstado: React.FC = () => {
                   ← Volver
                 </button>
 
-                <button type="submit" className="btn btn-success btn-sm" disabled={loading} aria-busy={loading}>
+                <button type="submit" className="btn btn-success btn-sm" disabled={loading || updateEstado.isPending}
+                  aria-busy={loading || updateEstado.isPending}>
                   {loading ? (
                     <>
                       <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
