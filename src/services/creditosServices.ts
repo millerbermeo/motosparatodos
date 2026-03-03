@@ -291,6 +291,7 @@ export interface CreditoRaw {
   deudor_id?: string | number;        // "6"
   cotizacion_id: string | number;        // "6"
   codeudor_id: string | number;
+  cedula_cliente?: string
 
 }
 
@@ -313,6 +314,7 @@ export interface Credito {
   deudor_id: number;
   cotizacion_id: string | number;        // "6"
   codeudor_id: string | number;
+  cedula_cliente?: string
 
 }
 
@@ -356,6 +358,7 @@ const mapCredito = (r: CreditoRaw): Credito => ({
   deudor_id: toNumberSafe(r.deudor_id),
   cotizacion_id: toNumberSafe(r.cotizacion_id),
   codeudor_id: toNumberSafe(r.codeudor_id),
+  cedula_cliente: r.cedula_cliente
 
 });
 

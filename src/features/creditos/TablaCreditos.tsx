@@ -232,6 +232,7 @@ const TablaCreditos: React.FC = () => {
                             <th>Asesor</th>
                             <th>Código del crédito</th>
                             <th>Nombre cliente</th>
+                            <th>Cédula cliente</th>
                             <th className="min-w-80">Producto</th>
                             <th>Valor producto</th>
                             <th>Plazo(meses)</th>
@@ -285,6 +286,7 @@ const TablaCreditos: React.FC = () => {
                                 <td className="font-medium">{c.asesor || "-"}</td>
                                 <td>{c.codigo_credito || "-"}</td>
                                 <td>{c.nombre_cliente || "-"}</td>
+                                <td>{c.cedula_cliente || "-"}</td>
                                 <td>{c.producto || "-"}</td>
                                 <td className="whitespace-nowrap">{moneyCOP(c.valor_producto)}</td>
                                 <td className="text-center">{c.plazo_meses ?? "-"}</td>
