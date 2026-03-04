@@ -25,7 +25,7 @@ const toISODate = (d: Date) => {
 type ReportRow = {
   "Id cotizacion": string;
   "Fecha de cotizacion": string;
-  "Fecha de venta": string;
+  "Fecha de actualizacion": string;
   Estado: string;
 
   Marca: string;
@@ -50,7 +50,7 @@ type ReportRow = {
 const COLUMNS = [
   "Id cotizacion",
   "Fecha de cotizacion",
-  "Fecha de venta",
+  "Fecha de actualizacion",
   "Estado",
   "Marca",
   "Linea",
@@ -110,7 +110,7 @@ const ReporteCotizacionesCard: React.FC = () => {
         return {
           "Id cotizacion": String(c.idPrimaria ?? c.id_cotizacion ?? c.id ?? ""),
           "Fecha de cotizacion": String(c.fecha_creacion ?? ""),
-          "Fecha de venta": String(c.fecha_actualizacion ?? ""),
+          "Fecha de actualizacion": String(c.fecha_actualizacion ?? ""),
           Estado: String(c.estado ?? ""),
 
           Marca: String(marca),
