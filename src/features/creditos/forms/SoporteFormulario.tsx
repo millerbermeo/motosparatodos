@@ -5,6 +5,7 @@ import { useSubirFormatos, useCreditoConDocumentos } from "../../../services/doc
 import { useParams, useNavigate } from "react-router-dom";
 import { useWizardStore } from "../../../store/wizardStore";
 import { Loader2, UploadCloud, FileText } from "lucide-react";
+import { useActualizarEstadoCredito } from "../../../services/creditosServices";
 
 type Props = { maxSizeMB?: number };
 
@@ -21,8 +22,14 @@ const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
   const prev = useWizardStore(s => s.prev);
   const isFirst = useWizardStore(s => s.isFirst);
 
+
+  const { mutateAsync: actualizarEstado } = useActualizarEstadoCredito();
+
   const subirFormatos = useSubirFormatos();
   const { data, isLoading, refetch } = useCreditoConDocumentos(codigo_credito);
+
+
+
 
   const openPicker = () => inputRef.current?.click();
 
@@ -129,22 +136,48 @@ const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
     Swal.fire({
       icon: "warning",
       title: "¿Deseas registrar este proceso?",
-      text: "Puedes adjuntar más soportes luego si lo necesitas.",
+      text: "Al finalizar, el crédito pasará a estado 'Revision'.",
       showCancelButton: true,
       confirmButtonText: "Sí, registrar",
       cancelButtonText: "Cancelar",
-    }).then((res) => {
+    }).then(async (res) => {
       if (!res.isConfirmed) return;
 
-      Swal.fire({
-        icon: "success",
-        title: "Proceso registrado",
-        text: "Serás redirigido a la vista de resumen.",
-        timer: 1500,
-        showConfirmButton: false,
-      }).then(() => {
-        navigate(redirectTo);
-      });
+      try {
+        Swal.fire({
+          title: "Actualizando...",
+          text: "Enviando crédito a revisión",
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          didOpen: () => Swal.showLoading(),
+        });
+
+        // ✅ aquí mandas el estado desde el frontend
+        await actualizarEstado({
+          codigo_credito,
+          payload: { estado: "Revision" },
+        });
+
+        Swal.fire({
+          icon: "success",
+          title: "Proceso registrado ✅",
+          text: "Crédito enviado a revisión. Redirigiendo...",
+          timer: 1500,
+          showConfirmButton: false,
+        }).then(() => {
+          navigate(redirectTo);
+        });
+      } catch (err: any) {
+        console.error(err);
+        const raw = err?.response?.data?.message ?? "No fue posible actualizar el estado";
+        const arr = Array.isArray(raw) ? raw : [raw];
+
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          html: arr.join("<br/>"),
+        });
+      }
     });
   };
 
@@ -279,7 +312,7 @@ const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
             onClick={handleRegisterAndFinish}
             disabled={isUploading}
           >
-            Registrar y finalizar
+            Continuar y pasar a revisión →
           </button>
         </div>
       </div>

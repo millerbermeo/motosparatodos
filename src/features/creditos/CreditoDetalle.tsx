@@ -7,7 +7,7 @@ import {
     ShieldCheck, User2, Wrench,
     X,
 } from 'lucide-react';
-import { useCredito, useDeudor } from '../../services/creditosServices';
+import { useActualizarEstadoCredito, useCredito, useDeudor } from '../../services/creditosServices';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ChipButton from '../../shared/components/ChipButton';
 import ChatThread from './ChatThread';
@@ -83,6 +83,9 @@ const CreditoDetalle: React.FC = () => {
     const { id: codigoFromUrl } = useParams<{ id: string }>();
     const codigo_credito = String(codigoFromUrl ?? '');
     const navigate = useNavigate();
+
+    const { mutateAsync: actualizarEstadoCredito, isPending: actualizandoEstado } =
+        useActualizarEstadoCredito();
 
     // Si tu hook soporta "enabled", genial; si no, quítalo
     const { data: datos, isLoading, error } = useCredito({ codigo_credito }, !!codigo_credito);
@@ -346,21 +349,46 @@ const CreditoDetalle: React.FC = () => {
             showCancelButton: true,
             confirmButtonText: "Sí, continuar",
             cancelButtonText: "Cancelar",
-            confirmButtonColor: "#0284c7", // azul Tailwind
+            confirmButtonColor: "#0284c7",
             cancelButtonColor: "#6b7280",
         });
 
-        if (result.isConfirmed) {
-            await Swal.fire({
+        if (!result.isConfirmed) return;
+
+        try {
+            Swal.fire({
+                title: "Actualizando...",
+                text: "Cambiando estado a 'Incompleto'",
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => Swal.showLoading(),
+            });
+
+            await actualizarEstadoCredito({
+                codigo_credito,
+                payload: { estado: "Incompleto" },
+            });
+
+            Swal.fire({
                 title: "Actualizado",
                 text: "El crédito se pasó a estado 'Incompleto' ✅",
                 icon: "success",
                 confirmButtonText: "OK",
             });
+
             navigate("/creditos");
+        } catch (err: any) {
+            console.error(err);
+            const raw = err?.response?.data?.message ?? "No fue posible actualizar el estado";
+            const arr = Array.isArray(raw) ? raw : [raw];
+
+            Swal.fire({
+                icon: "error",
+                title: "Error",
+                html: arr.join("<br/>"),
+            });
         }
     };
-
 
 
     const tieneDatosMoto = Boolean(
@@ -956,7 +984,7 @@ const CreditoDetalle: React.FC = () => {
                                                             Abrir
                                                         </a>
                                                         <a
-                                                        target='_blank'
+                                                            target='_blank'
                                                             href={href}
                                                             download
                                                             className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700"
@@ -1059,16 +1087,15 @@ const CreditoDetalle: React.FC = () => {
                                     Eliminar garantía extendida
                                 </button>
 
-
                                 <button
-                                    type='button'
+                                    type="button"
                                     className="btn bg-sky-400 hover:bg-sky-500 text-white flex items-center gap-2"
                                     onClick={handleIncompleto}
+                                    disabled={actualizandoEstado}
                                 >
                                     <CheckSquare className="w-4 h-4" />
                                     Pasar a incompleto
                                 </button>
-
 
 
 

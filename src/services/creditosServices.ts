@@ -769,3 +769,68 @@ export const useCreditoById = (id: number | null) =>
       return c ? { ...c, id: Number(c.id) } : null;
     },
   });
+
+
+
+
+export type ActualizarEstadoCreditoPayload = {
+  estado: string; // puede ser cualquier estado que envíe el frontend
+};
+
+export type ActualizarEstadoCreditoInput = {
+  codigo_credito: string | number;
+  payload: ActualizarEstadoCreditoPayload;
+};
+
+export interface ActualizarEstadoCreditoResponse {
+  success?: boolean;
+  message?: string;
+  data?: any; // si quieres tipar, lo cambiamos por CreditoLine o Credito
+}
+
+export const useActualizarEstadoCredito = () => {
+  const qc = useQueryClient();
+
+  return useMutation<
+    ActualizarEstadoCreditoResponse,
+    AxiosError<ServerError>,
+    ActualizarEstadoCreditoInput
+  >({
+    mutationFn: async ({ codigo_credito, payload }) => {
+      const { data } = await api.put<ActualizarEstadoCreditoResponse>(
+        "/actualizar_estado_credito.php",
+        {
+          codigo_credito: String(codigo_credito),
+          estado: payload.estado,
+        },
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+      return data;
+    },
+
+    onSuccess: async (resp, vars) => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["creditos"] }),
+        qc.invalidateQueries({ queryKey: ["credito", { codigo_credito: vars.codigo_credito }] }),
+        qc.invalidateQueries({ queryKey: ["credito", vars.codigo_credito] }), // por si lo usas así en otra parte
+      ]);
+
+      Swal.fire({
+        icon: "success",
+        title: resp?.message || "Estado actualizado",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    },
+
+    onError: (error) => {
+      const raw =
+        (error as AxiosError<any>)?.response?.data?.message ??
+        "Error al actualizar el estado";
+      const arr = Array.isArray(raw) ? raw : [raw];
+      Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
+    },
+  });
+};

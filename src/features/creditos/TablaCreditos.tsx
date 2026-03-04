@@ -48,14 +48,18 @@ const badgeSiNo = (v?: string) => {
 };
 
 const badgeEstado = (estado?: string) => {
-    const e = (estado || "").toLowerCase();
-    let cls = "badge-ghost";
-    if (e.includes("aprob")) cls = "badge-success";
-    else if (e.includes("incompleto")) cls = "badge-warning";
-    else if (e.includes("viable") && e.includes("no")) cls = "badge-error";
-    else if (e.includes("factur")) cls = "badge-info";
-    else if (e.includes("en factura")) cls = "badge-primary";
-    return <span className={`badge ${cls}`}>{estado ?? "-"}</span>;
+  const e = (estado || "").toLowerCase();
+
+  let cls = "badge-ghost";
+
+  if (e.includes("aprob")) cls = "badge-success";
+  else if (e.includes("revision") || e.includes("revisión")) cls = "badge-accent";
+  else if (e.includes("incompleto")) cls = "badge-warning";
+  else if (e.includes("viable") && e.includes("no")) cls = "badge-error";
+  else if (e.includes("factur")) cls = "badge-info";
+  else if (e.includes("en factura")) cls = "badge-primary";
+
+  return <span className={`badge ${cls}`}>{estado ?? "-"}</span>;
 };
 
 const timeAgo = (iso?: string) => {
