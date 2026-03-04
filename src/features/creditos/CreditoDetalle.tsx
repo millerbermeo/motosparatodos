@@ -956,6 +956,7 @@ const CreditoDetalle: React.FC = () => {
                                                             Abrir
                                                         </a>
                                                         <a
+                                                        target='_blank'
                                                             href={href}
                                                             download
                                                             className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700"
