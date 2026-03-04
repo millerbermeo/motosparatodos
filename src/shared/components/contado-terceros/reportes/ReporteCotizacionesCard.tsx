@@ -298,11 +298,6 @@ const ReporteCotizacionesCard: React.FC = () => {
               ))}
             </select>
 
-            <span className="label">
-              <span className="label-text-alt opacity-70">
-                Selecciona varios con Ctrl / Cmd + click
-              </span>
-            </span>
           </label>
         </div>
 
