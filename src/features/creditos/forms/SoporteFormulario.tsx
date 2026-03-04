@@ -16,22 +16,37 @@ const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
   const { id: codigoFromUrl } = useParams<{ id: string }>();
   const codigo_credito = String(codigoFromUrl ?? "");
   const navigate = useNavigate();
-  const redirectTo = `/creditos/detalle/${codigoFromUrl}`; // ← ajusta a tu ruta final
+  const redirectTo = `/creditos/detalle/${codigoFromUrl}`;
 
-  // Wizard controls
   const prev = useWizardStore(s => s.prev);
   const isFirst = useWizardStore(s => s.isFirst);
 
-  // hooks API
   const subirFormatos = useSubirFormatos();
   const { data, isLoading, refetch } = useCreditoConDocumentos(codigo_credito);
 
   const openPicker = () => inputRef.current?.click();
 
-  // Solo valida y guarda en memoria; NO sube
+  // 🔹 Construir URL correcta usando VITE_API_URL
+  const buildUrl = (path: string) => {
+    if (!path) return "";
+
+    // si ya es URL completa no tocarla
+    if (path.startsWith("http")) return path;
+
+    const base = import.meta.env.VITE_API_URL;
+
+    if (!base) return path;
+
+    const cleanBase = base.replace(/\/$/, "");
+    const cleanPath = path.startsWith("/") ? path : `/${path}`;
+
+    return `${cleanBase}${cleanPath}`;
+  };
+
   const validateOnly = (incoming: FileList | File[]) => {
     const errs: string[] = [];
     const validFiles: File[] = [];
+
     Array.from(incoming).forEach((f) => {
       if (f.size > maxSizeMB * 1024 * 1024) {
         errs.push(`"${f.name}" supera ${maxSizeMB} MB.`);
@@ -39,7 +54,9 @@ const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
       }
       validFiles.push(f);
     });
+
     setErrors(errs);
+
     if (validFiles.length) {
       setSelected(prev => [...prev, ...validFiles]);
     }
@@ -49,19 +66,24 @@ const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
     if (e.target.files?.length) validateOnly(e.target.files);
     e.target.value = "";
   };
+
   const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     if (e.dataTransfer.files?.length) validateOnly(e.dataTransfer.files);
   };
 
-  // Subida manual con confirmación
   const handleManualUpload = () => {
     if (!codigo_credito) {
       Swal.fire({ icon: "error", title: "Código de crédito no encontrado" });
       return;
     }
+
     if (!selected.length) {
-      Swal.fire({ icon: "warning", title: "Sin archivos seleccionados", text: "Agrega al menos un archivo." });
+      Swal.fire({
+        icon: "warning",
+        title: "Sin archivos seleccionados",
+        text: "Agrega al menos un archivo.",
+      });
       return;
     }
 
@@ -80,7 +102,8 @@ const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
         {
           onSuccess: async () => {
             await refetch();
-            setSelected([]); // limpia selección local
+            setSelected([]);
+
             Swal.fire({
               icon: "success",
               title: "Soportes subidos",
@@ -90,6 +113,7 @@ const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
           },
           onError: (err: any) => {
             console.error(err);
+
             Swal.fire({
               icon: "error",
               title: "Error al subir",
@@ -101,7 +125,6 @@ const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
     });
   };
 
-  // Confirmar registro y redirigir
   const handleRegisterAndFinish = () => {
     Swal.fire({
       icon: "warning",
@@ -125,22 +148,6 @@ const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
     });
   };
 
-  // const handleDelete = (filePath: string) => {
-  //   Swal.fire({
-  //     icon: "warning",
-  //     title: "Eliminar soporte",
-  //     text: `¿Seguro que deseas eliminar ${filePath}?`,
-  //     showCancelButton: true,
-  //     confirmButtonText: "Eliminar",
-  //     cancelButtonText: "Cancelar",
-  //   }).then((r) => {
-  //     if (r.isConfirmed) {
-  //       // Aquí llamarías a tu API de eliminación si existe
-  //       Swal.fire({ icon: "success", title: "Eliminado", timer: 1200, showConfirmButton: false });
-  //     }
-  //   });
-  // };
-
   const isUploading = subirFormatos.isPending;
 
   return (
@@ -149,7 +156,6 @@ const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
         Adjuntar Soportes del Crédito
       </h3>
 
-      {/* Dropzone (solo selección, sin subir) */}
       <div
         onDragOver={(e) => e.preventDefault()}
         onDrop={onDrop}
@@ -158,10 +164,14 @@ const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
         onClick={openPicker}
       >
         <UploadCloud className="w-12 h-12 mx-auto text-blue-500 mb-2" />
+
         <p className="text-gray-600">
           Arrastra y suelta tus archivos aquí o{" "}
-          <span className="text-blue-600 font-semibold">haz clic para seleccionar</span>
+          <span className="text-blue-600 font-semibold">
+            haz clic para seleccionar
+          </span>
         </p>
+
         <input
           ref={inputRef}
           type="file"
@@ -172,7 +182,6 @@ const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
         />
       </div>
 
-      {/* Errores de validación */}
       {errors.length > 0 && (
         <div className="bg-red-100 text-red-700 p-3 rounded-lg shadow-sm">
           {errors.map((e, i) => (
@@ -181,21 +190,25 @@ const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
         </div>
       )}
 
-      {/* Seleccionados (aún no subidos) */}
       {selected.length > 0 && (
         <div className="bg-base-100 border border-base-300 rounded-xl p-3">
-          <div className="font-semibold mb-2">Archivos seleccionados (pendientes de subir):</div>
+          <div className="font-semibold mb-2">
+            Archivos seleccionados (pendientes de subir):
+          </div>
+
           <ul className="list-disc ml-5 text-sm">
             {selected.map((f, i) => (
-              <li key={i} className="truncate">({i + 1}) {f.name}</li>
+              <li key={i} className="truncate">
+                ({i + 1}) {f.name}
+              </li>
             ))}
           </ul>
         </div>
       )}
 
-      {/* Lista de soportes ya registrados en backend */}
       <div>
         <h4 className="font-semibold mb-3">📑 Soportes registrados</h4>
+
         {isLoading ? (
           <div className="text-gray-400 flex items-center gap-2">
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -203,44 +216,43 @@ const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
           </div>
         ) : data?.soportes?.length ? (
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {data.soportes.map((s: string, i: number) => (
-              <div
-                key={i}
-                className="p-4 bg-white rounded-xl border border-success shadow-sm flex flex-col justify-between"
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <FileText className="text-blue-500" />
-                  <a
-                    href={s}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="truncate text-blue-600 hover:underline text-sm"
-                  >
-                    {s}
-                  </a>
-                </div>
-                {/* <button
-                  className="flex items-center gap-1 text-red-600 hover:text-red-800 text-sm"
-                  onClick={() => handleDelete(s)}
+            {data.soportes.map((s: string, i: number) => {
+              const url = buildUrl(s);
+
+              return (
+                <div
+                  key={i}
+                  className="p-4 bg-white rounded-xl border border-success shadow-sm flex flex-col justify-between"
                 >
-                  <Trash2 className="w-4 h-4" /> Eliminar
-                </button> */}
-              </div>
-            ))}
+                  <div className="flex items-center gap-2 mb-3">
+                    <FileText className="text-blue-500" />
+
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="truncate text-blue-600 hover:underline text-sm"
+                    >
+                      {url}
+                    </a>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : (
-          <p className="text-gray-500 italic">No hay soportes registrados.</p>
+          <p className="text-gray-500 italic">
+            No hay soportes registrados.
+          </p>
         )}
       </div>
 
-      {/* Controles */}
       <div className="mt-4 flex items-center justify-between gap-2">
         <button
           type="button"
           className="btn btn-ghost"
           onClick={prev}
           disabled={isFirst || isUploading}
-          title={isFirst ? "Ya estás en el primer paso" : "Ir al paso anterior"}
         >
           ← Anterior
         </button>
@@ -251,7 +263,6 @@ const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
             className="btn btn-primary"
             onClick={handleManualUpload}
             disabled={isUploading || selected.length === 0}
-            title={selected.length === 0 ? "Selecciona archivos primero" : "Subir soportes seleccionados"}
           >
             {isUploading ? (
               <span className="inline-flex items-center gap-2">
@@ -267,7 +278,6 @@ const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
             className="btn btn-success"
             onClick={handleRegisterAndFinish}
             disabled={isUploading}
-            title="Registrar proceso y finalizar"
           >
             Registrar y finalizar
           </button>

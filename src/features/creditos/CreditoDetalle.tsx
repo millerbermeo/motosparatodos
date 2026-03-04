@@ -367,23 +367,54 @@ const CreditoDetalle: React.FC = () => {
         moto?.numeroMotor || moto?.numeroChasis || moto?.placa
     );
 
-    // 👉 Soportes: solo los 3 documentos del JSON (firmas, formato_referencia, formato_datacredito)
+    // 👉 Soportes: firmas + formato_referencia + formato_datacredito + SOPORTES (array en string JSON)
+    const soportesFromJson: string[] = React.useMemo(() => {
+        const raw = (credito as any)?.soportes;
+
+        // Si no viene, no hay nada
+        if (!raw) return [];
+
+        // Si ya viniera como array real (por si cambia el backend), lo respetamos
+        if (Array.isArray(raw)) return raw.filter(Boolean).map(String);
+
+        // Si viene como string JSON: '["a","b"]'
+        if (typeof raw === "string") {
+            try {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    return parsed.filter(Boolean).map((x) => String(x));
+                }
+                return [];
+            } catch {
+                // Si viene "malformado", no rompe la vista
+                return [];
+            }
+        }
+
+        return [];
+    }, [credito]);
+
     const soportes: string[] = [
         ...(credito?.firmas ? [credito.firmas] : []),
+
         ...(credito?.formato_referencia
             ? [
-                credito.formato_referencia.startsWith('docs_creditos/')
+                credito.formato_referencia.startsWith("docs_creditos/")
                     ? credito.formato_referencia
                     : `docs_creditos/${credito.formato_referencia}`,
             ]
             : []),
+
         ...(credito?.formato_datacredito
             ? [
-                credito.formato_datacredito.startsWith('docs_creditos/')
+                credito.formato_datacredito.startsWith("docs_creditos/")
                     ? credito.formato_datacredito
                     : `docs_creditos/${credito.formato_datacredito}`,
             ]
             : []),
+
+        // ✅ aquí agregas TODOS los soportes del backend
+        ...soportesFromJson,
     ];
 
     const BaseUrl = import.meta.env.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
@@ -552,7 +583,7 @@ const CreditoDetalle: React.FC = () => {
         }
     };
 
-       const nombresOk =
+    const nombresOk =
         isNonEmpty(informacion_personal?.primer_nombre)
 
 
@@ -860,7 +891,7 @@ const CreditoDetalle: React.FC = () => {
                             ) : (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {soportes.map((s, idx) => {
-                                        const href = `${BaseUrl}/${s}`;
+                                        const href = `${BaseUrl.replace(/\/+$/, "")}/${String(s).replace(/^\/+/, "").replace(/\\/g, "")}`;
                                         const fileName = s.split('/').pop() ?? `Soporte ${idx + 1}`;
                                         const isImg = /\.(png|jpe?g|gif|webp)$/i.test(s);
                                         const isPdf = /\.pdf$/i.test(s);
@@ -1039,7 +1070,7 @@ const CreditoDetalle: React.FC = () => {
 
 
 
-         
+
 
                             </>
                         )}
@@ -1064,7 +1095,7 @@ const CreditoDetalle: React.FC = () => {
                 </section>
 
 
-                   
+
                 {(
                     useAuthStore.getState().user?.rol === "Administrador" ||
                     useAuthStore.getState().user?.rol === "Lider_marca" ||
@@ -1084,7 +1115,7 @@ const CreditoDetalle: React.FC = () => {
                             )}
                         </section>
                     )}
-                    
+
             </div>
         </main>
     );
