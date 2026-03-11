@@ -4,47 +4,68 @@ import { api } from "./axiosInstance";
 import type { AxiosError } from "axios";
 import Swal from "sweetalert2";
 
-/* ===== Tipos que devuelve la API (raw) ===== */
+/* ===== Tipos raw del backend ===== */
 export interface SolicitudFacturacionApi {
-  id: string;
+  id: string | number;
   agencia: string;
   distribuidora?: string | null;
   distribuidora_id?: string | null;
   codigo_solicitud: string;
   codigo_credito?: string | null;
   nombre_cliente: string;
-  cedula?: string | null;           // ruta al archivo, puede ser null
-  tipo_solicitud: string;           // "Contado" | "Crédito directo"
-  numero_recibo: string;            // ej. "00456" o "N/A"
+  cedula?: string | null;
+  tipo_solicitud: string;
+  numero_recibo?: string | null;
   resibo_pago?: string | null;
-  manifiesto?: string | null;       // ruta al archivo, puede ser null
+  manifiesto?: string | null;
   observaciones?: string | null;
-  facturador: string;               // ej. "Sin facturador"
-  autorizado: string;               // "Si" | "No"
-  facturado: string;                // "Si" | "No"
-  entrega_autorizada: string;       // "Si" | "No"
-  fecha_creacion: string;           // "YYYY-MM-DD HH:mm:ss"
-  actualizado: string;              // idem
-  id_cotizacion?: number
-    facturaPath?: string | null;
+  facturador?: string | null;
+  autorizado: string | number | boolean;
+  facturado: string | number | boolean;
+  entrega_autorizada: string | number | boolean;
+  fecha_creacion: string;
+  actualizado: string;
+  id_cotizacion?: number | string | null;
+  factura?: string | null;
+  observacion2?: string | null;
 
-  
+  // datos del JOIN con cotizaciones
+  cotizacion_id?: number | string | null;
+  cotizacion_codigo?: string | null;
+  cotizacion_nombre?: string | null;
+  cotizacion_s_name?: string | null;
+  cotizacion_last_name?: string | null;
+  cotizacion_s_last_name?: string | null;
+  cotizacion_cedula?: string | null;
+  cotizacion_email?: string | null;
+  cotizacion_celular?: string | null;
+  cotizacion_estado?: string | null;
+  cotizacion_fecha_creacion?: string | null;
+
+  marca_a?: string | null;
+  modelo_a?: string | null;
+  linea_a?: string | null;
+  precio_total_a?: string | number | null;
+  marca_b?: string | null;
+  modelo_b?: string | null;
+  linea_b?: string | null;
+  precio_total_b?: string | number | null;
 }
 
-/* ===== Tipos normalizados para tu app ===== */
+/* ===== Tipos normalizados ===== */
 export interface SolicitudFacturacion {
   id: number;
   agencia: string;
   distribuidora?: string | null;
   distribuidoraId?: string | null;
-  codigo: string;                   // corresponde a codigo_solicitud
+  codigo: string;
   codigoCredito?: string | null;
   cliente: string;
-  cedulaPath?: string | null;       // ruta de archivo
+  cedulaPath?: string | null;
   tipo: string;
   numeroRecibo?: string | null;
   resiboPago?: string | null;
-  manifiestoPath?: string | null;   // ruta de archivo
+  manifiestoPath?: string | null;
   observaciones?: string | null;
   facturador?: string | null;
   autorizado: boolean;
@@ -52,14 +73,57 @@ export interface SolicitudFacturacion {
   entregaAutorizada: boolean;
   fechaCreacion: string;
   actualizado: string;
-  id_cotizacion?: number
-    facturaPath?: string | null;
+  id_cotizacion?: number | null;
+  facturaPath?: string | null;
+  observacion2?: string | null;
 
+  // datos cotización
+  cotizacionId?: number | null;
+  cotizacionCodigo?: string | null;
+  cotizacionNombreCompleto?: string | null;
+  cotizacionCedula?: string | null;
+  cotizacionEmail?: string | null;
+  cotizacionCelular?: string | null;
+  cotizacionEstado?: string | null;
+  cotizacionFechaCreacion?: string | null;
+
+  marcaA?: string | null;
+  modeloA?: string | null;
+  lineaA?: string | null;
+  precioTotalA?: number | null;
+  marcaB?: string | null;
+  modeloB?: string | null;
+  lineaB?: string | null;
+  precioTotalB?: number | null;
 }
 
-/* ===== Normalizador ===== */
-const siNoToBool = (v?: string | null) =>
-  typeof v === "string" ? v.trim().toLowerCase().startsWith("s") : false;
+const siNoToBool = (v?: string | number | boolean | null) => {
+  if (typeof v === "boolean") return v;
+  if (typeof v === "number") return v === 1;
+  if (typeof v === "string") {
+    const t = v.trim().toLowerCase();
+    return t === "si" || t === "sí" || t === "1" || t === "true";
+  }
+  return false;
+};
+
+const toNumOrNull = (v: any): number | null => {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+
+const buildCotizacionNombre = (r: SolicitudFacturacionApi) =>
+  [
+    r.cotizacion_nombre,
+    r.cotizacion_s_name,
+    r.cotizacion_last_name,
+    r.cotizacion_s_last_name,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim() || null;
 
 export const normalizeSolicitud = (r: SolicitudFacturacionApi): SolicitudFacturacion => ({
   id: Number(r.id),
@@ -71,73 +135,120 @@ export const normalizeSolicitud = (r: SolicitudFacturacionApi): SolicitudFactura
   cliente: r.nombre_cliente,
   cedulaPath: r.cedula ?? null,
   tipo: r.tipo_solicitud,
-  numeroRecibo: r.numero_recibo === "N/A" ? null : r.numero_recibo,
+  numeroRecibo: r.numero_recibo ?? null,
   resiboPago: r.resibo_pago ?? null,
   manifiestoPath: r.manifiesto ?? null,
   observaciones: r.observaciones ?? null,
-  facturador: r.facturador === "Sin facturador" ? null : r.facturador,
+  facturador: r.facturador ?? null,
   autorizado: siNoToBool(r.autorizado),
   facturado: siNoToBool(r.facturado),
   entregaAutorizada: siNoToBool(r.entrega_autorizada),
   fechaCreacion: r.fecha_creacion,
   actualizado: r.actualizado,
-    id_cotizacion: r.id_cotizacion,
-      facturaPath: (r as any).factura ?? null,
+  id_cotizacion: toNumOrNull(r.id_cotizacion),
+  facturaPath: r.factura ?? null,
+  observacion2: r.observacion2 ?? null,
 
+  cotizacionId: toNumOrNull(r.cotizacion_id),
+  cotizacionCodigo: r.cotizacion_codigo ?? null,
+  cotizacionNombreCompleto: buildCotizacionNombre(r),
+  cotizacionCedula: r.cotizacion_cedula ?? null,
+  cotizacionEmail: r.cotizacion_email ?? null,
+  cotizacionCelular: r.cotizacion_celular ?? null,
+  cotizacionEstado: r.cotizacion_estado ?? null,
+  cotizacionFechaCreacion: r.cotizacion_fecha_creacion ?? null,
+
+  marcaA: r.marca_a ?? null,
+  modeloA: r.modelo_a ?? null,
+  lineaA: r.linea_a ?? null,
+  precioTotalA: toNumOrNull(r.precio_total_a),
+  marcaB: r.marca_b ?? null,
+  modeloB: r.modelo_b ?? null,
+  lineaB: r.linea_b ?? null,
+  precioTotalB: toNumOrNull(r.precio_total_b),
 });
 
+export interface SolicitudesPagination {
+  total: number;
+  per_page: number;
+  current_page: number;
+  last_page: number;
+}
 
 interface ListSolicitudesResponse {
   success: boolean;
-  solicitudes_facturacion: SolicitudFacturacionApi[];
+  data: SolicitudFacturacionApi[];
+  pagination?: SolicitudesPagination;
+  filters?: {
+    search?: string | null;
+    tipo_solicitud?: string | null;
+    fecha_desde?: string | null;
+    fecha_hasta?: string | null;
+    estado?: string | null;
+    id_cotizacion?: number | null;
+  };
 }
 
-/* ===== Parámetros de búsqueda/filtrado (opcionales) ===== */
+export interface SolicitudesListResult {
+  success: boolean;
+  data: SolicitudFacturacion[];
+  pagination: SolicitudesPagination;
+  filters?: ListSolicitudesResponse["filters"];
+}
+
 export type SolicitudesFilters = {
-  agencia?: string;
-  tipo?: string;               // "Contado" | "Crédito directo" | ...
-  autorizado?: boolean;
-  facturado?: boolean;
-  q?: string;                  // búsqueda libre (si tu backend la soporta)
+  search?: string;
+  tipo_solicitud?: string;
+  fecha_desde?: string;
+  fecha_hasta?: string;
+  estado?: string;
+  id_cotizacion?: number | null;
 };
 
-/* ===== Hook principal ===== */
 export const useSolicitudesFacturacion = (
+  page: number = 1,
+  perPage: number = 10,
   filters?: SolicitudesFilters,
-  opts?: { token?: string }    // por si quieres inyectar el Bearer manualmente
+  opts?: { token?: string }
 ) => {
-  return useQuery<SolicitudFacturacion[]>({
-    queryKey: ["solicitudes-facturacion", filters],
+  return useQuery<SolicitudesListResult>({
+    queryKey: ["solicitudes-facturacion", { page, perPage, ...filters }],
     queryFn: async () => {
-      const params: Record<string, string> = {};
+      const params: Record<string, any> = {
+        page,
+        per_page: perPage,
+      };
 
-      if (filters?.agencia) params.agencia = filters.agencia;
-      if (filters?.tipo) params.tipo_solicitud = filters.tipo;
-      if (filters?.autorizado !== undefined)
-        params.autorizado = filters.autorizado ? "Si" : "No";
-      if (filters?.facturado !== undefined)
-        params.facturado = filters.facturado ? "Si" : "No";
-      if (filters?.q) params.q = filters.q;
+      if (filters?.search?.trim()) params.search = filters.search.trim();
+      if (filters?.tipo_solicitud?.trim()) params.tipo_solicitud = filters.tipo_solicitud.trim();
+      if (filters?.fecha_desde?.trim()) params.fecha_desde = filters.fecha_desde.trim();
+      if (filters?.fecha_hasta?.trim()) params.fecha_hasta = filters.fecha_hasta.trim();
+      if (filters?.estado?.trim()) params.estado = filters.estado.trim();
+      if (filters?.id_cotizacion !== null && filters?.id_cotizacion !== undefined) {
+        params.id_cotizacion = filters.id_cotizacion;
+      }
 
-      const { data } = await api.get<ListSolicitudesResponse>(
-        "/list_solicitudes.php",
-        {
-          params,
-          headers: opts?.token
-            ? { Authorization: `Bearer ${opts.token}` }
-            : undefined, // si tu api ya agrega el token por interceptor, omite esto
-        }
-      );
+      const { data } = await api.get<ListSolicitudesResponse>("/list_solicitudes.php", {
+        params,
+        headers: opts?.token ? { Authorization: `Bearer ${opts.token}` } : undefined,
+      });
 
-      // Manejo básico de éxito/fracaso
-      const raw = data?.solicitudes_facturacion ?? [];
-      return raw.map(normalizeSolicitud);
+      return {
+        success: data.success,
+        data: (data.data ?? []).map(normalizeSolicitud),
+        pagination: data.pagination ?? {
+          total: 0,
+          per_page: perPage,
+          current_page: page,
+          last_page: 1,
+        },
+        filters: data.filters,
+      };
     },
     staleTime: 60_000,
     refetchOnWindowFocus: false,
   });
 };
-
 
 
 /* ======================================================================================
@@ -264,7 +375,7 @@ export const useSolicitudesPorCodigoCredito = (codigoCredito: string | number) =
 
       console.log(data)
 
-      const raw = data?.solicitudes_facturacion ?? [];
+      const raw = data?.data ?? [];
       return raw.map(normalizeSolicitud);
     },
     staleTime: 60_000,
