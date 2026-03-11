@@ -507,7 +507,7 @@ const TablaSolicitudes: React.FC = () => {
                 <td><BadgeSiNo v={s.entregaAutorizada} /></td>
 
                 <td className="whitespace-nowrap">
-                  {[s.marcaA, s.lineaA, s.modeloA].filter(Boolean).join(" ") || "—"}
+                  {[s.marcaA, s.lineaA].filter(Boolean).join(" ") || "—"}
                 </td>
 
                 <td className="whitespace-nowrap">
