@@ -6,10 +6,11 @@ import UsuarioEstadoAlert from "./UsuarioEstadoAlert";
 import { Pen } from "lucide-react";
 import { useLoaderStore } from "../../store/loader.store";
 import FiltrosUsuarios from "./FiltrosUsuarios";
-
-// Paginación
-const SIBLING_COUNT = 1;
-const BOUNDARY_COUNT = 1;
+import {
+  PAGE_SIZE,
+  SIBLING_COUNT,
+  BOUNDARY_COUNT,
+} from "../../constants/pagination";
 
 const range = (start: number, end: number) =>
   Array.from({ length: end - start + 1 }, (_, i) => start + i);
@@ -56,14 +57,15 @@ function getPaginationItems(
 const btnBase = "btn btn-xs rounded-xl min-w-8 h-8 px-3 font-medium shadow-none border-0";
 const btnGhost = `${btnBase} btn-ghost bg-base-200 text-base-content/70 hover:bg-base-300`;
 const btnActive = `${btnBase} bg-[#3498DB] text-primary-content`;
-const btnEllipsis = "btn btn-xs rounded-xl min-w-8 h-8 px-3 bg-base-200 text-base-content/60 pointer-events-none";
+const btnEllipsis =
+  "btn btn-xs rounded-xl min-w-8 h-8 px-3 bg-base-200 text-base-content/60 pointer-events-none";
 
 const TablaUsuarios: React.FC = () => {
   const open = useModalStore((s) => s.open);
 
   // ✅ server pagination
   const [page, setPage] = React.useState(1);
-  const [perPage, setPerPage] = React.useState(10);
+  const [perPage, setPerPage] = React.useState(PAGE_SIZE);
 
   // ✅ filtros
   const [filters, setFilters] = React.useState<UserFilters>({
@@ -111,6 +113,7 @@ const TablaUsuarios: React.FC = () => {
   const stateBadge = (s: string | number) => {
     const val = typeof s === "string" ? Number(s) : s;
     const isActive = val === 1;
+
     return (
       <span className={`badge ${isActive ? "badge-success" : "badge-error"}`}>
         {isActive ? "Activo" : "Inactivo"}
@@ -156,42 +159,15 @@ const TablaUsuarios: React.FC = () => {
 
   const clearFilters = () => {
     setFilters({ q: "", rol: "", state: "" });
-    setPerPage(10);
+    setPerPage(PAGE_SIZE);
     setPage(1);
   };
 
   return (
     <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
-      <div className="px-4 pt-4 flex items-center justify-between gap-3 flex-wrap my-3">
-        <h3 className="text-sm font-semibold tracking-wide text-base-content/70">
-          Módulo de usuarios
-        </h3>
 
-        <div className="flex items-center gap-3">
-          <label className="text-xs opacity-70">Filas:</label>
-          <select
-            className="select select-accent select-sm select-bordered w-20"
-            value={perPage}
-            onChange={(e) => {
-              setPerPage(Number(e.target.value) || 10);
-              setPage(1);
-            }}
-          >
-            {[10, 20, 50].map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-          {isFetching && <span className="loading loading-spinner loading-xs" />}
-          <button className="btn bg-[#2BB352] text-white" onClick={openCrear}>
-            Crear Usuario
-          </button>
-        </div>
-      </div>
 
-      {/* ✅ FILTROS */}
-      <div className="px-4 pb-3">
+      <div className="p-4 pb-0">
         <FiltrosUsuarios
           q={filters.q ?? ""}
           rol={filters.rol ?? ""}
@@ -202,9 +178,37 @@ const TablaUsuarios: React.FC = () => {
         />
       </div>
 
+
+      <div className="px-4 pt-4 flex items-center justify-end gap-3 flex-wrap my-3">
+
+        <div className="flex items-center gap-3">
+          <label className="text-xs opacity-70">Filas:</label>
+          <select
+            className="select select-accent select-sm select-bordered w-20"
+            value={perPage}
+            onChange={(e) => {
+              setPerPage(Number(e.target.value) || PAGE_SIZE);
+              setPage(1);
+            }}
+          >
+            {[PAGE_SIZE, 50, 100].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+
+          {isFetching && <span className="loading loading-spinner loading-xs" />}
+
+          <button className="btn bg-[#2BB352] text-white" onClick={openCrear}>
+            Crear Usuario
+          </button>
+        </div>
+      </div>
+
       <div className="relative overflow-x-auto max-w-full px-4">
-        <table className="table table-zebra table-pin-rows min-w-[900px]">
-          <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
+        <table className="table table-zebra table-pin-rows min-w-255">
+          <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-backdrop-filter:backdrop-blur-md">
             <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
               <th className="w-12">#</th>
               <th className="py-4">Nombre</th>
@@ -239,7 +243,10 @@ const TablaUsuarios: React.FC = () => {
                 <td>{formatFecha(u.fecha_exp)}</td>
                 <td className="text-right">
                   <div className="flex justify-end gap-2">
-                    <button className="btn btn-sm bg-white btn-circle" onClick={() => openEditar(u)}>
+                    <button
+                      className="btn btn-sm bg-white btn-circle"
+                      onClick={() => openEditar(u)}
+                    >
                       <Pen color="green" size="20px" />
                     </button>
                   </div>
@@ -258,7 +265,6 @@ const TablaUsuarios: React.FC = () => {
         </table>
       </div>
 
-      {/* Footer paginación */}
       <div className="flex items-center justify-between px-4 pb-4 pt-2">
         <span className="text-xs text-base-content/50">
           Mostrando {start}–{end} de {total}
@@ -271,7 +277,9 @@ const TablaUsuarios: React.FC = () => {
 
           {items.map((it, idx) =>
             it === "..." ? (
-              <span key={`e-${idx}`} className={btnEllipsis}>…</span>
+              <span key={`e-${idx}`} className={btnEllipsis}>
+                …
+              </span>
             ) : (
               <button
                 key={`p-${it}`}

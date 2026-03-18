@@ -13,10 +13,9 @@ import FormularioMotos from "./forms/FormularioMotos";
 import ImpuestosMotosFormulario from "./forms/ImpuestosMotosFormulario";
 import DescuentosMotosFormulario from "./forms/DescuentosMotosFormulario";
 import { useLoaderStore } from "../../store/loader.store";
+import { BOUNDARY_COUNT, PAGE_SIZE, SIBLING_COUNT } from "../../constants/pagination";
 
-const PAGE_SIZE = 10;
-const SIBLING_COUNT = 1;
-const BOUNDARY_COUNT = 1;
+
 
 const range = (start: number, end: number) =>
   Array.from({ length: end - start + 1 }, (_, i) => start + i);
@@ -81,8 +80,6 @@ const TablaMotos: React.FC = () => {
 
   // ✅ IMPORTANTE: ahora useMotos recibe filtros (pero si lo llamas sin filtros también sirve)
   const { data, isPending, isError } = useMotos(filters);
-
-  console.log("🚀 ~ file: TablaMotos.tsx:134 ~ TablaMotos ~ data:", data);
 
   const deleteMoto = useDeleteMoto();
   const toggleEstado = useToggleEstadoMoto();
@@ -365,8 +362,8 @@ const TablaMotos: React.FC = () => {
 
       {/* 👇 Wrapper scrolleable para hacerla responsive */}
       <div className="relative overflow-x-auto max-w-full px-4">
-        <table className="table table-zebra table-pin-rows min-w-[900px]">
-          <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
+        <table className="table table-zebra table-pin-rows min-w-225">
+          <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-backdrop-filter:backdrop-blur-md">
             <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
               <th className="w-12">#</th>
               <th>Imagen</th>
