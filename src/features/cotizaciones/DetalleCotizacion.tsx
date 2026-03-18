@@ -26,9 +26,14 @@ import { useLoaderStore } from '../../store/loader.store';
 import { useGarantiaExtByCotizacionId } from '../../services/garantiaExtServices';
 import { CotizacionDetalladaPDFDoc } from './CotizacionDetalladaPDFDoc';
 import { useEmpresaById } from '../../services/empresasServices';
-import { useSolicitudFacturacionPorIdCotizacion } from '../../services/solicitudServices';
+import { useSolicitudFacturacionPorIdCotizacion, useUltimaSolicitudPorIdCotizacion } from '../../services/solicitudServices';
 import { VehiculoCamposCollapse } from '../../shared/components/VehiculoCamposCollapse';
-import { DocumentosFacturacionCards } from '../../shared/components/DocumentosFacturacionCards';
+
+import {
+  DocumentosFacturacionCards,
+  DEFAULT_DOCS,
+  type DocItem,
+} from '../../shared/components/DocumentosFacturacionCards';
 
 const BaseUrl = import.meta.env.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
 
@@ -129,7 +134,7 @@ type Cotizacion = {
   motoA?: Motocicleta;
   motoB?: Motocicleta;
   actividad: Evento[];
-  
+
 };
 
 type MotoImageProps = {
@@ -264,6 +269,17 @@ const getFotoUrl = (payload: any, lado: 'A' | 'B'): string | undefined => {
   const key = `foto_${lado.toLowerCase()}`; // "foto_a" | "foto_b"
   return buildImageUrl(payload?.[key]);
 };
+
+
+
+const buildFileUrl = (path?: string | null): string | null => {
+  if (!path) return null;
+  if (/^https?:\/\//i.test(path)) return path;
+  const root = (BaseUrl || "").replace(/\/+$/, "");
+  const rel = String(path).replace(/^\/+/, "");
+  return `${root}/${rel}`;
+};
+
 
 
 // "2025-08-19 05:53:12" -> "19 de agosto de 2025, 5:53 a. m."
@@ -483,7 +499,7 @@ const mapApiToCotizacion = (data: any): Cotizacion => {
 
   const telAsesor = sanitizePhone(data?.telefono_asesor);
 
-  
+
   // Comercial
   const comercial = {
     asesor: data?.asesor || undefined,
@@ -492,7 +508,7 @@ const mapApiToCotizacion = (data: any): Cotizacion => {
     tipo_pago: data?.tipo_pago ?? data?.metodo_pago ?? null,
     prospecto: data?.prospecto ?? null,
     pregunta: data?.pregunta ?? null,
-      telefono_asesor: telAsesor,
+    telefono_asesor: telAsesor,
 
   };
 
@@ -549,11 +565,11 @@ const DetalleCotizacion: React.FC = () => {
     [payload]
   );
 
-const rawIdEmpresa = payload?.id_empresa_a ?? payload?.id_empresa_b;
-const idEmpresa = Number(rawIdEmpresa);
+  const rawIdEmpresa = payload?.id_empresa_a ?? payload?.id_empresa_b;
+  const idEmpresa = Number(rawIdEmpresa);
 
-const { data: empresaSeleccionada, isLoading: loadingEmpresa } =
-  useEmpresaById(idEmpresa);
+  const { data: empresaSeleccionada, isLoading: loadingEmpresa } =
+    useEmpresaById(idEmpresa);
 
   const { data: solicitudFact } = useSolicitudFacturacionPorIdCotizacion(id, {
     enabled: !!id, // 👈 clave
@@ -564,6 +580,65 @@ const { data: empresaSeleccionada, isLoading: loadingEmpresa } =
     if (!path) return null;
     return buildImageUrl(path);
   }, [solicitudFact?.facturaPath]);
+
+
+  const { data: ultimaSolData } = useUltimaSolicitudPorIdCotizacion(id ?? "");
+
+  const ultimaSolRegistro: any =
+    (ultimaSolData as any)?.registro ?? ultimaSolData ?? null;
+
+  const cedulaUrlSolicitud = React.useMemo(() => {
+    return buildFileUrl(ultimaSolRegistro?.cedula ?? null);
+  }, [ultimaSolRegistro]);
+
+  const manifiestoUrlSolicitud = React.useMemo(() => {
+    return buildFileUrl(ultimaSolRegistro?.manifiesto ?? null);
+  }, [ultimaSolRegistro]);
+
+  // const facturaUrlSolicitud = React.useMemo(() => {
+  //   return buildFileUrl(ultimaSolRegistro?.factura ?? null);
+  // }, [ultimaSolRegistro]);
+
+  // const cartaUrlSolicitud = React.useMemo(() => {
+  //   return buildFileUrl(ultimaSolRegistro?.carta ?? null);
+  // }, [ultimaSolRegistro]);
+
+  // const otrosDocsUrlsSolicitud: string[] = React.useMemo(() => {
+  //   const raw =
+  //     ultimaSolRegistro?.otros_documentos_rutas ??
+  //     ultimaSolRegistro?.otros_documentos ??
+  //     null;
+
+  //   if (!raw) return [];
+
+  //   if (Array.isArray(raw)) {
+  //     return raw
+  //       .map((p: any) => buildFileUrl(String(p)))
+  //       .filter((u: string | null): u is string => !!u);
+  //   }
+
+  //   if (typeof raw === "string") {
+  //     const t = raw.trim();
+  //     if (!t) return [];
+
+  //     try {
+  //       const parsed = JSON.parse(t);
+  //       if (Array.isArray(parsed)) {
+  //         return parsed
+  //           .map((p: any) => buildFileUrl(String(p)))
+  //           .filter((u: string | null): u is string => !!u);
+  //       }
+
+  //       const single = buildFileUrl(t);
+  //       return single ? [single] : [];
+  //     } catch {
+  //       const single = buildFileUrl(t);
+  //       return single ? [single] : [];
+  //     }
+  //   }
+
+  //   return [];
+  // }, [ultimaSolRegistro]);
 
   // Objeto que espera el PDF
   const empresaPDF = React.useMemo(() => {
@@ -690,6 +765,42 @@ const { data: empresaSeleccionada, isLoading: loadingEmpresa } =
     else hide();
   }, [isLoading, show, hide]);
 
+
+//   const documentosFacturacionCombinados: DocItem[] = React.useMemo(() => {
+//   const docsBackend: DocItem[] = [
+//     { name: "Cédula", url: cedulaUrlSolicitud || undefined },
+//     { name: "Manifiesto", url: manifiestoUrlSolicitud || undefined },
+//     { name: "Factura", url: (facturaUrlSolicitud || facturaUrl) || undefined },
+//     { name: "Carta", url: cartaUrlSolicitud || undefined },
+//     ...otrosDocsUrlsSolicitud.map((url, i) => ({
+//       name: `Otro documento #${i + 1}`,
+//       url,
+//     })),
+//   ].filter((d) => !!d.url);
+
+//   return [...DEFAULT_DOCS, ...docsBackend];
+// }, [
+//   cedulaUrlSolicitud,
+//   manifiestoUrlSolicitud,
+//   facturaUrlSolicitud,
+//   facturaUrl,
+//   cartaUrlSolicitud,
+//   otrosDocsUrlsSolicitud,
+// ]);
+
+
+const documentosFacturacionCombinados: DocItem[] = React.useMemo(() => {
+  const docsBackend: DocItem[] = [
+    { name: "Cédula", url: cedulaUrlSolicitud || undefined },
+    { name: "Manifiesto", url: manifiestoUrlSolicitud || undefined },
+  ].filter((d) => !!d.url);
+
+  return [...DEFAULT_DOCS, ...docsBackend];
+}, [
+  cedulaUrlSolicitud,
+  manifiestoUrlSolicitud,
+]);
+
   // Blocs de estados
   if (!id) {
     return (
@@ -725,6 +836,8 @@ const { data: empresaSeleccionada, isLoading: loadingEmpresa } =
 
   const isFacturado = normalizeLower(q.estado).includes("facturado");
   const tipoVehiculo = isCreditoPropio ? (1 as const) : (2 as const);
+
+
 
 
   return (
@@ -785,21 +898,21 @@ const { data: empresaSeleccionada, isLoading: loadingEmpresa } =
 
             {/* Datos comerciales */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-2 mt-2">
-<InfoPill icon={<UserCircle2 className="w-4 h-4" />} label="Asesor" value={q.comercial?.asesor || '—'} />
+              <InfoPill icon={<UserCircle2 className="w-4 h-4" />} label="Asesor" value={q.comercial?.asesor || '—'} />
 
-<InfoPill
-  icon={<Phone className="w-4 h-4" />}
-  label="Teléfono asesor"
-  value={
-    q.comercial?.telefono_asesor ? (
-      <a className="link link-primary" href={`tel:${q.comercial.telefono_asesor}`}>
-        {q.comercial.telefono_asesor}
-      </a>
-    ) : (
-      '—'
-    )
-  }
-/>
+              <InfoPill
+                icon={<Phone className="w-4 h-4" />}
+                label="Teléfono asesor"
+                value={
+                  q.comercial?.telefono_asesor ? (
+                    <a className="link link-primary" href={`tel:${q.comercial.telefono_asesor}`}>
+                      {q.comercial.telefono_asesor}
+                    </a>
+                  ) : (
+                    '—'
+                  )
+                }
+              />
               <InfoPill icon={<Fingerprint className="w-4 h-4" />} label="Tipo de pago" value={q.comercial?.tipo_pago || '—'} />
               <InfoPill icon={<MessageSquareQuote className="w-4 h-4" />} label="Canal de contacto" value={q.comercial?.canal_contacto || '—'} />
               <InfoPill icon={<BadgeCheck className="w-4 h-4" />} label="Prospecto" value={q.comercial?.prospecto || '—'} />
@@ -1239,19 +1352,22 @@ const { data: empresaSeleccionada, isLoading: loadingEmpresa } =
         </section>
       </div>
 
-{isFacturado && (
-  <>
-    <VehiculoCamposCollapse
-      idCotizacion={id}
-      tipo={tipoVehiculo}
-      titulo={tipoVehiculo === 1 ? "Datos vehículo (Crédito)" : "Datos vehículo (Facturación)"}
-    />
+      {isFacturado && (
+        <>
+          <VehiculoCamposCollapse
+            idCotizacion={id}
+            tipo={tipoVehiculo}
+            titulo={tipoVehiculo === 1 ? "Datos vehículo (Crédito)" : "Datos vehículo (Facturación)"}
+          />
 
-    <div className="mt-4">
-      <DocumentosFacturacionCards title="Documentos de facturación" />
-    </div>
-  </>
-)}
+          <div className="mt-4">
+            <DocumentosFacturacionCards
+              title="Documentos de facturación"
+              docs={documentosFacturacionCombinados}
+            />
+          </div>
+        </>
+      )}
 
 
       {/* Barra de acciones (inferior) – PDF detallado */}
