@@ -1797,32 +1797,32 @@ const CotizacionFormulario: React.FC = () => {
                                                 <div className="bg-base-200/70 p-4 rounded-xl mb-4 space-y-2">
                                                     <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-medium text-gray-700">Matrícula:</span>
-                                                        <span>{fmtCOP(mat1)}</span>
+                                                        <span>{fmtCOP(mat1)} COP</span>
                                                     </div>
                                                     <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-medium text-gray-700">Impuestos:</span>
-                                                        <span>{fmtCOP(imp1)}</span>
+                                                        <span>{fmtCOP(imp1)} COP</span>
                                                     </div>
                                                     <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-medium text-gray-700">SOAT:</span>
-                                                        <span>{fmtCOP(soat1)}</span>
+                                                        <span>{fmtCOP(soat1)} COP</span>
                                                     </div>
                                                     <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-semibold text-gray-800">Documentos (M+I+S):</span>
-                                                        <span className="font-semibold">{fmtCOP(documentos1)}</span>
+                                                        <span className="font-semibold">{fmtCOP(documentos1)} COP</span>
                                                     </div>
 
                                                     <div className="flex justify-between bg-purple-50/70 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-medium text-gray-700">
                                                             Costos adicionales (RUNT, licencias, defensas, etc.):
                                                         </span>
-                                                        <span>{fmtCOP(extrasMoto1)}</span>
+                                                        <span>{fmtCOP(extrasMoto1)} COP</span>
                                                     </div>
 
                                                     <div className="flex justify-between bg-error/5 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-medium text-gray-700">Descuento / Plan de marca:</span>
                                                         <span className="text-error font-semibold">
-                                                            {descuento1Val > 0 ? `-${fmtCOP(descuento1Val)}` : "0 COP"}
+                                                            {descuento1Val > 0 ? `-${fmtCOP(descuento1Val)} COP` : "0 COP"}
                                                         </span>
                                                     </div>
 
@@ -1831,7 +1831,7 @@ const CotizacionFormulario: React.FC = () => {
                                                             <span className="font-medium text-gray-700">
                                                                 Garantía extendida ({garantiaExt1Sel} meses):
                                                             </span>
-                                                            <span>{fmtCOP(garantiaExtVal1)}</span>
+                                                            <span>{fmtCOP(garantiaExtVal1)} COP</span>
                                                         </div>
                                                     )}
 
@@ -1840,38 +1840,38 @@ const CotizacionFormulario: React.FC = () => {
                                                             <span className="font-medium text-gray-700">
                                                                 GPS ({gpsSel1} meses):
                                                             </span>
-                                                            <span>{fmtCOP(gpsVal1)}</span>
+                                                            <span>{fmtCOP(gpsVal1)} COP</span>
                                                         </div>
                                                     )}
 
                                                     {poliza1Value !== "" && (
                                                         <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
                                                             <span className="font-medium">{polizaLabel} {poliza1Value}:</span>
-                                                            <span>{fmtCOP(polizaVal1)}</span>
+                                                            <span>{fmtCOP(polizaVal1)} COP</span>
                                                         </div>
                                                     )}
 
                                                     <div className="flex justify-between bg-blue-50/70 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-medium text-gray-700">Cascos y Accesorios:</span>
-                                                        <span>{fmtCOP(accesorios1Val)}</span>
+                                                        <span>{fmtCOP(accesorios1Val)} COP</span>
                                                     </div>
 
                                                     <div className="flex justify-between bg-indigo-50/70 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-medium text-gray-700">Marcación y personalización:</span>
-                                                        <span>{fmtCOP(marcacion1Val)}</span>
+                                                        <span>{fmtCOP(marcacion1Val)} COP</span>
                                                     </div>
 
                                                     {esCreditoDirecto && (
                                                         <div className="flex justify-between bg-yellow-50/70 px-4 py-2 rounded-md shadow-sm">
                                                             <span className="font-medium text-gray-700">Inicial:</span>
-                                                            <span>{fmtCOP(inicial1)}</span>
+                                                            <span>{fmtCOP(inicial1)} COP</span>
                                                         </div>
                                                     )}
 
                                                     {totalSeguros1 > 0 && (
                                                         <div className="flex justify-between bg-[#3498DB]/10 px-4 py-2 rounded-md shadow-sm">
                                                             <span className="font-medium text-gray-700">Seguro todo riesgo:</span>
-                                                            <span>{fmtCOP(totalSeguros1)}</span>
+                                                            <span>{fmtCOP(totalSeguros1)} COP</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -1879,18 +1879,18 @@ const CotizacionFormulario: React.FC = () => {
                                                 <div className="space-y-2">
                                                     <div className="flex justify-between items-center bg-base-200 px-4 py-2 rounded-md border border-base-300 shadow-sm">
                                                         <span className="font-semibold">PRECIO BASE:</span>
-                                                        <span className="font-extrabold">{fmtCOP(precioBase1)}</span>
+                                                        <span className="font-extrabold">{fmtCOP(precioBase1)} COP</span>
                                                     </div>
 
                                                     <div className="flex justify-between items-center bg-success/10 px-4 py-2 rounded-md border border-success/30 shadow-sm">
                                                         <span className="font-bold text-success">TOTAL:</span>
-                                                        <span className="text-success font-extrabold text-lg">{fmtCOP(totalConSeguros1)}</span>
+                                                        <span className="text-success font-extrabold text-lg">{fmtCOP(totalConSeguros1)} COP</span>
                                                     </div>
 
                                                     {esCreditoDirecto && (
                                                         <div className="flex justify-between items-center bg-info/10 px-4 py-2 rounded-md border border-info/30 shadow-sm">
                                                             <span className="font-semibold text-info">SALDO A FINANCIAR:</span>
-                                                            <span className="font-bold">{fmtCOP(saldoFinanciar1)}</span>
+                                                            <span className="font-bold">{fmtCOP(saldoFinanciar1)} COP</span>
                                                         </div>
                                                     )}
 
@@ -1900,20 +1900,20 @@ const CotizacionFormulario: React.FC = () => {
 
                                                             <div className="flex justify-between text-sm">
                                                                 <span>6 meses:</span>
-                                                                <span>{fmtCOP(cuota6_a_auto)}</span>
+                                                                <span>{fmtCOP(cuota6_a_auto)} COP</span>
                                                             </div>
 
                                                             <div className="flex justify-between text-sm">
                                                                 <span>12 meses:</span>
-                                                                <span>{fmtCOP(cuota12_a_auto)}</span>
+                                                                <span>{fmtCOP(cuota12_a_auto)} COP</span>
                                                             </div>
                                                             <div className="flex justify-between text-sm">
                                                                 <span>24 meses:</span>
-                                                                <span>{fmtCOP(cuota24_a_auto)}</span>
+                                                                <span>{fmtCOP(cuota24_a_auto)} COP</span>
                                                             </div>
                                                             <div className="flex justify-between text-sm">
                                                                 <span>36 meses:</span>
-                                                                <span>{fmtCOP(cuota36_a_auto)}</span>
+                                                                <span>{fmtCOP(cuota36_a_auto)} COP</span>
                                                             </div>
                                                         </div>
                                                     )}
@@ -2322,32 +2322,32 @@ const CotizacionFormulario: React.FC = () => {
                                                 <div className="bg-base-200/70 p-4 rounded-xl mb-4 space-y-2">
                                                     <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-medium text-gray-700">Matrícula:</span>
-                                                        <span>{fmtCOP(mat2)}</span>
+                                                        <span>{fmtCOP(mat2)} COP</span>
                                                     </div>
                                                     <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-medium text-gray-700">Impuestos:</span>
-                                                        <span>{fmtCOP(imp2)}</span>
+                                                        <span>{fmtCOP(imp2)} COP</span>
                                                     </div>
                                                     <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-medium text-gray-700">SOAT:</span>
-                                                        <span>{fmtCOP(soat2)}</span>
+                                                        <span>{fmtCOP(soat2)} COP</span>
                                                     </div>
                                                     <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-semibold text-gray-800">Documentos (M+I+S):</span>
-                                                        <span className="font-semibold">{fmtCOP(documentos2)}</span>
+                                                        <span className="font-semibold">{fmtCOP(documentos2)} COP</span>
                                                     </div>
 
                                                     <div className="flex justify-between bg-purple-50/70 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-medium text-gray-700">
                                                             Costos adicionales (RUNT, licencias, defensas, etc.):
                                                         </span>
-                                                        <span>{fmtCOP(extrasMoto2)}</span>
+                                                        <span>{fmtCOP(extrasMoto2)} COP</span>
                                                     </div>
 
                                                     <div className="flex justify-between bg-error/5 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-medium text-gray-700">Descuento / Plan de marca:</span>
                                                         <span className="text-error font-semibold">
-                                                            {descuento2Val > 0 ? `-${fmtCOP(descuento2Val)}` : "0 COP"}
+                                                            {descuento2Val > 0 ? `-${fmtCOP(descuento2Val)} COP` : "0 COP"}
                                                         </span>
                                                     </div>
 
@@ -2356,7 +2356,7 @@ const CotizacionFormulario: React.FC = () => {
                                                             <span className="font-medium text-gray-700">
                                                                 Garantía extendida ({garantiaExt2Sel} meses):
                                                             </span>
-                                                            <span>{fmtCOP(garantiaExtVal2)}</span>
+                                                            <span>{fmtCOP(garantiaExtVal2)} COP</span>
                                                         </div>
                                                     )}
 
@@ -2365,38 +2365,38 @@ const CotizacionFormulario: React.FC = () => {
                                                             <span className="font-medium text-gray-700">
                                                                 GPS ({gpsSel2} meses):
                                                             </span>
-                                                            <span>{fmtCOP(gpsVal2)}</span>
+                                                            <span>{fmtCOP(gpsVal2)} COP</span>
                                                         </div>
                                                     )}
 
                                                     {poliza2Value !== "" && (
                                                         <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
                                                             <span className="font-medium">{polizaLabel} {poliza2Value}:</span>
-                                                            <span>{fmtCOP(polizaVal2)}</span>
+                                                            <span>{fmtCOP(polizaVal2)} COP</span>
                                                         </div>
                                                     )}
 
                                                     <div className="flex justify-between bg-blue-50/70 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-medium text-gray-700">Cascos y Accesorios:</span>
-                                                        <span>{fmtCOP(accesorios2Val)}</span>
+                                                        <span>{fmtCOP(accesorios2Val)} COP</span>
                                                     </div>
 
                                                     <div className="flex justify-between bg-indigo-50/70 px-4 py-2 rounded-md shadow-sm">
                                                         <span className="font-medium text-gray-700">Marcación y personalización:</span>
-                                                        <span>{fmtCOP(marcacion2Val)}</span>
+                                                        <span>{fmtCOP(marcacion2Val)} COP</span>
                                                     </div>
 
                                                     {esCreditoDirecto && (
                                                         <div className="flex justify-between bg-yellow-50/70 px-4 py-2 rounded-md shadow-sm">
                                                             <span className="font-medium text-gray-700">Inicial:</span>
-                                                            <span>{fmtCOP(inicial2)}</span>
+                                                            <span>{fmtCOP(inicial2)} COP</span>
                                                         </div>
                                                     )}
 
                                                     {totalSeguros2 > 0 && (
                                                         <div className="flex justify-between bg-[#3498DB]/10 px-4 py-2 rounded-md shadow-sm">
                                                             <span className="font-medium text-gray-700">Seguro todo riesgo:</span>
-                                                            <span>{fmtCOP(totalSeguros2)}</span>
+                                                            <span>{fmtCOP(totalSeguros2)} COP</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -2404,18 +2404,18 @@ const CotizacionFormulario: React.FC = () => {
                                                 <div className="space-y-2">
                                                     <div className="flex justify-between items-center bg-base-200 px-4 py-2 rounded-md border border-base-300 shadow-sm">
                                                         <span className="font-semibold">PRECIO BASE:</span>
-                                                        <span className="font-extrabold">{fmtCOP(precioBase2)}</span>
+                                                        <span className="font-extrabold">{fmtCOP(precioBase2)} COP</span>
                                                     </div>
 
                                                     <div className="flex justify-between items-center bg-success/10 px-4 py-2 rounded-md border border-success/30 shadow-sm">
                                                         <span className="font-bold text-success">TOTAL:</span>
-                                                        <span className="text-success font-extrabold text-lg">{fmtCOP(totalConSeguros2)}</span>
+                                                        <span className="text-success font-extrabold text-lg">{fmtCOP(totalConSeguros2)} COP</span>
                                                     </div>
 
                                                     {esCreditoDirecto && (
                                                         <div className="flex justify-between items-center bg-info/10 px-4 py-2 rounded-md border border-info/30 shadow-sm">
                                                             <span className="font-semibold text-info">SALDO A FINANCIAR:</span>
-                                                            <span className="font-bold">{fmtCOP(saldoFinanciar2)}</span>
+                                                            <span className="font-bold">{fmtCOP(saldoFinanciar2)} COP</span>
                                                         </div>
                                                     )}
 
@@ -2425,25 +2425,25 @@ const CotizacionFormulario: React.FC = () => {
 
                                                             <div className="flex justify-between text-sm">
                                                                 <span>Seguro de vida mensual:</span>
-                                                                <span>{fmtCOP(segVidaMensualB)}</span>
+                                                                <span>{fmtCOP(segVidaMensualB)} COP</span>
                                                             </div>
 
                                                             <div className="flex justify-between text-sm">
                                                                 <span>6 meses:</span>
-                                                                <span>{fmtCOP(cuota6_b_auto)}</span>
+                                                                <span>{fmtCOP(cuota6_b_auto)} COP</span>
                                                             </div>
 
                                                             <div className="flex justify-between text-sm">
                                                                 <span>12 meses:</span>
-                                                                <span>{fmtCOP(cuota12_b_auto)}</span>
+                                                                <span>{fmtCOP(cuota12_b_auto)} COP</span>
                                                             </div>
                                                             <div className="flex justify-between text-sm">
                                                                 <span>24 meses:</span>
-                                                                <span>{fmtCOP(cuota24_b_auto)}</span>
+                                                                <span>{fmtCOP(cuota24_b_auto)} COP</span>
                                                             </div>
                                                             <div className="flex justify-between text-sm">
                                                                 <span>36 meses:</span>
-                                                                <span>{fmtCOP(cuota36_b_auto)}</span>
+                                                                <span>{fmtCOP(cuota36_b_auto)} COP</span>
                                                             </div>
                                                         </div>
                                                     )}
