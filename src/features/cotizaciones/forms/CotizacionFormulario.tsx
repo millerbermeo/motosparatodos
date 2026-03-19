@@ -960,32 +960,11 @@ const CotizacionFormulario: React.FC = () => {
     const saldoFinanciar2 =
         esCreditoDirecto && incluirMoto2 ? Math.max(totalConSeguros2 - inicial2, 0) : 0;
 
-const showGarantiaExtendida = showMotos && metodo === "credibike";
+    const hideGarantiaExtendida = metodo === "contado" || metodo === "terceros";
+    const showGarantiaExtendida = showMotos && !hideGarantiaExtendida;
 
-const polizaLabel = "Póliza todo riesgo";
-const polizaValorLabel = "Valor póliza";
-
-
-React.useEffect(() => {
-  if (metodo === "credibike") {
-    setValue("poliza1", "");
-    setValue("poliza2", "");
-    setValue("valor_poliza_a", "0");
-    setValue("valor_poliza_b", "0");
-  }
-}, [metodo, setValue]);
-
-
-
-React.useEffect(() => {
-  if (metodo !== "credibike") {
-    setValue("garantiaExtendida1", "no");
-    setValue("garantiaExtendida2", "no");
-    setValue("valor_garantia_extendida_a", "0");
-    setValue("valor_garantia_extendida_b", "0");
-  }
-}, [metodo, setValue]);
-
+    const polizaLabel = hideGarantiaExtendida ? "Garantía extendida" : "Póliza todo riesgo";
+    const polizaValorLabel = hideGarantiaExtendida ? "Valor garantía extendida" : "Valor póliza";
 
     React.useEffect(() => {
         const gpsComoContado = metodo === "contado" || metodo === "terceros";
