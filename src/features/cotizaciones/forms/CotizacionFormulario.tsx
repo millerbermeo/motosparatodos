@@ -10,7 +10,7 @@ import ButtonLink from "../../../shared/components/ButtonLink";
 import { useNavigate } from "react-router-dom";
 import { useConfigPlazoByCodigo } from "../../../services/configuracionPlazoService";
 import type { FormValuesCotizacion } from "../types";
-import { fmtCOP } from "../../../utils/money";
+import { fmtCOP, toNumberOrNullMoney, toNumberSafe } from "../../../utils/money";
 import { garantiaExtendidaOptions } from "../../../shared/components/options/garantia-extendida-options";
 import { aNumeroOUndefined } from "../../../utils/number";
 import MotoImage from "../detalles-cotizacion/sub-components/MotoImage";
@@ -575,14 +575,24 @@ const CotizacionFormulario: React.FC = () => {
             ? (segurosIds1 as string[]).reduce((acc, id) => acc + findSeguroValor(String(id)), 0) + otros1
             : 0;
 
-    const gpsSel1 = gps1Value;
     const gpsVal1 = aNumeroOUndefined(gpsAValue) ?? 0;
 
-    const gpsSel2 = gps2Value;
+
     const gpsVal2 = aNumeroOUndefined(gpsBValue) ?? 0;
 
     const polizaVal1 = aNumeroOUndefined(valorPolizaAValue) ?? 0;
     const polizaVal2 = aNumeroOUndefined(valorPolizaBValue) ?? 0;
+
+
+    const gpsAplica1 =
+        metodo === "contado" || metodo === "terceros"
+            ? gpsContado1Value === "si"
+            : gps1Value !== "no";
+
+    const gpsAplica2 =
+        metodo === "contado" || metodo === "terceros"
+            ? gpsContado2Value === "si"
+            : gps2Value !== "no";
 
     const totalSinSeguros1 =
         showMotos && incluirMoto1
@@ -592,7 +602,7 @@ const CotizacionFormulario: React.FC = () => {
             marcacion1Val -
             descuento1Val +
             (garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0) +
-            (gpsSel1 !== "no" ? gpsVal1 : 0) +
+            (gpsAplica1 ? gpsVal1 : 0) +
             extrasMoto1 +
             polizaVal1
             : 0;
@@ -618,7 +628,7 @@ const CotizacionFormulario: React.FC = () => {
             marcacion2Val -
             descuento2Val +
             (garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0) +
-            (gpsSel2 !== "no" ? gpsVal2 : 0) +
+            (gpsAplica2 ? gpsVal2 : 0) +
             extrasMoto2 +
             polizaVal2
             : 0;
@@ -629,20 +639,6 @@ const CotizacionFormulario: React.FC = () => {
     const moto2Seleccionada = Boolean(moto2Value);
 
     const onSubmit = (data: FormValuesCotizacion) => {
-        const unformatNumber = (v: string | number | null | undefined): string => {
-            if (v === null || v === undefined) return "";
-            return String(v).replace(/[^\d-]/g, "");
-        };
-
-        const toNumberSafe = (v: string | number | null | undefined): number => {
-            const raw = unformatNumber(v);
-            return raw ? Number(raw) : 0;
-        };
-
-        const toNumberOrNullMoney = (v: string | number | null | undefined): number | null => {
-            const raw = unformatNumber(v);
-            return raw ? Number(raw) : null;
-        };
 
         const motoA = incluirMoto1 && motos1?.motos ? motos1.motos[Number(data.moto1)] ?? null : null;
         const motoB = incluirMoto2 && motos2?.motos ? motos2.motos[Number(data.moto2)] ?? null : null;
@@ -964,11 +960,32 @@ const CotizacionFormulario: React.FC = () => {
     const saldoFinanciar2 =
         esCreditoDirecto && incluirMoto2 ? Math.max(totalConSeguros2 - inicial2, 0) : 0;
 
-    const hideGarantiaExtendida = metodo === "contado" || metodo === "terceros";
-    const showGarantiaExtendida = showMotos && !hideGarantiaExtendida;
+const showGarantiaExtendida = showMotos && metodo === "credibike";
 
-    const polizaLabel = hideGarantiaExtendida ? "Garantía extendida" : "Póliza todo riesgo";
-    const polizaValorLabel = hideGarantiaExtendida ? "Valor garantía extendida" : "Valor póliza";
+const polizaLabel = "Póliza todo riesgo";
+const polizaValorLabel = "Valor póliza";
+
+
+React.useEffect(() => {
+  if (metodo === "credibike") {
+    setValue("poliza1", "");
+    setValue("poliza2", "");
+    setValue("valor_poliza_a", "0");
+    setValue("valor_poliza_b", "0");
+  }
+}, [metodo, setValue]);
+
+
+
+React.useEffect(() => {
+  if (metodo !== "credibike") {
+    setValue("garantiaExtendida1", "no");
+    setValue("garantiaExtendida2", "no");
+    setValue("valor_garantia_extendida_a", "0");
+    setValue("valor_garantia_extendida_b", "0");
+  }
+}, [metodo, setValue]);
+
 
     React.useEffect(() => {
         const gpsComoContado = metodo === "contado" || metodo === "terceros";
@@ -1225,6 +1242,7 @@ const CotizacionFormulario: React.FC = () => {
 
         setValue("gps_b", String(val), { shouldDirty: true, shouldValidate: true });
     }, [incluirMoto2, gps2Value, precioBase2, gpsMap, setValue, metodo]);
+
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -1835,15 +1853,14 @@ const CotizacionFormulario: React.FC = () => {
                                                         </div>
                                                     )}
 
-                                                    {gpsSel1 !== "no" && (
+                                                    {gpsAplica1 && (
                                                         <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
                                                             <span className="font-medium text-gray-700">
-                                                                GPS ({gpsSel1} meses):
+                                                                GPS {metodo === "contado" || metodo === "terceros" ? "" : `(${gps1Value} meses)`}:
                                                             </span>
                                                             <span>{fmtCOP(gpsVal1)} COP</span>
                                                         </div>
                                                     )}
-
                                                     {poliza1Value !== "" && (
                                                         <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
                                                             <span className="font-medium">{polizaLabel} {poliza1Value}:</span>
@@ -2360,14 +2377,15 @@ const CotizacionFormulario: React.FC = () => {
                                                         </div>
                                                     )}
 
-                                                    {gpsSel2 !== "no" && (
+                                                    {gpsAplica2 && (
                                                         <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
                                                             <span className="font-medium text-gray-700">
-                                                                GPS ({gpsSel2} meses):
+                                                                GPS {metodo === "contado" || metodo === "terceros" ? "" : `(${gps2Value} meses)`}:
                                                             </span>
                                                             <span>{fmtCOP(gpsVal2)} COP</span>
                                                         </div>
                                                     )}
+
 
                                                     {poliza2Value !== "" && (
                                                         <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">

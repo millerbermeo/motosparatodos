@@ -2,7 +2,7 @@
 import { Controller } from "react-hook-form";
 import type { Control, FieldValues, Path, RegisterOptions } from "react-hook-form";
 import { useId, useRef, useLayoutEffect, useState } from "react";
-import { formatThousands as fmt, unformatNumber } from "./moneyUtils";
+import { formatThousands as fmt, unformatNumber } from "../../utils/money";
 
 type FormInputProps<T extends FieldValues> = {
   name: Path<T>;
