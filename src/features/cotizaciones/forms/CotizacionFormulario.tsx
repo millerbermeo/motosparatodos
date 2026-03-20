@@ -543,8 +543,13 @@ const CotizacionFormulario: React.FC = () => {
     );
 
     const { data: tasaFinanciacion } = useConfigPlazoByCodigo("TASA_FIN");
+    const { data: tasaGarantiaConfig } = useConfigPlazoByCodigo("TASA_GARANTIA");
 
     const tasaDecimal = tasaFinanciacion ? Number(tasaFinanciacion.valor) / 100 : 0.0188;
+
+    const TASA_GARANTIA_MENSUAL = tasaGarantiaConfig ? Number(tasaGarantiaConfig.valor) : 1.5;
+
+
 
     React.useEffect(() => {
         if (!incluirMoto1) {
@@ -1223,6 +1228,129 @@ const CotizacionFormulario: React.FC = () => {
     }, [incluirMoto2, gps2Value, precioBase2, gpsMap, setValue, metodo]);
 
 
+
+
+
+
+    const aplicarCalculoCreditoDirecto = metodo === "credibike";
+
+    const calcularCuotaPMT = (valorPresente: any, tasaPorcentaje: any, meses: any) => {
+        if (!valorPresente || !meses || meses === "no") return 0;
+
+        const PV = Number(valorPresente);
+        const n = Number(meses);
+        const r = Number(tasaPorcentaje) / 100;
+
+        if (!PV || !n) return 0;
+        if (r === 0) return PV / n;
+
+        return (r * PV) / (1 - Math.pow(1 + r, -n));
+    };
+
+
+    // Solo toma meses si es crédito directo y hay garantía extendida
+    const mesesMoto1 =
+        aplicarCalculoCreditoDirecto && incluirMoto1 && garantiaExtendida1Value !== "no"
+            ? Number(garantiaExtendida1Value)
+            : 0;
+
+    const mesesMoto2 =
+        aplicarCalculoCreditoDirecto && incluirMoto2 && garantiaExtendida2Value !== "no"
+            ? Number(garantiaExtendida2Value)
+            : 0;
+
+    // Inicializamos todo en 0
+    let cuotaGarantiaExtendidaMoto1 = 0;
+    let cuotaGarantiaExtendidaMoto2 = 0;
+
+    let seguroDeudorMoto1 = 0;
+    let seguroDeudorMoto2 = 0;
+
+    let garantiaSegurosMesMoto1 = 0;
+    let garantiaSegurosMesMoto2 = 0;
+
+    let cuotaNegocioMoto1 = 0;
+    let cuotaNegocioMoto2 = 0;
+
+    let cuotaTotalMoto1 = 0;
+    let cuotaTotalMoto2 = 0;
+
+    // Solo ejecuta este bloque si es crédito directo
+    if (aplicarCalculoCreditoDirecto) {
+        // Cuota garantía extendida
+        cuotaGarantiaExtendidaMoto1 =
+            mesesMoto1 > 0
+                ? Math.floor(
+                    calcularCuotaPMT(
+                        Number(valorGarantiaAValue),
+                        TASA_GARANTIA_MENSUAL,
+                        mesesMoto1
+                    )
+                )
+                : 0;
+
+        cuotaGarantiaExtendidaMoto2 =
+            mesesMoto2 > 0
+                ? Math.floor(
+                    calcularCuotaPMT(
+                        Number(valorGarantiaBValue),
+                        TASA_GARANTIA_MENSUAL,
+                        mesesMoto2
+                    )
+                )
+                : 0;
+
+        // Seguro deudor mensual
+        seguroDeudorMoto1 =
+            incluirMoto1 && saldoFinanciar1 > 0
+                ? Math.floor(Number(saldoFinanciar1) * 0.00043)
+                : 0;
+
+        seguroDeudorMoto2 =
+            incluirMoto2 && saldoFinanciar2 > 0
+                ? Math.floor(Number(saldoFinanciar2) * 0.00043)
+                : 0;
+
+        // Garantía + seguro deudor
+        garantiaSegurosMesMoto1 = cuotaGarantiaExtendidaMoto1 + seguroDeudorMoto1;
+        garantiaSegurosMesMoto2 = cuotaGarantiaExtendidaMoto2 + seguroDeudorMoto2;
+
+        // Cuota del negocio
+        cuotaNegocioMoto1 =
+            mesesMoto1 > 0 && saldoFinanciar1 > 0
+                ? Math.floor(
+                    calcularCuotaPMT(
+                        Number(saldoFinanciar1),
+                        tasaDecimal * 100,
+                        mesesMoto1
+                    )
+                )
+                : 0;
+
+        cuotaNegocioMoto2 =
+            mesesMoto2 > 0 && saldoFinanciar2 > 0
+                ? Math.floor(
+                    calcularCuotaPMT(
+                        Number(saldoFinanciar2),
+                        tasaDecimal * 100,
+                        mesesMoto2
+                    )
+                )
+                : 0;
+
+        // Cuota total
+        cuotaTotalMoto1 = cuotaNegocioMoto1 + garantiaSegurosMesMoto1;
+        cuotaTotalMoto2 = cuotaNegocioMoto2 + garantiaSegurosMesMoto2;
+
+        console.log("cuota garantia extendida", cuotaGarantiaExtendidaMoto1, cuotaGarantiaExtendidaMoto2);
+        console.log("seguro deudor", seguroDeudorMoto1, seguroDeudorMoto2);
+        console.log("garantias + seguros", garantiaSegurosMesMoto1, garantiaSegurosMesMoto2);
+        console.log("cuotas de negocio", cuotaNegocioMoto1, cuotaNegocioMoto2);
+        console.log("cuota total", cuotaTotalMoto1, cuotaTotalMoto2);
+    }
+
+
+
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="pt-4 mb-3">
@@ -1823,13 +1951,26 @@ const CotizacionFormulario: React.FC = () => {
                                                         </span>
                                                     </div>
 
-                                                    {garantiaExt1Sel !== "no" && (
-                                                        <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
-                                                            <span className="font-medium text-gray-700">
-                                                                Garantía extendida ({garantiaExt1Sel} meses):
-                                                            </span>
-                                                            <span>{fmtCOP(garantiaExtVal1)} COP</span>
-                                                        </div>
+                                                    {garantiaExt1Sel !== "no" && metodo === "credibike" && (
+                                                        <>
+                                                            {/* 🔒 Valor total (oculto por ahora, por si luego lo necesitan) */}
+                                                            <div className="hidden justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                                <span className="font-medium text-gray-700">
+                                                                    Garantía extendida ({garantiaExt1Sel} meses):
+                                                                </span>
+                                                                <span>{fmtCOP(garantiaExtVal1)} COP</span>
+                                                            </div>
+
+                                                            {/* ✅ Valor correcto mostrado (cuota mensual) */}
+                                                            <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                                <span className="font-medium text-gray-700">
+                                                                    Garantía extendida ({garantiaExt1Sel} meses):
+                                                                </span>
+                                                                <span>
+                                                                    {fmtCOP(cuotaGarantiaExtendidaMoto1)} / mes
+                                                                </span>
+                                                            </div>
+                                                        </>
                                                     )}
 
                                                     {gpsAplica1 && (
@@ -2347,15 +2488,27 @@ const CotizacionFormulario: React.FC = () => {
                                                         </span>
                                                     </div>
 
-                                                    {garantiaExt2Sel !== "no" && (
-                                                        <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
-                                                            <span className="font-medium text-gray-700">
-                                                                Garantía extendida ({garantiaExt2Sel} meses):
-                                                            </span>
-                                                            <span>{fmtCOP(garantiaExtVal2)} COP</span>
-                                                        </div>
-                                                    )}
+                                                    {garantiaExt2Sel !== "no" && metodo === "credibike" && (
+                                                        <>
+                                                            {/* 🔒 Valor total (oculto por ahora, por si luego lo necesitan) */}
+                                                            <div className="hidden justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                                <span className="font-medium text-gray-700">
+                                                                    Garantía extendida ({garantiaExt2Sel} meses):
+                                                                </span>
+                                                                <span>{fmtCOP(garantiaExtVal2)} COP</span>
+                                                            </div>
 
+                                                            {/* ✅ Valor correcto mostrado (cuota mensual) */}
+                                                            <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                                <span className="font-medium text-gray-700">
+                                                                    Garantía extendida ({garantiaExt2Sel} meses):
+                                                                </span>
+                                                                <span>
+                                                                    {fmtCOP(cuotaGarantiaExtendidaMoto2)} / mes
+                                                                </span>
+                                                            </div>
+                                                        </>
+                                                    )}
                                                     {gpsAplica2 && (
                                                         <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
                                                             <span className="font-medium text-gray-700">
