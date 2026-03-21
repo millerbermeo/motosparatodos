@@ -8,6 +8,8 @@ import { UserRound, CalendarDays, Mail, Phone, BadgeInfo, Bike } from 'lucide-re
 import ButtonLink from '../../shared/components/ButtonLink';
 import { useLoaderStore } from '../../store/loader.store';
 import { useAuthStore } from '../../store/auth.store';
+import { calcularCreditoDirectoMoto } from '../../shared/components/credito/creditoDirecto.utils';
+
 
 /* =======================
    Helpers
@@ -356,6 +358,14 @@ type MotoUI = {
     meses30?: number;
     meses36?: number;
   };
+
+  cuotaGarantiaExtendida: number;
+  seguroDeudor: number;
+  garantiaMasSeguro: number;
+  cuotaNegocio: number;
+  cuotaTotalCreditoDirecto: number;
+
+
 };
 
 const buildMotoUI = (row: any, side: 'a' | 'b'): MotoUI => {
@@ -432,6 +442,24 @@ const buildMotoUI = (row: any, side: 'a' | 'b'): MotoUI => {
     meses36: numOrUndef(row?.[`cuota_36${sfx}`]),
   };
 
+  // ✅ detectar si esta cotización es crédito directo
+  const creditoDirecto = esCreditoDirecto(row);
+
+  // ✅ tasas dinámicas desde backend, con fallback
+  const tasaFinanciacionPct = Number(row?.tasa_financiacion) || 1.9122;
+  const tasaGarantiaPct = Number(row?.tasa_garantia) || 1.5;
+
+  // ✅ cálculo reutilizable
+  const credito = calcularCreditoDirectoMoto({
+    incluir: creditoDirecto,
+    mesesGarantia: creditoDirecto ? garantiaExtendidaMeses ?? 0 : 0,
+    valorGarantia: garantiaExtendidaValor,
+    saldoFinanciar,
+    tasaFinanciacionPct,
+    tasaGarantiaPct,
+  });
+
+
   return {
     modelo: modeloMoto(row, side),
     precioBase,
@@ -456,6 +484,11 @@ const buildMotoUI = (row: any, side: 'a' | 'b'): MotoUI => {
     cuotaInicial,
     saldoFinanciar,
     cuotas,
+    cuotaGarantiaExtendida: credito.cuotaGarantiaExtendida,
+    seguroDeudor: credito.seguroDeudor,
+    garantiaMasSeguro: credito.garantiaMasSeguro,
+    cuotaNegocio: credito.cuotaNegocio,
+    cuotaTotalCreditoDirecto: credito.cuotaTotal,
   };
 };
 
@@ -843,7 +876,7 @@ const DetalleCambiarEstado: React.FC = () => {
             {rows.map((r) => (
               <tr key={r.label}>
                 <td>{r.label}</td>
-                <td className="text-right">{fmtCOP(r.value)}</td>
+                <td className="text-right">{fmtCOP(r.value)} COP</td>
               </tr>
             ))}
           </tbody>
@@ -941,10 +974,10 @@ const DetalleCambiarEstado: React.FC = () => {
 
               {/* Ficha básica de la moto */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border-b border-base-300/60">
-                <InfoKV label="Marca" value={marcaMoto(row, 'a')} />
-                <InfoKV label="Línea" value={lineaMoto(row, 'a')} />
-                <InfoKV label="Modelo (año)" value={anioModeloMoto(row, 'a')} />
-                <InfoKV label="Garantía" value={garantiaTexto(row, 'a')} />
+                <InfoKV label="Marca" value={marcaMoto(row, 'a')} showCOP={false} />
+                <InfoKV label="Línea" value={lineaMoto(row, 'a')} showCOP={false} />
+                <InfoKV label="Modelo (año)" value={anioModeloMoto(row, 'a')} showCOP={false} />
+                <InfoKV label="Garantía" value={garantiaTexto(row, 'a')} showCOP={false} />
               </div>
 
               {/* Costos principales */}
@@ -978,8 +1011,10 @@ const DetalleCambiarEstado: React.FC = () => {
                 {motoA.garantiaExtendidaMeses ? (
                   <>
                     <InfoKV label="Garantía extendida (meses):" value={`${motoA.garantiaExtendidaMeses} meses`} />
-                    <InfoKV label="Valor garantía extendida:" value={fmtCOP(motoA.garantiaExtendidaValor)} />
-                  </>
+                    <InfoKV
+                      label="Cuota garantía extendida:"
+                      value={fmtCOP(motoA.cuotaGarantiaExtendida)}
+                    />      </>
                 ) : null}
 
                 <InfoKV label="Seguros:" value={fmtCOP(motoA.seguros)} />
@@ -987,7 +1022,7 @@ const DetalleCambiarEstado: React.FC = () => {
                 <InfoKV label="Total:" value={fmtCOP(motoA.total)} />
 
                 {/* GPS */}
-                <InfoKV label="GPS (meses):" value={gpsLabel(motoA.gpsMeses)} />
+                <InfoKV label="GPS (meses):" value={gpsLabel(motoA.gpsMeses)} showCOP={false}/>
                 <InfoKV label="Valor GPS:" value={gpsValorLabel(motoA.gpsMeses, motoA.gpsValor)} />
               </div>
 
@@ -1011,7 +1046,7 @@ const DetalleCambiarEstado: React.FC = () => {
 
               {/* Forma de pago / cuotas */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-                <InfoKV label="Tipo de pago" value={safeText(row?.tipo_pago) || safeText(row?.metodo_pago) || '—'} />
+                <InfoKV label="Tipo de pago" value={safeText(row?.tipo_pago) || safeText(row?.metodo_pago) || '—'} showCOP={false}/>
                 <InfoKV label="Cuota inicial:" value={fmtCOP(motoA.cuotaInicial)} />
                 <InfoKV label="Saldo a financiar:" value={fmtCOP(motoA.saldoFinanciar)} />
               </div>
@@ -1033,10 +1068,10 @@ const DetalleCambiarEstado: React.FC = () => {
 
               {/* Ficha básica de la moto */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border-b border-base-300/60">
-                <InfoKV label="Marca" value={marcaMoto(row, 'b')} />
-                <InfoKV label="Línea" value={lineaMoto(row, 'b')} />
-                <InfoKV label="Modelo (año)" value={anioModeloMoto(row, 'b')} />
-                <InfoKV label="Garantía" value={garantiaTexto(row, 'b')} />
+                <InfoKV label="Marca" value={marcaMoto(row, 'b')} showCOP={false}/>
+                <InfoKV label="Línea" value={lineaMoto(row, 'b')} showCOP={false}/>
+                <InfoKV label="Modelo (año)" value={anioModeloMoto(row, 'b')} showCOP={false}/>
+                <InfoKV label="Garantía" value={garantiaTexto(row, 'b')} showCOP={false} />
               </div>
 
               {/* Costos principales */}
@@ -1068,7 +1103,7 @@ const DetalleCambiarEstado: React.FC = () => {
                 {motoB.garantiaExtendidaMeses ? (
                   <>
                     <InfoKV label="Garantía extendida (meses):" value={`${motoB.garantiaExtendidaMeses} meses`} />
-                    <InfoKV label="Valor garantía extendida:" value={fmtCOP(motoB.garantiaExtendidaValor)} />
+                    <InfoKV label="Cuota garantía extendida:" value={fmtCOP(motoB.cuotaGarantiaExtendida)} />
                   </>
                 ) : null}
 
@@ -1076,7 +1111,7 @@ const DetalleCambiarEstado: React.FC = () => {
                 <InfoKV label="Total sin seguros:" value={fmtCOP(motoB.totalSinSeguros)} />
                 <InfoKV label="Total:" value={fmtCOP(motoB.total)} />
 
-                <InfoKV label="GPS (meses):" value={gpsLabel(motoB.gpsMeses)} />
+                <InfoKV label="GPS (meses):" value={gpsLabel(motoB.gpsMeses)} showCOP={false} />
                 <InfoKV label="Valor GPS:" value={gpsValorLabel(motoB.gpsMeses, motoB.gpsValor)} />
               </div>
 
@@ -1100,7 +1135,7 @@ const DetalleCambiarEstado: React.FC = () => {
 
               {/* Forma de pago / cuotas */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-                <InfoKV label="Tipo de pago" value={safeText(row?.tipo_pago) || safeText(row?.metodo_pago) || '—'} />
+                <InfoKV label="Tipo de pago" value={safeText(row?.tipo_pago) || safeText(row?.metodo_pago) || '—'}  showCOP={false}/>
                 <InfoKV label="Cuota inicial:" value={fmtCOP(motoB.cuotaInicial)} />
                 <InfoKV label="Saldo a financiar:" value={fmtCOP(motoB.saldoFinanciar)} />
               </div>
@@ -1214,11 +1249,25 @@ const InfoRow: React.FC<{ label: string; value: React.ReactNode }> = ({ label, v
   </div>
 );
 
-const InfoKV: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
-  <div className="flex items-center justify-between">
-    <span className="opacity-70">{label}</span>
-    <span className="font-medium">{value}</span>
-  </div>
-);
+const InfoKV: React.FC<{ 
+  label: string; 
+  value: React.ReactNode;
+  showCOP?: boolean;
+}> = ({ label, value, showCOP = true }) => {
+
+  const formattedValue =
+    value !== null && value !== undefined && value !== false
+      ? showCOP
+        ? `${value} COP`
+        : value
+      : value;
+
+  return (
+    <div className="flex items-center justify-between">
+      <span className="opacity-70">{label}</span>
+      <span className="font-medium">{formattedValue}</span>
+    </div>
+  );
+};
 
 export default DetalleCambiarEstado;
