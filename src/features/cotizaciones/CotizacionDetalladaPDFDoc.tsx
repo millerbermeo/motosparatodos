@@ -49,7 +49,7 @@ const normalizeLower = (v: any) =>
 
 
 
- const getGpsValorAplicado = (gpsValorRaw: any) => {
+const getGpsValorAplicado = (gpsValorRaw: any) => {
   const valor = Number(gpsValorRaw ?? 0);
   if (!Number.isFinite(valor) || valor <= 0) return 0;
   return valor;
@@ -454,7 +454,7 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
   empresa,
   motoFotoAUrl,
   motoFotoBUrl,
-    creditoDirecto
+  creditoDirecto
 }) => {
   const d = cotizacion?.data || {};
   const g = garantiaExt?.data || {};
@@ -529,10 +529,10 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
 
 
     // ===== GPS (no sumar si viene "no") =====
-// ===== GPS (aplica si hay valor > 0) =====
-const gpsMeses = d[`gps_meses${s}`];
-const gpsValorRaw = num(d[`valor_gps${s}`]);
-const gpsValor = getGpsValorAplicado(gpsValorRaw);
+    // ===== GPS (aplica si hay valor > 0) =====
+    const gpsMeses = d[`gps_meses${s}`];
+    const gpsValorRaw = num(d[`valor_gps${s}`]);
+    const gpsValor = getGpsValorAplicado(gpsValorRaw);
 
 
     // ===== PÓLIZA =====
@@ -651,23 +651,23 @@ const gpsValor = getGpsValorAplicado(gpsValorRaw);
       { k: "Marcación", v: v.marcacion, type: "money" },
 
       // GPS (si viene "no", mostramos 0 y NO suma en total)
- {
-  k: getGpsLabel(v.gpsMeses, isContado),
-  v: v.gpsValor,
-  type: "money",
-},
+      {
+        k: getGpsLabel(v.gpsMeses, isContado),
+        v: v.gpsValor,
+        type: "money",
+      },
 
     ];
 
-if (showGarantiaExtendida) {
-  leftRows.push({
-    k: v.geMeses > 0
-      ? `Cuota garantía extendida (${v.geMeses} meses)`
-      : "Cuota garantía extendida",
-    v: v.geMeses > 0 ? creditoDirecto?.cuotaGarantiaExtendida ?? null : null,
-    type: "moneyOrDash",
-  });
-}
+    if (showGarantiaExtendida) {
+      leftRows.push({
+        k: v.geMeses > 0
+          ? `Cuota garantía extendida (${v.geMeses} meses)`
+          : "Cuota garantía extendida",
+        v: v.geMeses > 0 ? creditoDirecto?.cuotaGarantiaExtendida ?? null : null,
+        type: "moneyOrDash",
+      });
+    }
 
     // Póliza: se renombra a "Garantía extendida" en contado/terceros (solo texto/cálculo)
     if (num(v.polizaValor) > 0 || (v.polizaCodigo && String(v.polizaCodigo) !== "0")) {
@@ -732,8 +732,8 @@ if (showGarantiaExtendida) {
                         {item.type === "money"
                           ? fmtCOP(item.v)
                           : item.type === "moneyOrDash"
-                          ? item.v ? fmtCOP(item.v) : "—"
-                          : safe(item.v)}
+                            ? item.v ? fmtCOP(item.v) : "—"
+                            : safe(item.v)}
                       </Text>
                     </View>
                   ))}
@@ -875,8 +875,8 @@ if (showGarantiaExtendida) {
 
         <View style={styles.resumenCol}>
           <Text style={styles.resumenHeader}>Comercial</Text>
-<Text style={styles.resumenLine}>Asesor: {safe(d.asesor)}</Text>
-<Text style={styles.resumenLine}>Tel asesor: {safe(d.telefono_asesor)}</Text>          <Text style={styles.resumenLine}>Tipo pago: {safe(d.tipo_pago || d.metodo_pago)}</Text>
+          <Text style={styles.resumenLine}>Asesor: {safe(d.asesor)}</Text>
+          <Text style={styles.resumenLine}>Tel asesor: {safe(d.telefono_asesor)}</Text>          <Text style={styles.resumenLine}>Tipo pago: {safe(d.tipo_pago || d.metodo_pago)}</Text>
           <Text style={styles.resumenLine}>Prospecto: {safe(d.prospecto)}</Text>
           <Text style={styles.resumenLine}>Fecha: {fechaCorta}</Text>
         </View>

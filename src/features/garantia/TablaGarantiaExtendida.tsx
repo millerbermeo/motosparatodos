@@ -157,11 +157,11 @@ const TablaGarantiaExtendida: React.FC = () => {
     <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
       {/* Filtros */}
       <div className="px-4 pt-4 flex flex-wrap items-center justify-between gap-4 my-3">
-        <div className="flex flex-wrap gap-3 flex-1 min-w-[260px]">
+        <div className="flex flex-wrap gap-3 flex-1 min-w-65">
           {/* Buscar texto libre */}
           <input
             type="text"
-            className="input input-bordered w-full sm:w-[260px]"
+            className="input input-bordered w-full sm:w-65"
             placeholder="Buscar por cliente, cédula, moto, email…"
             value={q}
             onChange={(e) => {
@@ -173,7 +173,7 @@ const TablaGarantiaExtendida: React.FC = () => {
           {/* Filtro por ID garantía (detalle) */}
           <input
             type="number"
-            className="input input-bordered w-[150px] hidden"
+            className="input input-bordered w-37.5 hidden"
             placeholder="ID garantía"
             value={idDetalle ?? ""}
             onChange={(e) => {
@@ -185,7 +185,7 @@ const TablaGarantiaExtendida: React.FC = () => {
           {/* Filtro por ID de cotización */}
           <input
             type="number"
-            className="input input-bordered w-[170px] hidden"
+            className="input input-bordered w-42.5 hidden"
             placeholder="ID cotización"
             value={cotizacionId ?? ""}
             onChange={(e) => {
@@ -215,13 +215,13 @@ const TablaGarantiaExtendida: React.FC = () => {
             }}
           />
 
-          <button onClick={cleanFilters} className="btn btn-accent min-w-[150px]">
+          <button onClick={cleanFilters} className="btn btn-accent min-w-37.5">
             Limpiar Filtros
           </button>
         </div>
 
         {/* Paginación / filas */}
-        <div className="flex flex-wrap items-center gap-3 min-w-[220px] justify-end">
+        <div className="flex flex-wrap items-center gap-3 min-w-55 justify-end">
           <label className="text-xs opacity-70">Filas:</label>
           <select
             className="select select-accent select-sm select-bordered w-20"
@@ -244,8 +244,8 @@ const TablaGarantiaExtendida: React.FC = () => {
 
       {/* Tabla */}
       <div className="relative overflow-x-auto max-w-full px-4">
-        <table className="table table-zebra table-pin-rows min-w-[1200px]">
-          <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
+        <table className="table table-zebra table-pin-rows min-w-300">
+          <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-backdrop-filter:backdrop-blur-md">
             <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
               <th>ID</th>
               <th>Cotización</th>
