@@ -58,7 +58,9 @@ import {
   getGpsValorAplicado,
 } from './detalles-cotizacion/sub-components/moto.utils';
 import type { ActividadItem, DocItem } from './types';
-
+import {
+  calcularCreditoDirectoMoto,
+} from '../../shared/components/credito/creditoDirecto.utils';
 
 
 const EMPTY_EMPRESA_PDF = {
@@ -206,6 +208,8 @@ const DetalleCotizacion: React.FC = () => {
     return Math.max(totalConTodo - inicial, 0);
   }, [moto, cuotas, totalConTodo]);
 
+
+
   const hasCuotas = React.useMemo(() => {
     if (!moto) return false;
 
@@ -226,6 +230,13 @@ const DetalleCotizacion: React.FC = () => {
     tipoPagoNorm.includes('directo') || tipoPagoNorm.includes('credibike');
   const isCreditoTerceros = tipoPagoNorm.includes('terceros');
 
+
+  const tasaFinanciacionCot = Number((q as any)?.tasa_financiacion ?? 1.9122);
+  const tasaGarantiaCot = Number((q as any)?.tasa_garantia ?? 1.5);
+
+
+
+
   const showGarantiaExtendida = isCreditoPropio;
   const polizaLabel = isContado || isCreditoTerceros ? 'Garantía extendida' : 'Póliza';
 
@@ -245,6 +256,8 @@ const DetalleCotizacion: React.FC = () => {
     user?.rol === 'Lider_marca' ||
     user?.rol === 'Lider_punto';
 
+
+
   const documentosFacturacionCombinados: DocItem[] = React.useMemo(() => {
     const docsBackend: DocItem[] = [
       { name: 'Cédula', url: cedulaUrlSolicitud || undefined },
@@ -253,6 +266,8 @@ const DetalleCotizacion: React.FC = () => {
 
     return [...DEFAULT_DOCS, ...docsBackend];
   }, [cedulaUrlSolicitud, manifiestoUrlSolicitud]);
+
+
 
   const garantiaExtendidaTabData = React.useMemo(() => {
     const isA = tab === 'A';
@@ -272,6 +287,20 @@ const DetalleCotizacion: React.FC = () => {
       label: isA ? 'Moto A' : 'Moto B',
     };
   }, [tab, ge, q?.motoA?.garantiaExtendidaMeses, q?.motoA?.garantiaExtendidaValor, q?.motoB?.garantiaExtendidaMeses, q?.motoB?.garantiaExtendidaValor]);
+
+
+
+  const creditoMotoActual = React.useMemo(() => {
+    return calcularCreditoDirectoMoto({
+      incluir: isCreditoPropio && !!moto,
+      mesesGarantia: moto?.garantiaExtendidaMeses ?? 0,
+      valorGarantia: moto?.garantiaExtendidaValor ?? 0,
+      saldoFinanciar: saldoConTodo,
+      tasaFinanciacionPct: tasaFinanciacionCot,
+      tasaGarantiaPct: tasaGarantiaCot,
+    });
+  }, [isCreditoPropio, moto, saldoConTodo, tasaFinanciacionCot, tasaGarantiaCot]);
+
 
   const handleDescargarRunt = React.useCallback(() => {
     const link = document.createElement('a');
@@ -519,7 +548,7 @@ const DetalleCotizacion: React.FC = () => {
                     </div>
 
                     <DataRow
-                      label="Accesorios / Marcación / Personalización"
+                      label="Cascos y Accesorios / Marcación / Personalización"
                       value={fmtCOP(moto.accesoriosYMarcacion)}
                     />
 
@@ -565,19 +594,9 @@ const DetalleCotizacion: React.FC = () => {
                     <h3 className="text-sm font-semibold text-slate-700 mb-1">Resumen</h3>
 
                     <div className="space-y-1.5 mt-1">
-                      <DataRowText label="Garantía" value={moto.garantia ? 'Sí' : 'No'} />
+                      {/* <DataRowText label="Garantía" value={moto.garantia ? 'Sí' : 'No'} /> */}
 
-                      {showGarantiaExtendida && (
-                        <DataRowText
-                          label="Garantía extendida"
-                          value={
-                            typeof moto.garantiaExtendidaMeses === 'number' &&
-                              (moto.garantiaExtendidaMeses ?? 0) > 0
-                              ? `${moto.garantiaExtendidaMeses} meses`
-                              : 'No aplica'
-                          }
-                        />
-                      )}
+
 
                       <div className="mt-2 pt-2 border-t border-dashed border-base-300/80 space-y-1.5">
                         <DataRow
@@ -592,7 +611,7 @@ const DetalleCotizacion: React.FC = () => {
                         />
 
                         <DataRow
-                          label="Otros seguros"
+                          label="Seguro todo riesgo"
                           value={fmtCOP(moto.otrosSeguros || 0)}
                         />
 
@@ -636,10 +655,25 @@ const DetalleCotizacion: React.FC = () => {
                         />
 
                         {showGarantiaExtendida && (
-                          <DataRow
-                            label="Valor garantía extendida"
-                            value={fmtCOP(Number(moto.garantiaExtendidaValor ?? 0))}
-                          />
+
+                          <>
+                            <DataRowText
+                              label="Garantía extendida"
+                              value={
+                                typeof moto.garantiaExtendidaMeses === 'number' &&
+                                  (moto.garantiaExtendidaMeses ?? 0) > 0
+                                  ? `${moto.garantiaExtendidaMeses} meses`
+                                  : 'No aplica'
+                              }
+                            />
+
+
+                            <DataRow
+                              label="Cuota garantía extendida"
+                              value={fmtCOP(Number(creditoMotoActual.cuotaGarantiaExtendida ?? 0))}
+                            />
+
+                          </>
                         )}
                       </div>
                     </div>
@@ -712,15 +746,17 @@ const DetalleCotizacion: React.FC = () => {
                     }
                   />
 
+
                   <DataRow
-                    label="Valor garantía extendida"
+                    label="Cuota garantía extendida"
                     value={
                       typeof garantiaExtendidaTabData.meses === 'number' &&
                         garantiaExtendidaTabData.meses > 0
-                        ? fmtCOP(Number(garantiaExtendidaTabData.valor ?? 0))
+                        ? fmtCOP(Number(creditoMotoActual.cuotaGarantiaExtendida ?? 0))
                         : '—'
                     }
                   />
+
                 </div>
               </div>
             </div>

@@ -6,8 +6,8 @@ import { FormInput } from "../../../shared/components/FormInput";
 import { useDeudor, useRegistrarDeudor, useActualizarDeudor } from "../../../services/creditosServices";
 import { useParams } from "react-router-dom";
 import { useWizardStore } from "../../../store/wizardStore";
-import { unformatNumber } from "../../../shared/components/moneyUtils";
 import { useCotizacionByCodigoCredito } from "../../../services/cotizacionesServices";
+import { unformatNumber } from "../../../utils/money";
 
 /** Convierte string con puntos/comas/etc. a número en pesos */
 const toNumberPesos = (v: unknown): number => {

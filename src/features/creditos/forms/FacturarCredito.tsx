@@ -352,7 +352,7 @@ const FacturarCredito: React.FC = () => {
 
         {/* Tabla: Motocicleta */}
         <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-          <div className="bg-gradient-to-r from-sky-600 to-emerald-600 text-white font-semibold px-5 py-2.5 text-sm">
+          <div className="bg-linear-to-r from-sky-600 to-emerald-600 text-white font-semibold px-5 py-2.5 text-sm">
             <div className="grid grid-cols-12 items-center">
               <div className="col-span-5">Motocicleta</div>
               <div className="col-span-2"># Motor</div>

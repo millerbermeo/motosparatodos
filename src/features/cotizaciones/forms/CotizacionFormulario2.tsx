@@ -22,6 +22,9 @@ import { METODO_PAGO_LABEL } from "../../../shared/components/tipo-pago-label";
 import { dateNotTodayOrFuture } from "../../../utils/dateValidatorFutura";
 import { polizaOptions } from "../../../shared/components/options/poliza-options";
 import { calcCuotaConInteres, calcGarantia, calcGps, calcPoliza, getMatricula } from "./cotizacion.helpers";
+import { useIvaDecimal } from "../../../services/ivaServices";
+import { calcularCreditoDirectoMoto, logCreditoDirectoMoto } from "../../../shared/components/credito/creditoDirecto.utils";
+
 
 const getMotoByIndex = <T,>(
     motos: T[] | undefined,
@@ -151,6 +154,18 @@ const CotizacionFormulario: React.FC = () => {
     const { data: canales, isPending: loadingCanales } = useCanales();
     const { data: preguntas, isPending: loadingPregs } = usePreguntas();
     const { data: financieras, isPending: loadingFinancieras } = useFinancieras();
+
+    const {
+        porcentaje,
+        isLoading: ivaLoading,
+        error: ivaError,
+    } = useIvaDecimal();
+
+
+
+
+    const IVA_PCT = ivaLoading || ivaError ? 19 : Number(porcentaje ?? 19);
+
 
     // AUTH
     const name = useAuthStore((s) => s.user?.name);
@@ -729,6 +744,13 @@ const CotizacionFormulario: React.FC = () => {
         const gpsSelContA = data.gpsContado1 ?? "no";
         const gpsSelContB = data.gpsContado2 ?? "no";
 
+
+        const ivaEnviar = Number(IVA_PCT ?? 19);
+        const tasaFinEnviar = Number(tasaFinanciacion?.valor ?? 1.9122);
+        const tasaGarantiaEnviar = Number(tasaGarantiaConfig?.valor ?? 1.5);
+
+
+
         const payload: Record<string, any> = {
             name: data.primer_nombre?.trim(),
             s_name: data.segundo_nombre?.trim(),
@@ -880,6 +902,12 @@ const CotizacionFormulario: React.FC = () => {
             valor_poliza_b: incluirMoto2 ? toNumberSafe(data.valor_poliza_b) : null,
 
             telefono_asesor: telefonoAsesor,
+
+            iva: ivaEnviar,
+            tasa_financiacion: tasaFinEnviar,
+            tasa_garantia: tasaGarantiaEnviar,
+
+
         };
 
         if (!gpsComoContado) {
@@ -1229,126 +1257,54 @@ const CotizacionFormulario: React.FC = () => {
 
 
 
-
-
-
     const aplicarCalculoCreditoDirecto = metodo === "credibike";
 
-    const calcularCuotaPMT = (valorPresente: any, tasaPorcentaje: any, meses: any) => {
-        if (!valorPresente || !meses || meses === "no") return 0;
+    const creditoMoto1 = calcularCreditoDirectoMoto({
+        incluir: aplicarCalculoCreditoDirecto && incluirMoto1,
+        mesesGarantia:
+            aplicarCalculoCreditoDirecto && incluirMoto1 && garantiaExtendida1Value !== "no"
+                ? garantiaExtendida1Value
+                : 0,
+        valorGarantia: valorGarantiaAValue,
+        saldoFinanciar: saldoFinanciar1,
+        tasaFinanciacionPct: tasaDecimal * 100,
+        tasaGarantiaPct: TASA_GARANTIA_MENSUAL,
+    });
 
-        const PV = Number(valorPresente);
-        const n = Number(meses);
-        const r = Number(tasaPorcentaje) / 100;
+    const creditoMoto2 = calcularCreditoDirectoMoto({
+        incluir: aplicarCalculoCreditoDirecto && incluirMoto2,
+        mesesGarantia:
+            aplicarCalculoCreditoDirecto && incluirMoto2 && garantiaExtendida2Value !== "no"
+                ? garantiaExtendida2Value
+                : 0,
+        valorGarantia: valorGarantiaBValue,
+        saldoFinanciar: saldoFinanciar2,
+        tasaFinanciacionPct: tasaDecimal * 100,
+        tasaGarantiaPct: TASA_GARANTIA_MENSUAL,
+    });
 
-        if (!PV || !n) return 0;
-        if (r === 0) return PV / n;
+    // const mesesMoto1 = creditoMoto1.meses;
+    // const mesesMoto2 = creditoMoto2.meses;
 
-        return (r * PV) / (1 - Math.pow(1 + r, -n));
-    };
+    const cuotaGarantiaExtendidaMoto1 = creditoMoto1.cuotaGarantiaExtendida;
+    const cuotaGarantiaExtendidaMoto2 = creditoMoto2.cuotaGarantiaExtendida;
 
+    // const seguroDeudorMoto1 = creditoMoto1.seguroDeudor;
+    // const seguroDeudorMoto2 = creditoMoto2.seguroDeudor;
 
-    // Solo toma meses si es crédito directo y hay garantía extendida
-    const mesesMoto1 =
-        aplicarCalculoCreditoDirecto && incluirMoto1 && garantiaExtendida1Value !== "no"
-            ? Number(garantiaExtendida1Value)
-            : 0;
+    // const garantiaSegurosMesMoto1 = creditoMoto1.garantiaMasSeguro;
+    // const garantiaSegurosMesMoto2 = creditoMoto2.garantiaMasSeguro;
 
-    const mesesMoto2 =
-        aplicarCalculoCreditoDirecto && incluirMoto2 && garantiaExtendida2Value !== "no"
-            ? Number(garantiaExtendida2Value)
-            : 0;
+    // const cuotaNegocioMoto1 = creditoMoto1.cuotaNegocio;
+    // const cuotaNegocioMoto2 = creditoMoto2.cuotaNegocio;
 
-    // Inicializamos todo en 0
-    let cuotaGarantiaExtendidaMoto1 = 0;
-    let cuotaGarantiaExtendidaMoto2 = 0;
+    // const cuotaTotalMoto1 = creditoMoto1.cuotaTotal;
+    // const cuotaTotalMoto2 = creditoMoto2.cuotaTotal;
 
-    let seguroDeudorMoto1 = 0;
-    let seguroDeudorMoto2 = 0;
-
-    let garantiaSegurosMesMoto1 = 0;
-    let garantiaSegurosMesMoto2 = 0;
-
-    let cuotaNegocioMoto1 = 0;
-    let cuotaNegocioMoto2 = 0;
-
-    let cuotaTotalMoto1 = 0;
-    let cuotaTotalMoto2 = 0;
-
-    // Solo ejecuta este bloque si es crédito directo
     if (aplicarCalculoCreditoDirecto) {
-        // Cuota garantía extendida
-        cuotaGarantiaExtendidaMoto1 =
-            mesesMoto1 > 0
-                ? Math.floor(
-                    calcularCuotaPMT(
-                        Number(valorGarantiaAValue),
-                        TASA_GARANTIA_MENSUAL,
-                        mesesMoto1
-                    )
-                )
-                : 0;
-
-        cuotaGarantiaExtendidaMoto2 =
-            mesesMoto2 > 0
-                ? Math.floor(
-                    calcularCuotaPMT(
-                        Number(valorGarantiaBValue),
-                        TASA_GARANTIA_MENSUAL,
-                        mesesMoto2
-                    )
-                )
-                : 0;
-
-        // Seguro deudor mensual
-        seguroDeudorMoto1 =
-            incluirMoto1 && saldoFinanciar1 > 0
-                ? Math.floor(Number(saldoFinanciar1) * 0.00043)
-                : 0;
-
-        seguroDeudorMoto2 =
-            incluirMoto2 && saldoFinanciar2 > 0
-                ? Math.floor(Number(saldoFinanciar2) * 0.00043)
-                : 0;
-
-        // Garantía + seguro deudor
-        garantiaSegurosMesMoto1 = cuotaGarantiaExtendidaMoto1 + seguroDeudorMoto1;
-        garantiaSegurosMesMoto2 = cuotaGarantiaExtendidaMoto2 + seguroDeudorMoto2;
-
-        // Cuota del negocio
-        cuotaNegocioMoto1 =
-            mesesMoto1 > 0 && saldoFinanciar1 > 0
-                ? Math.floor(
-                    calcularCuotaPMT(
-                        Number(saldoFinanciar1),
-                        tasaDecimal * 100,
-                        mesesMoto1
-                    )
-                )
-                : 0;
-
-        cuotaNegocioMoto2 =
-            mesesMoto2 > 0 && saldoFinanciar2 > 0
-                ? Math.floor(
-                    calcularCuotaPMT(
-                        Number(saldoFinanciar2),
-                        tasaDecimal * 100,
-                        mesesMoto2
-                    )
-                )
-                : 0;
-
-        // Cuota total
-        cuotaTotalMoto1 = cuotaNegocioMoto1 + garantiaSegurosMesMoto1;
-        cuotaTotalMoto2 = cuotaNegocioMoto2 + garantiaSegurosMesMoto2;
-
-        console.log("cuota garantia extendida", cuotaGarantiaExtendidaMoto1, cuotaGarantiaExtendidaMoto2);
-        console.log("seguro deudor", seguroDeudorMoto1, seguroDeudorMoto2);
-        console.log("garantias + seguros", garantiaSegurosMesMoto1, garantiaSegurosMesMoto2);
-        console.log("cuotas de negocio", cuotaNegocioMoto1, cuotaNegocioMoto2);
-        console.log("cuota total", cuotaTotalMoto1, cuotaTotalMoto2);
+        logCreditoDirectoMoto("MOTO 1", creditoMoto1);
+        logCreditoDirectoMoto("MOTO 2", creditoMoto2);
     }
-
 
 
     return (
@@ -2572,12 +2528,7 @@ const CotizacionFormulario: React.FC = () => {
                                                     {metodo === "credibike" && incluirMoto2 && saldoFinanciar2 > 0 && (
                                                         <div className="mt-3 bg-base-100 border border-base-300 rounded-lg p-3 space-y-1">
                                                             <p className="font-semibold text-sm">Cuotas proyectadas</p>
-
-                                                            <div className="flex justify-between text-sm">
-                                                                <span>Seguro de vida mensual:</span>
-                                                                <span>{fmtCOP(segVidaMensualB)} COP</span>
-                                                            </div>
-
+                                                            
                                                             <div className="flex justify-between text-sm">
                                                                 <span>6 meses:</span>
                                                                 <span>{fmtCOP(cuota6_b_auto)} COP</span>
