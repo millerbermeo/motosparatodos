@@ -886,7 +886,7 @@ const DetalleCotizacion: React.FC = () => {
                   garantiaExt={ge ? { success: true, data: ge } : undefined}
                   logoUrl={logoUrl}
                   empresa={empresaPDF}
-                    creditoDirecto={creditoMotoActual}
+                  creditoDirecto={creditoMotoActual}
 
 
                 />
