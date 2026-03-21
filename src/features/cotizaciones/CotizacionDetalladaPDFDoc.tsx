@@ -1,6 +1,7 @@
 // src/pages/CotizacionDetalladaPDFDoc.tsx
 import React from "react";
 import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
+import type { CreditoMotoResultado } from "../../shared/components/credito/creditoDirecto.utils";
 
 const formatSeguros = (raw: any): string => {
   if (!raw) return "—";
@@ -97,6 +98,7 @@ type Props = {
   empresa?: EmpresaInfo;
   motoFotoAUrl?: string;
   motoFotoBUrl?: string;
+  creditoDirecto?: CreditoMotoResultado | null
 };
 
 /* ============================
@@ -452,6 +454,7 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
   empresa,
   motoFotoAUrl,
   motoFotoBUrl,
+    creditoDirecto
 }) => {
   const d = cotizacion?.data || {};
   const g = garantiaExt?.data || {};
@@ -656,14 +659,15 @@ const gpsValor = getGpsValorAplicado(gpsValorRaw);
 
     ];
 
-    // Garantía extendida: SOLO crédito propio
-    if (showGarantiaExtendida) {
-      leftRows.push({
-        k: v.geMeses > 0 ? `Garantía extendida (${v.geMeses} meses)` : "Garantía extendida",
-        v: v.geMeses > 0 ? v.geValor : null,
-        type: "moneyOrDash",
-      });
-    }
+if (showGarantiaExtendida) {
+  leftRows.push({
+    k: v.geMeses > 0
+      ? `Cuota garantía extendida (${v.geMeses} meses)`
+      : "Cuota garantía extendida",
+    v: v.geMeses > 0 ? creditoDirecto?.cuotaGarantiaExtendida ?? null : null,
+    type: "moneyOrDash",
+  });
+}
 
     // Póliza: se renombra a "Garantía extendida" en contado/terceros (solo texto/cálculo)
     if (num(v.polizaValor) > 0 || (v.polizaCodigo && String(v.polizaCodigo) !== "0")) {

@@ -700,7 +700,7 @@ const CreditoDetalle: React.FC = () => {
                                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         <CotizacionSingleMotoPDFButton
                                             id={idCot}
-                                            label="Descargar cotización (PDF v2)"
+                                            label="Descargar cotización"
                                             className="btn w-full bg-blue-500 hover:bg-blue-600 text-white border-0 normal-case text-sm"
                                         />
                                     </div>
@@ -716,7 +716,7 @@ const CreditoDetalle: React.FC = () => {
                                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         <CotizacionSingleMotoPDFButton
                                             id={Number(idCot)}
-                                            label="Descargar cotización (PDF v2)"
+                                            label="Descargar cotización"
                                             className="btn w-full bg-blue-500 hover:bg-blue-600 text-white border-0 normal-case text-sm"
                                         />
                                         <ChipButton

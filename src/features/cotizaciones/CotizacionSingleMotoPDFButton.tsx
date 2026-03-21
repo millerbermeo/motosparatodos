@@ -15,6 +15,7 @@ import type {
 
 import { useCotizacionById } from "../../services/cotizacionesServices";
 import { useEmpresaById } from "../../services/empresasServices";
+import { calcularCreditoDirectoMoto, type CreditoMotoResultado } from "../../shared/components/credito/creditoDirecto.utils";
 
 type Id = number | string;
 
@@ -27,6 +28,36 @@ type Props = {
   garantiaExt?: GarantiaExtApi;
   className?: string;
 };
+
+
+const normalizarTexto = (value: unknown): string =>
+  String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+const esCreditoDirectoDesdePayload = (payload: any): boolean => {
+  const tipoPago = normalizarTexto(payload?.tipo_pago ?? payload?.metodo_pago);
+
+  return (
+    tipoPago.includes("credibike") ||
+    tipoPago.includes("credito propio") ||
+    tipoPago.includes("credito directo") ||
+    tipoPago.includes("directo")
+  );
+};
+
+const getMesesGarantia = (value: unknown): number => {
+  if (value === null || value === undefined || value === "" || value === "no") {
+    return 0;
+  }
+
+  const meses = Number(value);
+  return Number.isFinite(meses) && meses > 0 ? meses : 0;
+};
+
+
 
 const BaseUrl =
   import.meta.env.VITE_API_URL ??
@@ -155,7 +186,7 @@ export const CotizacionSingleMotoPDFButton: React.FC<Props> = ({
   className,
 }) => {
   const finalClasses = `${sameChipStyles} ${className ?? ""}`;
-  const textLabel = label ?? "Descargar cotización (PDF v2)";
+  const textLabel = label ?? "Descargar cotización";
 
   // 1) Hook de cotización
   const { data, isLoading, isError } = useCotizacionById(id);
@@ -170,6 +201,28 @@ export const CotizacionSingleMotoPDFButton: React.FC<Props> = ({
 
   // 4) Construir payload "single moto" donde la seleccionada siempre es la A/1
   const payload = buildSingleMotoPayload(rawPayload);
+
+
+  const creditoDirecto: CreditoMotoResultado | null = React.useMemo(() => {
+    if (!payload) return null;
+
+    const esCreditoDirecto = esCreditoDirectoDesdePayload(payload);
+    if (!esCreditoDirecto) return null;
+
+    const mesesGarantia = getMesesGarantia(payload?.garantia_extendida_a);
+
+    const resultado = calcularCreditoDirectoMoto({
+      incluir: mesesGarantia > 0,
+      mesesGarantia,
+      valorGarantia: payload?.valor_garantia_extendida_a ?? 0,
+      saldoFinanciar: payload?.saldo_financiar_a ?? 0,
+      tasaFinanciacionPct: payload?.tasa_financiacion ?? 1.9122,
+      tasaGarantiaPct: payload?.tasa_garantia ?? 1.5,
+    });
+
+    return resultado;
+  }, [payload]);
+
 
   // 5) Elegir id_empresa según la moto seleccionada original
   const rawIdEmpresa: any = (() => {
@@ -200,12 +253,12 @@ export const CotizacionSingleMotoPDFButton: React.FC<Props> = ({
     if (!empresaSeleccionada) {
       // Fallback mientras carga o si no hay empresa
       return {
-        nombre: "Feria de la Movilidad",
-        ciudad: "Cali",
-        almacen: "Feria de la Movilidad",
-        nit: "123.456.789-0",
-        telefono: "300 000 0000",
-        direccion: "Dirección ejemplo 123",
+        nombre: "",
+        ciudad: "",
+        almacen: "",
+        nit: "",
+        telefono: "",
+        direccion: "",
       };
     }
 
@@ -294,6 +347,7 @@ export const CotizacionSingleMotoPDFButton: React.FC<Props> = ({
           logoUrl={logoUrl}
           empresa={empresaPDF}
           motoFotoUrl={motoFotoUrlFinal}
+          creditoDirecto={creditoDirecto}
         />
       }
       fileName={`cotizacion-${id}.pdf`}
