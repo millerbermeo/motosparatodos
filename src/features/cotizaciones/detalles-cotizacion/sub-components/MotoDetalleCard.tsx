@@ -6,11 +6,10 @@ import DataRow from './DataRow';
 import DataRow2 from './DataRow2';
 import DataRowText from './DataRowText';
 import MotoImage from './MotoImage';
-import {
-  getFotoUrl,
-  getGpsTexto,
-  getGpsValorAplicado,
-} from './detalleCotizacion.mapper';
+
+import { getGpsTexto, getGpsValorAplicado } from './moto.utils';
+import { getFotoUrl } from '../../../../utils/files';
+
 
 type Props = {
   q: Cotizacion;
