@@ -1,6 +1,7 @@
 // src/pages/CotizacionDetalladaPDFDoc.tsx
 import React from "react";
 import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
+import type { CreditoMotoResultado } from "../../shared/components/credito/creditoDirecto.utils";
 
 const formatSeguros = (raw: any): string => {
   if (!raw) return "—";
@@ -48,7 +49,7 @@ const normalizeLower = (v: any) =>
 
 
 
- const getGpsValorAplicado = (gpsValorRaw: any) => {
+const getGpsValorAplicado = (gpsValorRaw: any) => {
   const valor = Number(gpsValorRaw ?? 0);
   if (!Number.isFinite(valor) || valor <= 0) return 0;
   return valor;
@@ -97,6 +98,7 @@ type Props = {
   empresa?: EmpresaInfo;
   motoFotoAUrl?: string;
   motoFotoBUrl?: string;
+  creditoDirecto?: CreditoMotoResultado | null
 };
 
 /* ============================
@@ -452,6 +454,7 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
   empresa,
   motoFotoAUrl,
   motoFotoBUrl,
+  creditoDirecto
 }) => {
   const d = cotizacion?.data || {};
   const g = garantiaExt?.data || {};
@@ -526,10 +529,10 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
 
 
     // ===== GPS (no sumar si viene "no") =====
-// ===== GPS (aplica si hay valor > 0) =====
-const gpsMeses = d[`gps_meses${s}`];
-const gpsValorRaw = num(d[`valor_gps${s}`]);
-const gpsValor = getGpsValorAplicado(gpsValorRaw);
+    // ===== GPS (aplica si hay valor > 0) =====
+    const gpsMeses = d[`gps_meses${s}`];
+    const gpsValorRaw = num(d[`valor_gps${s}`]);
+    const gpsValor = getGpsValorAplicado(gpsValorRaw);
 
 
     // ===== PÓLIZA =====
@@ -648,19 +651,20 @@ const gpsValor = getGpsValorAplicado(gpsValorRaw);
       { k: "Marcación", v: v.marcacion, type: "money" },
 
       // GPS (si viene "no", mostramos 0 y NO suma en total)
- {
-  k: getGpsLabel(v.gpsMeses, isContado),
-  v: v.gpsValor,
-  type: "money",
-},
+      {
+        k: getGpsLabel(v.gpsMeses, isContado),
+        v: v.gpsValor,
+        type: "money",
+      },
 
     ];
 
-    // Garantía extendida: SOLO crédito propio
     if (showGarantiaExtendida) {
       leftRows.push({
-        k: v.geMeses > 0 ? `Garantía extendida (${v.geMeses} meses)` : "Garantía extendida",
-        v: v.geMeses > 0 ? v.geValor : null,
+        k: v.geMeses > 0
+          ? `Cuota garantía extendida (${v.geMeses} meses)`
+          : "Cuota garantía extendida",
+        v: v.geMeses > 0 ? creditoDirecto?.cuotaGarantiaExtendida ?? null : null,
         type: "moneyOrDash",
       });
     }
@@ -728,8 +732,8 @@ const gpsValor = getGpsValorAplicado(gpsValorRaw);
                         {item.type === "money"
                           ? fmtCOP(item.v)
                           : item.type === "moneyOrDash"
-                          ? item.v ? fmtCOP(item.v) : "—"
-                          : safe(item.v)}
+                            ? item.v ? fmtCOP(item.v) : "—"
+                            : safe(item.v)}
                       </Text>
                     </View>
                   ))}
@@ -871,8 +875,8 @@ const gpsValor = getGpsValorAplicado(gpsValorRaw);
 
         <View style={styles.resumenCol}>
           <Text style={styles.resumenHeader}>Comercial</Text>
-<Text style={styles.resumenLine}>Asesor: {safe(d.asesor)}</Text>
-<Text style={styles.resumenLine}>Tel asesor: {safe(d.telefono_asesor)}</Text>          <Text style={styles.resumenLine}>Tipo pago: {safe(d.tipo_pago || d.metodo_pago)}</Text>
+          <Text style={styles.resumenLine}>Asesor: {safe(d.asesor)}</Text>
+          <Text style={styles.resumenLine}>Tel asesor: {safe(d.telefono_asesor)}</Text>          <Text style={styles.resumenLine}>Tipo pago: {safe(d.tipo_pago || d.metodo_pago)}</Text>
           <Text style={styles.resumenLine}>Prospecto: {safe(d.prospecto)}</Text>
           <Text style={styles.resumenLine}>Fecha: {fechaCorta}</Text>
         </View>

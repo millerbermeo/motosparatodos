@@ -12,7 +12,7 @@ import {
 // + añade:
 import { useParams } from "react-router-dom";
 import { useWizardStore } from "../../../store/wizardStore";
-import { unformatNumber } from "../../../shared/components/moneyUtils";
+import { unformatNumber } from "../../../utils/money";
 
 /** String con puntos/comas/etc. → número en PESOS (entero) */
 const toNumberPesos = (v: unknown): number => {

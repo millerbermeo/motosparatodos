@@ -188,7 +188,7 @@ const UserPerfil: React.FC<Props> = ({ id }) => {
           <button
             type="button"
             aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"}
-            className="btn btn-ghost btn-xs absolute right-2 top-[38px] md:top-[42px]"
+            className="btn btn-ghost btn-xs absolute right-2 top-9.5 md:top-10.5"
             onClick={() => setShowPass((s) => !s)}
             disabled={busy}
             tabIndex={-1}

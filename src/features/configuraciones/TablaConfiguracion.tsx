@@ -43,13 +43,13 @@ const TablaConfiguracion: React.FC = () => {
         <h3 className="text-sm font-semibold tracking-wide text-base-content/70">
           Configuración de plazos y servicios
         </h3>
-        <button className="btn hidden  btn-primary" onClick={openCrear}>
+        <button className="btn hidden btn-primary" onClick={openCrear}>
           Nueva configuración
         </button>
       </div>
 
       <div className="relative overflow-x-auto max-w-full px-4 pb-3">
-        <table className="table table-zebra min-w-[800px]">
+        <table className="table table-zebra min-w-200">
           <thead className="bg-base-200">
             <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider bg-[#3498DB] [&>th]:text-white">
               <th>ID</th>

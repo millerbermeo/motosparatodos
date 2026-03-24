@@ -1,5 +1,7 @@
 import React from "react";
 import { Search, Filter, RotateCcw } from "lucide-react";
+import InputFilter from "../../shared/components/InputFilter";
+import SelectFilter from "../../shared/components/SelectFilter";
 
 type Props = {
   q: string;
@@ -21,7 +23,7 @@ const FiltrosUsuarios: React.FC<Props> = ({
   const hasFilters = Boolean((q ?? "").trim() || rol || state);
 
   return (
-    <div className="bg-base-100 rounded-2xl border border-base-200 shadow-sm">
+    <div className="bg-linear-to-r from-slate-50 to-slate-100 border border-info rounded-2xl shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-base-200">
         <div className="flex items-center gap-2 text-sm font-semibold text-base-content/80">
@@ -33,10 +35,8 @@ const FiltrosUsuarios: React.FC<Props> = ({
           type="button"
           onClick={onClear}
           disabled={!hasFilters}
-          className={`btn btn-sm rounded-xl ${
-            hasFilters ? "btn-accent" : "btn-ghost opacity-50 pointer-events-none"
-          }`}
-          title="Limpiar filtros"
+          className={`btn btn-sm rounded-xl ${hasFilters ? "btn-accent" : "btn-ghost opacity-50 pointer-events-none"
+            }`}
         >
           <RotateCcw size={16} />
           Limpiar
@@ -45,75 +45,46 @@ const FiltrosUsuarios: React.FC<Props> = ({
 
       {/* Body */}
       <div className="px-4 py-4">
-        {/* ✅ todo alineado a la izquierda + responsive */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-          {/* Buscar */}
-          <div className="form-control w-full">
-            <label className="label py-1">
-              <span className="label-text text-xs font-semibold text-base-content/70">
-                Buscar
-              </span>
-            </label>
 
-            <div className="relative w-full">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40">
-                <Search size={16} />
-              </span>
-              <input
-                className="input input-bordered w-full pl-9 rounded-xl bg-base-100"
-                value={q}
-                placeholder="name, username, lastname o phone..."
-                onChange={(e) => onChange({ q: e.target.value })}
-              />
-            </div>
-          </div>
+          {/* Buscar */}
+          <InputFilter
+            label="Buscar"
+            value={q}
+            placeholder="name, username, lastname o phone..."
+            icon={<Search size={16} />}
+            onChange={(value) => onChange({ q: value })}
+          />
 
           {/* Rol */}
-          <div className="form-control w-full">
-            <label className="label py-1">
-              <span className="label-text text-xs font-semibold text-base-content/70">
-                Rol
-              </span>
-            </label>
-            <select
-              className="select select-bordered w-full rounded-xl bg-base-100"
-              value={rol}
-              onChange={(e) => onChange({ rol: e.target.value })}
-            >
-              <option value="">Todos</option>
-              {roles.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-          </div>
+          <SelectFilter
+            label="Rol"
+            value={rol}
+            options={roles.map((r) => ({
+              label: r,
+              value: r,
+            }))}
+            onChange={(value) => onChange({ rol: value })}
+          />
 
           {/* Estado */}
-          <div className="form-control w-full">
-            <label className="label py-1">
-              <span className="label-text text-xs font-semibold text-base-content/70">
-                Estado
-              </span>
-            </label>
-            <select
-              className="select select-bordered w-full rounded-xl bg-base-100"
-              value={state}
-              onChange={(e) => onChange({ state: e.target.value as any })}
-            >
-              <option value="">Todos</option>
-              <option value="1">Activo</option>
-              <option value="0">Inactivo</option>
-            </select>
-          </div>
+          <SelectFilter
+            label="Estado"
+            value={state}
+            options={[
+              { label: "Activo", value: "1" },
+              { label: "Inactivo", value: "0" },
+            ]}
+            onChange={(value) => onChange({ state: value as any })}
+          />
         </div>
 
-        {/* Footer mini: chips opcionales (bonito y útil) */}
+        {/* Chips */}
         {hasFilters && (
           <div className="mt-3 flex flex-wrap items-center gap-2 justify-start">
-            {(q ?? "").trim() && (
+            {q?.trim() && (
               <span className="badge badge-outline rounded-xl">
-                Buscar: {(q ?? "").trim()}
+                Buscar: {q.trim()}
               </span>
             )}
             {rol && (

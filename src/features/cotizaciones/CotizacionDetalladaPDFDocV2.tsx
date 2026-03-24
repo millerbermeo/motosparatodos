@@ -1,6 +1,7 @@
 // src/pages/CotizacionDetalladaPDFDocV2.tsx
 import React from "react";
 import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
+import type { CreditoMotoResultado } from "../../shared/components/credito/creditoDirecto.utils";
 
 const formatSeguros = (raw: any): string => {
   if (!raw) return "—";
@@ -68,6 +69,7 @@ type PropsV2 = {
   logoUrl?: string;
   empresa?: EmpresaInfo;
   motoFotoUrl?: string;
+  creditoDirecto?: CreditoMotoResultado | null;
 };
 
 /* ============================
@@ -280,7 +282,7 @@ const styles = StyleSheet.create({
   footer: { fontSize: 7.6, color: "#6b7280", marginTop: 5, lineHeight: 1.2, textAlign: "center" },
   footerCenter: { fontSize: 7.6, color: "#374151", marginTop: 3, textAlign: "center" },
 
-    observacionesBox: {
+  observacionesBox: {
     marginTop: 6,
     marginBottom: 6,
     borderWidth: 1,
@@ -385,6 +387,7 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
   logoUrl,
   empresa,
   motoFotoUrl,
+  creditoDirecto
 }) => {
   const d = cotizacion?.data || {};
   const g = garantiaExt?.data || {};
@@ -400,6 +403,20 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
   const ciudad = empresa?.ciudad || "Cali";
   const almacen = empresa?.almacen || "FERIA DE LA MOVILIDAD";
   const tipoPago = safe(d.tipo_pago || d.metodo_pago);
+
+
+  const tipoPagoNorm = String(d.tipo_pago || d.metodo_pago || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  const esCreditoDirecto =
+    tipoPagoNorm.includes("credibike") ||
+    tipoPagoNorm.includes("credito propio") ||
+    tipoPagoNorm.includes("credito directo") ||
+    tipoPagoNorm.includes("directo");
+
 
   const motoImg = resolveMotoImg(d, motoFotoUrl);
 
@@ -505,12 +522,12 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
   const renderHabeasFirmasFooter = () => (
     <>
 
-        {/* Observaciones */}
-          <View style={styles.observacionesBox} wrap={false}>
-            <Text style={styles.observacionesLabel}>Observaciones</Text>
-    
-          </View>
-    
+      {/* Observaciones */}
+      <View style={styles.observacionesBox} wrap={false}>
+        <Text style={styles.observacionesLabel}>Observaciones</Text>
+
+      </View>
+
 
       <SectionTitle title="Autorización de habeas data y firmas" />
       <View style={styles.box} wrap={false}>
@@ -653,11 +670,21 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
                     },
 
                     // ✅ Garantía extendida (24 meses) -> $valor
-                    {
-                      k: ge.meses > 0 ? `Garantía extendida (${ge.meses} meses)` : "Garantía extendida",
-                      vv: ge.meses > 0 ? ge.valor : null,
-                      type: "moneyOrDash",
-                    },
+                    // {
+                    //   k: ge.meses > 0 ? `Garantía extendida (${ge.meses} meses)` : "Garantía extendida",
+                    //   vv: ge.meses > 0 ? ge.valor : null,
+                    //   type: "moneyOrDash",
+                    // },
+
+                   {
+  k: ge.meses > 0
+    ? `${esCreditoDirecto ? "Cuota" : "Valor"} garantía extendida (${ge.meses} meses)`
+    : `${esCreditoDirecto ? "Cuota" : "Valor"} garantía extendida`,
+  vv: esCreditoDirecto
+    ? (creditoDirecto?.cuotaGarantiaExtendida ?? null)
+    : (ge.meses > 0 ? ge.valor : null),
+  type: "moneyOrDash",
+},
 
                     { k: "Cuota inicial", vv: v.cuotaInicial, type: "money" },
                   ].map((item, idx) => (
@@ -748,13 +775,17 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
                   <Text style={styles.tableCellHeader}>Moto</Text>
                   <Text style={styles.tableCellHeader}>Plan</Text>
                   <Text style={styles.tableCellHeader}>Meses</Text>
-                  <Text style={[styles.tableCellHeader, styles.tableCellLast]}>Valor</Text>
+                  <Text style={[styles.tableCellHeader, styles.tableCellLast]}>Cuota garantia extendida</Text>
                 </View>
                 <View style={styles.tableRow}>
                   <Text style={styles.tableCell}>{safe(motoLabel)}</Text>
                   <Text style={styles.tableCell}>{safe(ge.plan)}</Text>
                   <Text style={styles.tableCell}>{String(ge.meses)}</Text>
-                  <Text style={[styles.tableCell, styles.tableCellLast]}>{fmtCOP(ge.valor)}</Text>
+                  <Text style={[styles.tableCell, styles.tableCellLast]}>
+                    {esCreditoDirecto
+                      ? fmtCOP(creditoDirecto?.cuotaGarantiaExtendida ?? 0)
+                      : fmtCOP(ge.valor)}
+                  </Text>
                 </View>
               </View>
             </View>

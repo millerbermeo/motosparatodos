@@ -69,8 +69,8 @@ const WizardTimeline: React.FC<WizardProps> = ({
       {/* Timeline */}
       <div className="max-w-full mx-auto">
         <div className="relative px-2 pt-8 pb-4">
-          <div className="absolute inset-x-0 top-[55px] h-[3px] bg-base-300 rounded-full" />
-          <div className="absolute left-0 top-[55px] h-[3px] bg-success rounded-full transition-all duration-300"
+          <div className="absolute inset-x-0 top-13.75 h-0.75 bg-base-300 rounded-full" />
+          <div className="absolute left-0 top-13.75 h-0.75 bg-success rounded-full transition-all duration-300"
                style={{ width: `${progress}%` }} />
           <ol className="relative z-10 flex items-center justify-between gap-2">
             {steps.map((s, i) => {
@@ -88,7 +88,7 @@ const WizardTimeline: React.FC<WizardProps> = ({
               ].join(' ');
 
               return (
-                <li key={s.id} className="flex flex-col items-center min-w-[140px]">
+                <li key={s.id} className="flex flex-col items-center min-w-35">
                   <button
                     type="button"
                     role="tab"

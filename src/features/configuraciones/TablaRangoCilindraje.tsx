@@ -66,7 +66,7 @@ const TablaRangoCilindraje: React.FC = () => {
       </div>
 
       <div className="relative overflow-x-auto max-w-full px-4 pb-3">
-        <table className="table table-zebra min-w-[1000px]">
+        <table className="table table-zebra min-w-250">
           <thead className="bg-base-200">
             <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider bg-[#3498DB] [&>th]:text-white">
               <th>ID</th>

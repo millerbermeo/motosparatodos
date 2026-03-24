@@ -1,11 +1,8 @@
 import React from "react";
 import { FileText, Download } from "lucide-react";
+import type { DocItem } from "../../features/cotizaciones/types";
 
-export type DocItem = {
-  name: string;     // Texto mostrado
-  file?: string;    // Nombre exacto del archivo en /public
-  url?: string;     // URL absoluta o relativa del backend
-};
+
 
 type Props = {
   title?: string;

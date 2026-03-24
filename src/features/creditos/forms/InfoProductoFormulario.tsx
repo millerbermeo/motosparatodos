@@ -11,7 +11,7 @@ import { useParams } from "react-router-dom";
 import { useWizardStore } from "../../../store/wizardStore";
 
 import { TablaAmortizacionCredito } from "../../../features/creditos/TablaAmortizacionCredito";
-import { unformatNumber } from "../../../shared/components/moneyUtils";
+import { unformatNumber } from "../../../utils/money";
 
 /** String con puntos/comas/etc. → número en PESOS (entero) */
 const toNumberPesos = (v: unknown): number => {
