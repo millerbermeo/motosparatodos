@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { useConfigPlazoByCodigo } from "../../services/configuracionPlazoService";
+import { useTasasCotizacion } from "../../services/tasaCotiService";
 import {
   calcularCuotaPMT,
   calcularSeguroDeudorMensual,
@@ -16,6 +17,7 @@ interface CreditoApi {
 interface TablaAmortizacionCreditoProps {
   credito: CreditoApi;
   fechaCreacion?: string;
+  cotizacionId: number;
 }
 
 const fmtCOP = (v: number) =>
@@ -100,20 +102,15 @@ const buildScheduleFrances = (
 
 export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> = ({
   credito,
+  cotizacionId,
 }) => {
   const plazo = toNumber(credito.plazo_meses);
 
   const {
-    data: tasaFinConfig,
-    isLoading: loadingTasaFin,
-    error: errorTasaFin,
-  } = useConfigPlazoByCodigo("TASA_FIN", true);
-
-  const {
-    data: tasaGarantiaConfig,
-    isLoading: loadingTasaGarantia,
-    error: errorTasaGarantia,
-  } = useConfigPlazoByCodigo("TASA_GARANTIA", true);
+    data: tasasCotizacion,
+    isLoading: loadingTasas,
+    error: errorTasas,
+  } = useTasasCotizacion(cotizacionId);
 
   const { data: garantiaConfig } = useConfigPlazoByCodigo(
     plazo ? `GAR_EXT_${plazo}` : "",
@@ -121,7 +118,7 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
   );
 
   const resultado = useMemo(() => {
-    if (!plazo || !tasaFinConfig || !tasaGarantiaConfig) return null;
+    if (!plazo || !tasasCotizacion) return null;
 
     const valorProducto = toNumber(credito.valor_producto);
     const cuotaInicial = toNumber(credito.cuota_inicial);
@@ -140,14 +137,10 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
     const saldoFinanciadoGarantia = Math.max(valorGarantia, 0);
 
     const tasaFinanciacionMensual =
-      tasaFinConfig.tipo_valor === "%"
-        ? toNumber(tasaFinConfig.valor) / 100
-        : toNumber(tasaFinConfig.valor);
+      toNumber(tasasCotizacion.tasa_financiacion) / 100;
 
     const tasaGarantiaMensual =
-      tasaGarantiaConfig.tipo_valor === "%"
-        ? toNumber(tasaGarantiaConfig.valor) / 100
-        : toNumber(tasaGarantiaConfig.valor);
+      toNumber(tasasCotizacion.tasa_garantia) / 100;
 
     const teaFin = Math.pow(1 + tasaFinanciacionMensual, 12) - 1;
     const teaGarantia = Math.pow(1 + tasaGarantiaMensual, 12) - 1;
@@ -247,7 +240,7 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
       cuotaGarantia,
       schedule,
     };
-  }, [credito, plazo, tasaFinConfig, tasaGarantiaConfig, garantiaConfig]);
+  }, [credito, plazo, tasasCotizacion, garantiaConfig]);
 
   if (!plazo) {
     return (
@@ -259,15 +252,15 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
     );
   }
 
-  if (loadingTasaFin || loadingTasaGarantia) {
+  if (loadingTasas) {
     return (
       <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4 sm:p-6">
-        <p className="text-sm text-slate-600">Cargando configuración de tasas...</p>
+        <p className="text-sm text-slate-600">Cargando tasas de la cotización...</p>
       </section>
     );
   }
 
-  if (errorTasaFin || errorTasaGarantia || !resultado) {
+  if (errorTasas || !resultado) {
     return (
       <section className="rounded-2xl border border-rose-200 bg-rose-50 shadow-sm p-4 sm:p-6">
         <p className="text-sm text-rose-700">
