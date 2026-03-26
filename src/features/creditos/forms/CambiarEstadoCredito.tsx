@@ -32,9 +32,8 @@ const optionsEstado: SelectOption[] = [
 
 const buildNombreCliente = (info?: any): string => {
   if (!info) return "";
-  return `${info?.primer_nombre ?? ""} ${info?.segundo_nombre ?? ""} ${
-    info?.primer_apellido ?? ""
-  } ${info?.segundo_apellido ?? ""}`
+  return `${info?.primer_nombre ?? ""} ${info?.segundo_nombre ?? ""} ${info?.primer_apellido ?? ""
+    } ${info?.segundo_apellido ?? ""}`
     .replace(/\s+/g, " ")
     .trim();
 };
@@ -53,7 +52,7 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
     defaultValues: { estado: "" as any, comentario: "" },
     mode: "onBlur",
   });
-  
+
 
   const isAprobado = watch("estado") === "Aprobado";
 
@@ -107,22 +106,22 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
   const creditoTabla = useMemo(() => {
     if (!data) return null;
 
-    console.log("wwwwwwww",data.credito)
+    console.log("wwwwwwww", data.credito)
     return {
       valor_producto: Number(
         data?.credito?.valor_producto ??
-          data?.moto?.valorMotocicleta ??
-          0
-      ),
+        data?.moto?.valorMotocicleta ??
+        0
+      ) - Number(data?.credito?.garantia_extendida_valor ?? 0),
       cuota_inicial: Number(
         data?.credito?.cuota_inicial ??
-          data?.moto?.cuotaInicial ??
-          0
+        data?.moto?.cuotaInicial ??
+        0
       ),
       plazo_meses: Number(
         data?.credito?.plazo_meses ??
-          data?.moto?.numeroCuotas ??
-          0
+        data?.moto?.numeroCuotas ??
+        0
       ),
       soat: data?.credito?.soat ?? data?.moto?.soat ?? 0,
       matricula: data?.credito?.matricula ?? data?.moto?.matricula ?? 0,
@@ -290,16 +289,16 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
                       <TablaAmortizacionPDFDoc
                         credito={creditoTabla}
                         tasaMensualPorcentaje={tasaMensualPorcentaje}
-                                   empresa={{
-                        nombre: 'VERIFICARTE AAA S.A.S',
-                        ciudad: 'Cali',
-                        nit: '901155548-8',
-                    }}
+                        empresa={{
+                          nombre: 'VERIFICARTE AAA S.A.S',
+                          ciudad: 'Cali',
+                          nit: '901155548-8',
+                        }}
                         cliente={clienteInfo}
                         codigoPlan={String(codigo_credito)}
                         fechaPlan={fechaPlan}
-                        // logoUrl opcional si tienes una URL
-                        // logoUrl="https://tuservidor.com/logo.png"
+                      // logoUrl opcional si tienes una URL
+                      // logoUrl="https://tuservidor.com/logo.png"
                       />
                     }
                     fileName={`tabla-amortizacion-${codigo_credito}.pdf`}
