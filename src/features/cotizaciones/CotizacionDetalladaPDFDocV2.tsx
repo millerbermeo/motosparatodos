@@ -392,6 +392,8 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
   const d = cotizacion?.data || {};
   const g = garantiaExt?.data || {};
 
+
+  
   const nombreCompletoCliente = [d.name, d.s_name, d.last_name, d.s_last_name]
     .filter(Boolean)
     .join(" ");
@@ -462,7 +464,16 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
       num(d[`total_sin_seguros${s}`] ?? d.total_sin_seguros) ||
       (precioBase + docsReal + accesoriosMarcacion + adicionalesTotal - descuentos + polizaValor);
 
-    const total = num(d[`precio_total${s}`] ?? d.precio_total) || (totalSinSeguros + otrosSeguros);
+    const garantiaValor = num(
+      d[`valor_garantia_extendida${s}`] ?? d.valor_garantia_extendida
+    );
+
+    const totalBruto =
+      num(d[`precio_total${s}`] ?? d.precio_total) ||
+      (totalSinSeguros + otrosSeguros);
+
+    // ✅ quitar garantía del total
+    const total = Math.max(totalBruto - garantiaValor, 0);
 
     const cuotaInicial = num(d[`cuota_inicial${s}`] ?? d.cuota_inicial);
     const saldo = Math.max(total - cuotaInicial, 0);
@@ -676,15 +687,15 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
                     //   type: "moneyOrDash",
                     // },
 
-                   {
-  k: ge.meses > 0
-    ? `${esCreditoDirecto ? "Cuota" : "Valor"} garantía extendida (${ge.meses} meses)`
-    : `${esCreditoDirecto ? "Cuota" : "Valor"} garantía extendida`,
-  vv: esCreditoDirecto
-    ? (creditoDirecto?.cuotaGarantiaExtendida ?? null)
-    : (ge.meses > 0 ? ge.valor : null),
-  type: "moneyOrDash",
-},
+                    {
+                      k: ge.meses > 0
+                        ? `${esCreditoDirecto ? "Cuota" : "Valor"} garantía extendida (${ge.meses} meses)`
+                        : `${esCreditoDirecto ? "Cuota" : "Valor"} garantía extendida`,
+                      vv: esCreditoDirecto
+                        ? (creditoDirecto?.cuotaGarantiaExtendida ?? null)
+                        : (ge.meses > 0 ? ge.valor : null),
+                      type: "moneyOrDash",
+                    },
 
                     { k: "Cuota inicial", vv: v.cuotaInicial, type: "money" },
                   ].map((item, idx) => (

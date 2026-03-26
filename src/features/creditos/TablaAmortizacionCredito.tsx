@@ -1,16 +1,15 @@
-import React, { useMemo } from 'react';
-import { useConfigPlazoByCodigo } from '../../services/configuracionPlazoService';
+import React, { useMemo } from "react";
+import { useConfigPlazoByCodigo } from "../../services/configuracionPlazoService";
+import {
+  calcularCuotaPMT,
+  calcularSeguroDeudorMensual,
+} from "../../shared/components/credito/creditoDirecto.utils";
 
 interface CreditoApi {
   valor_producto: number;
   cuota_inicial: number;
   plazo_meses: number;
-
-  soat?: string | number;
-  matricula?: string | number;
-  impuestos?: string | number;
-  accesorios_total?: string | number;
-  precio_seguros?: string | number; // total seguro (para dividir entre meses)
+  precio_seguros?: string | number; // opcional, por si lo quieres mostrar aparte
   garantia_extendida_valor?: string | number;
 }
 
@@ -20,69 +19,66 @@ interface TablaAmortizacionCreditoProps {
 }
 
 const fmtCOP = (v: number) =>
-  new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
+  new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
     maximumFractionDigits: 0,
-  }).format(v);
+  }).format(Math.round(v));
 
 const fmtPct = (v: number) => `${(v * 100).toFixed(2)}%`;
 
 const toNumber = (v: unknown): number => {
-  if (typeof v === 'number') return v;
-  if (typeof v === 'string') {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : 0;
-  }
-  return 0;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
 };
 
-type AmortRowPdf = {
+type ScheduleRow = {
   periodo: number;
   saldoInicial: number;
-  intereses: number;
+  cuota: number;
+  interes: number;
   abonoCapital: number;
-  cuotaMensual: number;
   saldoFinal: number;
 };
 
-const buildSchedulePdf = (
+type AmortizacionRow = {
+  periodo: number;
+
+  saldoInicialNegocio: number;
+  cuotaNegocio: number;
+  interesNegocio: number;
+  abonoCapitalNegocio: number;
+  saldoFinalNegocio: number;
+
+  saldoInicialGarantia: number;
+  cuotaGarantia: number;
+  interesGarantia: number;
+  abonoCapitalGarantia: number;
+  saldoFinalGarantia: number;
+
+  seguroDeudor: number;
+  cuotaTotalMes: number;
+};
+
+const buildScheduleFrances = (
   principal: number,
-  tasaMensual: number,
+  tasaMensualDecimal: number,
   meses: number,
-  seguroMensual: number
-): { cuotaBase: number; cuotaMensual: number; schedule: AmortRowPdf[] } => {
-  if (principal <= 0 || tasaMensual <= 0 || meses <= 0) {
-    return { cuotaBase: 0, cuotaMensual: 0, schedule: [] };
-  }
+  cuotaFija: number
+): ScheduleRow[] => {
+  if (principal <= 0 || meses <= 0) return [];
 
-  const r = tasaMensual;
-  const n = meses;
-
-  // Cuota base (método francés)
-  const cuotaBase =
-    (principal * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
-
-  // En el PDF normalmente se muestra una sola "Cuota mensual"
-  const cuotaMensual = cuotaBase + seguroMensual;
-
-  const schedule: AmortRowPdf[] = [];
+  const schedule: ScheduleRow[] = [];
   let saldo = principal;
 
-  for (let i = 1; i <= n; i++) {
+  for (let i = 1; i <= meses; i++) {
     const saldoInicial = saldo;
+    const interes = tasaMensualDecimal > 0 ? saldoInicial * tasaMensualDecimal : 0;
 
-    const intereses = saldoInicial * r;
-
-    // En tu componente original: capital = cuotaBase - interes
-    // Para que el PDF cuadre, usamos la misma lógica:
-    // El seguro NO amortiza capital (solo se suma a la cuota mensual).
-    let abonoCapital = cuotaBase - intereses;
-
+    let abonoCapital = cuotaFija - interes;
     let saldoFinal = saldoInicial - abonoCapital;
 
-    // Última cuota: ajustamos para cerrar saldo en 0 exacto
-    if (i === n) {
+    if (i === meses || saldoFinal < 1) {
       abonoCapital = saldoInicial;
       saldoFinal = 0;
     }
@@ -90,93 +86,168 @@ const buildSchedulePdf = (
     schedule.push({
       periodo: i,
       saldoInicial,
-      intereses,
+      cuota: cuotaFija,
+      interes,
       abonoCapital,
-      cuotaMensual,
-      saldoFinal: saldoFinal < 1 ? 0 : saldoFinal,
+      saldoFinal,
     });
 
     saldo = saldoFinal;
   }
 
-  return { cuotaBase, cuotaMensual, schedule };
+  return schedule;
 };
 
 export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> = ({
   credito,
-  fechaCreacion, // (no se usa en la tabla PDF, pero la dejamos por compatibilidad)
 }) => {
-  const plazo = credito.plazo_meses ?? 0;
+  const plazo = toNumber(credito.plazo_meses);
 
-  console.log("Datos para tabla de amortización:", fechaCreacion)
   const {
     data: tasaFinConfig,
-    isLoading: loadingTasa,
-    error: errorTasa,
-  } = useConfigPlazoByCodigo('TASA_FIN', true);
+    isLoading: loadingTasaFin,
+    error: errorTasaFin,
+  } = useConfigPlazoByCodigo("TASA_FIN", true);
 
-  // Opcional: config garantía por plazo (si la usas)
+  const {
+    data: tasaGarantiaConfig,
+    isLoading: loadingTasaGarantia,
+    error: errorTasaGarantia,
+  } = useConfigPlazoByCodigo("TASA_GARANTIA", true);
+
   const { data: garantiaConfig } = useConfigPlazoByCodigo(
-    plazo ? `GAR_EXT_${plazo}` : '',
+    plazo ? `GAR_EXT_${plazo}` : "",
     Boolean(plazo)
   );
 
   const resultado = useMemo(() => {
-    if (!tasaFinConfig || !plazo) return null;
+    if (!plazo || !tasaFinConfig || !tasaGarantiaConfig) return null;
 
     const valorProducto = toNumber(credito.valor_producto);
     const cuotaInicial = toNumber(credito.cuota_inicial);
 
-    const soat = toNumber(credito.soat);
-    const matricula = toNumber(credito.matricula);
-    const impuestos = toNumber(credito.impuestos);
-    const accesorios = toNumber(credito.accesorios_total);
-    const precioSeguros = toNumber(credito.precio_seguros);
+    let valorGarantia = toNumber(credito.garantia_extendida_valor);
 
-    let garantiaExt = toNumber(credito.garantia_extendida_valor);
-
-    // Si viene 0 y existe config en %, la calculamos (igual que tu lógica)
-    if (garantiaExt === 0 && garantiaConfig && garantiaConfig.tipo_valor === '%') {
-      const porcentaje = garantiaConfig.valor / 100;
-      garantiaExt = valorProducto * porcentaje;
+    // Si no viene guardado el valor pero existe configuración por %
+    if (valorGarantia === 0 && garantiaConfig && garantiaConfig.tipo_valor === "%") {
+      valorGarantia = valorProducto * (toNumber(garantiaConfig.valor) / 100);
     }
 
-    const baseFinanciada =
-      valorProducto + soat + matricula + impuestos + accesorios + garantiaExt;
+    // IMPORTANTE:
+    // valor_producto YA incluye documentos, papeles, etc.
+    // Entonces NO se vuelve a sumar nada.
+    const saldoFinanciadoNegocio = Math.max(valorProducto - cuotaInicial, 0);
+    const saldoFinanciadoGarantia = Math.max(valorGarantia, 0);
 
-    const principal = Math.max(baseFinanciada - cuotaInicial, 0);
+    const tasaFinanciacionMensual =
+      tasaFinConfig.tipo_valor === "%"
+        ? toNumber(tasaFinConfig.valor) / 100
+        : toNumber(tasaFinConfig.valor);
 
-    // Seguro mensual (se suma a la cuota, pero no amortiza capital)
-    const seguroMensual = plazo > 0 ? precioSeguros / plazo : 0;
+    const tasaGarantiaMensual =
+      tasaGarantiaConfig.tipo_valor === "%"
+        ? toNumber(tasaGarantiaConfig.valor) / 100
+        : toNumber(tasaGarantiaConfig.valor);
 
-    // Tasa mensual viene como % (ej: 1.83)
-    const tasaMensual =
-      tasaFinConfig.tipo_valor === '%'
-        ? tasaFinConfig.valor / 100
-        : tasaFinConfig.valor;
+    const teaFin = Math.pow(1 + tasaFinanciacionMensual, 12) - 1;
+    const teaGarantia = Math.pow(1 + tasaGarantiaMensual, 12) - 1;
 
-    const tea = Math.pow(1 + tasaMensual, 12) - 1;
+    const cuotaNegocio =
+      saldoFinanciadoNegocio > 0
+        ? Math.floor(
+            calcularCuotaPMT(
+              saldoFinanciadoNegocio,
+              tasaFinanciacionMensual * 100,
+              plazo
+            )
+          )
+        : 0;
 
-    const { cuotaBase, cuotaMensual, schedule } = buildSchedulePdf(
-      principal,
-      tasaMensual,
+    const cuotaGarantia =
+      saldoFinanciadoGarantia > 0
+        ? Math.floor(
+            calcularCuotaPMT(
+              saldoFinanciadoGarantia,
+              tasaGarantiaMensual * 100,
+              plazo
+            )
+          )
+        : 0;
+
+    const scheduleNegocio = buildScheduleFrances(
+      saldoFinanciadoNegocio,
+      tasaFinanciacionMensual,
       plazo,
-      seguroMensual
+      cuotaNegocio
     );
 
+    const scheduleGarantia = buildScheduleFrances(
+      saldoFinanciadoGarantia,
+      tasaGarantiaMensual,
+      plazo,
+      cuotaGarantia
+    );
+
+    const schedule: AmortizacionRow[] = Array.from({ length: plazo }, (_, idx) => {
+      const n = scheduleNegocio[idx] ?? {
+        periodo: idx + 1,
+        saldoInicial: 0,
+        cuota: 0,
+        interes: 0,
+        abonoCapital: 0,
+        saldoFinal: 0,
+      };
+
+      const g = scheduleGarantia[idx] ?? {
+        periodo: idx + 1,
+        saldoInicial: 0,
+        cuota: 0,
+        interes: 0,
+        abonoCapital: 0,
+        saldoFinal: 0,
+      };
+
+      const seguroDeudor =
+        n.saldoInicial > 0 ? calcularSeguroDeudorMensual(n.saldoInicial) : 0;
+
+      const cuotaTotalMes = n.cuota + g.cuota + seguroDeudor;
+
+      return {
+        periodo: idx + 1,
+
+        saldoInicialNegocio: n.saldoInicial,
+        cuotaNegocio: n.cuota,
+        interesNegocio: n.interes,
+        abonoCapitalNegocio: n.abonoCapital,
+        saldoFinalNegocio: n.saldoFinal,
+
+        saldoInicialGarantia: g.saldoInicial,
+        cuotaGarantia: g.cuota,
+        interesGarantia: g.interes,
+        abonoCapitalGarantia: g.abonoCapital,
+        saldoFinalGarantia: g.saldoFinal,
+
+        seguroDeudor,
+        cuotaTotalMes,
+      };
+    });
+
     return {
+      plazo,
       valorProducto,
       cuotaInicial,
-      baseFinanciada,
-      principal,
-      tasaMensual,
-      tea,
-      cuotaBase,
-      cuotaMensual,
-      seguroMensual,
+      valorGarantia,
+      saldoFinanciadoNegocio,
+      saldoFinanciadoGarantia,
+      tasaFinanciacionMensual,
+      tasaGarantiaMensual,
+      teaFin,
+      teaGarantia,
+      cuotaNegocio,
+      cuotaGarantia,
       schedule,
     };
-  }, [credito, tasaFinConfig, garantiaConfig, plazo]);
+  }, [credito, plazo, tasaFinConfig, tasaGarantiaConfig, garantiaConfig]);
 
   if (!plazo) {
     return (
@@ -188,68 +259,73 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
     );
   }
 
-  if (loadingTasa) {
+  if (loadingTasaFin || loadingTasaGarantia) {
     return (
       <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4 sm:p-6">
-        <p className="text-sm text-slate-600">Cargando configuración de tasa...</p>
+        <p className="text-sm text-slate-600">Cargando configuración de tasas...</p>
       </section>
     );
   }
 
-  if (errorTasa || !tasaFinConfig) {
+  if (errorTasaFin || errorTasaGarantia || !resultado) {
     return (
       <section className="rounded-2xl border border-rose-200 bg-rose-50 shadow-sm p-4 sm:p-6">
         <p className="text-sm text-rose-700">
-          No fue posible obtener la configuración de la tasa de financiación (TASA_FIN).
+          No fue posible generar la tabla de amortización.
         </p>
       </section>
     );
   }
 
-  if (!resultado) return null;
-
   const {
     valorProducto,
     cuotaInicial,
-    baseFinanciada,
-    principal,
-    tasaMensual,
-    tea,
-    cuotaMensual,
+    valorGarantia,
+    saldoFinanciadoNegocio,
+    saldoFinanciadoGarantia,
+    tasaFinanciacionMensual,
+    tasaGarantiaMensual,
+    teaFin,
+    teaGarantia,
+    cuotaNegocio,
+    cuotaGarantia,
     schedule,
   } = resultado;
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="p-4 sm:p-6 space-y-4">
-        {/* Encabezado tipo PDF (Resumen + Condiciones) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
             <p className="font-semibold text-slate-900 mb-2">Resumen del crédito</p>
 
             <div className="flex items-center justify-between gap-3">
+              <span className="text-slate-600">Valor total moto:</span>
+              <span className="font-semibold text-slate-900">{fmtCOP(valorProducto)}</span>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 mt-1">
               <span className="text-slate-600">Cuota inicial:</span>
               <span className="font-semibold text-slate-900">{fmtCOP(cuotaInicial)}</span>
             </div>
 
             <div className="flex items-center justify-between gap-3 mt-1">
-              <span className="text-slate-600">Base financiada (incl. gastos):</span>
-              <span className="font-semibold text-slate-900">{fmtCOP(baseFinanciada)}</span>
+              <span className="text-slate-600">Saldo financiado negocio:</span>
+              <span className="font-semibold text-sky-700">
+                {fmtCOP(saldoFinanciadoNegocio)}
+              </span>
             </div>
 
             <div className="flex items-center justify-between gap-3 mt-1">
-              <span className="text-slate-600">Valor a financiar:</span>
-              <span className="font-semibold text-slate-900">{fmtCOP(principal)}</span>
+              <span className="text-slate-600">Valor garantía:</span>
+              <span className="font-semibold text-rose-700">
+                {fmtCOP(saldoFinanciadoGarantia)}
+              </span>
             </div>
 
             <div className="flex items-center justify-between gap-3 mt-1">
-              <span className="text-slate-600">Valor moto:</span>
-              <span className="font-semibold text-slate-900">{fmtCOP(valorProducto)}</span>
-            </div>
-
-            <div className="flex items-center justify-between gap-3 mt-1">
-              <span className="text-slate-600">Plazo (meses):</span>
-              <span className="font-semibold text-slate-900">{plazo}</span>
+              <span className="text-slate-600">Garantía total:</span>
+              <span className="font-semibold text-slate-900">{fmtCOP(valorGarantia)}</span>
             </div>
           </div>
 
@@ -257,32 +333,70 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
             <p className="font-semibold text-slate-900 mb-2">Condiciones</p>
 
             <div className="flex items-center justify-between gap-3">
-              <span className="text-slate-600">Tasa mensual efectiva:</span>
-              <span className="font-semibold text-slate-900">{fmtPct(tasaMensual)}</span>
+              <span className="text-slate-600">Tasa mensual negocio:</span>
+              <span className="font-semibold text-slate-900">
+                {fmtPct(tasaFinanciacionMensual)}
+              </span>
             </div>
 
             <div className="flex items-center justify-between gap-3 mt-1">
-              <span className="text-slate-600">Tasa efectiva anual:</span>
-              <span className="font-semibold text-slate-900">{fmtPct(tea)}</span>
+              <span className="text-slate-600">TEA negocio:</span>
+              <span className="font-semibold text-slate-900">{fmtPct(teaFin)}</span>
             </div>
 
             <div className="flex items-center justify-between gap-3 mt-1">
-              <span className="text-slate-600">Cuota mensual:</span>
-              <span className="font-semibold text-slate-900">{fmtCOP(Math.round(cuotaMensual))}</span>
+              <span className="text-slate-600">Tasa mensual garantía:</span>
+              <span className="font-semibold text-slate-900">
+                {fmtPct(tasaGarantiaMensual)}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 mt-1">
+              <span className="text-slate-600">TEA garantía:</span>
+              <span className="font-semibold text-slate-900">{fmtPct(teaGarantia)}</span>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 mt-1">
+              <span className="text-slate-600">Cuota negocio:</span>
+              <span className="font-semibold text-sky-700">{fmtCOP(cuotaNegocio)}</span>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 mt-1">
+              <span className="text-slate-600">Cuota garantía:</span>
+              <span className="font-semibold text-rose-700">{fmtCOP(cuotaGarantia)}</span>
             </div>
           </div>
         </div>
 
-        {/* Tabla igual a PDF */}
         <div className="overflow-x-auto border border-slate-200 rounded-xl">
-          <table className="min-w-full text-xs sm:text-sm">
-            <thead className="bg-slate-100 text-slate-700">
-              <tr>
-                <th className="px-3 py-2 text-left font-semibold">Periodo</th>
+          <table className="min-w-425 w-full text-xs sm:text-sm">
+            <thead>
+              <tr className="bg-slate-200 text-slate-800">
+                <th className="px-3 py-2 text-left font-semibold" rowSpan={2}>Periodo</th>
+                <th className="px-3 py-2 text-center font-semibold" colSpan={5}>
+                  Financiación negocio
+                </th>
+                <th className="px-3 py-2 text-center font-semibold" colSpan={5}>
+                  Garantía
+                </th>
+                <th className="px-3 py-2 text-right font-semibold" rowSpan={2}>
+                  Seguro deudor
+                </th>
+                <th className="px-3 py-2 text-right font-semibold" rowSpan={2}>
+                  Cuota total mes
+                </th>
+              </tr>
+              <tr className="bg-slate-100 text-slate-700">
                 <th className="px-3 py-2 text-right font-semibold">Saldo inicial</th>
-                <th className="px-3 py-2 text-right font-semibold">Intereses</th>
-                <th className="px-3 py-2 text-right font-semibold">Abono a capital</th>
-                <th className="px-3 py-2 text-right font-semibold">Cuota mensual</th>
+                <th className="px-3 py-2 text-right font-semibold">Cuota</th>
+                <th className="px-3 py-2 text-right font-semibold">Interés</th>
+                <th className="px-3 py-2 text-right font-semibold">Abono capital</th>
+                <th className="px-3 py-2 text-right font-semibold">Saldo final</th>
+
+                <th className="px-3 py-2 text-right font-semibold">Saldo inicial</th>
+                <th className="px-3 py-2 text-right font-semibold">Cuota</th>
+                <th className="px-3 py-2 text-right font-semibold">Interés</th>
+                <th className="px-3 py-2 text-right font-semibold">Abono capital</th>
                 <th className="px-3 py-2 text-right font-semibold">Saldo final</th>
               </tr>
             </thead>
@@ -291,21 +405,25 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
               {schedule.map((row) => (
                 <tr key={row.periodo} className="hover:bg-slate-50">
                   <td className="px-3 py-1.5">{row.periodo}</td>
-                  <td className="px-3 py-1.5 text-right">
-                    {fmtCOP(Math.round(row.saldoInicial))}
+
+                  <td className="px-3 py-1.5 text-right">{fmtCOP(row.saldoInicialNegocio)}</td>
+                  <td className="px-3 py-1.5 text-right font-medium text-sky-700">
+                    {fmtCOP(row.cuotaNegocio)}
                   </td>
-                  <td className="px-3 py-1.5 text-right">
-                    {fmtCOP(Math.round(row.intereses))}
+                  <td className="px-3 py-1.5 text-right">{fmtCOP(row.interesNegocio)}</td>
+                  <td className="px-3 py-1.5 text-right">{fmtCOP(row.abonoCapitalNegocio)}</td>
+                  <td className="px-3 py-1.5 text-right">{fmtCOP(row.saldoFinalNegocio)}</td>
+
+                  <td className="px-3 py-1.5 text-right">{fmtCOP(row.saldoInicialGarantia)}</td>
+                  <td className="px-3 py-1.5 text-right font-medium text-rose-700">
+                    {fmtCOP(row.cuotaGarantia)}
                   </td>
-                  <td className="px-3 py-1.5 text-right">
-                    {fmtCOP(Math.round(row.abonoCapital))}
-                  </td>
-                  <td className="px-3 py-1.5 text-right">
-                    {fmtCOP(Math.round(row.cuotaMensual))}
-                  </td>
-                  <td className="px-3 py-1.5 text-right">
-                    {fmtCOP(Math.round(row.saldoFinal))}
-                  </td>
+                  <td className="px-3 py-1.5 text-right">{fmtCOP(row.interesGarantia)}</td>
+                  <td className="px-3 py-1.5 text-right">{fmtCOP(row.abonoCapitalGarantia)}</td>
+                  <td className="px-3 py-1.5 text-right">{fmtCOP(row.saldoFinalGarantia)}</td>
+
+                  <td className="px-3 py-1.5 text-right">{fmtCOP(row.seguroDeudor)}</td>
+                  <td className="px-3 py-1.5 text-right font-bold">{fmtCOP(row.cuotaTotalMes)}</td>
                 </tr>
               ))}
             </tbody>
@@ -313,7 +431,8 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
         </div>
 
         <p className="text-xs text-slate-500">
-          Este plan de pagos es un documento informativo. Los valores pueden variar ligeramente por redondeos y ajustes operativos de la entidad financiera.
+          La tabla separa el saldo financiado principal y el saldo de garantía.
+          La cuota total del mes es: cuota negocio + cuota garantía + seguro deudor.
         </p>
       </div>
     </section>
