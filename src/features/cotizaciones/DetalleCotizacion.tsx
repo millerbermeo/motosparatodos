@@ -196,7 +196,6 @@ const DetalleCotizacion: React.FC = () => {
       totalDocumentos +
       (moto.adicionalesTotal || 0) +
       Number(moto.polizaValor ?? 0) +
-      Number(moto.garantiaExtendidaValor ?? 0) +
       gpsAplicado +
       Number(moto.otrosSeguros ?? 0)
     );

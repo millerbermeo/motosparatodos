@@ -21,7 +21,7 @@ import { alert } from "../../../utils/alerts";
 import { METODO_PAGO_LABEL } from "../../../shared/components/tipo-pago-label";
 import { dateNotTodayOrFuture } from "../../../utils/dateValidatorFutura";
 import { polizaOptions } from "../../../shared/components/options/poliza-options";
-import { calcCuotaConInteres, calcGarantia, calcGps, calcPoliza, getMatricula } from "./cotizacion.helpers";
+import {  calcGarantia, calcGps, calcPoliza, getMatricula } from "./cotizacion.helpers";
 import { useIvaDecimal } from "../../../services/ivaServices";
 import { calcularCreditoDirectoMoto, logCreditoDirectoMoto } from "../../../shared/components/credito/creditoDirecto.utils";
 
@@ -1074,66 +1074,147 @@ const CotizacionFormulario: React.FC = () => {
     const { data: polTranquiPlus } = useConfigPlazoByCodigo("TRANQUI_PLUS");
 
     const { data: marcacionCoti } = useConfigPlazoByCodigo("MARC");
-    const { data: segVidaCfg } = useConfigPlazoByCodigo("SEG_VIDA");
+    // const { data: segVidaCfg } = useConfigPlazoByCodigo("SEG_VIDA");
 
-    const calcSeguroVidaMensual = (saldo: number, cfg: any | null): number => {
-        if (!cfg || saldo <= 0) return 0;
+    // const calcSeguroVidaMensual = (saldo: number, cfg: any | null): number => {
+    //     if (!cfg || saldo <= 0) return 0;
 
-        const v = Number(cfg.valor) || 0;
+    //     const v = Number(cfg.valor) || 0;
 
-        if (cfg.tipo_valor === "%") {
-            return Math.round(saldo * (v / 100));
-        }
+    //     if (cfg.tipo_valor === "%") {
+    //         return Math.round(saldo * (v / 100));
+    //     }
 
-        return Math.round((saldo / 1000) * v);
-    };
+    //     return Math.round((saldo / 1000) * v);
+    // };
+    
 
-    const segVidaMensualA =
-        metodo === "credibike" && incluirMoto1 ? calcSeguroVidaMensual(saldoFinanciar1, segVidaCfg ?? null) : 0;
+    const saldoFinanciar1SinGarantia = Math.max(
+  saldoFinanciar1 - (garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0),
+  0
+);
 
-    const segVidaMensualB =
-        metodo === "credibike" && incluirMoto2 ? calcSeguroVidaMensual(saldoFinanciar2, segVidaCfg ?? null) : 0;
+const saldoFinanciar2SinGarantia = Math.max(
+  saldoFinanciar2 - (garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0),
+  0
+);
 
-    const cuota6_a_auto =
-        metodo === "credibike" && incluirMoto1
-            ? calcCuotaConInteres(saldoFinanciar1, 6, tasaDecimal) + segVidaMensualA
-            : 0;
+// const segVidaMensualA =
+//   metodo === "credibike" && incluirMoto1
+//     ? calcSeguroVidaMensual(saldoFinanciar1SinGarantia, segVidaCfg ?? null)
+//     : 0;
 
-    const cuota12_a_auto =
-        metodo === "credibike" && incluirMoto1
-            ? calcCuotaConInteres(saldoFinanciar1, 12, tasaDecimal) + segVidaMensualA
-            : 0;
+// const segVidaMensualB =
+//   metodo === "credibike" && incluirMoto2
+//     ? calcSeguroVidaMensual(saldoFinanciar2SinGarantia, segVidaCfg ?? null)
+//     : 0;
+    
 
-    const cuota24_a_auto =
-        metodo === "credibike" && incluirMoto1
-            ? calcCuotaConInteres(saldoFinanciar1, 24, tasaDecimal) + segVidaMensualA
-            : 0;
+    const calcularCuotaProyectadaMoto = (
+  incluir: boolean,
+  saldoSinGarantia: number,
+  valorGarantia: number,
+  plazo: number
+) => {
+  if (metodo !== "credibike" || !incluir) return 0;
 
-    const cuota36_a_auto =
-        metodo === "credibike" && incluirMoto1
-            ? calcCuotaConInteres(saldoFinanciar1, 36, tasaDecimal) + segVidaMensualA
-            : 0;
+  const credito = calcularCreditoDirectoMoto({
+    incluir: true,
+    mesesGarantia: plazo,
+    valorGarantia,
+    saldoFinanciar: saldoSinGarantia,
+    tasaFinanciacionPct: tasaDecimal * 100,
+    tasaGarantiaPct: TASA_GARANTIA_MENSUAL,
+  });
 
-    const cuota6_b_auto =
-        metodo === "credibike" && incluirMoto2
-            ? calcCuotaConInteres(saldoFinanciar2, 6, tasaDecimal) + segVidaMensualB
-            : 0;
+  return credito.cuotaTotal;
+};
 
-    const cuota12_b_auto =
-        metodo === "credibike" && incluirMoto2
-            ? calcCuotaConInteres(saldoFinanciar2, 12, tasaDecimal) + segVidaMensualB
-            : 0;
+    const cuota6_a_auto = calcularCuotaProyectadaMoto(
+  incluirMoto1,
+  saldoFinanciar1SinGarantia,
+  garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0,
+  6
+);
 
-    const cuota24_b_auto =
-        metodo === "credibike" && incluirMoto2
-            ? calcCuotaConInteres(saldoFinanciar2, 24, tasaDecimal) + segVidaMensualB
-            : 0;
+const cuota12_a_auto = calcularCuotaProyectadaMoto(
+  incluirMoto1,
+  saldoFinanciar1SinGarantia,
+  garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0,
+  12
+);
 
-    const cuota36_b_auto =
-        metodo === "credibike" && incluirMoto2
-            ? calcCuotaConInteres(saldoFinanciar2, 36, tasaDecimal) + segVidaMensualB
-            : 0;
+// const cuota18_a_auto = calcularCuotaProyectadaMoto(
+//   incluirMoto1,
+//   saldoFinanciar1SinGarantia,
+//   garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0,
+//   18
+// );
 
+const cuota24_a_auto = calcularCuotaProyectadaMoto(
+  incluirMoto1,
+  saldoFinanciar1SinGarantia,
+  garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0,
+  24
+);
+
+// const cuota30_a_auto = calcularCuotaProyectadaMoto(
+//   incluirMoto1,
+//   saldoFinanciar1SinGarantia,
+//   garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0,
+//   30
+// );
+
+const cuota36_a_auto = calcularCuotaProyectadaMoto(
+  incluirMoto1,
+  saldoFinanciar1SinGarantia,
+  garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0,
+  36
+);
+
+const cuota6_b_auto = calcularCuotaProyectadaMoto(
+  incluirMoto2,
+  saldoFinanciar2SinGarantia,
+  garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0,
+  6
+);
+
+const cuota12_b_auto = calcularCuotaProyectadaMoto(
+  incluirMoto2,
+  saldoFinanciar2SinGarantia,
+  garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0,
+  12
+);
+
+// const cuota18_b_auto = calcularCuotaProyectadaMoto(
+//   incluirMoto2,
+//   saldoFinanciar2SinGarantia,
+//   garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0,
+//   18
+// );
+
+const cuota24_b_auto = calcularCuotaProyectadaMoto(
+  incluirMoto2,
+  saldoFinanciar2SinGarantia,
+  garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0,
+  24
+);
+
+// const cuota30_b_auto = calcularCuotaProyectadaMoto(
+//   incluirMoto2,
+//   saldoFinanciar2SinGarantia,
+//   garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0,
+//   30
+// );
+
+const cuota36_b_auto = calcularCuotaProyectadaMoto(
+  incluirMoto2,
+  saldoFinanciar2SinGarantia,
+  garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0,
+  36
+);
+
+            
     React.useEffect(() => {
         if (metodo === "contado") return;
         const hayMoto = moto1Value !== undefined && moto1Value !== null && moto1Value !== "";
@@ -1259,29 +1340,31 @@ const CotizacionFormulario: React.FC = () => {
 
     const aplicarCalculoCreditoDirecto = metodo === "credibike";
 
-    const creditoMoto1 = calcularCreditoDirectoMoto({
-        incluir: aplicarCalculoCreditoDirecto && incluirMoto1,
-        mesesGarantia:
-            aplicarCalculoCreditoDirecto && incluirMoto1 && garantiaExtendida1Value !== "no"
-                ? garantiaExtendida1Value
-                : 0,
-        valorGarantia: valorGarantiaAValue,
-        saldoFinanciar: saldoFinanciar1,
-        tasaFinanciacionPct: tasaDecimal * 100,
-        tasaGarantiaPct: TASA_GARANTIA_MENSUAL,
-    });
+const creditoMoto1 = calcularCreditoDirectoMoto({
+  incluir: aplicarCalculoCreditoDirecto && incluirMoto1,
+  mesesGarantia:
+    aplicarCalculoCreditoDirecto && incluirMoto1 && garantiaExtendida1Value !== "no"
+      ? garantiaExtendida1Value
+      : 0,
+  valorGarantia: valorGarantiaAValue,
+  saldoFinanciar: saldoFinanciar1SinGarantia,
+  tasaFinanciacionPct: tasaDecimal * 100,
+  tasaGarantiaPct: TASA_GARANTIA_MENSUAL,
+});
 
-    const creditoMoto2 = calcularCreditoDirectoMoto({
-        incluir: aplicarCalculoCreditoDirecto && incluirMoto2,
-        mesesGarantia:
-            aplicarCalculoCreditoDirecto && incluirMoto2 && garantiaExtendida2Value !== "no"
-                ? garantiaExtendida2Value
-                : 0,
-        valorGarantia: valorGarantiaBValue,
-        saldoFinanciar: saldoFinanciar2,
-        tasaFinanciacionPct: tasaDecimal * 100,
-        tasaGarantiaPct: TASA_GARANTIA_MENSUAL,
-    });
+const creditoMoto2 = calcularCreditoDirectoMoto({
+  incluir: aplicarCalculoCreditoDirecto && incluirMoto2,
+  mesesGarantia:
+    aplicarCalculoCreditoDirecto && incluirMoto2 && garantiaExtendida2Value !== "no"
+      ? garantiaExtendida2Value
+      : 0,
+  valorGarantia: valorGarantiaBValue,
+  saldoFinanciar: saldoFinanciar2SinGarantia,
+  tasaFinanciacionPct: tasaDecimal * 100,
+  tasaGarantiaPct: TASA_GARANTIA_MENSUAL,
+});
+
+
 
     // const mesesMoto1 = creditoMoto1.meses;
     // const mesesMoto2 = creditoMoto2.meses;
@@ -1918,7 +2001,7 @@ const CotizacionFormulario: React.FC = () => {
                                                             </div>
 
                                                             {/* ✅ Valor correcto mostrado (cuota mensual) */}
-                                                            <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                            <div className="hidden justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
                                                                 <span className="font-medium text-gray-700">
                                                                     Garantía extendida ({garantiaExt1Sel} meses):
                                                                 </span>
@@ -1977,15 +2060,32 @@ const CotizacionFormulario: React.FC = () => {
 
                                                     <div className="flex justify-between items-center bg-success/10 px-4 py-2 rounded-md border border-success/30 shadow-sm">
                                                         <span className="font-bold text-success">TOTAL:</span>
-                                                        <span className="text-success font-extrabold text-lg">{fmtCOP(totalConSeguros1)} COP</span>
+                                                        <span className="text-success font-extrabold text-lg">
+                                                            {fmtCOP(
+                                                                totalConSeguros1 - (garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0)
+                                                            )} COP
+                                                        </span>
                                                     </div>
-
                                                     {esCreditoDirecto && (
-                                                        <div className="flex justify-between items-center bg-info/10 px-4 py-2 rounded-md border border-info/30 shadow-sm">
-                                                            <span className="font-semibold text-info">SALDO A FINANCIAR:</span>
-                                                            <span className="font-bold">{fmtCOP(saldoFinanciar1)} COP</span>
-                                                        </div>
+                                                        <>
+                                                            <div className="flex justify-between items-center bg-info/10 px-4 py-2 rounded-md border border-info/30 shadow-sm">
+                                                                <span className="font-semibold text-info">SALDO A FINANCIAR:</span>
+                                                                <span className="font-bold">
+                                                                    {fmtCOP(
+                                                                        saldoFinanciar1 - (garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0)
+                                                                    )} COP
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex justify-between items-center bg-red-50 px-4 py-2 rounded-md border border-red-200 shadow-sm">
+                                                                <span className="font-semibold text-red-700">Cuota Garantía {garantiaExt1Sel} Meses:</span>
+                                                                <span className="font-bold text-red-900">
+                                                                    {fmtCOP(cuotaGarantiaExtendidaMoto1)} COP
+                                                                </span>
+                                                            </div>
+                                                        </>
                                                     )}
+
+
 
                                                     {metodo === "credibike" && incluirMoto1 && saldoFinanciar1 > 0 && (
                                                         <div className="mt-3 bg-base-100 border border-base-300 rounded-lg p-3 space-y-1">
@@ -2515,20 +2615,37 @@ const CotizacionFormulario: React.FC = () => {
 
                                                     <div className="flex justify-between items-center bg-success/10 px-4 py-2 rounded-md border border-success/30 shadow-sm">
                                                         <span className="font-bold text-success">TOTAL:</span>
-                                                        <span className="text-success font-extrabold text-lg">{fmtCOP(totalConSeguros2)} COP</span>
+                                                        <span className="text-success font-extrabold text-lg">
+                                                            {fmtCOP(
+                                                                totalConSeguros2 - (garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0)
+                                                            )} COP
+                                                        </span>
                                                     </div>
 
                                                     {esCreditoDirecto && (
-                                                        <div className="flex justify-between items-center bg-info/10 px-4 py-2 rounded-md border border-info/30 shadow-sm">
-                                                            <span className="font-semibold text-info">SALDO A FINANCIAR:</span>
-                                                            <span className="font-bold">{fmtCOP(saldoFinanciar2)} COP</span>
-                                                        </div>
+                                                        <>
+                                                            <div className="flex justify-between items-center bg-info/10 px-4 py-2 rounded-md border border-info/30 shadow-sm">
+                                                                <span className="font-semibold text-info">SALDO A FINANCIAR:</span>
+                                                                <span className="font-bold">
+                                                                    {fmtCOP(
+                                                                        saldoFinanciar2 - (garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0)
+                                                                    )} COP
+                                                                </span>
+                                                            </div>
+
+                                                            <div className="flex justify-between items-center bg-red-50 px-4 py-2 rounded-md border border-red-200 shadow-sm">
+                                                                <span className="font-semibold text-red-700">Cuota Garantía {garantiaExt2Sel} Meses:</span>
+                                                                <span className="font-bold text-red-900">
+                                                                    {fmtCOP(cuotaGarantiaExtendidaMoto2)} COP
+                                                                </span>
+                                                            </div>
+                                                        </>
                                                     )}
 
                                                     {metodo === "credibike" && incluirMoto2 && saldoFinanciar2 > 0 && (
                                                         <div className="mt-3 bg-base-100 border border-base-300 rounded-lg p-3 space-y-1">
                                                             <p className="font-semibold text-sm">Cuotas proyectadas</p>
-                                                            
+
                                                             <div className="flex justify-between text-sm">
                                                                 <span>6 meses:</span>
                                                                 <span>{fmtCOP(cuota6_b_auto)} COP</span>

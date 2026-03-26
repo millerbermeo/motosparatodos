@@ -555,7 +555,7 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
       accesoriosMarcacion +
       adicionalesTotal +
       polizaValor +
-      geValor +
+      // geValor +
       gpsValor -
       descuentos;
 
@@ -662,8 +662,8 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
     if (showGarantiaExtendida) {
       leftRows.push({
         k: v.geMeses > 0
-          ? `Cuota garantía extendida (${v.geMeses} meses)`
-          : "Cuota garantía extendida",
+          ? `Cuota garantía (${v.geMeses} meses)`
+          : "Cuota garantía",
         v: v.geMeses > 0 ? creditoDirecto?.cuotaGarantiaExtendida ?? null : null,
         type: "moneyOrDash",
       });
