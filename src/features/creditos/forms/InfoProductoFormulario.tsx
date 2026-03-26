@@ -84,23 +84,23 @@ const InfoProductoFormulario: React.FC = () => {
     data?.success && data.creditos?.length ? data.creditos[0] : null;
 
 
-    console.log("bakedn", creditoBackend)
+  console.log("bakedn", creditoBackend)
   // ✅ Sincroniza FORM apenas llega backend (plazoCuotas = número)
   React.useEffect(() => {
     if (!creditoBackend) return;
     const c = creditoBackend;
 
     setValue("producto", buildProducto(c), { shouldDirty: false });
- setValue(
-  "valorMoto",
-  String(
-    Number(c?.valor_producto ?? 0) -
-    Number(c?.garantia_extendida_valor ?? 0)
-  ),
-  {
-    shouldDirty: false,
-  }
-);
+    setValue(
+      "valorMoto",
+      String(
+        Number(c?.valor_producto ?? 0) -
+        Number(c?.garantia_extendida_valor ?? 0)
+      ),
+      {
+        shouldDirty: false,
+      }
+    );
 
     // ✅ número
     const plazoNumero = normalizePlazo(c?.plazo_meses, 12);
@@ -155,16 +155,16 @@ const InfoProductoFormulario: React.FC = () => {
 
   const creditoParaTabla = creditoBackend
     ? {
-valor_producto: (Number(creditoBackend.valor_producto) || 0) - (Number(creditoBackend.garantia_extendida_valor) || 0),
-        cuota_inicial: cuotaInicialParaTabla,
-        plazo_meses: plazoParaTabla,
-        soat: creditoBackend.soat ?? "0",
-        matricula: creditoBackend.matricula ?? "0",
-        impuestos: creditoBackend.impuestos ?? "0",
-        accesorios_total: creditoBackend.accesorios_total ?? "0",
-        precio_seguros: creditoBackend.precio_seguros ?? "0",
-        garantia_extendida_valor: creditoBackend.garantia_extendida_valor ?? "0",
-      }
+      valor_producto: (Number(creditoBackend.valor_producto) || 0) - (Number(creditoBackend.garantia_extendida_valor) || 0),
+      cuota_inicial: cuotaInicialParaTabla,
+      plazo_meses: plazoParaTabla,
+      soat: creditoBackend.soat ?? "0",
+      matricula: creditoBackend.matricula ?? "0",
+      impuestos: creditoBackend.impuestos ?? "0",
+      accesorios_total: creditoBackend.accesorios_total ?? "0",
+      precio_seguros: creditoBackend.precio_seguros ?? "0",
+      garantia_extendida_valor: creditoBackend.garantia_extendida_valor ?? "0",
+    }
     : null;
 
   const fechaCreacionCredito = creditoBackend?.fecha_creacion ?? undefined;
@@ -275,6 +275,7 @@ valor_producto: (Number(creditoBackend.valor_producto) || 0) - (Number(creditoBa
           <TablaAmortizacionCredito
             credito={creditoParaTabla}
             fechaCreacion={fechaCreacionCredito}
+            cotizacionId={Number(creditoBackend?.cotizacion_id ?? 0)}
           />
         </div>
       )}

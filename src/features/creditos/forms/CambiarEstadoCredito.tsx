@@ -53,6 +53,7 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
     defaultValues: { estado: "" as any, comentario: "" },
     mode: "onBlur",
   });
+  
 
   const isAprobado = watch("estado") === "Aprobado";
 
@@ -314,6 +315,7 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
                   <TablaAmortizacionCredito
                     credito={creditoTabla}
                     fechaCreacion={fechaCreacionTabla}
+                    cotizacionId={data.cotizacion_id}
                   />
                 </div>
               </div>

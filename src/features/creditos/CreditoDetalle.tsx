@@ -1016,6 +1016,7 @@ const CreditoDetalle: React.FC = () => {
                                 <TablaAmortizacionCredito
                                     credito={credito as any}
                                     fechaCreacion={credito.fecha_creacion}
+                                    cotizacionId={idCot ?? 0}
                                 />
                             </div>
                         </details>
