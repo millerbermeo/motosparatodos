@@ -107,6 +107,7 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
   const creditoTabla = useMemo(() => {
     if (!data) return null;
 
+    console.log("wwwwwwww",data.credito)
     return {
       valor_producto: Number(
         data?.credito?.valor_producto ??
@@ -189,6 +190,9 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
     );
   }, [data]);
 
+
+
+  // console.log(data.credito.cotizacion_id)
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="flex items-center justify-between border-b border-info pb-2">
@@ -315,7 +319,7 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
                   <TablaAmortizacionCredito
                     credito={creditoTabla}
                     fechaCreacion={fechaCreacionTabla}
-                    cotizacionId={data.cotizacion_id}
+                    cotizacionId={data.credito.cotizacion_id}
                   />
                 </div>
               </div>
