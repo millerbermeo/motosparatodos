@@ -6,275 +6,25 @@ import DocumentosSolicitud from "../features/solicitudes/DocumentosSolicitud";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { useIvaDecimal } from "../services/ivaServices";
 import { useAuthStore } from "../store/auth.store";
-
-// Hooks del servicio de solicitudes
 import {
   useUltimaSolicitudPorIdCotizacion,
   useActualizarFacturaSolicitud,
   useDescuentosContraentrega
 } from "../services/solicitudServices";
-
-import Swal from "sweetalert2";
-
-// 🔹 NUEVO: panel de descuentos / contraentrega
 import DescuentosContraentregaPanel from "../shared/components/DescuentosContraentregaPanel";
 import SolicitudFacturaPDF2 from "../features/creditos/pdf/SolicitudFacturaPDF2";
 import { useEmpresaById } from "../services/empresasServices";
 import ManifiestoUploader from "../shared/components/ManifiestoUploader";
+import { toNum } from "../utils/convertirNumeroSeguro";
+import { fmtFecha } from "../utils/date";
+import { fmtCOP } from "../utils/money";
+import { RowRight } from "../shared/components/facturacion/RowRight";
+import { buildMotoFromCotizacion } from "../shared/components/facturacion/buildMotoFromCotizacion";
+import { desglosarConIva } from "../shared/components/facturacion/desglosarIva";
+import { toAbsoluteUrl } from "../utils/files";
+import { alert } from "../utils/alerts";
+import { max0, pick, sum } from "../shared/components/facturacion/utilsFacturacion";
 
-type Num = number | undefined | null;
-
-
-// Helpers
-const toNum = (v: unknown): number | undefined => {
-  if (v === null || v === undefined) return undefined;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : undefined;
-};
-
-const fmtCOP = (v?: Num) =>
-  typeof v === "number" && Number.isFinite(v)
-    ? new Intl.NumberFormat("es-CO", {
-      style: "currency",
-      currency: "COP",
-      maximumFractionDigits: 0,
-    }).format(v)
-    : v === 0
-      ? new Intl.NumberFormat("es-CO", {
-        style: "currency",
-        currency: "COP",
-        maximumFractionDigits: 0,
-      }).format(0)
-      : "—";
-
-const pick = <T,>(...vals: (T | undefined | null | "")[]): T | undefined => {
-  for (const v of vals) {
-    if (v !== undefined && v !== null && v !== "") return v as T;
-  }
-  return undefined;
-};
-
-const sum = (...vals: Num[]): number | undefined => {
-  const arr = vals.map(toNum).filter((n): n is number => typeof n === "number");
-  return arr.length ? arr.reduce((a, b) => a + b, 0) : undefined;
-};
-
-const max0 = (n?: number) =>
-  typeof n === "number" && Number.isFinite(n) ? Math.max(n, 0) : undefined;
-
-const fmtDate = (raw?: string | null) => {
-  if (!raw) return "—";
-  return raw.replace("T", " ").split(".")[0];
-};
-
-const RowRight: React.FC<{
-  label: string;
-  value?: string;
-  bold?: boolean;
-  badge?: string;
-}> = ({ label, value = "—", bold, badge = "" }) => (
-  <div className="px-5 py-3 grid grid-cols-12 items-center text-sm">
-    <div className="col-span-8 sm:col-span-10 text-slate-700">{label}</div>
-    <div
-      className={`col-span-4 sm:col-span-2 text-right ${bold ? "font-semibold text-slate-900" : "font-medium text-slate-800"
-        }`}
-    >
-      {badge ? <span className={badge}>{value}</span> : value}
-    </div>
-  </div>
-);
-
-// Base URL para armar links de descarga
-const BASE_BACK_URL = "https://tuclick.vozipcolombia.net.co/motos/back/";
-
-// Helper para construir URLs absolutas
-const buildUrlFromBase = (path?: string | null): string | null => {
-  if (!path) return null;
-  if (path.startsWith("http://") || path.startsWith("https://")) {
-    return path;
-  }
-  const clean = path.replace(/^\/+/, "");
-  return `${BASE_BACK_URL}${clean}`;
-};
-
-// 🔹 Helper genérico para desglosar TOTAL = BRUTO + IVA
-const desglosarConIva = (
-  totalConIva?: Num,
-  baseSinIva?: Num,
-  ivaExplicito?: Num,
-  ivaDec: number = 0.19
-) => {
-  const total = toNum(totalConIva);
-  const base = toNum(baseSinIva);
-  const iva = toNum(ivaExplicito);
-
-  // Caso ideal: ya viene todo explícito
-  if (base !== undefined && iva !== undefined) {
-    return {
-      total: base + iva,
-      bruto: base,
-      iva,
-    };
-  }
-
-
-
-  // Si tengo total y base => IVA = total - base
-  if (total !== undefined && base !== undefined) {
-    const ivaCalc = max0(total - base);
-    return {
-      total,
-      bruto: base,
-      iva: ivaCalc,
-    };
-  }
-
-  // Si solo tengo total => calculo base e IVA desde total
-  if (total !== undefined) {
-    const brutoCalc = Math.round(total / (1 + ivaDec));
-    const ivaCalc = max0(total - brutoCalc);
-    return {
-      total,
-      bruto: brutoCalc,
-      iva: ivaCalc,
-    };
-  }
-
-  // Si solo tengo base => calculo IVA desde base
-  if (base !== undefined) {
-    const ivaCalc = Math.round(base * ivaDec);
-    return {
-      total: base + ivaCalc,
-      bruto: base,
-      iva: ivaCalc,
-    };
-  }
-
-  // Si no hay nada
-  return {
-    total: undefined as number | undefined,
-    bruto: undefined as number | undefined,
-    iva: undefined as number | undefined,
-  };
-};
-
-// ===== NUEVO: estructura de moto calculada igual que en DetalleCotizacion =====
-type MotoCot = {
-  precioBase: number;
-  precioDocumentos: number;
-  descuentos: number;
-  accesoriosYMarcacion: number;
-  seguros: number;
-  soat: number;
-  matricula: number;
-  impuestos: number;
-  adicionalesTotal: number;
-  totalSinSeguros: number;
-  total: number;
-  gpsValor?: number;
-
-};
-
-const buildMotoFromCotizacion = (cot: any, lado: "A" | "B"): MotoCot | undefined => {
-  const suffix = lado === "A" ? "_a" : "_b";
-
-  const marca = cot?.[`marca${suffix}`];
-  const linea = cot?.[`linea${suffix}`];
-
-  const hasCore =
-    marca || linea || cot?.[`precio_base${suffix}`] || cot?.[`precio_total${suffix}`];
-
-  if (!hasCore) return undefined;
-
-  const precioBase = Number(cot?.[`precio_base${suffix}`]) || 0;
-  const precioDocumentos = Number(cot?.[`precio_documentos${suffix}`]) || 0;
-
-  const descuentos = Math.abs(Number(cot?.[`descuentos${suffix}`]) || 0);
-
-  const accesorios = Number(cot?.[`accesorios${suffix}`]) || 0;
-  const marcacion = Number(cot?.[`marcacion${suffix}`]) || 0;
-  const accesoriosYMarcacion = accesorios + marcacion;
-  const gpsValor = Number(cot?.[`valor_gps${suffix}`]) || 0;
-
-  let seguros = 0;
-
-  // 1) Campo JSON: seguros_a / seguros_b
-  const segurosRaw = cot?.[`seguros${suffix}`];
-  let jsonIncluyeOtros = false;
-
-  if (typeof segurosRaw === "number") {
-    seguros += segurosRaw;
-  } else if (typeof segurosRaw === "string" && segurosRaw.trim()) {
-    try {
-      const arr = JSON.parse(segurosRaw);
-      if (Array.isArray(arr)) {
-        seguros += arr.reduce((acc, item) => {
-          const nombre = String(item?.nombre ?? "").toLowerCase();
-          if (nombre.includes("otros seguros")) jsonIncluyeOtros = true;
-
-          const v = Number(item?.valor ?? 0);
-          return acc + (Number.isFinite(v) ? v : 0);
-        }, 0);
-      }
-    } catch {
-      // ignore
-    }
-  }
-
-  // 2) Campo directo: otro_seguro_a / otro_seguro_b
-  // ✅ Solo se suma si NO venía ya en el JSON (para no duplicar)
-  const otroSeguro = Number(cot?.[`otro_seguro${suffix}`]) || 0;
-  if (!jsonIncluyeOtros) seguros += otroSeguro;
-
-  const soat = Number(cot?.[`soat${suffix}`]) || 0;
-  const matricula = Number(cot?.[`matricula${suffix}`]) || 0;
-  const impuestos = Number(cot?.[`impuestos${suffix}`]) || 0;
-
-  const isA = lado === "A";
-  const adicionalesRunt = Number(cot?.[isA ? "runt_1" : "runt_2"]) || 0;
-  const adicionalesLicencia = Number(cot?.[isA ? "licencia_1" : "licencia_2"]) || 0;
-  const adicionalesDefensas = Number(cot?.[isA ? "defensas_1" : "defensas_2"]) || 0;
-  const adicionalesHandSavers =
-    Number(cot?.[isA ? "hand_savers_1" : "hand_savers_2"]) || 0;
-  const adicionalesOtros =
-    Number(cot?.[isA ? "otros_adicionales_1" : "otros_adicionales_2"]) || 0;
-
-  const adicionalesTotal =
-    Number(cot?.[isA ? "total_adicionales_1" : "total_adicionales_2"]) ||
-    adicionalesRunt +
-    adicionalesLicencia +
-    adicionalesDefensas +
-    adicionalesHandSavers +
-    adicionalesOtros;
-
-
-
-  const totalSinSeguros =
-    Number(cot?.[`total_sin_seguros${suffix}`]) ||
-    (precioBase +
-      precioDocumentos +
-      accesoriosYMarcacion +
-      adicionalesTotal -
-      descuentos);
-
-  const total =
-    Number(cot?.[`precio_total${suffix}`]) || totalSinSeguros + seguros;
-
-  return {
-    precioBase,
-    precioDocumentos,
-    descuentos,
-    accesoriosYMarcacion,
-    seguros,
-    soat,
-    matricula,
-    impuestos,
-    adicionalesTotal,
-    totalSinSeguros,
-    total,
-    gpsValor,
-  };
-};
 
 const DetallesFacturacion: React.FC = () => {
   const { id: idParam } = useParams<{ id: string }>();
@@ -282,6 +32,7 @@ const DetallesFacturacion: React.FC = () => {
 
   const { data, isLoading, isError, error, refetch } =
     useCotizacionFullById(id_cotizacion);
+
 
   // Última solicitud de facturación por id_cotizacion
   const {
@@ -301,24 +52,28 @@ const DetallesFacturacion: React.FC = () => {
   // Estado local para el archivo de factura
   const [facturaFile, setFacturaFile] = useState<File | null>(null);
 
-  // IVA desde backend (con fallback)
+  // IVA desde backend (fallback si la cotización no trae el campo)
   const {
-    ivaDecimal,
     porcentaje,
     isLoading: ivaLoading,
     error: ivaError,
   } = useIvaDecimal();
 
-
-
-
-  const IVA_DEC = ivaLoading || ivaError ? 0.19 : ivaDecimal ?? 0.19;
-  const IVA_PCT = ivaLoading || ivaError ? 19 : Number(porcentaje ?? 19);
-
   // data = { success, data: { cotizacion, creditos, solicitar_estado_facturacion } }
   const cot = data?.data?.cotizacion ?? null;
   const cred = data?.data?.creditos ?? null;
   const sol = data?.data?.solicitar_estado_facturacion ?? null;
+
+  // IVA: prioridad al campo `iva` de la cotización (ej. "19.0000" = 19%)
+  // Si no existe o no es válido, usa el hook de IVA dinámico
+  const ivaCotizacionPct = cot ? Number((cot as any).iva) : NaN;
+  const ivaDesdeCotizacion = Number.isFinite(ivaCotizacionPct) && ivaCotizacionPct > 0;
+
+  const IVA_PCT = ivaDesdeCotizacion
+    ? ivaCotizacionPct
+    : ivaLoading || ivaError ? 19 : Number(porcentaje ?? 19);
+
+  const IVA_DEC = IVA_PCT / 100;
 
   const user = useAuthStore((s) => s.user);
 
@@ -337,19 +92,18 @@ const DetallesFacturacion: React.FC = () => {
     isLoading: loadingEmpresa,
   } = useEmpresaById(idEmpresa);
 
-  console.log()
 
   // Objeto que espera el PDF
   const empresaPDF = useMemo(() => {
     if (!empresaSeleccionada) {
       // Fallback si algo falla
       return {
-        nombre: "Feria de la Movilidad",
-        ciudad: "Cali",
-        almacen: "Feria de la Movilidad",
-        nit: "123.456.789-0",
-        telefono: "300 000 0000",
-        direccion: "Dirección ejemplo 123",
+        nombre: "",
+        ciudad: "",
+        almacen: "",
+        nit: "",
+        telefono: "",
+        direccion: "",
       };
     }
 
@@ -366,7 +120,7 @@ const DetallesFacturacion: React.FC = () => {
   // Logo de la empresa para el PDF
   const logoUrl = useMemo(() => {
     const fromEmpresa = empresaSeleccionada?.foto
-      ? buildUrlFromBase(empresaSeleccionada.foto)
+      ? toAbsoluteUrl(empresaSeleccionada.foto)
       : null;
 
     // Si no hay logo en la empresa, usa uno por defecto
@@ -491,8 +245,6 @@ const DetallesFacturacion: React.FC = () => {
       (sol as any)?.observaciones ??
       "")?.toString();
 
-      
-
 
   const finalizadoActaRaw =
     (sol as any)?.is_final_acta ??
@@ -500,14 +252,6 @@ const DetallesFacturacion: React.FC = () => {
     (ultimaSolRegistro as any)?.is_final_acta ??
     (ultimaSolRegistro as any)?.is_final ??
     0;
-
-  console.log("DEBUG finalizadoActaRaw", {
-    sol_is_final_acta: (sol as any)?.is_final_acta,
-    sol_is_final: (sol as any)?.is_final,
-    ultima_is_final_acta: (ultimaSolRegistro as any)?.is_final_acta,
-    ultima_is_final: (ultimaSolRegistro as any)?.is_final,
-    finalizadoActaRaw,
-  });
 
   const isFinalAutorizacion: boolean = (() => {
     if (!ultimaSolRegistro) return false;
@@ -539,25 +283,25 @@ const DetallesFacturacion: React.FC = () => {
 
 
 
-    // ✅ Observación de autorización (viene en descuentosCE)
-const observacionAutorizacion = (descuentosCE?.observacion2 ?? "").toString().trim();
+  // ✅ Observación de autorización (viene en descuentosCE)
+  const observacionAutorizacion = (descuentosCE?.observacion2 ?? "").toString().trim();
 
-// ✅ texto final: junta ambas si aplica
-const observacionesFinal = useMemo(() => {
-  const o1 = (observacionesSolicitud ?? "").toString().trim();
-  const o2 = observacionAutorizacion;
+  // ✅ texto final: junta ambas si aplica
+  const observacionesFinal = useMemo(() => {
+    const o1 = (observacionesSolicitud ?? "").toString().trim();
+    const o2 = observacionAutorizacion;
 
-  // solo mostrar observacion2 si aplica autorización final
-  const aplicaObs2 = aplicaDescuentosAutorizados && o2.length > 0;
+    // solo mostrar observacion2 si aplica autorización final
+    const aplicaObs2 = aplicaDescuentosAutorizados && o2.length > 0;
 
-  if (o1 && aplicaObs2) {
-    return `${o1}\n\n\nObservación de autorización:\n${o2}`;
-  }
-  if (!o1 && aplicaObs2) {
-    return `Observación de autorización:\n${o2}`;
-  }
-  return o1; // solo observación normal
-}, [observacionesSolicitud, observacionAutorizacion, aplicaDescuentosAutorizados]);
+    if (o1 && aplicaObs2) {
+      return `${o1}\n\n\nObservación de autorización:\n${o2}`;
+    }
+    if (!o1 && aplicaObs2) {
+      return `Observación de autorización:\n${o2}`;
+    }
+    return o1; // solo observación normal
+  }, [observacionesSolicitud, observacionAutorizacion, aplicaDescuentosAutorizados]);
 
 
 
@@ -868,19 +612,19 @@ const observacionesFinal = useMemo(() => {
 
   const otrosDocsUrls: string[] = useMemo(() => {
     return otrosDocsPaths
-      .map((p) => buildUrlFromBase(p))
+      .map((p) => toAbsoluteUrl(p))
       .filter((u): u is string => !!u);
   }, [otrosDocsPaths]);
 
 
   const cedulaUrlFinal =
-    buildUrlFromBase(cedulaPathUlt) || buildUrlFromBase(cedula_url);
+    toAbsoluteUrl(cedulaPathUlt) || toAbsoluteUrl(cedula_url);
   const manifiestoUrlFinal =
-    buildUrlFromBase(manifiestoPathUlt) || buildUrlFromBase(manifiesto_url);
+    toAbsoluteUrl(manifiestoPathUlt) || toAbsoluteUrl(manifiesto_url);
   const facturaUrlFinal =
-    buildUrlFromBase(facturaPathUlt) || buildUrlFromBase(factura_url);
+    toAbsoluteUrl(facturaPathUlt) || toAbsoluteUrl(factura_url);
   const cartaUrlFinal =
-    buildUrlFromBase(cartaPathUlt) || buildUrlFromBase(carta_url);
+    toAbsoluteUrl(cartaPathUlt) || toAbsoluteUrl(carta_url);
 
   const tieneFactura = !!facturaUrlFinal;
 
@@ -909,19 +653,17 @@ const observacionesFinal = useMemo(() => {
 
   const handleSubirFactura = () => {
     if (!idSolicitud) {
-      Swal.fire(
+      alert.warn(
         "Sin solicitud",
-        "No se encontró el ID de la solicitud de facturación. Verifica que exista una solicitud.",
-        "warning"
+        "No se encontró el ID de la solicitud de facturación. Verifica que exista una solicitud."
       );
       return;
     }
 
     if (!facturaFile) {
-      Swal.fire(
+      alert.info(
         "Archivo requerido",
-        "Selecciona un archivo de factura antes de enviar.",
-        "info"
+        "Selecciona un archivo de factura antes de enviar."
       );
       return;
     }
@@ -990,7 +732,7 @@ const observacionesFinal = useMemo(() => {
             <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
               <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2">
-                  <h2 className="text-base font-semibold text-emerald-700.mb-3">
+                  <h2 className="text-base font-semibold text-emerald-700 mb-3">
                     Cliente
                   </h2>
                   <div className="text-sm leading-6 text-slate-700 space-y-1.5">
@@ -999,7 +741,7 @@ const observacionesFinal = useMemo(() => {
                     </div>
                     <div className="text-slate-600">{clienteDocumento}</div>
                     <div>
-                      <span className="font-semibold.text-slate-700">
+                      <span className="font-semibold text-slate-700">
                         Teléfono:
                       </span>{" "}
                       <span className="text-slate-600">
@@ -1007,7 +749,7 @@ const observacionesFinal = useMemo(() => {
                       </span>
                     </div>
                     <div>
-                      <span className="font-semibold hidden text-slate-700">
+                      <span className="font-semibold text-slate-700">
                         Correo:
                       </span>{" "}
                       <span className="text-slate-600">
@@ -1049,7 +791,7 @@ const observacionesFinal = useMemo(() => {
                         Solicitud #{codigoSolicitud}
                       </div>
                       <div className="text-sm text-slate-600 mt-1">
-                        Creado: {fmtDate(fechaCreacion)}
+                        Creado: {fmtFecha(fechaCreacion)}
                       </div>
                       <div className="text-sm text-slate-600 mt-1">
                         Asesor: {asesor}
@@ -1065,16 +807,16 @@ const observacionesFinal = useMemo(() => {
               </div>
             </section>
 
-  {observacionesFinal && (
-  <section className="rounded-xl border border-amber-200 bg-amber-50 shadow-sm">
-    <div className="p-6">
-      <h3 className="text-base font-semibold text-amber-900">Observaciones</h3>
-      <p className="mt-2 text-sm text-amber-900 whitespace-pre-wrap">
-        {observacionesFinal}
-      </p>
-    </div>
-  </section>
-)}
+            {observacionesFinal && (
+              <section className="rounded-xl border border-amber-200 bg-amber-50 shadow-sm">
+                <div className="p-6">
+                  <h3 className="text-base font-semibold text-amber-900">Observaciones</h3>
+                  <p className="mt-2 text-sm text-amber-900 whitespace-pre-wrap">
+                    {observacionesFinal}
+                  </p>
+                </div>
+              </section>
+            )}
 
 
             {/* Motocicleta */}
@@ -1521,10 +1263,9 @@ const observacionesFinal = useMemo(() => {
                 estadoCotizacion={estadoCotizacion}
                 onAprobado={() => {
                   if (!tieneFactura) {
-                    Swal.fire(
+                    alert.warn(
                       "Falta la factura",
-                      "Para aprobar/aceptar es obligatorio que exista una factura adjunta.",
-                      "warning"
+                      "Para aprobar/aceptar es obligatorio que exista una factura adjunta."
                     );
                     return;
                   }
@@ -1558,7 +1299,7 @@ const observacionesFinal = useMemo(() => {
                       // ENCABEZADO
                       codigoFactura={codigoSolicitud || ""}
                       codigoCredito={cred?.codigo_credito ?? ""}
-                      fecha={fmtDate(fechaCreacion)}
+                      fecha={fmtFecha(fechaCreacion)}
                       agencia={cot?.canal_contacto ?? ""}
 
                       // DEUDOR

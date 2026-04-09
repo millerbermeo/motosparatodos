@@ -27,6 +27,9 @@ export const toNumberSafe = (value: unknown, fallback = 0): number => {
   return Number.isFinite(n) ? n : fallback;
 };
 
+/**
+ * 🔥 PMT estilo Excel (NEGATIVO)
+ */
 export const calcularCuotaPMT = (
   valorPresente: unknown,
   tasaPorcentaje: unknown,
@@ -40,19 +43,25 @@ export const calcularCuotaPMT = (
 
   const r = tasaPct / 100;
 
-  if (r === 0) return PV / n;
+  if (r === 0) return -(PV / n);
 
-  return (r * PV) / (1 - Math.pow(1 + r, -n));
+  // 🔥 ahora negativo como Excel
+  return -(r * PV) / (1 - Math.pow(1 + r, -n));
 };
 
+/**
+ * 🔥 Seguro (entero como Excel)
+ */
 export const calcularSeguroDeudorMensual = (
   saldoFinanciar: unknown,
   tasaSeguroDecimal = 0.00043
 ): number => {
   const saldo = toNumberSafe(saldoFinanciar, 0);
   if (saldo <= 0) return 0;
-  return Math.floor(saldo * tasaSeguroDecimal);
+  return Math.round(saldo * tasaSeguroDecimal);
 };
+
+const round2 = (n: number) => Number(n.toFixed(2));
 
 export const calcularCreditoDirectoMoto = (
   input: CreditoMotoInput
@@ -69,20 +78,49 @@ export const calcularCreditoDirectoMoto = (
   const tasaFinanciacionDecimal = tasaFinanciacionPct / 100;
   const tasaGarantiaDecimal = tasaGarantiaPct / 100;
 
-  const cuotaGarantiaExtendida =
+  /**
+   * 🔥 GARANTÍA (2 decimales como Excel)
+   */
+  const cuotaGarantiaRaw =
     meses > 0
-      ? Math.floor(calcularCuotaPMT(valorGarantia, tasaGarantiaPct, meses))
+      ? valorGarantia *
+        ((tasaGarantiaPct / 100) /
+          (1 - Math.pow(1 + tasaGarantiaPct / 100, -meses)))
       : 0;
 
+  const cuotaGarantiaExtendida = round2(cuotaGarantiaRaw);
+
+  /**
+   * 🔥 SEGURO
+   */
   const seguroDeudor = calcularSeguroDeudorMensual(saldoFinanciar);
 
-  const garantiaMasSeguro = cuotaGarantiaExtendida + seguroDeudor;
+  /**
+   * 🔥 GARANTÍA + SEGURO
+   */
+  const garantiaMasSeguro = Math.round(
+    cuotaGarantiaExtendida + seguroDeudor
+  );
 
+  /**
+   * 🔥 CUOTA NEGOCIO (REDONDEAR.MENOS EXACTO)
+   */
   const cuotaNegocio =
     meses > 0 && saldoFinanciar > 0
-      ? Math.floor(calcularCuotaPMT(saldoFinanciar, tasaFinanciacionPct, meses))
+      ? Math.abs(
+          Math.floor(
+            calcularCuotaPMT(
+              saldoFinanciar,
+              tasaFinanciacionPct,
+              meses
+            ) + 1e-7 // 🔥 FIX CLAVE
+          )
+        )
       : 0;
 
+  /**
+   * 🔥 TOTAL FINAL
+   */
   const cuotaTotal = cuotaNegocio + garantiaMasSeguro;
 
   return {

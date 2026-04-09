@@ -1,10 +1,12 @@
-export const fmtCOP = (v: number) =>
-  new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    maximumFractionDigits: 0,
-  }).format(v ?? 0);
+export const fmtCOP = (v?: number | null) => {
+  if (typeof v !== "number" || !Number.isFinite(v)) return "—";
 
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0,
+  }).format(v);
+};
 
   // moneyUtils.ts
 export const unformatNumber = (
