@@ -150,9 +150,10 @@ const estadoBadgeClass = (estado?: string) => {
 const TablaCotizaciones: React.FC = () => {
     // server-side pagination (como lo tienes actualmente)
     const [page, setPage] = useState(1);
-    const [perPage, setPerPage] = useState(10); // 👈 arranca en 20
+    const [perPage, setPerPage] = useState(10);
     const [cotizacionId, setCotizacionId] = useState<number | null>(null);
     const [estadoFilter, setEstadoFilter] = useState<string>('');
+    const [tipoFilter, setTipoFilter] = useState<string>('');
 
 
     const {
@@ -160,7 +161,7 @@ const TablaCotizaciones: React.FC = () => {
         isLoading,
         isError,
         isFetching
-    } = cotizacionId ? useCotizacionById(cotizacionId) : useCotizaciones(page, perPage, estadoFilter);
+    } = cotizacionId ? useCotizacionById(cotizacionId) : useCotizaciones(page, perPage, estadoFilter, tipoFilter);
 
     // ¿estamos en modo "detalle por id"?
     const isDetail = Boolean(cotizacionId);
@@ -216,10 +217,11 @@ const TablaCotizaciones: React.FC = () => {
 
 
     const cleanFilters = () => {
-        setCotizacionId(null);   // salir del modo detalle
-        setPage(1);              // volver a la primera página
-        setPerPage(10);          // tamaño por defecto (ajústalo si quieres 20)
-        setEstadoFilter('')
+        setCotizacionId(null);
+        setPage(1);
+        setPerPage(10);
+        setEstadoFilter('');
+        setTipoFilter('');
     };
 
     return (
@@ -241,7 +243,7 @@ const TablaCotizaciones: React.FC = () => {
                     <select
                         className="select select-bordered select-md min-w-45 max-w-50 flex-1"
                         value={estadoFilter}
-                        onChange={(e) => setEstadoFilter(e.target.value)}
+                        onChange={(e) => { setEstadoFilter(e.target.value); setPage(1); }}
                     >
                         <option value="">Todos los estados</option>
                         <option value="Sin estado">Sin revisar</option>
@@ -251,6 +253,17 @@ const TablaCotizaciones: React.FC = () => {
                         <option value="Solicitar crédito">Solicitud de crédito</option>
                         <option value="En facturación">En facturación</option>
                         <option value="Facturado">Facturado</option>
+                    </select>
+
+                    <select
+                        className="select select-bordered select-md min-w-45 max-w-50 flex-1"
+                        value={tipoFilter}
+                        onChange={(e) => { setTipoFilter(e.target.value); setPage(1); }}
+                    >
+                        <option value="">Todos los tipos</option>
+                        <option value="contado">Contado</option>
+                        <option value="credito">Crédito propio</option>
+                        <option value="Credito de terceros">Crédito de terceros</option>
                     </select>
 
                     <button

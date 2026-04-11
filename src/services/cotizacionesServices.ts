@@ -75,16 +75,18 @@ export interface ApiListResponse {
 export const useCotizaciones = (
   page: number = 1,
   perPage: number = 10,
-  estado?: string   // 👈 nuevo param opcional
+  estado?: string,
+  tipo?: string
 ) => {
   return useQuery<ApiListResponse>({
-    queryKey: ['cotizaciones', { page, perPage, estado }],
+    queryKey: ['cotizaciones', { page, perPage, estado, tipo }],
     queryFn: async () => {
       const { data } = await api.get<ApiListResponse>('/list_cotizaciones.php', {
         params: {
           page,
           per_page: perPage,
-          ...(estado ? { estado } : {}), // 👈 solo lo manda si tiene valor
+          ...(estado ? { estado } : {}),
+          ...(tipo ? { tipo } : {}),
         },
       });
       return data;

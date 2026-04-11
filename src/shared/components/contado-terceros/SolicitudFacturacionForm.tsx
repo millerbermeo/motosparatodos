@@ -482,12 +482,11 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
       onSuccess: (resp: any) => {
         const texto = Array.isArray(resp?.message)
           ? resp.message.join("\n")
-          : resp?.message ||
-            "Solicitud de facturación registrada correctamente";
+          : resp?.message || "Solicitud de facturación registrada correctamente";
 
         Swal.fire({
           icon: "success",
-          title: "Solicitud registrada",
+          title: "✓ Solicitud registrada",
           text: texto,
           timer: 1500,
           showConfirmButton: false,
@@ -500,14 +499,46 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
           navigateTo(isAdmin ? "/solicitudes" : "/cotizaciones");
         });
       },
+
       onError: (err: any) => {
-        const msg =
-          err?.response?.data?.error ||
-          err?.response?.data?.details ||
-          "No se pudo registrar la solicitud.";
-        Swal.fire({ icon: "error", title: "Error", text: msg });
+        const data = err?.response?.data;
+        const status = err?.response?.status;
+
+        // ── 409: cotización ya tiene solicitud de facturación ─────────────
+        if (status === 409 || data?.errno === 1062) {
+          Swal.fire({
+            icon: "warning",
+            title: "Solicitud ya registrada",
+            text: data?.error ?? "Esta cotización ya fue enviada a facturación.",
+            confirmButtonText: "Entendido",
+            allowOutsideClick: true, // permite cerrar haciendo clic afuera
+          }).then(() => {
+            window.location.reload();
+          });
+
+          return;
+        }
+        // ── 422: campo / archivo obligatorio faltante ─────────────────────
+        if (status === 422) {
+          Swal.fire({
+            icon: "error",
+            title: "Datos incompletos",
+            text: data?.error ?? "Faltan campos o archivos obligatorios.",
+            confirmButtonText: "Revisar",
+          });
+          return;
+        }
+
+        // ── 500 / cualquier otro error ────────────────────────────────────
+        Swal.fire({
+          icon: "error",
+          title: "Error al registrar",
+          text: data?.error ?? "No se pudo registrar la solicitud. Intenta de nuevo.",
+          confirmButtonText: "Cerrar",
+        });
       },
     });
+
   };
 
   return (
@@ -589,9 +620,8 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
                     type="file"
                     multiple
                     accept=".pdf,.jpg,.jpeg,.png"
-                    className={`file-input file-input-bordered w-full bg-slate-50 ${
-                      errors.cartaFile ? "file-input-error" : ""
-                    }`}
+                    className={`file-input file-input-bordered w-full bg-slate-50 ${errors.cartaFile ? "file-input-error" : ""
+                      }`}
                     {...register("cartaFile", {
                       validate: (files) =>
                         !esCreditoTercerosCot ||
@@ -614,9 +644,8 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
                   type="file"
                   multiple
                   accept=".pdf,.jpg,.jpeg,.png"
-                  className={`file-input file-input-bordered w-full bg-slate-50 ${
-                    errors.manifiestoFile ? "file-input-error" : ""
-                  }`}
+                  className={`file-input file-input-bordered w-full bg-slate-50 ${errors.manifiestoFile ? "file-input-error" : ""
+                    }`}
                   {...register("manifiestoFile")} // ✅ opcional
                 />
               }
@@ -631,9 +660,8 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
                 </span>
               </label>
               <textarea
-                className={`textarea w-full textarea-bordered bg-slate-50 min-h-28 ${
-                  errors.observaciones ? "textarea-error" : ""
-                }`}
+                className={`textarea w-full textarea-bordered bg-slate-50 min-h-28 ${errors.observaciones ? "textarea-error" : ""
+                  }`}
                 placeholder="Incluye observaciones relevantes para el área de facturación"
                 {...register("observaciones", {
                   required: "Requerido",
@@ -703,9 +731,8 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
                   type="file"
                   multiple
                   accept=".pdf,.jpg,.jpeg,.png"
-                  className={`file-input file-input-bordered w-full bg-slate-50 ${
-                    errors.cedulaFile ? "file-input-error" : ""
-                  }`}
+                  className={`file-input file-input-bordered w-full bg-slate-50 ${errors.cedulaFile ? "file-input-error" : ""
+                    }`}
                   {...register("cedulaFile", {
                     validate: (files) =>
                       docValue === "No" ||
@@ -727,9 +754,8 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
                   type="file"
                   multiple
                   accept=".pdf,.jpg,.jpeg,.png"
-                  className={`file-input file-input-bordered w-full bg-slate-50 ${
-                    errors.otrosDocumentosFile ? "file-input-error" : ""
-                  }`}
+                  className={`file-input file-input-bordered w-full bg-slate-50 ${errors.otrosDocumentosFile ? "file-input-error" : ""
+                    }`}
                   name={otrosReg.name}
                   ref={otrosReg.ref}
                   onBlur={otrosReg.onBlur}

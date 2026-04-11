@@ -1,6 +1,6 @@
 // src/services/motosServices.ts
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "./axiosInstance"; // ajusta si tu ruta es otra
+import { api } from "./axiosInstance";
 import type { AxiosError } from "axios";
 import Swal from "sweetalert2";
 import { useModalStore } from "../store/modalStore";
@@ -10,9 +10,8 @@ export interface Moto {
   id: number;
   marca: string;
   estado_moto: 0 | 1;
-
   linea: string;
-  tipo_moto?: "Moto" | "Motocarro" | "Electrica"; // ✅ NUEVO
+  tipo_moto?: "Moto" | "Motocarro" | "Electrica";
   modelo: string;
   estado: string;
   precio_base: number;
@@ -29,14 +28,15 @@ export interface Moto {
   id_empresa?: number;
   id_distribuidora?: number;
   cilindraje?: number | null;
-
 }
-
 
 export type NewMoto = Omit<Moto, "id" | "imagen"> & { imagen?: File | null };
 
 export interface MotosResponse {
+  success?: boolean;
+  count?: number;
   motos: Moto[];
+  pagination?: MotosPagination;
 }
 
 export interface ServerError {
@@ -44,7 +44,6 @@ export interface ServerError {
   error?: string | string[];
 }
 
-/* Helper para armar FormData */
 const toFormData = (data: Partial<Moto> & { imagen?: File | null }) => {
   const fd = new FormData();
   if (data.id != null) fd.append("id", String(data.id));
@@ -55,30 +54,17 @@ const toFormData = (data: Partial<Moto> & { imagen?: File | null }) => {
   if (data.estado != null) fd.append("estado", data.estado);
   if (data.precio_base != null) fd.append("precio_base", String(data.precio_base));
   if (data.descrip != null) fd.append("descrip", data.descrip);
-
-  // 🔹 Agregar los dos campos nuevos (nombres en string)
   if (data.empresa != null) fd.append("empresa", data.empresa);
   if (data.subdistribucion != null) fd.append("subdistribucion", data.subdistribucion);
-
-  // ✅ quitar duplicados: soat e impuestos se estaban enviando 2 veces
   if (data.soat != null) fd.append("soat", data.soat);
   if (data.matricula_contado != null) fd.append("matricula_contado", data.matricula_contado);
   if (data.matricula_credito != null) fd.append("matricula_credito", data.matricula_credito);
   if (data.impuestos != null) fd.append("impuestos", data.impuestos);
-
   if (data.descuento_empresa != null) fd.append("descuento_empresa", data.descuento_empresa);
   if (data.descuento_ensambladora != null) fd.append("descuento_ensambladora", data.descuento_ensambladora);
-
   if (data.imagen instanceof File) fd.append("imagen", data.imagen);
-
-  // 🔹 NUEVO: enviar los IDs al backend
-  if (data.id_empresa != null) {
-    fd.append("id_empresa", String(data.id_empresa));
-  }
-  if (data.id_distribuidora != null) {
-    fd.append("id_distribuidora", String(data.id_distribuidora));
-  }
-
+  if (data.id_empresa != null) fd.append("id_empresa", String(data.id_empresa));
+  if (data.id_distribuidora != null) fd.append("id_distribuidora", String(data.id_distribuidora));
   return fd;
 };
 
@@ -90,10 +76,16 @@ export type MotoFilters = {
   estado?: "Nueva" | "Usada" | "";
 };
 
-export interface MotosResponse {
-  success?: boolean;
-  count?: number;
+export interface MotosPagination {
+  total: number;
+  per_page: number;
+  current_page: number;
+  last_page: number;
+}
+
+export interface MotosPagedResult {
   motos: Moto[];
+  pagination: MotosPagination;
 }
 
 const clean = (v?: string) => {
@@ -101,27 +93,58 @@ const clean = (v?: string) => {
   return t.length ? t : undefined;
 };
 
-export const useMotos = (filters: MotoFilters) => {
-  // queryKey incluye filtros => cambia => refetch automático
-  return useQuery<Moto[]>({
-    queryKey: ["motos", filters],
+export const useMotos = (
+  filters: MotoFilters,
+  page: number = 1,
+  perPage: number = 10
+) => {
+  return useQuery<MotosPagedResult>({
+    queryKey: ["motos", filters, page, perPage],
     queryFn: async () => {
-      const params: Record<string, string> = {};
-
-      if (clean(filters.marca)) params.marca = clean(filters.marca)!;
-      if (clean(filters.linea)) params.linea = clean(filters.linea)!;
-      if (clean(filters.modelo)) params.modelo = clean(filters.modelo)!;
+      const params: Record<string, string | number> = {
+        page,
+        per_page: perPage,
+      };
+      if (clean(filters.marca))   params.marca   = clean(filters.marca)!;
+      if (clean(filters.linea))   params.linea   = clean(filters.linea)!;
+      if (clean(filters.modelo))  params.modelo  = clean(filters.modelo)!;
       if (clean(filters.empresa)) params.empresa = clean(filters.empresa)!;
-      if (clean(filters.estado)) params.estado = clean(filters.estado)!;
+      if (clean(filters.estado))  params.estado  = clean(filters.estado)!;
 
       const { data } = await api.get<MotosResponse>("/list_motos.php", { params });
 
-      return (data.motos ?? []).map((m) => ({
+      const motos = (data.motos ?? []).map((m) => ({
         ...m,
         precio_base: typeof m.precio_base === "string" ? Number(m.precio_base) : m.precio_base,
       }));
+
+      const pagination: MotosPagination = data.pagination ?? {
+        total: motos.length,
+        per_page: perPage,
+        current_page: page,
+        last_page: Math.max(1, Math.ceil(motos.length / perPage)),
+      };
+
+      return { motos, pagination };
     },
     staleTime: 10_000,
+  });
+};
+
+// ✅ NUEVO: opciones para los selects de filtros (toda la BD, sin paginar)
+export const useMotoFilterOptions = () => {
+  return useQuery({
+    queryKey: ["motos-filter-options"],
+    queryFn: async () => {
+      const { data } = await api.get("/filter_options_motos.php");
+      return {
+        marcas:         (data.marcas          ?? []) as string[],
+        lineasPorMarca: (data.lineas_por_marca ?? {}) as Record<string, string[]>,
+        modelos:        (data.modelos          ?? []) as string[],
+        empresas:       (data.empresas         ?? []) as string[],
+      };
+    },
+    staleTime: 60_000,
   });
 };
 

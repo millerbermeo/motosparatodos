@@ -6,6 +6,7 @@ import {
   useMotos,
   useDeleteMoto,
   useToggleEstadoMoto,
+  useMotoFilterOptions,
   type MotoFilters,
 } from "../../services/motosServices";
 import Swal from "sweetalert2";
@@ -14,8 +15,7 @@ import ImpuestosMotosFormulario from "./forms/ImpuestosMotosFormulario";
 import DescuentosMotosFormulario from "./forms/DescuentosMotosFormulario";
 import { useLoaderStore } from "../../store/loader.store";
 import { BOUNDARY_COUNT, PAGE_SIZE, SIBLING_COUNT } from "../../constants/pagination";
-
-
+import { BASE_URL } from "../../utils/url";
 
 const range = (start: number, end: number) =>
   Array.from({ length: end - start + 1 }, (_, i) => start + i);
@@ -63,13 +63,9 @@ const btnActive = `${btnBase} btn-primary text-primary-content`;
 const btnEllipsis =
   "btn btn-xs rounded-xl min-w-8 h-8 px-3 bg-base-200 text-base-content/60 pointer-events-none";
 
-// ✅ Helpers para opciones únicas
-const unique = (arr: string[]) => Array.from(new Set(arr)).filter(Boolean).sort();
-
 const TablaMotos: React.FC = () => {
   const open = useModalStore((s) => s.open);
 
-  // ✅ NUEVO: estado de filtros
   const [filters, setFilters] = React.useState<MotoFilters>({
     marca: "",
     linea: "",
@@ -78,13 +74,28 @@ const TablaMotos: React.FC = () => {
     estado: "",
   });
 
-  // ✅ IMPORTANTE: ahora useMotos recibe filtros (pero si lo llamas sin filtros también sirve)
-  const { data, isPending, isError } = useMotos(filters);
+  const [page, setPage] = React.useState(1);
+  const [perPage, setPerPage] = React.useState(PAGE_SIZE);
 
+  React.useEffect(() => {
+    setPage(1);
+  }, [filters.marca, filters.linea, filters.modelo, filters.empresa, filters.estado]);
+
+  const { data, isPending, isError, isFetching } = useMotos(filters, page, perPage);
   const deleteMoto = useDeleteMoto();
   const toggleEstado = useToggleEstadoMoto();
 
-  // ✅ Toast (SweetAlert2)
+  // ✅ Opciones desde toda la BD (no cambian al paginar)
+  const { data: filterOptions } = useMotoFilterOptions();
+  const marcaOptions = filterOptions?.marcas ?? [];
+  const lineasPorMarca = filterOptions?.lineasPorMarca ?? {};
+  const lineaOptions = filters.marca
+    ? (lineasPorMarca[filters.marca] ?? [])
+    : Object.values(lineasPorMarca).flat().filter((v, i, a) => a.indexOf(v) === i).sort();
+
+  const modeloOptions = filterOptions?.modelos ?? [];
+  const empresaOptions = filterOptions?.empresas ?? [];
+
   const Toast = React.useMemo(
     () =>
       Swal.mixin({
@@ -97,34 +108,22 @@ const TablaMotos: React.FC = () => {
     []
   );
 
-  // ✅ deshabilitar solo el toggle que se está cambiando
   const [togglingId, setTogglingId] = React.useState<number | null>(null);
 
-  const motos = Array.isArray(data) ? data : data ?? [];
-  const [page, setPage] = React.useState(1);
+  const motos = data?.motos ?? [];
+  const total = Number(data?.pagination?.total ?? 0) || 0;
+  const serverPerPage = Number(data?.pagination?.per_page ?? perPage) || perPage;
+  const currentPage = Number(data?.pagination?.current_page ?? page) || page;
+  const lastPage = Number(data?.pagination?.last_page ?? Math.max(1, Math.ceil(total / serverPerPage)));
 
-  // ✅ Reset página cuando cambian filtros (para no quedar en página vacía)
-  React.useEffect(() => {
-    setPage(1);
-  }, [filters.marca, filters.linea, filters.modelo, filters.empresa, filters.estado]);
-
-  const totalPages = React.useMemo(
-    () => Math.max(1, Math.ceil(motos.length / PAGE_SIZE)),
-    [motos.length]
-  );
-
-  React.useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
-
-  const start = (page - 1) * PAGE_SIZE;
-  const end = Math.min(start + PAGE_SIZE, motos.length);
-  const visible = motos.slice(start, end);
-  const items = getPaginationItems(page, totalPages);
+  const start = total === 0 ? 0 : (currentPage - 1) * serverPerPage + 1;
+  const end = Math.min(currentPage * serverPerPage, total);
+  const visible = motos;
+  const items = getPaginationItems(currentPage, lastPage);
 
   const goPrev = () => setPage((p) => Math.max(1, p - 1));
-  const goNext = () => setPage((p) => Math.min(totalPages, p + 1));
-  const goTo = (p: number) => setPage(Math.min(Math.max(1, p), totalPages));
+  const goNext = () => setPage((p) => Math.min(lastPage, p + 1));
+  const goTo = (p: number) => setPage(Math.min(Math.max(1, p), lastPage));
 
   const openCrear = () =>
     open(<FormularioMotos key="create" />, "Crear moto", {
@@ -136,10 +135,7 @@ const TablaMotos: React.FC = () => {
     open(
       <FormularioMotos key={`edit-${m.id}`} initialValues={m} mode="edit" />,
       `Editar moto: ${m.marca} ${m.linea}`,
-      {
-        size: "5xl",
-        position: "center",
-      }
+      { size: "5xl", position: "center" }
     );
 
   const openImpuestos = (m: any) => {
@@ -150,7 +146,6 @@ const TablaMotos: React.FC = () => {
       matricula_credito: m.matricula_credito ?? "",
       impuestos: m.impuestos ?? "",
     };
-
     open(
       <ImpuestosMotosFormulario key={`imp-${m.id}`} initialValues={initialValues} />,
       `Impuestos: ${m.marca ?? ""} ${m.linea ?? ""} ${m.modelo ?? ""}`,
@@ -198,37 +193,22 @@ const TablaMotos: React.FC = () => {
       </div>
     );
 
-  const BaseUrl =
-    import.meta.env.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
 
-  // ✅ Opciones de filtros basadas en los datos actuales
-  const marcaOptions = React.useMemo(
-    () => unique(motos.map((m: any) => m.marca ?? "")),
-    [motos]
-  );
-  const lineaOptions = React.useMemo(
-    () => unique(motos.map((m: any) => m.linea ?? "")),
-    [motos]
-  );
-  const modeloOptions = React.useMemo(
-    () => unique(motos.map((m: any) => String(m.modelo ?? ""))),
-    [motos]
-  );
-  const empresaOptions = React.useMemo(
-    () => unique(motos.map((m: any) => m.empresa ?? "")),
-    [motos]
-  );
 
+  // ✅ ahora
   const set = (k: keyof MotoFilters) => (e: React.ChangeEvent<HTMLSelectElement>) => {
     const v = e.target.value;
-    setFilters((prev) => ({ ...prev, [k]: v }));
+    setFilters((prev) => ({
+      ...prev,
+      [k]: v,
+      // si cambia la marca, limpia la línea
+      ...(k === "marca" ? { linea: "" } : {}),
+    }));
   };
-
   const clearFilters = () => {
     setFilters({ marca: "", linea: "", modelo: "", empresa: "", estado: "" });
   };
 
-  // ✅ Toggle estado_moto (1/0) + Toast
   const onToggleEstadoMoto = (m: any) => {
     const id = Number(m.id);
     const actual = Number(m.estado_moto) === 1 ? 1 : 0;
@@ -240,10 +220,7 @@ const TablaMotos: React.FC = () => {
     });
 
     setTogglingId(id);
-
-    toggleEstado.mutate(id, {
-      onSettled: () => setTogglingId(null),
-    });
+    toggleEstado.mutate(id, { onSettled: () => setTogglingId(null) });
   };
 
   return (
@@ -257,7 +234,7 @@ const TablaMotos: React.FC = () => {
         </button>
       </div>
 
-      {/* ✅ NUEVO: FILTROS ARRIBA DE LA TABLA */}
+      {/* FILTROS */}
       <div className="px-4 pb-3">
         <div className="bg-white rounded-xl border border-base-200 p-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
@@ -272,9 +249,7 @@ const TablaMotos: React.FC = () => {
               >
                 <option value="">Todas</option>
                 {marcaOptions.map((x) => (
-                  <option key={x} value={x}>
-                    {x}
-                  </option>
+                  <option key={x} value={x}>{x}</option>
                 ))}
               </select>
             </div>
@@ -290,9 +265,7 @@ const TablaMotos: React.FC = () => {
               >
                 <option value="">Todas</option>
                 {lineaOptions.map((x) => (
-                  <option key={x} value={x}>
-                    {x}
-                  </option>
+                  <option key={x} value={x}>{x}</option>
                 ))}
               </select>
             </div>
@@ -308,9 +281,7 @@ const TablaMotos: React.FC = () => {
               >
                 <option value="">Todos</option>
                 {modeloOptions.map((x) => (
-                  <option key={x} value={x}>
-                    {x}
-                  </option>
+                  <option key={x} value={x}>{x}</option>
                 ))}
               </select>
             </div>
@@ -326,9 +297,7 @@ const TablaMotos: React.FC = () => {
               >
                 <option value="">Todas</option>
                 {empresaOptions.map((x) => (
-                  <option key={x} value={x}>
-                    {x}
-                  </option>
+                  <option key={x} value={x}>{x}</option>
                 ))}
               </select>
             </div>
@@ -351,7 +320,7 @@ const TablaMotos: React.FC = () => {
 
           <div className="flex items-center justify-between mt-3">
             <span className="text-xs text-base-content/60">
-              {isPending ? "Cargando..." : `Resultados: ${motos.length}`}
+              {isPending ? "Cargando..." : `Resultados: ${total}`}
             </span>
             <button type="button" className="btn btn-ghost btn-sm" onClick={clearFilters}>
               Limpiar filtros
@@ -360,7 +329,7 @@ const TablaMotos: React.FC = () => {
         </div>
       </div>
 
-      {/* 👇 Wrapper scrolleable para hacerla responsive */}
+      {/* TABLA */}
       <div className="relative overflow-x-auto max-w-full px-4">
         <table className="table table-zebra table-pin-rows min-w-225">
           <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-backdrop-filter:backdrop-blur-md">
@@ -374,10 +343,7 @@ const TablaMotos: React.FC = () => {
               <th>Modelo</th>
               <th className="hidden md:table-cell">Empresa</th>
               <th className="hidden lg:table-cell">Subdistribucion</th>
-
-              {/* ✅ Cambiado: Mostrando (Sí/No) */}
               <th className="hidden sm:table-cell">Mostrar</th>
-
               <th className="text-right pr-6 whitespace-nowrap">Precio</th>
               <th className="text-right pr-6">Acciones</th>
             </tr>
@@ -390,7 +356,7 @@ const TablaMotos: React.FC = () => {
                 <td>
                   {m.foto ? (
                     <img
-                      src={`${BaseUrl}/${m.foto}`}
+                      src={`${BASE_URL}/${m.foto}`}
                       alt={`${m.marca} ${m.linea}`}
                       className="h-12 w-16 object-cover rounded-md border"
                     />
@@ -402,12 +368,9 @@ const TablaMotos: React.FC = () => {
                 <td>{m.linea ?? ""}</td>
                 <td>{m.cilindraje != null ? `${m.cilindraje} CC` : "-"}</td>
                 <td>{m.tipo_moto ?? ""}</td>
-
                 <td>{m.modelo ?? ""}</td>
                 <td className="hidden md:table-cell">{m.empresa ?? ""}</td>
                 <td className="hidden lg:table-cell">{m.subdistribucion ?? ""}</td>
-
-                {/* ✅ Toggle + texto Sí/No basado en estado_moto */}
                 <td className="hidden sm:table-cell">
                   <div className="flex items-center justify-center gap-2">
                     <input
@@ -422,7 +385,6 @@ const TablaMotos: React.FC = () => {
                     </span>
                   </div>
                 </td>
-
                 <td className="text-right whitespace-nowrap">
                   {Number(m.precio_base || 0).toLocaleString()}
                 </td>
@@ -435,7 +397,6 @@ const TablaMotos: React.FC = () => {
                     >
                       <Percent size="18px" />
                     </button>
-
                     <button
                       className="btn btn-sm bg-white btn-circle"
                       onClick={() => openImpuestos(m)}
@@ -443,7 +404,6 @@ const TablaMotos: React.FC = () => {
                     >
                       <Banknote size="18px" />
                     </button>
-
                     <button
                       className="btn btn-sm bg-white btn-circle"
                       onClick={() => openEditar(m)}
@@ -451,12 +411,9 @@ const TablaMotos: React.FC = () => {
                     >
                       <Pen size="18px" color="green" />
                     </button>
-
                     <button
                       className="btn btn-sm bg-white btn-circle"
-                      onClick={() =>
-                        confirmarEliminar(Number(m.id), `${m.marca} ${m.linea}`)
-                      }
+                      onClick={() => confirmarEliminar(Number(m.id), `${m.marca} ${m.linea}`)}
                       title="Eliminar"
                     >
                       <Trash2 size="18px" color="#ef4444" />
@@ -468,7 +425,7 @@ const TablaMotos: React.FC = () => {
 
             {!isPending && visible.length === 0 && (
               <tr>
-                <td colSpan={11} className="text-center py-6 opacity-70">
+                <td colSpan={12} className="text-center py-6 opacity-70">
                   No hay resultados con esos filtros.
                 </td>
               </tr>
@@ -477,25 +434,35 @@ const TablaMotos: React.FC = () => {
         </table>
       </div>
 
-      <div className="flex items-center justify-between px-4 pb-4 pt-2">
-        <span className="text-xs text-base-content/50">
-          Mostrando {motos.length === 0 ? 0 : start + 1}–{end} de {motos.length}
-        </span>
+      {/* PAGINACIÓN */}
+      <div className="flex items-center justify-between px-4 pb-4 pt-2 flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-base-content/50">
+            Mostrando {total === 0 ? 0 : start}–{end} de {total}
+          </span>
+          {isFetching && <span className="loading loading-spinner loading-xs" />}
+          <label className="text-xs opacity-70">Filas:</label>
+          <select
+            className="select select-bordered select-xs w-16"
+            value={perPage}
+            onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
+          >
+            {[10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </div>
 
         <div className="flex items-center gap-2">
-          <button className={btnGhost} onClick={goPrev} disabled={page === 1}>
+          <button className={btnGhost} onClick={goPrev} disabled={currentPage === 1}>
             «
           </button>
 
           {items.map((it, i) =>
             it === "..." ? (
-              <span key={`e-${i}`} className={btnEllipsis}>
-                …
-              </span>
+              <span key={`e-${i}`} className={btnEllipsis}>…</span>
             ) : (
               <button
                 key={`p-${it}`}
-                className={it === page ? btnActive : btnGhost}
+                className={Number(it) === currentPage ? btnActive : btnGhost}
                 onClick={() => goTo(Number(it))}
               >
                 {it}
@@ -503,7 +470,7 @@ const TablaMotos: React.FC = () => {
             )
           )}
 
-          <button className={btnGhost} onClick={goNext} disabled={page === totalPages}>
+          <button className={btnGhost} onClick={goNext} disabled={currentPage === lastPage}>
             »
           </button>
         </div>
