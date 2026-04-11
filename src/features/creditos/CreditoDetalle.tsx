@@ -151,18 +151,18 @@ const CreditoDetalle: React.FC = () => {
     // Dato principal (puede ser undefined mientras carga)
     const credito = datos?.creditos?.[0];
 
-   const creditoAjustado = React.useMemo(() => {
-    if (!credito) return undefined;
+    const creditoAjustado = React.useMemo(() => {
+        if (!credito) return undefined;
 
-    const valorProducto = Number(credito.valor_producto ?? 0);
-    const garantiaExtendida = Number(credito.garantia_extendida_valor ?? 0);
+        const valorProducto = Number(credito.valor_producto ?? 0);
+        const garantiaExtendida = Number(credito.garantia_extendida_valor ?? 0);
 
-    return {
-        ...credito,
-        valor_producto: valorProducto - garantiaExtendida,
-        garantia_extendida_valor: garantiaExtendida,
-    };
-}, [credito]);
+        return {
+            ...credito,
+            valor_producto: valorProducto - garantiaExtendida,
+            garantia_extendida_valor: garantiaExtendida,
+        };
+    }, [credito]);
 
 
     // Fallbacks seguros para evitar crasheos
@@ -173,18 +173,18 @@ const CreditoDetalle: React.FC = () => {
     const registradaPor = credito?.asesor;
 
     // Sección "motocicleta": solo mapear lo que venga en el crédito
-const moto = {
-    modelo: creditoAjustado?.producto,
-    numeroCuotas: creditoAjustado?.plazo_meses,
-    fechaPago: undefined,
-    numeroChasis: creditoAjustado?.numero_chasis,
-    placa: creditoAjustado?.placa,
-    valorMotocicleta: creditoAjustado?.valor_producto,
-    cuotaInicial: typeof creditoAjustado?.cuota_inicial === 'number' ? creditoAjustado.cuota_inicial : undefined,
-    valorCuota: undefined,
-    numeroMotor: creditoAjustado?.numero_motor,
-    fechaEntrega: creditoAjustado?.fecha_entrega,
-};
+    const moto = {
+        modelo: creditoAjustado?.producto,
+        numeroCuotas: creditoAjustado?.plazo_meses,
+        fechaPago: undefined,
+        numeroChasis: creditoAjustado?.numero_chasis,
+        placa: creditoAjustado?.placa,
+        valorMotocicleta: creditoAjustado?.valor_producto,
+        cuotaInicial: typeof creditoAjustado?.cuota_inicial === 'number' ? creditoAjustado.cuota_inicial : undefined,
+        valorCuota: undefined,
+        numeroMotor: creditoAjustado?.numero_motor,
+        fechaEntrega: creditoAjustado?.fecha_entrega,
+    };
 
 
     const idCot = credito?.cotizacion_id ?? null;
@@ -1027,11 +1027,11 @@ const moto = {
                                 </h2>
                             </summary>
                             <div className="collapse-content text-sm">
-                             <TablaAmortizacionCredito
-    credito={creditoAjustado as any}
-    fechaCreacion={creditoAjustado?.fecha_creacion}
-    cotizacionId={idCot ?? 0}
-/>
+                                <TablaAmortizacionCredito
+                                    credito={creditoAjustado as any}
+                                    fechaCreacion={creditoAjustado?.fecha_creacion}
+                                    cotizacionId={idCot ?? 0}
+                                />
                             </div>
                         </details>
                     </section>
