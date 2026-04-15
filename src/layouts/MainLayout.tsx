@@ -1,16 +1,45 @@
-// MainLayout.tsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "../shared/components/Sidebar";
 import Navbar from "../shared/components/Navbar";
 
 const SIDEBAR_KEY = "sidebar_collapsed";
+const LG_BREAKPOINT = 1024;
 
 const MainLayout: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
+
   const [collapsed, setCollapsed] = useState<boolean>(
     () => localStorage.getItem(SIDEBAR_KEY) === "true"
   );
+
+  const [isDesktop, setIsDesktop] = useState(
+    () => window.innerWidth >= LG_BREAKPOINT
+  );
+
+  // ✅ FIX PRO: detectar cambio real de breakpoint
+  useEffect(() => {
+    const media = window.matchMedia(`(min-width: ${LG_BREAKPOINT}px)`);
+
+    const handleChange = (e: MediaQueryListEvent) => {
+      const desktop = e.matches;
+
+      setIsDesktop(desktop);
+
+      // 🔥 reset limpio al cambiar modo
+      setMobileOpen(false);
+
+      // opcional pero recomendado → evita estados raros
+      if (!desktop) {
+        // en móvil nunca queremos colapsado
+        setCollapsed(false);
+      }
+    };
+
+    media.addEventListener("change", handleChange);
+
+    return () => media.removeEventListener("change", handleChange);
+  }, []);
 
   const toggleCollapsed = () =>
     setCollapsed((prev) => {
@@ -19,13 +48,15 @@ const MainLayout: React.FC = () => {
       return next;
     });
 
+  // 🔥 clave: solo colapsa en desktop
+  const effectiveCollapsed = isDesktop ? collapsed : false;
+
   return (
     <div className="flex relative w-full overflow-x-hidden">
-
-      {/* Overlay oscuro — solo móvil cuando el sidebar está abierto */}
-      {mobileOpen && (
+      {/* Overlay móvil */}
+      {mobileOpen && !isDesktop && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/50"
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -35,32 +66,32 @@ const MainLayout: React.FC = () => {
         className={`
           fixed top-0 left-0 z-50 h-dvh
           transition-all duration-300 ease-in-out
-          /* móvil: desliza dentro/fuera */
+
           ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
-          /* desktop: siempre visible, ancho varía */
           lg:translate-x-0
-          ${collapsed ? "lg:w-16" : "lg:w-64"}
+
+          ${effectiveCollapsed ? "lg:w-16" : "lg:w-64"}
           w-64
         `}
       >
         <Sidebar
-          collapsed={collapsed}
+          collapsed={effectiveCollapsed}
           onToggleCollapse={toggleCollapsed}
           onNavigate={() => setMobileOpen(false)}
         />
       </aside>
 
-      {/* Contenedor principal — se desplaza en desktop según el ancho del sidebar */}
+      {/* Contenido */}
       <div
         className={`
           flex-1 min-h-dvh bg-[#F5F5F5]
           transition-all duration-300
           ml-0
-          ${collapsed ? "lg:ml-16" : "lg:ml-64"}
+          ${effectiveCollapsed ? "lg:ml-16" : "lg:ml-64"}
           min-w-0
         `}
       >
-        {/* Navbar sticky con botón hamburguesa para móvil */}
+        {/* Navbar */}
         <div className="sticky top-0 z-30 w-full">
           <Navbar onMenuClick={() => setMobileOpen((p) => !p)} />
         </div>
