@@ -1,7 +1,7 @@
 // src/components/Navbar/Navbar.tsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, LogOut, Settings, User as UserIcon, Shield } from "lucide-react";
+import { Bell, LogOut, Menu, Settings, User as UserIcon, Shield } from "lucide-react";
 import Swal from "sweetalert2";
 import { useAuthStore } from "../../store/auth.store";
 
@@ -9,7 +9,11 @@ import { useAuthStore } from "../../store/auth.store";
 import { useModalStore } from "../../store/modalStore";
 import UserPerfil from "../../features/users/UserPerfil";
 
-const Navbar: React.FC = () => {
+interface NavbarProps {
+  onMenuClick?: () => void;
+}
+
+const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
@@ -43,10 +47,20 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <div className="w-full bg-white pl-14 backdrop-blur border-b border-gray-200 px-4 py-4 flex items-center justify-between">
-      <h1 className="text-[15px] md:text-base font-medium text-gray-700">
-        Panel de Administración
-      </h1>
+    <div className="w-full bg-white backdrop-blur border-b border-gray-200 px-4 py-4 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        {/* Hamburguesa solo en móvil */}
+        <button
+          className="btn btn-ghost btn-circle lg:hidden"
+          onClick={onMenuClick}
+          aria-label="Abrir menú"
+        >
+          <Menu className="w-5 h-5 text-gray-700" />
+        </button>
+        <h1 className="text-[15px] md:text-base font-medium text-gray-700">
+          Panel de Administración
+        </h1>
+      </div>
 
       <div className="flex items-center gap-3">
         <div className="indicator">

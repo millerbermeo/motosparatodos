@@ -1,47 +1,61 @@
 // MainLayout.tsx
 import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
-import { ChevronLeft, Menu } from "lucide-react";
 import Sidebar from "../shared/components/Sidebar";
 import Navbar from "../shared/components/Navbar";
 
 const MainLayout: React.FC = () => {
-  const [isOpen, setIsOpen] = useState<boolean>(true);
-  const toggleSidebar = () => setIsOpen((p) => !p);
+  // Mobile: sidebar se abre como overlay
+  const [mobileOpen, setMobileOpen] = useState(false);
+  // Desktop: sidebar se colapsa a solo iconos
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
-    // 👇 Evita que el body haga scroll horizontal por cualquier desborde
     <div className="flex relative w-full overflow-x-hidden">
-      {/* Sidebar fijo con slide-in */}
-  <div
-  className={`fixed top-0 left-0 z-40 h-dvh flex items-start transition-transform duration-300 ease-in-out
-  ${isOpen ? "translate-x-0" : "-translate-x-[120%]"} w-64`}
->
-  <Sidebar />
 
-  {/* Botón pegado al borde derecho del sidebar */}
-  <button
-    onClick={toggleSidebar}
-    className={`absolute top-3  p-2 cursor-pointer rounded-full bg-[#3498DB] border-white border text-white shadow ${isOpen ? 'right-[-60px] lg:right-[-20px]' : 'right-[-100px] lg:right-[-95px]'}`}
-    aria-label="Toggle sidebar"
-  >
-    {isOpen ? <ChevronLeft size={20} /> : <Menu size={20} />}
-  </button>
-</div>
+      {/* Overlay oscuro — solo móvil cuando el sidebar está abierto */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
 
-
-      {/* Contenedor principal */}
-      <div
-        className={`flex-1 min-h-dvh bg-[#F5F5F5] transition-all duration-300
-        ${isOpen ? "lg:ml-64" : "ml-0"} 
-        min-w-0`}  // 👈 clave: permite que el contenido NO fuerce ancho extra
+      {/* Sidebar */}
+      <aside
+        className={`
+          fixed top-0 left-0 z-50 h-dvh
+          transition-all duration-300 ease-in-out
+          /* móvil: desliza dentro/fuera */
+          ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
+          /* desktop: siempre visible, ancho varía */
+          lg:translate-x-0
+          ${collapsed ? "lg:w-16" : "lg:w-64"}
+          w-64
+        `}
       >
-        {/* Navbar sticky */}
+        <Sidebar
+          collapsed={collapsed}
+          onToggleCollapse={() => setCollapsed((p) => !p)}
+          onNavigate={() => setMobileOpen(false)}
+        />
+      </aside>
+
+      {/* Contenedor principal — se desplaza en desktop según el ancho del sidebar */}
+      <div
+        className={`
+          flex-1 min-h-dvh bg-[#F5F5F5]
+          transition-all duration-300
+          ml-0
+          ${collapsed ? "lg:ml-16" : "lg:ml-64"}
+          min-w-0
+        `}
+      >
+        {/* Navbar sticky con botón hamburguesa para móvil */}
         <div className="sticky top-0 z-30 w-full">
-          <Navbar />
+          <Navbar onMenuClick={() => setMobileOpen((p) => !p)} />
         </div>
 
-        {/* Contenido dinámico */}
         <main className="px-5 py-4 w-full min-w-0">
           <Outlet />
         </main>
