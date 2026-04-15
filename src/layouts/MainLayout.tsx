@@ -4,11 +4,20 @@ import { Outlet } from "react-router-dom";
 import Sidebar from "../shared/components/Sidebar";
 import Navbar from "../shared/components/Navbar";
 
+const SIDEBAR_KEY = "sidebar_collapsed";
+
 const MainLayout: React.FC = () => {
-  // Mobile: sidebar se abre como overlay
   const [mobileOpen, setMobileOpen] = useState(false);
-  // Desktop: sidebar se colapsa a solo iconos
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(
+    () => localStorage.getItem(SIDEBAR_KEY) === "true"
+  );
+
+  const toggleCollapsed = () =>
+    setCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem(SIDEBAR_KEY, String(next));
+      return next;
+    });
 
   return (
     <div className="flex relative w-full overflow-x-hidden">
@@ -36,7 +45,7 @@ const MainLayout: React.FC = () => {
       >
         <Sidebar
           collapsed={collapsed}
-          onToggleCollapse={() => setCollapsed((p) => !p)}
+          onToggleCollapse={toggleCollapsed}
           onNavigate={() => setMobileOpen(false)}
         />
       </aside>

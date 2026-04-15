@@ -202,7 +202,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                       ${collapsed ? "justify-center px-0" : "pr-3"}
                       ${opened ? "text-white/90 bg-white/10" : "hover:bg-[#0277bd]/40 text-white"}`}
                     style={collapsed ? {} : { paddingLeft: "16px" }}
-                    onClick={() => !collapsed && toggleGroup(menu.nombre)}
+                    onClick={() => {
+                      if (collapsed) {
+                        // Expandir sidebar y abrir el grupo de una vez
+                        onToggleCollapse?.();
+                        setOpenGroup(menu.nombre);
+                      } else {
+                        toggleGroup(menu.nombre);
+                      }
+                    }}
                     role="button"
                     aria-expanded={opened}
                   >
@@ -274,20 +282,19 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Footer: colapsar (solo desktop) + logout */}
-      <div className={`p-3 space-y-2 border-t border-white/20`}>
-        {/* Botón colapsar — solo visible en desktop */}
+      <div className="p-3 space-y-2 border-t border-white/20">
+        {/* Botón colapsar — solo desktop */}
         <button
           onClick={onToggleCollapse}
           title={collapsed ? "Expandir menú" : "Colapsar menú"}
-          className={`hidden lg:flex w-full items-center gap-2 bg-white/10 hover:bg-white/20 text-white rounded-md py-2 transition
-            ${collapsed ? "justify-center px-0" : "px-3"}`}
+          className={`hidden lg:flex w-full items-center justify-center gap-2 bg-white/15 hover:bg-white/25 text-white rounded-md py-2 transition font-medium text-sm`}
         >
           {collapsed ? (
             <ChevronRight className="w-4 h-4 shrink-0" />
           ) : (
             <>
               <ChevronLeft className="w-4 h-4 shrink-0" />
-              <span className="text-sm">Colapsar</span>
+              <span>Colapsar</span>
             </>
           )}
         </button>
@@ -295,12 +302,11 @@ const Sidebar: React.FC<SidebarProps> = ({
         {/* Logout */}
         <button
           title={collapsed ? "Cerrar sesión" : undefined}
-          className={`w-full flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white rounded-md py-2 transition
-            ${collapsed ? "justify-center px-0" : "justify-center px-3"}`}
+          className="w-full flex items-center justify-center gap-2 bg-red-500/80 hover:bg-red-600 text-white rounded-md py-2 transition font-medium text-sm"
           onClick={handleLogout}
         >
           <LogOut className="w-4 h-4 shrink-0" />
-          {!collapsed && <span>Salir</span>}
+          {!collapsed && <span>Cerrar sesión</span>}
         </button>
       </div>
     </div>
