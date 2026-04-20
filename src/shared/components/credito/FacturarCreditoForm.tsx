@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useRegistrarSolicitudFacturacion } from "../../../services/solicitudServices";
 import { useAuthStore } from "../../../store/auth.store";
+import { HeaderSolicitud } from "../solicitar-facturacion/HeaderSolicitud";
 
 const AGENCIAS = ["Sucursal Norte", "Sucursal Centro", "Sucursal Sur"];
 
@@ -332,15 +333,8 @@ const FacturarCreditoForm: React.FC<Props> = ({
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white shadow-md p-4 md:p-6 lg:p-7">
-      <div className="mb-6 text-center space-y-1">
-        <h3 className="text-lg md:text-xl font-semibold text-slate-900">
-          Solicitud de facturación (Crédito)
-        </h3>
-        <p className="text-xs md:text-sm text-slate-500 max-w-xl mx-auto">
-          Completa los datos para registrar la solicitud. Los campos marcados con{" "}
-          <span className="text-rose-600">*</span> son obligatorios.
-        </p>
-      </div>
+
+      <HeaderSolicitud tipo="credito" />
 
       <form onSubmit={onSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">

@@ -269,28 +269,45 @@ const FacturarCredito: React.FC = () => {
     (credito as any)?.garantia_extendida_valor
   );
 
- 
+
   const BaseUrl =
     import.meta.env.VITE_API_URL ??
     'https://tuclick.vozipcolombia.net.co/motos/back';
 
   return (
     <main className="min-h-screen w-full bg-slate-50">
+
+
       {/* Header / Migas */}
-      <div className="border-b border-slate-200 bg-white/70 backdrop-blur">
-        <div className="max-w-full mx-auto px-6 py-4 flex items-center justify-start gap-5">
-          <div className="pt-4 mb-3">
+     <div className='p-8 pb-0'>
+       <div className="border-b border-emerald-100 bg-[#EAF7F0]/80 backdrop-blur rounded-xl shadow">
+        <div className="w-full px-4 md:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+
+          {/* IZQUIERDA: botón volver */}
+          <div className="flex items-center gap-3">
             <ButtonLink
               to="/solicitudes"
               label="Volver a facturación"
               direction="back"
             />
           </div>
-          <h1 className="text-xl font-semibold tracking-tight badge badge-soft badge-success">
-            Solicitudes de facturación
-          </h1>
+
+          {/* DERECHA: título */}
+          <div className="flex items-center gap-2 justify-center sm:justify-end">
+
+            <div className="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold border border-emerald-200">
+              Módulo
+            </div>
+
+            <h1 className="text-lg md:text-xl font-semibold text-slate-900 tracking-tight">
+              Solicitudes de facturación
+            </h1>
+
+          </div>
+
         </div>
       </div>
+     </div>
 
       <div className="max-w-full mx-auto px-6 py-8 space-y-6">
         {(isLoading ||
@@ -309,44 +326,63 @@ const FacturarCredito: React.FC = () => {
           </div>
         )}
 
-        {/* Encabezado: Información del cliente + caja lateral con solicitud */}
-        <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2">
-              <h2 className="text-base font-semibold text-emerald-700 mb-3">
+        <section className="rounded-2xl border border-blue-100 bg-[#EBF5FB] shadow-sm p-4 md:p-6">
+
+          <div className="flex flex-col lg:flex-row gap-6 lg:items-center lg:justify-between">
+
+            {/* IZQUIERDA: Info cliente */}
+            <div className="flex-1 space-y-2 text-center lg:text-left">
+
+              <h2 className="text-sm font-semibold text-blue-700 uppercase tracking-wide">
                 Información del cliente
               </h2>
-              <div className="text-sm leading-6 text-slate-700 space-y-1.5">
-                <div className="font-medium text-slate-900">{clienteNombre}</div>
-                <div className="text-slate-600">{clienteDoc}</div>
-                <div className="text-slate-600">{clienteDireccion}</div>
+
+              <div className="text-base md:text-lg font-semibold text-slate-900">
+                {clienteNombre}
+              </div>
+
+              <div className="text-sm text-slate-600">
+                {clienteDoc}
+              </div>
+
+              <div className="text-sm text-slate-600">
+                {clienteDireccion}
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-slate-600 justify-center lg:justify-start">
                 <div>
-                  <span className="font-semibold text-slate-700">Teléfono:</span>{' '}
-                  <span className="text-slate-600">{clienteTelefono || ''}</span>
+                  <span className="font-semibold text-slate-700">Tel:</span>{" "}
+                  {clienteTelefono || "—"}
                 </div>
                 <div>
-                  <span className="font-semibold text-slate-700">Correo:</span>{' '}
-                  <span className="text-slate-600">{clienteCorreo}</span>
+                  <span className="font-semibold text-slate-700">Correo:</span>{" "}
+                  {clienteCorreo || "—"}
                 </div>
               </div>
+
             </div>
-            <div className="md:col-span-1">
-              <div className="h-full rounded-lg bg-[#F1FCF6] border border-success p-4 flex flex-col justify-center md:justify-end md:items-end">
-                <div className="text-right">
-                  <div className="text-lg font-semibold text-slate-900">
-                    Solicitud #{numeroSolicitud ?? ''}
-                  </div>
-                  <div className="text-sm text-slate-600 inline-flex items-center gap-1 mt-1">
-                    <CalendarDays className="w-4 h-4" />
-                    <span>{fechaCreacion}</span>
-                  </div>
-                  <div className="text-sm text-slate-600 inline-flex items-center gap-1 mt-1">
-                    <User2 className="w-4 h-4" />
-                    <span>Asesor {asesor}</span>
-                  </div>
+
+            {/* DERECHA: info solicitud */}
+            <div className="w-full lg:w-auto">
+              <div className="h-full rounded-xl bg-white border border-blue-200 p-4 flex flex-col items-center lg:items-end text-center lg:text-right shadow-sm">
+
+                <div className="text-base md:text-lg font-semibold text-slate-900">
+                  Solicitud #{numeroSolicitud ?? "—"}
                 </div>
+
+                <div className="text-xs md:text-sm text-slate-600 flex items-center gap-1 mt-1">
+                  <CalendarDays className="w-4 h-4 text-blue-500" />
+                  <span>{fechaCreacion}</span>
+                </div>
+
+                <div className="text-xs md:text-sm text-slate-600 flex items-center gap-1 mt-1">
+                  <User2 className="w-4 h-4 text-blue-500" />
+                  <span>Asesor {asesor}</span>
+                </div>
+
               </div>
             </div>
+
           </div>
         </section>
 
@@ -495,16 +531,16 @@ const FacturarCredito: React.FC = () => {
         </section>
 
         {/* Formulario inferior */}
-{!yaRegistrada ? (
-  <FacturarCreditoForm
-    codigoCredito={codigo_credito}
-    idCotizacion={id_cotizacion}
-    clienteNombre={clienteNombre}
-    distribuidorasActivas={distribuidorasActivas}
-    loadingDistribuidoras={loadingDistribuidoras}
-    errorDistribuidoras={errorDistribuidoras}
-  />
-) : (
+        {!yaRegistrada ? (
+          <FacturarCreditoForm
+            codigoCredito={codigo_credito}
+            idCotizacion={id_cotizacion}
+            clienteNombre={clienteNombre}
+            distribuidorasActivas={distribuidorasActivas}
+            loadingDistribuidoras={loadingDistribuidoras}
+            errorDistribuidoras={errorDistribuidoras}
+          />
+        ) : (
           /* Si hay solicitud registrada, mostramos el detalle */
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             {/* Encabezado */}

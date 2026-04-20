@@ -5,7 +5,8 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { FormInput } from "../../shared/components/FormInput";
 import { useRegistrarProcesoContado } from "../../services/procesoContadoServices";
 import { useGetProcesoContadoPorCotizacionYMoto } from "../../services/procesoContadoHooks";
-import { ClipboardList, UserRound, Bike, BadgeInfo } from "lucide-react";
+import { ClipboardList, UserRound, Bike } from "lucide-react";
+import { useLoaderStore } from "../../store/loader.store";
 
 /* ============================ Tipos (solo lo que pide la UI) ============================ */
 type SolicitudFormValues = {
@@ -101,7 +102,6 @@ const SolicitudForm: React.FC = () => {
   const location = useLocation();
   const incoming = (location.state as IncomingCotizacionState) || {};
 
-  console.log(incoming);
   const clienteForForm = incoming?.clienteForForm;
 
   // "semilla" de moto desde location para poder consultar proceso_contado
@@ -183,7 +183,6 @@ const SolicitudForm: React.FC = () => {
       cotizacion_id: cotizacionId,
     });
 
-  console.log("sss", pcData);
 
   // Aplicar autocompletado UNA sola vez cuando pcData llega
   const didAutofillRef = React.useRef(false);
@@ -254,10 +253,10 @@ const SolicitudForm: React.FC = () => {
 
     const esCreditoTerceros = incoming?.esCreditoTerceros === true;
 
-  const numeroMoto =
-    incoming.motoSeleccion === "A" ? "1" :
-    incoming.motoSeleccion === "B" ? "2" :
-    "";
+    const numeroMoto =
+      incoming.motoSeleccion === "A" ? "1" :
+        incoming.motoSeleccion === "B" ? "2" :
+          "";
 
     if (id) fd.append("id_cotizacion", String(id));
     fd.append("is_act", "2");
@@ -410,7 +409,16 @@ const SolicitudForm: React.FC = () => {
   }, [placaValue, setValue]);
 
 
-  
+  const { show, hide } = useLoaderStore();
+
+  React.useEffect(() => {
+    if (pcLoading) {
+      show();
+    } else {
+      hide();
+    }
+  }, [pcLoading, show, hide]);
+
 
   return (
     <main className="min-h-screen bg-linear-to-br from-slate-50 via-slate-100 to-slate-200 px-4 py-6 md:py-10">
@@ -446,15 +454,6 @@ const SolicitudForm: React.FC = () => {
           )}
         </header>
 
-        {/* Mensaje mientras se consulta proceso_contado */}
-        {pcLoading && (
-          <div className="alert alert-info bg-sky-50 border border-sky-200 text-sky-800 flex items-center gap-2 shadow-sm">
-            <BadgeInfo className="w-4 h-4" />
-            <span className="text-sm">
-              Buscando datos previos del cliente y la motocicleta para autocompletar el formulario…
-            </span>
-          </div>
-        )}
 
         <form
           onSubmit={handleSubmit(onSubmit)}
@@ -581,54 +580,54 @@ const SolicitudForm: React.FC = () => {
               </div>
             </div>
 
-  <div className={`p-4 md:p-6 ${grid}`}>
-  {/* OPCIONAL */}
-  <FormInput
-    name="numeroChasis"
-    label="Número de chasis"
-    control={control}
-    placeholder="Ingrese número de chasis"
-  />
+            <div className={`p-4 md:p-6 ${grid}`}>
+              {/* OPCIONAL */}
+              <FormInput
+                name="numeroChasis"
+                label="Número de chasis"
+                control={control}
+                placeholder="Ingrese número de chasis"
+              />
 
-  {/* OPCIONAL */}
-  <FormInput
-    name="numeroMotor"
-    label="Número de motor"
-    control={control}
-    placeholder="Ingrese número de motor"
-  />
+              {/* OPCIONAL */}
+              <FormInput
+                name="numeroMotor"
+                label="Número de motor"
+                control={control}
+                placeholder="Ingrese número de motor"
+              />
 
-  {/* OBLIGATORIO */}
-  <FormInput
-    name="color"
-    label="Color*"
-    control={control}
-    placeholder="Ingrese color"
-    rules={{
-      required: "Requerido",
-      pattern: { value: soloLetras, message: "Solo letras y espacios" },
-    }}
-  />
+              {/* OBLIGATORIO */}
+              <FormInput
+                name="color"
+                label="Color*"
+                control={control}
+                placeholder="Ingrese color"
+                rules={{
+                  required: "Requerido",
+                  pattern: { value: soloLetras, message: "Solo letras y espacios" },
+                }}
+              />
 
- {/* OPCIONAL, PERO VALIDADO SI HAY TEXTO */}
-  <FormInput
-    name="placa"
-    label="Placa"
-    control={control}
-    placeholder="Ingrese placa"
-    rules={{
-      validate: (value) => {
-        const v = String(value ?? "").trim();
-        if (!v) return true; // opcional
-        return (
-          placaRegex.test(v) ||
-          "Debe tener exactamente 6 caracteres (letras y números en mayúscula)"
-        );
-      },
-    }}
-  />
-  
-</div>
+              {/* OPCIONAL, PERO VALIDADO SI HAY TEXTO */}
+              <FormInput
+                name="placa"
+                label="Placa"
+                control={control}
+                placeholder="Ingrese placa"
+                rules={{
+                  validate: (value) => {
+                    const v = String(value ?? "").trim();
+                    if (!v) return true; // opcional
+                    return (
+                      placaRegex.test(v) ||
+                      "Debe tener exactamente 6 caracteres (letras y números en mayúscula)"
+                    );
+                  },
+                }}
+              />
+
+            </div>
 
           </section>
 
