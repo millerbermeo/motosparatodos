@@ -21,9 +21,11 @@ import { alert } from "../../../utils/alerts";
 import { METODO_PAGO_LABEL } from "../../../shared/components/tipo-pago-label";
 import { dateNotTodayOrFuture } from "../../../utils/dateValidatorFutura";
 import { polizaOptions } from "../../../shared/components/options/poliza-options";
-import {  calcGarantia, calcGps, calcPoliza, getMatricula } from "./cotizacion.helpers";
+import { calcGarantia, calcGps, calcPoliza, getMatricula } from "./cotizacion.helpers";
 import { useIvaDecimal } from "../../../services/ivaServices";
 import { calcularCreditoDirectoMoto, logCreditoDirectoMoto } from "../../../shared/components/credito/creditoDirecto.utils";
+import { useBuscarClientePorCedula } from "../../../services/clientesServices";
+import { Search } from "lucide-react";
 
 
 const getMotoByIndex = <T,>(
@@ -1087,134 +1089,134 @@ const CotizacionFormulario: React.FC = () => {
 
     //     return Math.round((saldo / 1000) * v);
     // };
-    
+
 
     const saldoFinanciar1SinGarantia = Math.max(
-  saldoFinanciar1 - (garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0),
-  0
-);
+        saldoFinanciar1 - (garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0),
+        0
+    );
 
-const saldoFinanciar2SinGarantia = Math.max(
-  saldoFinanciar2 - (garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0),
-  0
-);
+    const saldoFinanciar2SinGarantia = Math.max(
+        saldoFinanciar2 - (garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0),
+        0
+    );
 
-// const segVidaMensualA =
-//   metodo === "credibike" && incluirMoto1
-//     ? calcSeguroVidaMensual(saldoFinanciar1SinGarantia, segVidaCfg ?? null)
-//     : 0;
+    // const segVidaMensualA =
+    //   metodo === "credibike" && incluirMoto1
+    //     ? calcSeguroVidaMensual(saldoFinanciar1SinGarantia, segVidaCfg ?? null)
+    //     : 0;
 
-// const segVidaMensualB =
-//   metodo === "credibike" && incluirMoto2
-//     ? calcSeguroVidaMensual(saldoFinanciar2SinGarantia, segVidaCfg ?? null)
-//     : 0;
-    
+    // const segVidaMensualB =
+    //   metodo === "credibike" && incluirMoto2
+    //     ? calcSeguroVidaMensual(saldoFinanciar2SinGarantia, segVidaCfg ?? null)
+    //     : 0;
+
 
     const calcularCuotaProyectadaMoto = (
-  incluir: boolean,
-  saldoSinGarantia: number,
-  valorGarantia: number,
-  plazo: number
-) => {
-  if (metodo !== "credibike" || !incluir) return 0;
+        incluir: boolean,
+        saldoSinGarantia: number,
+        valorGarantia: number,
+        plazo: number
+    ) => {
+        if (metodo !== "credibike" || !incluir) return 0;
 
-  const credito = calcularCreditoDirectoMoto({
-    incluir: true,
-    mesesGarantia: plazo,
-    valorGarantia,
-    saldoFinanciar: saldoSinGarantia,
-    tasaFinanciacionPct: tasaDecimal * 100,
-    tasaGarantiaPct: TASA_GARANTIA_MENSUAL,
-  });
+        const credito = calcularCreditoDirectoMoto({
+            incluir: true,
+            mesesGarantia: plazo,
+            valorGarantia,
+            saldoFinanciar: saldoSinGarantia,
+            tasaFinanciacionPct: tasaDecimal * 100,
+            tasaGarantiaPct: TASA_GARANTIA_MENSUAL,
+        });
 
-  return credito.cuotaTotal;
-};
+        return credito.cuotaTotal;
+    };
 
     const cuota6_a_auto = calcularCuotaProyectadaMoto(
-  incluirMoto1,
-  saldoFinanciar1SinGarantia,
-  garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0,
-  6
-);
+        incluirMoto1,
+        saldoFinanciar1SinGarantia,
+        garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0,
+        6
+    );
 
-const cuota12_a_auto = calcularCuotaProyectadaMoto(
-  incluirMoto1,
-  saldoFinanciar1SinGarantia,
-  garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0,
-  12
-);
+    const cuota12_a_auto = calcularCuotaProyectadaMoto(
+        incluirMoto1,
+        saldoFinanciar1SinGarantia,
+        garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0,
+        12
+    );
 
-// const cuota18_a_auto = calcularCuotaProyectadaMoto(
-//   incluirMoto1,
-//   saldoFinanciar1SinGarantia,
-//   garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0,
-//   18
-// );
+    // const cuota18_a_auto = calcularCuotaProyectadaMoto(
+    //   incluirMoto1,
+    //   saldoFinanciar1SinGarantia,
+    //   garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0,
+    //   18
+    // );
 
-const cuota24_a_auto = calcularCuotaProyectadaMoto(
-  incluirMoto1,
-  saldoFinanciar1SinGarantia,
-  garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0,
-  24
-);
+    const cuota24_a_auto = calcularCuotaProyectadaMoto(
+        incluirMoto1,
+        saldoFinanciar1SinGarantia,
+        garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0,
+        24
+    );
 
-// const cuota30_a_auto = calcularCuotaProyectadaMoto(
-//   incluirMoto1,
-//   saldoFinanciar1SinGarantia,
-//   garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0,
-//   30
-// );
+    // const cuota30_a_auto = calcularCuotaProyectadaMoto(
+    //   incluirMoto1,
+    //   saldoFinanciar1SinGarantia,
+    //   garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0,
+    //   30
+    // );
 
-const cuota36_a_auto = calcularCuotaProyectadaMoto(
-  incluirMoto1,
-  saldoFinanciar1SinGarantia,
-  garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0,
-  36
-);
+    const cuota36_a_auto = calcularCuotaProyectadaMoto(
+        incluirMoto1,
+        saldoFinanciar1SinGarantia,
+        garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0,
+        36
+    );
 
-const cuota6_b_auto = calcularCuotaProyectadaMoto(
-  incluirMoto2,
-  saldoFinanciar2SinGarantia,
-  garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0,
-  6
-);
+    const cuota6_b_auto = calcularCuotaProyectadaMoto(
+        incluirMoto2,
+        saldoFinanciar2SinGarantia,
+        garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0,
+        6
+    );
 
-const cuota12_b_auto = calcularCuotaProyectadaMoto(
-  incluirMoto2,
-  saldoFinanciar2SinGarantia,
-  garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0,
-  12
-);
+    const cuota12_b_auto = calcularCuotaProyectadaMoto(
+        incluirMoto2,
+        saldoFinanciar2SinGarantia,
+        garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0,
+        12
+    );
 
-// const cuota18_b_auto = calcularCuotaProyectadaMoto(
-//   incluirMoto2,
-//   saldoFinanciar2SinGarantia,
-//   garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0,
-//   18
-// );
+    // const cuota18_b_auto = calcularCuotaProyectadaMoto(
+    //   incluirMoto2,
+    //   saldoFinanciar2SinGarantia,
+    //   garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0,
+    //   18
+    // );
 
-const cuota24_b_auto = calcularCuotaProyectadaMoto(
-  incluirMoto2,
-  saldoFinanciar2SinGarantia,
-  garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0,
-  24
-);
+    const cuota24_b_auto = calcularCuotaProyectadaMoto(
+        incluirMoto2,
+        saldoFinanciar2SinGarantia,
+        garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0,
+        24
+    );
 
-// const cuota30_b_auto = calcularCuotaProyectadaMoto(
-//   incluirMoto2,
-//   saldoFinanciar2SinGarantia,
-//   garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0,
-//   30
-// );
+    // const cuota30_b_auto = calcularCuotaProyectadaMoto(
+    //   incluirMoto2,
+    //   saldoFinanciar2SinGarantia,
+    //   garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0,
+    //   30
+    // );
 
-const cuota36_b_auto = calcularCuotaProyectadaMoto(
-  incluirMoto2,
-  saldoFinanciar2SinGarantia,
-  garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0,
-  36
-);
+    const cuota36_b_auto = calcularCuotaProyectadaMoto(
+        incluirMoto2,
+        saldoFinanciar2SinGarantia,
+        garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0,
+        36
+    );
 
-            
+
     React.useEffect(() => {
         if (metodo === "contado") return;
         const hayMoto = moto1Value !== undefined && moto1Value !== null && moto1Value !== "";
@@ -1340,29 +1342,29 @@ const cuota36_b_auto = calcularCuotaProyectadaMoto(
 
     const aplicarCalculoCreditoDirecto = metodo === "credibike";
 
-const creditoMoto1 = calcularCreditoDirectoMoto({
-  incluir: aplicarCalculoCreditoDirecto && incluirMoto1,
-  mesesGarantia:
-    aplicarCalculoCreditoDirecto && incluirMoto1 && garantiaExtendida1Value !== "no"
-      ? garantiaExtendida1Value
-      : 0,
-  valorGarantia: valorGarantiaAValue,
-  saldoFinanciar: saldoFinanciar1SinGarantia,
-  tasaFinanciacionPct: tasaDecimal * 100,
-  tasaGarantiaPct: TASA_GARANTIA_MENSUAL,
-});
+    const creditoMoto1 = calcularCreditoDirectoMoto({
+        incluir: aplicarCalculoCreditoDirecto && incluirMoto1,
+        mesesGarantia:
+            aplicarCalculoCreditoDirecto && incluirMoto1 && garantiaExtendida1Value !== "no"
+                ? garantiaExtendida1Value
+                : 0,
+        valorGarantia: valorGarantiaAValue,
+        saldoFinanciar: saldoFinanciar1SinGarantia,
+        tasaFinanciacionPct: tasaDecimal * 100,
+        tasaGarantiaPct: TASA_GARANTIA_MENSUAL,
+    });
 
-const creditoMoto2 = calcularCreditoDirectoMoto({
-  incluir: aplicarCalculoCreditoDirecto && incluirMoto2,
-  mesesGarantia:
-    aplicarCalculoCreditoDirecto && incluirMoto2 && garantiaExtendida2Value !== "no"
-      ? garantiaExtendida2Value
-      : 0,
-  valorGarantia: valorGarantiaBValue,
-  saldoFinanciar: saldoFinanciar2SinGarantia,
-  tasaFinanciacionPct: tasaDecimal * 100,
-  tasaGarantiaPct: TASA_GARANTIA_MENSUAL,
-});
+    const creditoMoto2 = calcularCreditoDirectoMoto({
+        incluir: aplicarCalculoCreditoDirecto && incluirMoto2,
+        mesesGarantia:
+            aplicarCalculoCreditoDirecto && incluirMoto2 && garantiaExtendida2Value !== "no"
+                ? garantiaExtendida2Value
+                : 0,
+        valorGarantia: valorGarantiaBValue,
+        saldoFinanciar: saldoFinanciar2SinGarantia,
+        tasaFinanciacionPct: tasaDecimal * 100,
+        tasaGarantiaPct: TASA_GARANTIA_MENSUAL,
+    });
 
 
 
@@ -1389,6 +1391,41 @@ const creditoMoto2 = calcularCreditoDirectoMoto({
         logCreditoDirectoMoto("MOTO 2", creditoMoto2);
     }
 
+
+
+    const cedulaValue = watch("cedula");
+
+    const {
+        refetch: buscarCliente,
+        isFetching: buscandoCliente,
+    } = useBuscarClientePorCedula(cedulaValue);
+
+
+
+    const handleBuscarCliente = async () => {
+        if (!cedulaValue || cedulaValue.length < 5) {
+            alert.warn("Cédula inválida", "Ingresa una cédula válida");
+            return;
+        }
+
+        const { data: cliente } = await buscarCliente();
+
+        if (!cliente) {
+            alert.warn("No encontrado", "No existe cliente con esa cédula");
+            return;
+        }
+
+        // ✅ Rellenar formulario automáticamente
+        setValue("primer_nombre", cliente.name || "");
+        setValue("segundo_nombre", cliente.s_name || "");
+        setValue("primer_apellido", cliente.last_name || "");
+        setValue("segundo_apellido", cliente.s_last_name || "");
+        setValue("celular", cliente.celular || "");
+        setValue("email", cliente.email || "");
+    };
+
+
+    const isCedulaValida = /^[0-9]{5,20}$/.test(cedulaValue ?? "");
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -1509,13 +1546,37 @@ const creditoMoto2 = calcularCreditoDirectoMoto({
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormInput<FormValuesCotizacion>
-                        name="cedula"
-                        label="Cédula"
-                        control={control}
-                        placeholder="Número de documento"
-                        rules={{ required: "La cédula es obligatoria.", pattern: { value: /^[0-9]{5,20}$/, message: "Solo números (5-20 dígitos)" } }}
-                    />
+                    <div className="relative">
+                        <FormInput<FormValuesCotizacion>
+                            name="cedula"
+                            label="Cédula"
+                            control={control}
+                            placeholder="Número de documento"
+                            rules={{
+                                required: "La cédula es obligatoria.",
+                                pattern: {
+                                    value: /^[0-9]{5,20}$/,
+                                    message: "Solo números (5-20 dígitos)",
+                                },
+                            }}
+                        />
+
+                        {isCedulaValida && (
+                            <button
+                                type="button"
+                                onClick={handleBuscarCliente}
+                                className="absolute right-2 top-3 btn btn-sm btn-circle bg-[#3498DB] "
+                            >
+                                {buscandoCliente ? (
+                                    <span className="loading loading-spinner loading-xs"></span>
+                                ) : (
+                                    <>
+                                    <Search className="w-4 h-4 text-white" />
+                                    </>
+                                )}
+                            </button>
+                        )}
+                    </div>
                     <FormInput<FormValuesCotizacion>
                         name="fecha_nac"
                         label="Fecha de nacimiento"

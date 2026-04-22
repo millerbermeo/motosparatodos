@@ -10,6 +10,7 @@ import Swal from "sweetalert2";
 import { FormInput } from "../../../shared/components/FormInput";
 import { FormSelect } from "../../../shared/components/FormSelect";
 import { useRegistrarSolicitudFacturacion2 } from "../../../services/solicitudServices";
+import { HeaderSolicitud } from "../solicitar-facturacion/HeaderSolicitud";
 
 export type FormValues = {
   documentos: "Si" | "No";
@@ -543,16 +544,8 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white shadow-md p-4 md:p-6 lg:p-7">
-      <div className="mb-6 text-center space-y-1">
-        <h3 className="text-lg md:text-xl font-semibold text-slate-900">
-          Solicitud de facturación
-        </h3>
-        <p className="text-xs md:text-sm text-slate-500 max-w-xl mx-auto">
-          Diligencia los siguientes campos para generar la solicitud de
-          facturación de esta cotización. Los campos marcados con{" "}
-          <span className="text-error">*</span> son obligatorios.
-        </p>
-      </div>
+
+      <HeaderSolicitud tipo="contado" />
 
       <form onSubmit={handleSubmit(onSubmitInternal)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">

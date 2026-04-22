@@ -5,10 +5,13 @@ import { useForm } from "react-hook-form";
 import { useGetFacturacionPorCodigo } from "../services/procesoContadoServices";
 import { useAuthStore } from "../store/auth.store";
 import { useDistribuidoras } from "../services/distribuidoraServices";
-import { useIvaDecimal } from "../services/ivaServices";
 import { useCotizacionSoloMotoById } from "../services/fullServices";
 import { SolicitarFacturacionForm } from "../shared/components/contado-terceros/SolicitudFacturacionForm";
 import { useUltimaSolicitudPorIdCotizacion } from "../services/solicitudServices";
+import { fmtFecha } from "../utils/date";
+import { fmtCOP, toNumberSafe } from "../utils/money";
+import Box from "../shared/components/solicitar-facturacion/Box";
+import ButtonLink from "../shared/components/ButtonLink";
 
 type FormValues = {
   documentos: "Si" | "No";
@@ -23,47 +26,7 @@ type FormValues = {
   otrosDocumentosFile?: FileList;
 };
 
-const fmtCOP = (v?: string | number | null) => {
-  const n = v == null || v === "" ? 0 : Number(v);
-  return new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0,
-  }).format(Number.isNaN(n) ? 0 : n);
-};
-
 const safe = (v?: string | null) => (v ? String(v) : "—");
-
-const fmtOptCOP = (v?: string | number | null) => {
-  if (v === null || v === undefined || v === "") return "—";
-  return fmtCOP(v);
-};
-
-const fmtFechaLarga = (iso?: string | null) => {
-  if (!iso) return "—";
-  const d = new Date(iso.replace(" ", "T"));
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("es-CO", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
-};
-
-const fmtSoloFecha = (iso?: string | null) => {
-  if (!iso) return "—";
-  const d = new Date(iso.replace(" ", "T"));
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("es-CO", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-};
 
 const slugify = (s: string) =>
   s
@@ -76,42 +39,6 @@ const slugify = (s: string) =>
 
 /* ======================= UI Helpers (mejorados sin romper) ======================= */
 
-const Box = ({
-  title,
-  right,
-  children,
-  tone = "emerald",
-}: {
-  title: string;
-  right?: React.ReactNode;
-  children?: React.ReactNode;
-  tone?: "emerald" | "sky" | "slate";
-}) => {
-  const headerCls =
-    tone === "sky"
-      ? "bg-linear-to-r from-sky-600 to-sky-700"
-      : tone === "slate"
-        ? "bg-linear-to-r from-slate-700 to-slate-800"
-        : "bg-linear-to-r from-emerald-600 to-emerald-700";
-
-  return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <header
-        className={`${headerCls} text-white px-4 md:px-5 py-3 flex items-center justify-between`}
-      >
-        <h3 className="font-semibold text-sm md:text-base tracking-tight">
-          {title}
-        </h3>
-        {right ? (
-          <div className="text-[11px] md:text-sm opacity-90 font-medium">
-            {right}
-          </div>
-        ) : null}
-      </header>
-      <div className="p-4 md:p-5">{children}</div>
-    </section>
-  );
-};
 
 const HeadRow = ({ cols }: { cols: React.ReactNode[] }) => (
   <div className="grid grid-cols-12 bg-sky-700 text-white text-xs md:text-sm font-semibold">
@@ -138,13 +65,13 @@ const Row = ({
       <div
         key={i}
         className={`px-3 py-2 text-xs md:text-sm ${i === 0
-            ? "col-span-6 md:col-span-6 font-medium text-slate-600"
-            : `col-span-6 md:col-span-6 text-right ${emphasis === "success"
-              ? "text-emerald-700 font-semibold"
-              : emphasis === "danger"
-                ? "text-rose-600 font-semibold"
-                : "text-slate-800"
-            }`
+          ? "col-span-6 md:col-span-6 font-medium text-slate-600"
+          : `col-span-6 md:col-span-6 text-right ${emphasis === "success"
+            ? "text-emerald-700 font-semibold"
+            : emphasis === "danger"
+              ? "text-rose-600 font-semibold"
+              : "text-slate-800"
+          }`
           } border-r border-slate-100 last:border-r-0`}
       >
         {c}
@@ -322,12 +249,6 @@ const buildMotoFromCotizacion = (
   };
 };
 
-const parseCOPInput = (v?: string) => {
-  if (!v) return 0;
-  const cleaned = String(v).replace(/[^\d\-]/g, "");
-  const n = Number(cleaned);
-  return Number.isFinite(n) ? n : 0;
-};
 
 const SolicitarFacturacionPage: React.FC = () => {
   const { codigo } = useParams<{ codigo: string }>();
@@ -338,15 +259,8 @@ const SolicitarFacturacionPage: React.FC = () => {
   const { data: cotFull } = useCotizacionSoloMotoById(data?.cotizacion_id);
   const cotF = cotFull?.data?.cotizacion;
 
-  const {
-    ivaDecimal,
-    porcentaje: ivaPorcentaje,
-    isLoading: ivaLoading,
-    error: ivaError,
-  } = useIvaDecimal();
-
-  const IVA_DEC = ivaLoading || ivaError ? 0.19 : ivaDecimal ?? 0.19;
-  const IVA_PCT = ivaLoading || ivaError ? 19 : Number(ivaPorcentaje ?? 19);
+  const IVA_PCT = cotF ? Number((cotF as any).iva ?? 19) : 19;
+  const IVA_DEC = IVA_PCT / 100;
 
   const { data: distsResp, isLoading: loadingDists } = useDistribuidoras({
     page: 1,
@@ -411,8 +325,8 @@ const SolicitarFacturacionPage: React.FC = () => {
 
 
   const docValue = watch("documentos");
-  const descuentoAutForm = parseCOPInput(watch("descuentoAut"));
-  const saldoContraentregaForm = parseCOPInput(watch("saldoContraentrega"));
+  const descuentoAutForm = toNumberSafe(watch("descuentoAut"));
+  const saldoContraentregaForm = toNumberSafe(watch("saldoContraentrega"));
 
   const cedulaFiles = watch("cedulaFile");
   const manifiestoFiles = watch("manifiestoFile");
@@ -624,50 +538,82 @@ const SolicitarFacturacionPage: React.FC = () => {
   }
 
   const encabezadoCliente = (
-    <>
-      <div className="flex items-center gap-2 mb-1 flex-wrap">
-        <span className="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 px-3 py-1 text-xs font-semibold border border-emerald-100">
-          Solicitud de facturación
-        </span>
+    <div className="w-full bg-[#EBF5FB] border border-blue-100 rounded-2xl p-4 md:p-5 shadow-sm">
 
-        {ivaLoading ? (
-          <span className="text-[11px] text-slate-400">Cargando IVA…</span>
-        ) : ivaError ? (
-          <span className="text-[11px] text-rose-500">Error al cargar IVA</span>
-        ) : (
-          <span className="text-[11px] text-slate-500">
-            IVA vigente: <span className="font-semibold">{IVA_PCT.toFixed(2)}%</span>
-          </span>
-        )}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 
-        <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-          Tipo de pago:{" "}
-          <span className="font-semibold">
-            {esCreditoTercerosCot
-              ? "Crédito de terceros"
-              : esContado
-                ? "Contado"
-                : cotF?.tipo_pago || cotF?.metodo_pago || "—"}
-          </span>
-        </span>
-      </div>
+        {/* IZQUIERDA: Info cliente */}
+        <div className="space-y-1 text-center md:text-left">
+          <h3 className="text-base md:text-lg font-semibold text-slate-900">
+            {safe(data.nombre_cliente)}
+          </h3>
 
-      <div className="text-lg md:text-xl font-semibold mb-1 text-slate-900">
-        {safe(data.nombre_cliente)}
-      </div>
+          <div className="text-sm text-slate-600">
+            C.C. <span className="font-medium">{safe(data.numero_documento)}</span>
+          </div>
 
-      <div className="text-sm leading-6 text-slate-600 space-y-0.5">
-        <div>
-          C.C. <span className="font-medium">{safe(data.numero_documento)}</span>
+          {data.email && (
+            <div className="text-xs text-slate-500">
+              {data.email}
+            </div>
+          )}
         </div>
-        {data.email ? <div>{data.email}</div> : null}
+
+        {/* DERECHA: badges / info */}
+        <div className="flex flex-wrap justify-center md:justify-end items-center gap-2 text-xs">
+
+          <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 px-3 py-1 font-semibold border border-blue-200">
+            Solicitud de facturación
+          </span>
+
+          <span className="px-2 py-1 rounded-full bg-white text-slate-600 border border-slate-200 shadow-sm">
+            IVA: <span className="font-semibold">{IVA_PCT.toFixed(2)}%</span>
+          </span>
+
+          <span className="px-2 py-1 rounded-full bg-white text-slate-600 border border-slate-200 shadow-sm">
+            Pago:{" "}
+            <span className="font-semibold">
+              {esCreditoTercerosCot
+                ? "Crédito de terceros"
+                : esContado
+                  ? "Contado"
+                  : cotF?.tipo_pago || cotF?.metodo_pago || "—"}
+            </span>
+          </span>
+
+        </div>
       </div>
-    </>
+    </div>
   );
 
   return (
     <main className="min-h-screen bg-linear-to-b w-full from-slate-50 to-slate-100 py-6 md:py-8">
       <div className="w-full space-y-6 md:space-y-8 px-4 md:px-6 lg:px-8">
+
+        <div className="border-b border-emerald-100 bg-[#EAF7F0]/80 backdrop-blur rounded-xl px-4 md:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm">
+
+          {/* Botón volver */}
+          <div>
+            <ButtonLink
+              to="/solicitudes"
+              label="Volver a facturación"
+              direction="back"
+            />
+          </div>
+
+          {/* Título */}
+          <div className="flex items-center gap-2 justify-center sm:justify-end">
+
+            <div className="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold border border-emerald-200">
+              Facturación
+            </div>
+
+            <h1 className="text-lg md:text-xl font-semibold text-slate-900">
+              Solicitud de facturación
+            </h1>
+
+          </div>
+        </div>
         {/* Header */}
         <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4 md:p-6">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 md:gap-6">
@@ -711,12 +657,24 @@ const SolicitarFacturacionPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-slate-700">
               <div>
                 <span className="font-semibold">Fecha de nacimiento:</span>{" "}
-                {fmtSoloFecha((data as any).fecha_nacimiento)}
+                {fmtFecha((data as any).fecha_nacimiento)}
               </div>
               <div>
                 <span className="font-semibold">Ciudad:</span>{" "}
                 {safe((data as any).ciudad_residencia)}
               </div>
+              {(data.telefono || (cotF as any)?.celular) && (
+                <div>
+                  <span className="font-semibold">Teléfono:</span>{" "}
+                  {safe(data.telefono || (cotF as any)?.celular)}
+                </div>
+              )}
+              {(data.email || (cotF as any)?.email) && (
+                <div>
+                  <span className="font-semibold">Correo:</span>{" "}
+                  {safe(data.email || (cotF as any)?.email)}
+                </div>
+              )}
               <div className="md:col-span-2">
                 <span className="font-semibold">Dirección:</span>{" "}
                 {safe((data as any).direccion_residencia)}
@@ -726,13 +684,19 @@ const SolicitarFacturacionPage: React.FC = () => {
 
           <Box title="Información de la solicitud" tone="emerald">
             <div className="space-y-1 text-sm text-slate-700">
+              {(cotF as any)?.asesor && (
+                <div>
+                  <span className="font-semibold">Asesor:</span>{" "}
+                  {safe((cotF as any).asesor)}
+                </div>
+              )}
               <div>
                 <span className="font-semibold">Creada:</span>{" "}
-                {fmtFechaLarga((data as any).creado_en)}
+                {fmtFecha((data as any).creado_en)}
               </div>
               <div>
                 <span className="font-semibold">Actualizada:</span>{" "}
-                {fmtFechaLarga((data as any).actualizado_en)}
+                {fmtFecha((data as any).actualizado_en)}
               </div>
 
               {(data as any).observaciones && (
@@ -902,25 +866,25 @@ const SolicitarFacturacionPage: React.FC = () => {
                 <Row
                   cols={[
                     "Documentos (subtotal):",
-                    <span className="font-semibold">{fmtOptCOP(subtotalDocs)}</span>,
+                    <span className="font-semibold">{fmtCOP(subtotalDocs)}</span>,
                   ]}
                 />
                 <Row
                   cols={[
                     "SOAT:",
-                    <span className="font-semibold">{fmtOptCOP(soatNum)}</span>,
+                    <span className="font-semibold">{fmtCOP(soatNum)}</span>,
                   ]}
                 />
                 <Row
                   cols={[
                     "Matrícula:",
-                    <span className="font-semibold">{fmtOptCOP(matriculaNum)}</span>,
+                    <span className="font-semibold">{fmtCOP(matriculaNum)}</span>,
                   ]}
                 />
                 <Row
                   cols={[
                     "Impuestos:",
-                    <span className="font-semibold">{fmtOptCOP(impuestosNum)}</span>,
+                    <span className="font-semibold">{fmtCOP(impuestosNum)}</span>,
                   ]}
                 />
                 <Row

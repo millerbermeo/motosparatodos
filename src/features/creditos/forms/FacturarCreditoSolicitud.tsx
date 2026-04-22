@@ -385,6 +385,7 @@ const FacturarCreditoSolicitud: React.FC = () => {
         {/* Encabezado: Información del cliente + lateral */}
         <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+
             <div className="md:col-span-2">
               <h2 className="text-base font-semibold text-emerald-700 mb-3">
                 Información del cliente
@@ -403,6 +404,7 @@ const FacturarCreditoSolicitud: React.FC = () => {
                 </div>
               </div>
             </div>
+            
             <div className="md:col-span-1">
               <div className="h-full rounded-lg bg-[#F1FCF6] border border-success p-4 flex flex-col justify-center md:justify-end md:items-end">
                 <div className="text-right">
