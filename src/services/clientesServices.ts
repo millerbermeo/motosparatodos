@@ -1,14 +1,15 @@
-/* ===== CLIENTES (únicos por cédula) ===== */
+/* ===== CLIENTES ===== */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { api } from "./axiosInstance";
 import Swal from "sweetalert2";
 import type { AxiosError } from "axios";
 import type { ServerError } from "../shared/types/server";
 
-/** Modelo que devuelve el backend en clientes-unicos.php */
+/* ===== TYPES ===== */
+
 export interface Cliente {
-  id: number;                 // id del registro (se normaliza a number)
+  id: number;
   cedula: string;
   name?: string;
   s_name?: string;
@@ -16,8 +17,11 @@ export interface Cliente {
   s_last_name?: string;
   celular?: string;
   email?: string;
-  fecha_nacimiento?: string;  // "YYYY-MM-DD"
-  fecha_creacion?: string;    // "YYYY-MM-DD HH:mm:ss"
+  fecha_nacimiento?: string;
+  direccion?: string;
+  ciudad?: string;
+  departamento?: string;
+  fecha_creacion?: string;
   [k: string]: any;
 }
 
@@ -32,30 +36,42 @@ export interface ApiListResponseT<T> {
   };
 }
 
-/**
- * Lista de clientes únicos por cédula (último registro por cédula).
- * - page/perPage para paginación.
- * - Normaliza id a number por seguridad.
- */
-export const useClientes = (page: number = 1, perPage: number = 10) => {
-  return useQuery<ApiListResponseT<Cliente[]>>({
-    queryKey: ["clientes", { page, perPage }],
-    queryFn: async () => {
-      const { data } = await api.get<ApiListResponseT<Cliente[]>>(
-        "/clientes-unicos.php",
-        { params: { page, per_page: perPage } }
-      );
+/* ===== LISTADO CON FILTROS ===== */
 
-      const list = Array.isArray(data?.data) ? data.data : [];
-      const normalized: Cliente[] = list.map((c) => ({
-        ...c,
-        id: Number(c.id),
-      }));
+export const useClientes = (
+  page: number = 1,
+  perPage: number = 10,
+  filters?: {
+    cedula?: string;
+    nombre?: string;
+    ciudad?: string;
+    departamento?: string;
+  }
+) => {
+  return useQuery<ApiListResponseT<Cliente[]>>({
+    queryKey: ["clientes", { page, perPage, filters }],
+    queryFn: async () => {
+      const params: any = {
+        page,
+        per_page: perPage,
+      };
+
+      if (filters?.cedula?.trim()) params.cedula = filters.cedula.trim();
+      if (filters?.nombre?.trim()) params.nombre = filters.nombre.trim();
+      if (filters?.ciudad?.trim()) params.ciudad = filters.ciudad.trim();
+      if (filters?.departamento?.trim()) params.departamento = filters.departamento.trim();
+
+      const { data } = await api.get<ApiListResponseT<Cliente[]>>(
+        "/list_clientes.php",
+        { params }
+      );
 
       return {
         ...data,
-        data: normalized,
-        // normaliza por si el backend envía "4" como string
+        data: (data?.data ?? []).map((c) => ({
+          ...c,
+          id: Number(c.id),
+        })),
         pagination: data?.pagination
           ? {
               ...data.pagination,
@@ -67,19 +83,17 @@ export const useClientes = (page: number = 1, perPage: number = 10) => {
   });
 };
 
-/**
- * Trae el ÚLTIMO registro para una cédula específica
- * - GET /clientes-unicos.php?cedula=XXXX
- */
+/* ===== CLIENTE POR CÉDULA ===== */
+
 export const useClienteByCedula = (cedulaInput: string | undefined | null) => {
   const cedula = (cedulaInput ?? "").trim();
 
   return useQuery<Cliente>({
     queryKey: ["cliente-cedula", cedula],
-    enabled: cedula.length >= 3, // evita llamadas con cédulas vacías o muy cortas
+    enabled: cedula.length >= 3,
     queryFn: async () => {
       const { data } = await api.get<ApiListResponseT<Cliente>>(
-        "/clientes-unicos.php",
+        "/list_clientes.php",
         { params: { cedula } }
       );
 
@@ -89,17 +103,13 @@ export const useClienteByCedula = (cedulaInput: string | undefined | null) => {
   });
 };
 
-/* ===== OPCIONALES/UTILIDADES ===== */
+/* ===== REFRESH ===== */
 
-/**
- * Si en algún flujo (p.ej. crear/actualizar cotización) quieres refrescar
- * la lista de clientes únicos, puedes usar este helper.
- * Llama a qc.invalidateQueries({ queryKey: ["clientes"] })
- */
 export const useRefreshClientes = () => {
   const qc = useQueryClient();
+
   return useMutation({
-    mutationFn: async () => true, // dummy
+    mutationFn: async () => true,
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["clientes"] });
       Swal.fire({
@@ -112,27 +122,43 @@ export const useRefreshClientes = () => {
   });
 };
 
-/**
- * Ejemplo: tras crear cotización, refrescar clientes
- * (útil si la creación puede introducir una nueva cédula o actualizar la última).
- *
- * En tu useCreateCotizaciones onSuccess:
- *   await qc.invalidateQueries({ queryKey: ["clientes"] });
- *
- * Ya tienes un hook similar; lo recordamos aquí como guía.
- */
-export const usePostCreateCotizacionRefreshClientes = () => {
-  const qc = useQueryClient();
-  return async () => {
-    await qc.invalidateQueries({ queryKey: ["clientes"] });
-  };
-};
+/* ===== ERROR HANDLER ===== */
 
-/**
- * Manejo de errores genérico (opcional para reutilizar en onError)
- */
-export const handleAxiosError = (error: AxiosError<ServerError>, fallbackMsg: string) => {
+export const handleAxiosError = (
+  error: AxiosError<ServerError>,
+  fallbackMsg: string
+) => {
   const raw = (error.response?.data as any)?.message ?? fallbackMsg;
   const arr = Array.isArray(raw) ? raw : [raw];
   Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
+};
+
+
+/* ===== BUSCAR CLIENTE (ENDPOINT RÁPIDO) ===== */
+
+export const useBuscarClientePorCedula = (
+  cedulaInput: string | undefined | null
+) => {
+  const cedula = (cedulaInput ?? "").trim();
+
+  return useQuery<Cliente | null>({
+    queryKey: ["buscar-cliente-cedula", cedula],
+    enabled: cedula.length >= 5, // evita llamadas innecesarias
+    queryFn: async () => {
+      const { data } = await api.get<{
+        success: boolean;
+        data: Cliente | null;
+      }>("/buscar_cliente_cedula.php", {
+        params: { cedula },
+      });
+
+      if (!data?.data) return null;
+
+      return {
+        ...data.data,
+        id: Number(data.data.id),
+      };
+    },
+    staleTime: 1000 * 60 * 5, // cache 5 min
+  });
 };
