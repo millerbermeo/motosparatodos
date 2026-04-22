@@ -1422,6 +1422,7 @@ const CotizacionFormulario: React.FC = () => {
         setValue("segundo_apellido", cliente.s_last_name || "");
         setValue("celular", cliente.celular || "");
         setValue("email", cliente.email || "");
+        setValue("fecha_nac", cliente.fecha_nacimiento || "");
     };
 
 
