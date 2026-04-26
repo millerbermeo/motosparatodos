@@ -15,6 +15,7 @@ import DescuentosContraentregaPanel from "../shared/components/DescuentosContrae
 import SolicitudFacturaPDF2 from "../features/creditos/pdf/SolicitudFacturaPDF2";
 import { useEmpresaById } from "../services/empresasServices";
 import ManifiestoUploader from "../shared/components/ManifiestoUploader";
+import CedulaUploader from "../shared/components/CedulaUploader";
 import { toNum } from "../utils/convertirNumeroSeguro";
 import { fmtFecha } from "../utils/date";
 import { fmtCOP } from "../utils/money";
@@ -570,10 +571,10 @@ const DetallesFacturacion: React.FC = () => {
     null;
 
   const cedulaPathUlt: string | null =
-    (ultimaSolRegistro && ultimaSolRegistro.cedula) ?? null;
+    (ultimaSolRegistro && ultimaSolRegistro.cedula) || null;
 
   const manifiestoPathUlt: string | null =
-    (ultimaSolRegistro && ultimaSolRegistro.manifiesto) ?? null;
+    (ultimaSolRegistro && ultimaSolRegistro.manifiesto) || null;
 
   const facturaPathUlt: string | null =
     (ultimaSolRegistro && ultimaSolRegistro.factura) ?? null;
@@ -618,9 +619,13 @@ const DetallesFacturacion: React.FC = () => {
 
 
   const cedulaUrlFinal =
-    toAbsoluteUrl(cedulaPathUlt) || toAbsoluteUrl(cedula_url);
+    ultimaSolRegistro
+      ? toAbsoluteUrl(cedulaPathUlt)
+      : toAbsoluteUrl(cedulaPathUlt) || toAbsoluteUrl(cedula_url);
   const manifiestoUrlFinal =
-    toAbsoluteUrl(manifiestoPathUlt) || toAbsoluteUrl(manifiesto_url);
+    ultimaSolRegistro
+      ? toAbsoluteUrl(manifiestoPathUlt)
+      : toAbsoluteUrl(manifiestoPathUlt) || toAbsoluteUrl(manifiesto_url);
   const facturaUrlFinal =
     toAbsoluteUrl(facturaPathUlt) || toAbsoluteUrl(factura_url);
   const cartaUrlFinal =
@@ -1150,6 +1155,16 @@ const DetallesFacturacion: React.FC = () => {
                       />
                     )}
 
+                    {!cedulaPathUlt && !!idSolicitud && (
+                      <CedulaUploader
+                        idSolicitud={idSolicitud}
+                        idCotizacion={id_cotizacion}
+                        onUploaded={() => {
+                          refetch();
+                        }}
+                      />
+                    )}
+
                     {/* Carga de factura: SOLO si aún NO hay factura */}
                     {!tieneFactura && (
                       <div className="mt-4 pt-3 bg-success p-3 rounded-2xl border-t border-dashed border-slate-200 space-y-2">
@@ -1246,21 +1261,22 @@ const DetallesFacturacion: React.FC = () => {
               <DocumentosSolicitud
                 id_factura={Number(id_cotizacion)}
                 id={id_cotizacion}
-                tiene_factura={tieneFactura} // 👈 NUEVO
-
+                idSolicitud={idSolicitud}
+                idCotizacion={id_cotizacion}
+                tiene_factura={tieneFactura}
                 docs={{
                   manifiesto_url: manifiestoUrlFinal,
                   cedula_url: cedulaUrlFinal,
                   factura_url: facturaUrlFinal,
                   carta_url: cartaUrlFinal,
                   otros_documentos: otrosDocsUrls,
-
                 }}
                 onVolver={() => {
                   volverAtras();
                 }}
-                finalizado={finalizadoActaRaw}   // 👈 AQUÍ EL CAMBIO
+                finalizado={finalizadoActaRaw}
                 estadoCotizacion={estadoCotizacion}
+                onDocumentUploaded={() => refetch()}
                 onAprobado={() => {
                   if (!tieneFactura) {
                     alert.warn(
