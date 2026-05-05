@@ -142,11 +142,9 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
   // Fecha para la tabla (mes/año de las cuotas en la UI)
   const fechaCreacionTabla = useMemo(() => {
     const raw =
-      data?.credito?.fecha_entrega ??
+      data?.credito?.fecha_inicial ??
       data?.credito?.fecha_creacion ??
-      data?.credito?.fecha_solicitud ??
       null;
-
     return raw ? String(raw) : undefined;
   }, [data]);
 
@@ -161,6 +159,15 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
     [data]
   );
 
+  const { productoCot, cedulaCot } = useMemo(() => {
+    const cot = data?.cotizacion;
+    const suf = (cot?.moto_seleccionada ?? 1) === 2 ? "b" : "a";
+    return {
+      productoCot: [cot?.[`marca_${suf}`], cot?.[`linea_${suf}`]].filter(Boolean).join(" ") || undefined,
+      cedulaCot: cot?.cedula ?? clienteInfo.documento ?? undefined,
+    };
+  }, [data, clienteInfo.documento]);
+
   // const empresaInfo = useMemo(
   //   () => ({
   //     nombre: data?.empresa?.nombre ?? "Mi empresa",
@@ -174,19 +181,19 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
     const raw =
       data?.credito?.tasa_mensual ??
       data?.credito?.tasaMensual ??
-      data?.credito?.tasa_mensual_porcentaje;
+      data?.credito?.tasa_mensual_porcentaje ??
+      data?.cotizacion?.tasa_financiacion; // viene en la cotización
     const n = Number(raw);
     if (Number.isFinite(n) && n > 0) return n;
-    // fallback si no viene del backend
     return 1.96;
   }, [data]);
 
   const fechaPlan = useMemo(() => {
-    return (
+    const raw =
+      data?.credito?.fecha_inicial ??
       data?.credito?.fecha_creacion ??
-      data?.credito?.fecha_solicitud ??
-      undefined
-    );
+      null;
+    return raw ? String(raw) : undefined;
   }, [data]);
 
 
@@ -289,16 +296,16 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
                       <TablaAmortizacionPDFDoc
                         credito={creditoTabla}
                         tasaMensualPorcentaje={tasaMensualPorcentaje}
+                        tasaGarantiaPorcentaje={Number(data?.cotizacion?.tasa_garantia ?? 1.5)}
                         empresa={{
                           nombre: 'VERIFICARTE AAA S.A.S',
                           ciudad: 'Cali',
                           nit: '901155548-8',
                         }}
                         cliente={clienteInfo}
+                        producto={productoCot}
                         codigoPlan={String(codigo_credito)}
                         fechaPlan={fechaPlan}
-                      // logoUrl opcional si tienes una URL
-                      // logoUrl="https://tuservidor.com/logo.png"
                       />
                     }
                     fileName={`tabla-amortizacion-${codigo_credito}.pdf`}
@@ -319,6 +326,11 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
                     credito={creditoTabla}
                     fechaCreacion={fechaCreacionTabla}
                     cotizacionId={data.credito.cotizacion_id}
+                    nombreCliente={clienteInfo.nombre}
+                    cedula={cedulaCot}
+                    direccion={clienteInfo.direccion}
+                    telefono={clienteInfo.telefono}
+                    producto={productoCot}
                   />
                 </div>
               </div>

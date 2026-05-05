@@ -190,6 +190,15 @@ const CreditoDetalle: React.FC = () => {
     const idCot = credito?.cotizacion_id ?? null;
     const { data: cotizacion } = useCotizacionById(Number(idCot));
 
+    const cotData = cotizacion?.data;
+    const motoSel = cotData?.moto_seleccionada ?? 1;
+    const sufCot = motoSel === 2 ? "b" : "a";
+    const productoCot = [cotData?.[`marca_${sufCot}`], cotData?.[`linea_${sufCot}`]]
+        .filter(Boolean).join(" ") || undefined;
+    const cedulaCot = cotData?.cedula
+        ?? informacion_personal?.numero_documento
+        ?? undefined;
+
     const empresaIdRaw =
         cotizacion?.data?.id_empresa_a ??
         cotizacion?.data?.id_empresa_b;
@@ -307,18 +316,19 @@ const CreditoDetalle: React.FC = () => {
 
             const blob = await pdf(
                 <TablaAmortizacionPDFDoc
-                    credito={credito as any}
+                    credito={creditoAjustado as any}
                     tasaMensualPorcentaje={tasaMensualPorcentaje}
+                    tasaGarantiaPorcentaje={Number(cotData?.tasa_garantia ?? 1.5)}
                     codigoPlan={String(codigo_credito)}
-                    fechaPlan={credito.fecha_creacion}
+                    fechaPlan={credito.fecha_inicial ?? credito.fecha_creacion}
                     empresa={empresaPDF}
                     cliente={{
                         nombre: nombreCliente,
-                        documento: informacion_personal?.numero_documento,
+                        documento: cedulaCot ?? informacion_personal?.numero_documento,
                         direccion: informacion_personal?.direccion_residencia,
                         telefono: informacion_personal?.celular,
                     }}
-                    // si tienes logo en /public, por ejemplo:
+                    producto={productoCot}
                     logoUrl={logoUrl}
                 />
             ).toBlob();
@@ -1029,8 +1039,18 @@ const CreditoDetalle: React.FC = () => {
                             <div className="collapse-content text-sm">
                                 <TablaAmortizacionCredito
                                     credito={creditoAjustado as any}
-                                    fechaCreacion={creditoAjustado?.fecha_creacion}
+                                    fechaCreacion={creditoAjustado?.fecha_inicial ?? creditoAjustado?.fecha_creacion}
                                     cotizacionId={idCot ?? 0}
+                                    nombreCliente={[
+                                        informacion_personal?.primer_nombre,
+                                        informacion_personal?.segundo_nombre,
+                                        informacion_personal?.primer_apellido,
+                                        informacion_personal?.segundo_apellido,
+                                    ].filter(Boolean).join(" ")}
+                                    cedula={cedulaCot}
+                                    direccion={informacion_personal?.direccion_residencia}
+                                    telefono={informacion_personal?.celular}
+                                    producto={productoCot}
                                 />
                             </div>
                         </details>
@@ -1149,7 +1169,8 @@ const CreditoDetalle: React.FC = () => {
                                 <CambiarEstadoCredito codigo_credito={codigo_credito} data={{
                                     informacion_personal,
                                     moto,
-                                    credito, // si prefieres, puedes enviar solo { estado: credito?.estado, ... }
+                                    credito,
+                                    cotizacion: cotData,
                                 }} />
                             ) : (
                                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800 text-sm">

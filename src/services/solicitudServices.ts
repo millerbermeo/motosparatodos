@@ -373,9 +373,12 @@ export const useSolicitudesPorCodigoCredito = (codigoCredito: string | number) =
         { params: { id: codigoCredito } } // ← el back espera 'id' como codigo_credito
       );
 
-      console.log(data)
-
-      const raw = data?.data ?? [];
+      const rawData = data?.data;
+      const raw: SolicitudFacturacionApi[] = Array.isArray(rawData)
+        ? rawData
+        : rawData && typeof rawData === 'object'
+        ? [rawData as SolicitudFacturacionApi]
+        : [];
       return raw.map(normalizeSolicitud);
     },
     staleTime: 60_000,
@@ -926,6 +929,59 @@ export const useSubirManifiestoSolicitud = (opts?: { endpoint?: string }) => {
         (error.response?.data as any)?.message ??
         (error.response?.data as any)?.error ??
         "No se pudo subir el manifiesto";
+      const arr = Array.isArray(raw) ? raw : [raw];
+
+      Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
+    },
+  });
+};
+
+export interface SubirCedulaResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+  cedula_nueva?: string;
+}
+
+export const useSubirCedulaSolicitud = (opts?: { endpoint?: string }) => {
+  const qc = useQueryClient();
+
+  return useMutation<SubirCedulaResponse, AxiosError<ServerError>, FormData>({
+    mutationFn: async (fd) => {
+      const { data } = await api.post<SubirCedulaResponse>(
+        opts?.endpoint ?? "/actualizar_cedula.php",
+        fd,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+      return data;
+    },
+
+    onSuccess: async (resp, fd) => {
+      const idCot = fd.get("id_cotizacion")?.toString();
+
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["solicitudes-facturacion"] }),
+        idCot
+          ? qc.invalidateQueries({
+              queryKey: ["solicitud-facturacion", "ultima-por-id-cotizacion", idCot],
+            })
+          : Promise.resolve(),
+      ]);
+
+      Swal.fire({
+        icon: "success",
+        title: "Cédula cargada",
+        text: resp?.message ?? "La cédula se cargó correctamente",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    },
+
+    onError: (error) => {
+      const raw =
+        (error.response?.data as any)?.message ??
+        (error.response?.data as any)?.error ??
+        "No se pudo subir la cédula";
       const arr = Array.isArray(raw) ? raw : [raw];
 
       Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });

@@ -9,20 +9,19 @@ import {
   Image,
 } from "@react-pdf/renderer";
 
-/* ==========================
-   Tipos base (ajusta a tu API)
-   ========================== */
+/* ============================================================
+   Tipos
+   ============================================================ */
 
 export interface CreditoApi {
   valor_producto: number;
   cuota_inicial: number;
   plazo_meses: number;
-
   soat?: string | number;
   matricula?: string | number;
   impuestos?: string | number;
   accesorios_total?: string | number;
-  precio_seguros?: string | number;          // total seguro (para dividir)
+  precio_seguros?: string | number;
   garantia_extendida_valor?: string | number;
 }
 
@@ -41,449 +40,507 @@ type ClienteInfo = {
 
 export type TablaAmortizacionPDFProps = {
   credito: CreditoApi;
-  /** tasa mensual como % (ej: 1.96 para 1,96%) */
+  /** Tasa de financiación mensual como % (ej: 1.9189) */
   tasaMensualPorcentaje: number;
-
-  /** código interno del crédito / plan */
+  /** Tasa de garantía mensual como % (ej: 1.5) */
+  tasaGarantiaPorcentaje?: number;
   codigoPlan?: string;
-  /** fecha del plan en string (YYYY-MM-DD o similar) */
   fechaPlan?: string;
-
   empresa?: EmpresaInfo;
   cliente?: ClienteInfo;
+  producto?: string;
   logoUrl?: string;
 };
 
-/* ==========================
-   Helpers
-   ========================== */
+/* ============================================================
+   Estilos
+   ============================================================ */
 
-const ACCENT = "#1f2937";
-const ACCENT_LIGHT = "#f3f4f6";
+const DARK = "#1f2937";
 const BORDER = "#d1d5db";
+const LIGHT_BG = "#f9fafb";
+const HEADER_BG = "#374151";
 
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 36,
-    paddingBottom: 40,
-    paddingHorizontal: 40,
-    fontSize: 9,
+    paddingTop: 30,
+    paddingBottom: 44,
+    paddingHorizontal: 36,
+    fontSize: 8.5,
     fontFamily: "Helvetica",
     backgroundColor: "#ffffff",
   },
 
-  /* HEADER */
+  /* CABECERA EMPRESA */
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 14,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER,
-  },
-  headerLeft: {
-    flexDirection: "row",
     alignItems: "center",
+    marginBottom: 10,
+    paddingBottom: 8,
+    borderBottomWidth: 1.5,
+    borderBottomColor: DARK,
   },
-  logo: {
-    width: 90,
-    height: 40,
-    marginRight: 10,
-  },
-  empresaNombre: {
-    fontSize: 11,
-    fontWeight: "bold",
-    color: "#111827",
-  },
-  empresaSub: {
-    fontSize: 8.5,
-    color: "#4b5563",
-  },
-  headerRight: {
-    alignItems: "flex-end",
-  },
+  headerLeft: { flexDirection: "row", alignItems: "center" },
+  logo: { width: 80, height: 36, marginRight: 8 },
+  empresaNombre: { fontSize: 11, fontFamily: "Helvetica-Bold", color: "#111827" },
+  empresaSub: { fontSize: 7.5, color: "#4b5563", marginTop: 1 },
+  headerRight: { alignItems: "flex-end" },
   headerTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: ACCENT,
-    marginBottom: 3,
+    fontSize: 13,
+    fontFamily: "Helvetica-Bold",
+    color: DARK,
+    marginBottom: 2,
   },
-  headerLine: {
-    fontSize: 8.5,
-    color: "#374151",
-  },
+  headerSub: { fontSize: 7.5, color: "#374151", marginTop: 1 },
 
-  /* BLOQUE INFO PRINCIPAL */
-  infoBox: {
+  /* RESUMEN 3 COLUMNAS */
+  summaryRow: {
+    flexDirection: "row",
     borderWidth: 1,
     borderColor: BORDER,
-    borderRadius: 5,
-    padding: 8,
+    borderRadius: 4,
     marginBottom: 10,
   },
-  infoRow: {
-    flexDirection: "row",
-    marginBottom: 4,
-  },
-  infoLabel: {
-    width: 80,
-    fontSize: 8.5,
-    fontWeight: "bold",
-    color: "#111827",
-  },
-  infoValue: {
-    fontSize: 8.5,
-    color: "#111827",
-  },
-
-  /* RESUMEN ECONÓMICO */
-  resumenBox: {
-    flexDirection: "row",
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: BORDER,
-    backgroundColor: ACCENT_LIGHT,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    marginBottom: 14,
-  },
-  resumenCol: {
+  summaryCol: {
     flex: 1,
-    paddingRight: 10,
+    padding: 7,
+    borderRightWidth: 1,
+    borderRightColor: BORDER,
   },
-  resumenTitle: {
-    fontSize: 10,
-    fontWeight: "bold",
-    color: "#111827",
+  summaryColLast: { flex: 1, padding: 7 },
+  summaryColTitle: {
+    fontSize: 8,
+    fontFamily: "Helvetica-Bold",
+    color: DARK,
     marginBottom: 4,
+    paddingBottom: 3,
+    borderBottomWidth: 0.5,
+    borderBottomColor: BORDER,
   },
-  resumenLine: {
-    fontSize: 8.5,
+  summaryLine: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 2.5,
+  },
+  summaryLabel: { fontSize: 7.5, color: "#4b5563", flex: 1 },
+  summaryValue: {
+    fontSize: 7.5,
+    fontFamily: "Helvetica-Bold",
     color: "#111827",
-    marginBottom: 2,
+    textAlign: "right",
+  },
+  summaryValueAccent: {
+    fontSize: 7.5,
+    fontFamily: "Helvetica-Bold",
+    color: "#1d4ed8",
+    textAlign: "right",
+  },
+  summaryValueRose: {
+    fontSize: 7.5,
+    fontFamily: "Helvetica-Bold",
+    color: "#be123c",
+    textAlign: "right",
+  },
+  summaryValueGreen: {
+    fontSize: 8.5,
+    fontFamily: "Helvetica-Bold",
+    color: "#065f46",
+    textAlign: "right",
+  },
+  summaryDivider: {
+    marginTop: 3,
+    paddingTop: 3,
+    borderTopWidth: 0.5,
+    borderTopColor: BORDER,
   },
 
   /* TABLA */
   table: {
-    marginTop: 6,
     borderWidth: 1,
     borderColor: BORDER,
-    borderRadius: 5,
+    borderRadius: 4,
+    marginTop: 2,
   },
   tableHeaderRow: {
     flexDirection: "row",
-    backgroundColor: "#e5e7eb",
+    backgroundColor: HEADER_BG,
   },
-  tableRow: {
-    flexDirection: "row",
-  },
-  th: {
-    flex: 1,
-    paddingVertical: 4,
-    paddingHorizontal: 4,
-    fontSize: 8,
-    fontWeight: "bold",
-    borderRightWidth: 1,
-    borderRightColor: BORDER,
-    textAlign: "center",
-    color: "#111827",
-  },
-  thFirst: {
-    flex: 0.4,
-  },
-  thLast: {
-    borderRightWidth: 0,
-  },
-  td: {
-    flex: 1,
-    paddingVertical: 3,
-    paddingHorizontal: 4,
-    fontSize: 8,
-    borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
-    borderRightWidth: 1,
-    borderRightColor: "#e5e7eb",
-    textAlign: "right",
-  },
-  tdFirst: {
-    flex: 0.4,
-    textAlign: "center",
-  },
-  tdLast: {
-    borderRightWidth: 0,
-  },
+  tableRow: { flexDirection: "row" },
+  tableRowAlt: { flexDirection: "row", backgroundColor: LIGHT_BG },
 
+  th: {
+    paddingVertical: 5,
+    paddingHorizontal: 3,
+    fontSize: 7,
+    fontFamily: "Helvetica-Bold",
+    color: "#ffffff",
+    textAlign: "right",
+    borderRightWidth: 0.5,
+    borderRightColor: "#6b7280",
+  },
+  thCenter: { textAlign: "center" },
+  thLast: { borderRightWidth: 0 },
+
+  td: {
+    paddingVertical: 2.5,
+    paddingHorizontal: 3,
+    fontSize: 7,
+    color: "#111827",
+    textAlign: "right",
+    borderTopWidth: 0.5,
+    borderTopColor: BORDER,
+    borderRightWidth: 0.5,
+    borderRightColor: BORDER,
+  },
+  tdCenter: { textAlign: "center", color: "#6b7280" },
+  tdBold: { fontFamily: "Helvetica-Bold", color: "#065f46" },
+  tdRose: { fontFamily: "Helvetica-Bold", color: "#be123c" },
+  tdLast: { borderRightWidth: 0 },
+
+  /* PIE */
   footer: {
     marginTop: 10,
-    fontSize: 7.5,
+    fontSize: 7,
     color: "#6b7280",
+    fontStyle: "italic",
+  },
+
+  /* FIRMAS */
+  signatureSection: {
+    marginTop: 36,
+    flexDirection: "row",
+    justifyContent: "space-around",
+  },
+  signatureBlock: {
+    width: "40%",
+    alignItems: "center",
+  },
+  signatureSpace: { height: 48 },
+  signatureLine: {
+    borderTopWidth: 1,
+    borderTopColor: DARK,
+    width: "100%",
+    marginBottom: 5,
+  },
+  signatureLabel: {
+    fontSize: 8,
+    fontFamily: "Helvetica-Bold",
+    color: "#111827",
+    textAlign: "center",
+  },
+  signatureSub: {
+    fontSize: 7,
+    color: "#6b7280",
+    textAlign: "center",
+    marginTop: 2,
   },
 });
+
+/* ============================================================
+   Helpers
+   ============================================================ */
 
 const fmtCOP = (v: number) =>
   new Intl.NumberFormat("es-CO", {
     style: "currency",
     currency: "COP",
     maximumFractionDigits: 0,
-  }).format(Number.isFinite(v) ? v : 0);
+  }).format(Number.isFinite(v) ? Math.round(v) : 0);
 
-const fmtDateShort = (raw?: string) => {
-  if (!raw) return "";
-  const d = new Date(raw.replace(" ", "T"));
-  if (Number.isNaN(d.getTime())) return raw;
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const yy = d.getFullYear();
-  return `${dd}-${mm}-${yy}`;
-};
-
-const safe = (v: any, fallback: string = "—") =>
-  v === null || v === undefined || v === "" ? fallback : String(v);
+const fmtPct = (v: number) => `${(v * 100).toFixed(2)}%`;
 
 const toNumber = (v: unknown): number => {
-  if (typeof v === "number") return v;
-  if (typeof v === "string") {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : 0;
-  }
-  return 0;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
 };
 
-/* ==========================
-   Lógica de amortización
-   ========================== */
+const safe = (v: unknown, fallback = "—") =>
+  v === null || v === undefined || String(v).trim() === "" ? fallback : String(v);
 
-type AmortRow = {
+const MESES_ES = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+];
+
+const addMonths = (date: Date, months: number): Date =>
+  new Date(date.getFullYear(), date.getMonth() + months, 1);
+
+const parseLocalDate = (raw: string): Date => {
+  const s = raw.substring(0, 10);
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+};
+
+const fmtFechaMes = (fecha: Date): string =>
+  `${MESES_ES[fecha.getMonth()]}/${fecha.getFullYear()}`;
+
+const fmtFechaCorta = (raw?: string): string => {
+  if (!raw) return "—";
+  const d = parseLocalDate(raw);
+  if (isNaN(d.getTime())) return raw;
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+};
+
+/* PMT positivo (igual a calcularCuotaPMT pero sin negativo) */
+const pmt = (principal: number, tasaPct: number, meses: number): number => {
+  if (principal <= 0 || meses <= 0) return 0;
+  const r = tasaPct / 100;
+  if (r === 0) return principal / meses;
+  return (r * principal) / (1 - Math.pow(1 + r, -meses));
+};
+
+/* Seguro deudor — igual a calcularSeguroDeudorMensual */
+const calcSeguro = (saldo: number): number =>
+  saldo > 0 ? Math.round(saldo * 0.00043) : 0;
+
+/* ============================================================
+   Tipo fila
+   ============================================================ */
+
+type ScheduleRow = {
   periodo: number;
-  saldoInicial: number;
+  fecha: Date;
   interes: number;
   abonoCapital: number;
-  cuotaTotal: number;
+  garantiaYSeguros: number;
+  cuotaTotalMes: number;
   saldoFinal: number;
 };
 
 const buildSchedule = (
   principal: number,
-  tasaMensual: number,
+  tasaFinMensual: number,
+  cuotaNegocio: number,
+  garantiaYSeguros: number,
   meses: number,
-  cuotaConSeguro: number
-): AmortRow[] => {
-  if (!principal || !tasaMensual || !meses) return [];
-
-  const r = tasaMensual;
-  const n = meses;
-  const cuotaBase =
-    (principal * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
-
-  const schedule: AmortRow[] = [];
+  fechaInicio: Date
+): ScheduleRow[] => {
+  if (principal <= 0 || meses <= 0) return [];
+  const rows: ScheduleRow[] = [];
   let saldo = principal;
 
-  for (let i = 1; i <= n; i++) {
+  for (let i = 1; i <= meses; i++) {
     const saldoInicial = saldo;
-    const interes = saldoInicial * r;
-    let abonoCapital = cuotaBase - interes;
+    const interes = saldoInicial * tasaFinMensual;
+    let abonoCapital = cuotaNegocio - interes;
     let saldoFinal = saldoInicial - abonoCapital;
 
-    // Ajuste última cuota
-    if (i === n) {
+    if (i === meses || saldoFinal < 1) {
       abonoCapital = saldoInicial;
       saldoFinal = 0;
     }
 
-    schedule.push({
+    rows.push({
       periodo: i,
-      saldoInicial,
+      fecha: addMonths(fechaInicio, i),
       interes,
       abonoCapital,
-      cuotaTotal: cuotaConSeguro, // mostramos cuota total que paga el cliente
-      saldoFinal: saldoFinal < 1 ? 0 : saldoFinal,
+      garantiaYSeguros,
+      cuotaTotalMes: cuotaNegocio + garantiaYSeguros,
+      saldoFinal,
     });
 
     saldo = saldoFinal;
   }
-
-  return schedule;
+  return rows;
 };
 
-/* ==========================
-   Componente principal PDF
-   ========================== */
+/* ============================================================
+   Flex por columna
+   ============================================================ */
+const F_PER  = 0.35;
+const F_FECH = 0.8;
+const F_DEF  = 1;
+
+/* ============================================================
+   Componente PDF
+   ============================================================ */
 
 export const TablaAmortizacionPDFDoc: React.FC<TablaAmortizacionPDFProps> = ({
   credito,
   tasaMensualPorcentaje,
+  tasaGarantiaPorcentaje = 1.5,
   empresa,
   cliente,
+  producto,
   logoUrl,
   codigoPlan,
   fechaPlan,
 }) => {
-  const plazo = credito.plazo_meses ?? 0;
+  const plazo          = toNumber(credito.plazo_meses);
+  const valorProducto  = toNumber(credito.valor_producto);
+  const cuotaInicial   = toNumber(credito.cuota_inicial);
+  const valorGarantia  = toNumber(credito.garantia_extendida_valor);
 
-  const valorProducto = toNumber(credito.valor_producto);
-  const cuotaInicial = toNumber(credito.cuota_inicial);
-  const soat = toNumber(credito.soat);
-  const matricula = toNumber(credito.matricula);
-  const impuestos = toNumber(credito.impuestos);
-  const accesorios = toNumber(credito.accesorios_total);
-  const precioSeguros = toNumber(credito.precio_seguros);
-  const garantiaExt = toNumber(credito.garantia_extendida_valor);
+  // valorTotal = precio completo de la moto (valorProducto ya viene sin garantía)
+  const valorTotal    = valorProducto + valorGarantia;
+  const saldoNegocio  = Math.max(valorProducto - cuotaInicial, 0);
+  const saldoGarantia = Math.max(valorGarantia, 0);
 
-  const baseFinanciada =
-    valorProducto + soat + matricula + impuestos + accesorios + garantiaExt;
+  const tasaFinMensual = tasaMensualPorcentaje / 100;
+  const teaFin         = Math.pow(1 + tasaFinMensual, 12) - 1;
 
-  const principal = Math.max(baseFinanciada - cuotaInicial, 0);
-  const seguroMensual = plazo > 0 ? precioSeguros / plazo : 0;
+  const cuotaNegocio    = Math.floor(pmt(saldoNegocio,  tasaMensualPorcentaje,  plazo));
+  const cuotaGarantia   = Math.floor(pmt(saldoGarantia, tasaGarantiaPorcentaje, plazo));
+  const seguroFijo      = Math.floor(calcSeguro(saldoNegocio));
+  const garantiaYSeg    = cuotaGarantia + seguroFijo;
+  const cuotaTotalMes   = cuotaNegocio + garantiaYSeg;
 
-  const tasaMensual = tasaMensualPorcentaje / 100; // de % a decimal
-  const tasaEfectivaAnual =
-    tasaMensual > 0 ? (Math.pow(1 + tasaMensual, 12) - 1) * 100 : 0;
-
-  // cuota base SIN seguro
-  const r = tasaMensual;
-  const n = plazo || 1;
-  const cuotaBase =
-    principal && r
-      ? (principal * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1)
-      : 0;
-
-  const cuotaTotalMensual = cuotaBase + seguroMensual;
-
-  const schedule = buildSchedule(principal, tasaMensual, plazo, cuotaTotalMensual);
-
-  const fecha = fmtDateShort(fechaPlan);
+  const fechaInicio = fechaPlan ? parseLocalDate(fechaPlan) : new Date();
+  const schedule    = buildSchedule(saldoNegocio, tasaFinMensual, cuotaNegocio, garantiaYSeg, plazo, fechaInicio);
 
   return (
     <Document>
       <Page size="A4" style={styles.page} wrap>
-        {/* HEADER */}
+
+        {/* ── CABECERA EMPRESA ── */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             {logoUrl ? <Image src={logoUrl} style={styles.logo} /> : null}
             <View>
-              <Text style={styles.empresaNombre}>
-                {empresa?.nombre ?? "PLAN DE PAGOS"}
-              </Text>
-              {empresa?.nit && (
-                <Text style={styles.empresaSub}>NIT: {empresa.nit}</Text>
-              )}
-              {empresa?.ciudad && (
-                <Text style={styles.empresaSub}>Ciudad: {empresa.ciudad}</Text>
-              )}
+              <Text style={styles.empresaNombre}>{empresa?.nombre ?? "PLAN DE PAGOS"}</Text>
+              {empresa?.nit    && <Text style={styles.empresaSub}>NIT: {empresa.nit}</Text>}
+              {empresa?.ciudad && <Text style={styles.empresaSub}>Ciudad: {empresa.ciudad}</Text>}
+            </View>
+          </View>
+          <View style={styles.headerRight}>
+            <Text style={styles.headerTitle}>TABLA DE AMORTIZACIÓN</Text>
+            <Text style={styles.headerSub}>Sistema Francés — Crédito Directo</Text>
+            {codigoPlan && <Text style={styles.headerSub}>Código: {codigoPlan}</Text>}
+          </View>
+        </View>
+
+        {/* ── RESUMEN 3 COLUMNAS ── */}
+        <View style={styles.summaryRow}>
+
+          {/* Col 1 — Cliente */}
+          <View style={styles.summaryCol}>
+            <Text style={styles.summaryColTitle}>Datos del cliente</Text>
+            <View style={styles.summaryLine}>
+              <Text style={styles.summaryLabel}>Cédula:</Text>
+              <Text style={styles.summaryValue}>{safe(cliente?.documento)}</Text>
+            </View>
+            <View style={styles.summaryLine}>
+              <Text style={styles.summaryLabel}>Nombre:</Text>
+              <Text style={styles.summaryValue}>{safe(cliente?.nombre)}</Text>
+            </View>
+            <View style={styles.summaryLine}>
+              <Text style={styles.summaryLabel}>Dirección:</Text>
+              <Text style={styles.summaryValue}>{safe(cliente?.direccion)}</Text>
+            </View>
+            <View style={styles.summaryLine}>
+              <Text style={styles.summaryLabel}>Teléfono:</Text>
+              <Text style={styles.summaryValue}>{safe(cliente?.telefono)}</Text>
+            </View>
+            <View style={styles.summaryLine}>
+              <Text style={styles.summaryLabel}>Fecha desembolso:</Text>
+              <Text style={styles.summaryValue}>{fmtFechaCorta(fechaPlan)}</Text>
             </View>
           </View>
 
-          <View style={styles.headerRight}>
-            <Text style={styles.headerTitle}>PLAN DE PAGOS</Text>
-            {codigoPlan && (
-              <Text style={styles.headerLine}>Código: {codigoPlan}</Text>
-            )}
-            {fecha && (
-              <Text style={styles.headerLine}>Fecha: {fecha}</Text>
-            )}
-            {empresa?.ciudad && (
-              <Text style={styles.headerLine}>Ciudad: {empresa.ciudad}</Text>
-            )}
+          {/* Col 2 — Valores */}
+          <View style={styles.summaryCol}>
+            <Text style={styles.summaryColTitle}>Información del crédito</Text>
+            {producto ? (
+              <View style={styles.summaryLine}>
+                <Text style={styles.summaryLabel}>Producto:</Text>
+                <Text style={styles.summaryValue}>{producto.toUpperCase()}</Text>
+              </View>
+            ) : null}
+            <View style={styles.summaryLine}>
+              <Text style={styles.summaryLabel}>Valor:</Text>
+              <Text style={styles.summaryValue}>{fmtCOP(valorTotal)}</Text>
+            </View>
+            <View style={styles.summaryLine}>
+              <Text style={styles.summaryLabel}>Cuota Inicial:</Text>
+              <Text style={styles.summaryValue}>{fmtCOP(cuotaInicial)}</Text>
+            </View>
+            <View style={styles.summaryLine}>
+              <Text style={styles.summaryLabel}>Valor a financiar:</Text>
+              <Text style={styles.summaryValueAccent}>{fmtCOP(saldoNegocio)}</Text>
+            </View>
+            <View style={styles.summaryLine}>
+              <Text style={styles.summaryLabel}>Garantía y Seguros:</Text>
+              <Text style={styles.summaryValueRose}>{fmtCOP(garantiaYSeg)}</Text>
+            </View>
+          </View>
+
+          {/* Col 3 — Tasas */}
+          <View style={styles.summaryColLast}>
+            <Text style={styles.summaryColTitle}>Condiciones</Text>
+            <View style={styles.summaryLine}>
+              <Text style={styles.summaryLabel}>Tasa efectiva mensual:</Text>
+              <Text style={styles.summaryValue}>{tasaMensualPorcentaje.toFixed(4)}%</Text>
+            </View>
+            <View style={styles.summaryLine}>
+              <Text style={styles.summaryLabel}>Tasa efectiva anual:</Text>
+              <Text style={styles.summaryValue}>{fmtPct(teaFin)}</Text>
+            </View>
+            <View style={styles.summaryLine}>
+              <Text style={styles.summaryLabel}>Plazo (Meses):</Text>
+              <Text style={styles.summaryValue}>{plazo}</Text>
+            </View>
+            <View style={styles.summaryLine}>
+              <Text style={styles.summaryLabel}>Cuota:</Text>
+              <Text style={styles.summaryValueAccent}>{fmtCOP(cuotaNegocio)}</Text>
+            </View>
+            <View style={[styles.summaryLine, styles.summaryDivider]}>
+              <Text style={[styles.summaryLabel, { fontFamily: "Helvetica-Bold" }]}>CuotaTotal Mes:</Text>
+              <Text style={styles.summaryValueGreen}>{fmtCOP(cuotaTotalMes)}</Text>
+            </View>
           </View>
         </View>
 
-        {/* INFO PRINCIPAL */}
-        <View style={styles.infoBox}>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Nombre:</Text>
-            <Text style={styles.infoValue}>{safe(cliente?.nombre)}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Cédula/NIT:</Text>
-            <Text style={styles.infoValue}>{safe(cliente?.documento)}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Dirección:</Text>
-            <Text style={styles.infoValue}>{safe(cliente?.direccion)}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Teléfono:</Text>
-            <Text style={styles.infoValue}>{safe(cliente?.telefono)}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Producto:</Text>
-            <Text style={styles.infoValue}>Motocicleta</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Valor moto:</Text>
-            <Text style={styles.infoValue}>{fmtCOP(valorProducto)}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Plazo (meses):</Text>
-            <Text style={styles.infoValue}>{plazo}</Text>
-          </View>
-        </View>
-
-        {/* RESUMEN ECONÓMICO */}
-        <View style={styles.resumenBox}>
-          <View style={styles.resumenCol}>
-            <Text style={styles.resumenTitle}>Resumen del crédito</Text>
-            <Text style={styles.resumenLine}>
-              Cuota inicial: {fmtCOP(cuotaInicial)}
-            </Text>
-            <Text style={styles.resumenLine}>
-              Base financiada (incl. gastos): {fmtCOP(baseFinanciada)}
-            </Text>
-            <Text style={styles.resumenLine}>
-              Valor a financiar: {fmtCOP(principal)}
-            </Text>
-          </View>
-          <View style={styles.resumenCol}>
-            <Text style={styles.resumenTitle}>Condiciones</Text>
-            <Text style={styles.resumenLine}>
-              Tasa mensual efectiva: {tasaMensualPorcentaje.toFixed(2)}%
-            </Text>
-            <Text style={styles.resumenLine}>
-              Tasa efectiva anual: {tasaEfectivaAnual.toFixed(2)}%
-            </Text>
-            <Text style={styles.resumenLine}>
-              Cuota mensual: {fmtCOP(cuotaTotalMensual)}{" "}
-              {seguroMensual > 0
-                ? `(base ${fmtCOP(cuotaBase)} + seguro ${fmtCOP(seguroMensual)})`
-                : ""}
-            </Text>
-          </View>
-        </View>
-
-        {/* TABLA DE AMORTIZACIÓN */}
+        {/* ── TABLA AMORTIZACIÓN ── */}
         <View style={styles.table}>
           <View style={styles.tableHeaderRow}>
-            <Text style={[styles.th, styles.thFirst]}>Período</Text>
-            <Text style={styles.th}>Saldo inicial</Text>
-            <Text style={styles.th}>Intereses</Text>
-            <Text style={styles.th}>Abono a capital</Text>
-            <Text style={styles.th}>Cuota mensual</Text>
-            <Text style={[styles.th, styles.thLast]}>Saldo final</Text>
+            <Text style={[styles.th, styles.thCenter, { flex: F_PER  }]}>Per.</Text>
+            <Text style={[styles.th, styles.thCenter, { flex: F_FECH }]}>Fecha</Text>
+            <Text style={[styles.th, { flex: F_DEF }]}>Intereses</Text>
+            <Text style={[styles.th, { flex: F_DEF }]}>Abono Capital</Text>
+            <Text style={[styles.th, { flex: F_DEF }]}>Garantía y Seguros</Text>
+            <Text style={[styles.th, { flex: F_DEF }]}>Total Cuota Mes</Text>
+            <Text style={[styles.th, styles.thLast, { flex: F_DEF }]}>Saldo Final</Text>
           </View>
 
-          {schedule.map((row) => (
-            <View key={row.periodo} style={styles.tableRow}>
-              <Text style={[styles.td, styles.tdFirst]}>
-                {row.periodo}
-              </Text>
-              <Text style={styles.td}>{fmtCOP(Math.round(row.saldoInicial))}</Text>
-              <Text style={styles.td}>{fmtCOP(Math.round(row.interes))}</Text>
-              <Text style={styles.td}>
-                {fmtCOP(Math.round(row.abonoCapital))}
-              </Text>
-              <Text style={styles.td}>{fmtCOP(Math.round(row.cuotaTotal))}</Text>
-              <Text style={[styles.td, styles.tdLast]}>
-                {fmtCOP(Math.round(row.saldoFinal))}
-              </Text>
+          {schedule.map((row, idx) => (
+            <View key={row.periodo} style={idx % 2 === 0 ? styles.tableRow : styles.tableRowAlt}>
+              <Text style={[styles.td, styles.tdCenter, { flex: F_PER  }]}>{row.periodo}</Text>
+              <Text style={[styles.td, styles.tdCenter, { flex: F_FECH }]}>{fmtFechaMes(row.fecha)}</Text>
+              <Text style={[styles.td, { flex: F_DEF }]}>{fmtCOP(row.interes)}</Text>
+              <Text style={[styles.td, { flex: F_DEF }]}>{fmtCOP(row.abonoCapital)}</Text>
+              <Text style={[styles.td, styles.tdRose, { flex: F_DEF }]}>{fmtCOP(row.garantiaYSeguros)}</Text>
+              <Text style={[styles.td, styles.tdBold, { flex: F_DEF }]}>{fmtCOP(row.cuotaTotalMes)}</Text>
+              <Text style={[styles.td, styles.tdLast, { flex: F_DEF }]}>{fmtCOP(row.saldoFinal)}</Text>
             </View>
           ))}
         </View>
 
+        {/* ── NOTA PIE ── */}
         <Text style={styles.footer}>
-          Este plan de pagos es un documento informativo. Los valores pueden
-          variar ligeramente por redondeos y ajustes operativos de la entidad
-          financiera.
+          Simulación inicial del crédito bajo los parámetros básicos, no contiene ajustes o acuerdos de pago.
+          Los valores pueden variar ligeramente por redondeos operativos.
         </Text>
+
+        {/* ── FIRMAS ── */}
+        <View style={styles.signatureSection}>
+          <View style={styles.signatureBlock}>
+            <View style={styles.signatureSpace} />
+            <View style={styles.signatureLine} />
+            <Text style={styles.signatureLabel}>Firma del Cliente</Text>
+            <Text style={styles.signatureSub}>{safe(cliente?.nombre)}</Text>
+            <Text style={styles.signatureSub}>C.C. {safe(cliente?.documento)}</Text>
+          </View>
+
+          <View style={styles.signatureBlock}>
+            <View style={styles.signatureSpace} />
+            <View style={styles.signatureLine} />
+            <Text style={styles.signatureLabel}>Firma del Asesor</Text>
+            <Text style={styles.signatureSub}>{safe(empresa?.nombre)}</Text>
+          </View>
+        </View>
+
       </Page>
     </Document>
   );
