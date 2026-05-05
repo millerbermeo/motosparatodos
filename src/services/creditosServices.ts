@@ -450,6 +450,7 @@ export interface CreditoLine {
   numero_chasis?: string | null;
   numero_motor?: string | null;
   fecha_entrega?: any;
+  fecha_inicial?: string | null;
   placa?: string | null;
 
   // 👇 NUEVOS CAMPOS TOMADOS DEL JSON

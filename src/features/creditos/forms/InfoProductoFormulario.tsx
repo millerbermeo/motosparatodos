@@ -6,7 +6,9 @@ import { FormSelect } from "../../../shared/components/FormSelect";
 import {
   useActualizarCredito,
   useCredito,
+  useDeudor,
 } from "../../../services/creditosServices";
+import { useCotizacionById } from "../../../services/cotizacionesServices";
 import { useParams } from "react-router-dom";
 import { useWizardStore } from "../../../store/wizardStore";
 
@@ -24,10 +26,11 @@ const toNumberPesos = (v: unknown): number => {
 // ✅ AHORA plazoCuotas ES NUMBER SIEMPRE
 type ProductoValues = {
   producto: string;
-  plazoCuotas: number; // ✅ 6/12/24/36
+  plazoCuotas: number;
   valorMoto: number | string;
   cuotaInicial: number | string;
   comentario?: string;
+  fechaInicio: string; // fecha_inicial en backend — inicio real del crédito
 };
 
 // Opciones de plazo (en meses)
@@ -66,9 +69,10 @@ const InfoProductoFormulario: React.FC = () => {
     defaultValues: {
       producto: "",
       valorMoto: "0",
-      plazoCuotas: 12, // ✅ número (default)
+      plazoCuotas: 12,
       cuotaInicial: "0",
       comentario: "",
+      fechaInicio: "",
     },
   });
 
@@ -82,6 +86,22 @@ const InfoProductoFormulario: React.FC = () => {
 
   const creditoBackend =
     data?.success && data.creditos?.length ? data.creditos[0] : null;
+
+  const { data: deudorData } = useDeudor(codigo_credito);
+  const infoPers = (deudorData as any)?.data?.informacion_personal;
+  const nombreCliente = [
+    infoPers?.primer_nombre,
+    infoPers?.segundo_nombre,
+    infoPers?.primer_apellido,
+    infoPers?.segundo_apellido,
+  ].filter(Boolean).join(" ") || undefined;
+
+  const { data: cotizacionData } = useCotizacionById(Number(creditoBackend?.cotizacion_id ?? 0));
+  const cotObj = cotizacionData?.data;
+  const sufCot = (cotObj?.moto_seleccionada ?? 1) === 2 ? "b" : "a";
+  const productoCot = [cotObj?.[`marca_${sufCot}`], cotObj?.[`linea_${sufCot}`]]
+    .filter(Boolean).join(" ") || undefined;
+  const cedulaCot = cotObj?.cedula ?? infoPers?.numero_documento ?? undefined;
 
 
   console.log("bakedn", creditoBackend)
@@ -110,6 +130,14 @@ const InfoProductoFormulario: React.FC = () => {
       shouldDirty: false,
     });
     setValue("comentario", c?.comentario ?? "", { shouldDirty: false });
+
+    // Toma fecha_entrega del backend si existe, si no queda vacío
+    const fechaInicialRaw = c?.fecha_inicial
+      ? String(c.fecha_inicial).substring(0, 10)
+      : c?.fecha_creacion
+        ? String(c.fecha_creacion).substring(0, 10)
+        : "";
+    setValue("fechaInicio", fechaInicialRaw, { shouldDirty: false });
   }, [creditoBackend, setValue]);
 
   const onSubmit = (v: ProductoValues) => {
@@ -117,6 +145,7 @@ const InfoProductoFormulario: React.FC = () => {
       plazo_meses: v.plazoCuotas || undefined,
       cuota_inicial: toNumberPesos(v.cuotaInicial) || 0,
       comentario: (v.comentario?.trim() ?? "") || null,
+      fecha_inicial: v.fechaInicio || null,
     };
 
     actualizarCredito.mutate(
@@ -142,6 +171,7 @@ const InfoProductoFormulario: React.FC = () => {
   // 👇 Leemos lo que hay en el form
   const plazoCuotasWatch = watch("plazoCuotas");
   const cuotaInicialWatch = watch("cuotaInicial");
+  const fechaInicioWatch = watch("fechaInicio");
 
   // ✅ Tabla: form → backend → 12 (pero ya todo es número)
   const plazoParaTabla = normalizePlazo(
@@ -167,7 +197,11 @@ const InfoProductoFormulario: React.FC = () => {
     }
     : null;
 
-  const fechaCreacionCredito = creditoBackend?.fecha_creacion ?? undefined;
+  const fechaCreacionCredito =
+    fechaInicioWatch ||
+    (creditoBackend?.fecha_inicial
+      ? String(creditoBackend.fecha_inicial)
+      : creditoBackend?.fecha_creacion ?? undefined);
 
   const grid = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-3";
 
@@ -230,6 +264,14 @@ const InfoProductoFormulario: React.FC = () => {
               validate: (v) => toNumberPesos(v) >= 0 || "Debe ser >= 0",
             }}
           />
+
+          <FormInput
+            name="fechaInicio"
+            label="Fecha inicio del crédito"
+            type="date"
+            control={control}
+            placeholder=""
+          />
         </div>
 
         <div>
@@ -276,6 +318,11 @@ const InfoProductoFormulario: React.FC = () => {
             credito={creditoParaTabla}
             fechaCreacion={fechaCreacionCredito}
             cotizacionId={Number(creditoBackend?.cotizacion_id ?? 0)}
+            nombreCliente={nombreCliente}
+            cedula={cedulaCot}
+            direccion={infoPers?.direccion_residencia}
+            telefono={infoPers?.celular}
+            producto={productoCot}
           />
         </div>
       )}
