@@ -16,6 +16,7 @@ import type {
 import { useCotizacionById } from "../../services/cotizacionesServices";
 import { useEmpresaById } from "../../services/empresasServices";
 import { calcularCreditoDirectoMoto, type CreditoMotoResultado } from "../../shared/components/credito/creditoDirecto.utils";
+import { useTasasCotizacion } from "../../services/tasaCotiService";
 
 type Id = number | string;
 
@@ -202,6 +203,8 @@ export const CotizacionSingleMotoPDFButton: React.FC<Props> = ({
   // 4) Construir payload "single moto" donde la seleccionada siempre es la A/1
   const payload = buildSingleMotoPayload(rawPayload);
 
+  // 5) Tasas desde el mismo endpoint que usa la tabla de amortización
+  const { data: tasasCot } = useTasasCotizacion(Number(id));
 
   const creditoDirecto: CreditoMotoResultado | null = React.useMemo(() => {
     if (!payload) return null;
@@ -210,18 +213,31 @@ export const CotizacionSingleMotoPDFButton: React.FC<Props> = ({
     if (!esCreditoDirecto) return null;
 
     const mesesGarantia = getMesesGarantia(payload?.garantia_extendida_a);
+    const valorGarantia = Number(payload?.valor_garantia_extendida_a ?? 0);
 
-    const resultado = calcularCreditoDirectoMoto({
+    // saldo_financiar_a del backend incluye el capital de garantía → restar
+    const saldoBruto = Number(payload?.saldo_financiar_a ?? 0);
+    const saldoNegocio = Math.max(saldoBruto - valorGarantia, 0);
+
+    // Tasas: cotización primero (campo ya disponible), hook como fallback
+    const tasaFinCot = Number(payload?.tasa_financiacion ?? 0);
+    const tasaGarCot = Number(payload?.tasa_garantia ?? 0);
+    const tasaFin = tasaFinCot > 0 ? tasaFinCot : (tasasCot?.tasa_financiacion ?? 1.9122);
+    const tasaGar = tasaGarCot > 0 ? tasaGarCot : (tasasCot?.tasa_garantia ?? 1.5);
+
+    const input = {
       incluir: mesesGarantia > 0,
       mesesGarantia,
-      valorGarantia: payload?.valor_garantia_extendida_a ?? 0,
-      saldoFinanciar: payload?.saldo_financiar_a ?? 0,
-      tasaFinanciacionPct: payload?.tasa_financiacion ?? 1.9122,
-      tasaGarantiaPct: payload?.tasa_garantia ?? 1.5,
-    });
-
+      valorGarantia,
+      saldoFinanciar: saldoNegocio,
+      tasaFinanciacionPct: tasaFin,
+      tasaGarantiaPct: tasaGar,
+    };
+    console.log("[V2-PDF] creditoDirecto input:", input);
+    const resultado = calcularCreditoDirectoMoto(input);
+    console.log("[V2-PDF] creditoDirecto resultado:", resultado);
     return resultado;
-  }, [payload]);
+  }, [payload, tasasCot]);
 
 
   // 5) Elegir id_empresa según la moto seleccionada original

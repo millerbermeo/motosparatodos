@@ -23,6 +23,10 @@ interface TablaAmortizacionCreditoProps {
   direccion?: string;
   telefono?: string;
   producto?: string;
+  /** Tasa de financiación % directa de la cotización (ej: 1.9189). Hook como fallback. */
+  tasaFinanciacion?: number;
+  /** Tasa de garantía % directa de la cotización (ej: 1.5). Hook como fallback. */
+  tasaGarantia?: number;
 }
 
 const fmtCOP = (v: number) =>
@@ -124,6 +128,8 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
   direccion,
   telefono,
   producto,
+  tasaFinanciacion,
+  tasaGarantia,
 }) => {
   const plazo = toNumber(credito.plazo_meses);
 
@@ -139,7 +145,15 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
   );
 
   const resultado = useMemo(() => {
-    if (!plazo || !tasasCotizacion) return null;
+    // Tasa primaria desde props (cotización), fallback al hook
+    const tasaFinPct = (tasaFinanciacion && tasaFinanciacion > 0)
+      ? tasaFinanciacion
+      : toNumber(tasasCotizacion?.tasa_financiacion);
+    const tasaGarPct = (tasaGarantia && tasaGarantia > 0)
+      ? tasaGarantia
+      : toNumber(tasasCotizacion?.tasa_garantia);
+
+    if (!plazo || tasaFinPct === 0) return null;
 
     const valorProducto = toNumber(credito.valor_producto);
     const cuotaInicial = toNumber(credito.cuota_inicial);
@@ -152,8 +166,8 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
     const saldoFinanciadoNegocio = Math.max(valorProducto - cuotaInicial, 0);
     const saldoFinanciadoGarantia = Math.max(valorGarantia, 0);
 
-    const tasaFinanciacionMensual = toNumber(tasasCotizacion.tasa_financiacion) / 100;
-    const tasaGarantiaMensual = toNumber(tasasCotizacion.tasa_garantia) / 100;
+    const tasaFinanciacionMensual = tasaFinPct / 100;
+    const tasaGarantiaMensual = tasaGarPct / 100;
     const teaFin = Math.pow(1 + tasaFinanciacionMensual, 12) - 1;
 
     const cuotaNegocio =
@@ -204,7 +218,7 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
       fechaInicio,
       schedule,
     };
-  }, [credito, plazo, tasasCotizacion, garantiaConfig, fechaCreacion]);
+  }, [credito, plazo, tasasCotizacion, garantiaConfig, fechaCreacion, tasaFinanciacion, tasaGarantia]);
 
   if (!plazo) {
     return (
@@ -216,7 +230,8 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
     );
   }
 
-  if (loadingTasas) {
+  const hasTasasDeProps = (tasaFinanciacion && tasaFinanciacion > 0);
+  if (loadingTasas && !hasTasasDeProps) {
     return (
       <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4 sm:p-6">
         <p className="text-sm text-slate-600">Cargando tasas de la cotización...</p>

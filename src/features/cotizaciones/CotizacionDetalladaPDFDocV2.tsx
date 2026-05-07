@@ -353,6 +353,24 @@ const buildAbsUrl = (path?: string | null): string | null => {
   return `${root}/${rel}`;
 };
 
+const calcCuotaForPlazo = (n: number, cd: CreditoMotoResultado): number => {
+  if (n === cd.meses) {
+    console.log(`[V2 calcCuotaForPlazo] plazo=${n} === cd.meses → cuotaTotal=${cd.cuotaTotal}`);
+    return cd.cuotaTotal;
+  }
+  const r = cd.tasaFinanciacionPct / 100;
+  const pv = cd.saldoFinanciar;
+  const cuotaN =
+    pv > 0 && n > 0
+      ? r > 0
+        ? Math.floor(Math.abs((r * pv) / (1 - Math.pow(1 + r, -n)) + 1e-7))
+        : Math.floor(pv / n)
+      : 0;
+  const result = cuotaN + Math.floor(cd.cuotaGarantiaExtendida) + cd.seguroDeudor;
+  console.log(`[V2 calcCuotaForPlazo] plazo=${n}, saldo=${pv}, cuotaN=${cuotaN}, cuotaG=${Math.floor(cd.cuotaGarantiaExtendida)}, seguro=${cd.seguroDeudor} → total=${result}`);
+  return result;
+};
+
 const resolveMotoImg = (d: any, override?: string): string | null => {
   if (override) return override;
 
@@ -389,6 +407,7 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
   motoFotoUrl,
   creditoDirecto
 }) => {
+  console.log("[V2-PDF-DOC] creditoDirecto recibido:", creditoDirecto);
   const d = cotizacion?.data || {};
   const g = garantiaExt?.data || {};
 
@@ -689,10 +708,10 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
 
                     {
                       k: ge.meses > 0
-                        ? `${esCreditoDirecto ? "Cuota" : "Valor"} garantía extendida (${ge.meses} meses)`
-                        : `${esCreditoDirecto ? "Cuota" : "Valor"} garantía extendida`,
+                        ? `${esCreditoDirecto ? "Garantía y seguros" : "Valor garantía extendida"} (${ge.meses} meses)`
+                        : `${esCreditoDirecto ? "Garantía y seguros" : "Valor garantía extendida"}`,
                       vv: esCreditoDirecto
-                        ? (creditoDirecto?.cuotaGarantiaExtendida ?? null)
+                        ? (creditoDirecto?.garantiaMasSeguro ?? null)
                         : (ge.meses > 0 ? ge.valor : null),
                       type: "moneyOrDash",
                     },
@@ -748,13 +767,20 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
                       <Text style={[styles.t3h, styles.t3Last]}>Tipo</Text>
                     </View>
 
-                    {cuotasList.map(([p, val]) => (
-                      <View style={styles.table3Row} key={`C-ONE-${p}`}>
-                        <Text style={styles.t3c}>{p} meses</Text>
-                        <Text style={styles.t3c}>{fmtCOP(val)}</Text>
-                        <Text style={[styles.t3c, styles.t3Last]}>{tipoPago}</Text>
-                      </View>
-                    ))}
+                    {cuotasList.map(([p, val]) => {
+                      const mesesPlazo = Number(p);
+                      const displayVal =
+                        esCreditoDirecto && creditoDirecto
+                          ? calcCuotaForPlazo(mesesPlazo, creditoDirecto)
+                          : Number(val);
+                      return (
+                        <View style={styles.table3Row} key={`C-ONE-${p}`}>
+                          <Text style={styles.t3c}>{p} meses</Text>
+                          <Text style={styles.t3c}>{fmtCOP(displayVal)}</Text>
+                          <Text style={[styles.t3c, styles.t3Last]}>{tipoPago}</Text>
+                        </View>
+                      );
+                    })}
                   </View>
                 </View>
               ) : null}
@@ -781,24 +807,22 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
           <>
             <SectionTitle title="Garantía extendida" />
             <View style={styles.box} wrap={false}>
-              <View style={styles.table} wrap={false}>
-                <View style={styles.tableHeaderRow}>
-                  <Text style={styles.tableCellHeader}>Moto</Text>
-                  <Text style={styles.tableCellHeader}>Plan</Text>
-                  <Text style={styles.tableCellHeader}>Meses</Text>
-                  <Text style={[styles.tableCellHeader, styles.tableCellLast]}>Cuota garantia extendida</Text>
-                </View>
-                <View style={styles.tableRow}>
-                  <Text style={styles.tableCell}>{safe(motoLabel)}</Text>
-                  <Text style={styles.tableCell}>{safe(ge.plan)}</Text>
-                  <Text style={styles.tableCell}>{String(ge.meses)}</Text>
-                  <Text style={[styles.tableCell, styles.tableCellLast]}>
-                    {esCreditoDirecto
-                      ? fmtCOP(creditoDirecto?.cuotaGarantiaExtendida ?? 0)
-                      : fmtCOP(ge.valor)}
-                  </Text>
-                </View>
-              </View>
+              <Text style={[styles.value, { marginBottom: 3 }]}>
+                <Text style={styles.label}>Plan: </Text>
+                {safe(ge.plan)} · {String(ge.meses)} meses
+              </Text>
+              {segurosDetalle && segurosDetalle !== "—" ? (
+                <Text style={[styles.value, { marginBottom: 3 }]}>
+                  <Text style={styles.label}>Incluye: </Text>
+                  {segurosDetalle}
+                </Text>
+              ) : null}
+              <Text style={styles.value}>
+                <Text style={styles.label}>Cuota garantía y seguros: </Text>
+                {esCreditoDirecto
+                  ? fmtCOP(creditoDirecto?.garantiaMasSeguro ?? 0)
+                  : fmtCOP(ge.valor)}
+              </Text>
             </View>
           </>
         ) : null}

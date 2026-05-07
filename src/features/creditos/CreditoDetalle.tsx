@@ -7,7 +7,7 @@ import {
     ShieldCheck, User2, Wrench,
     X,
 } from 'lucide-react';
-import { useActualizarEstadoCredito, useCredito, useDeudor } from '../../services/creditosServices';
+import { useActualizarEstadoCredito, useActualizarFechaInicial, useCredito, useDeudor } from '../../services/creditosServices';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ChipButton from '../../shared/components/ChipButton';
 import ChatThread from './ChatThread';
@@ -86,6 +86,8 @@ const CreditoDetalle: React.FC = () => {
 
     const { mutateAsync: actualizarEstadoCredito, isPending: actualizandoEstado } =
         useActualizarEstadoCredito();
+
+    const { mutateAsync: actualizarFechaInicial } = useActualizarFechaInicial();
 
     // Si tu hook soporta "enabled", genial; si no, quítalo
     const { data: datos, isLoading, error } = useCredito({ codigo_credito }, !!codigo_credito);
@@ -286,33 +288,70 @@ const CreditoDetalle: React.FC = () => {
     };
 
 
-    // 🔹 NUEVO: generar PDF de TABLA DE AMORTIZACIÓN
+    // 🔹 Generar PDF de TABLA DE AMORTIZACIÓN con selección de fecha previa
     const handleDownloadTabla = async () => {
+        if (!credito) {
+            Swal.fire({ icon: 'warning', title: 'Sin datos', text: 'No hay información de crédito para generar la tabla.' });
+            return;
+        }
+
+        // Fecha guardada en el crédito (YYYY-MM-DD)
+        const fechaGuardada = (credito.fecha_inicial ?? credito.fecha_creacion ?? '').substring(0, 10);
+
+        // Modal de selección de fecha
+        const result = await Swal.fire({
+            title: 'Fecha de inicio del plan',
+            html: `
+                <p style="font-size:13px;color:#6b7280;margin-bottom:12px;">
+                    Puedes ajustar la fecha antes de descargar.<br/>
+                    Los meses del plan se calcularán desde esta fecha.
+                </p>
+                <input
+                    id="swal-fecha-input"
+                    type="date"
+                    class="swal2-input"
+                    value="${fechaGuardada}"
+                    style="width:100%;max-width:220px;"
+                />
+            `,
+            showDenyButton: true,
+            showCancelButton: false,
+            confirmButtonText: '📅 Actualizar y descargar',
+            denyButtonText: 'Continuar sin actualizar',
+            confirmButtonColor: '#2563eb',
+            denyButtonColor: '#6b7280',
+            focusConfirm: false,
+            preConfirm: () => {
+                const input = document.getElementById('swal-fecha-input') as HTMLInputElement;
+                return input?.value || fechaGuardada;
+            },
+        });
+
+        // Usuario cerró el modal sin elegir
+        if (result.isDismissed) return;
+
+        // Fecha a usar en el PDF
+        const nuevaFecha = result.isConfirmed ? (result.value as string || fechaGuardada) : null;
+        const fechaPlan = nuevaFecha || fechaGuardada || undefined;
+
         try {
-            if (!credito) {
-                alert('No hay información de crédito para generar la tabla.');
-                return;
+            // Si eligió "Actualizar y descargar" y la fecha cambió → persistir en backend
+            if (result.isConfirmed && nuevaFecha && nuevaFecha !== fechaGuardada) {
+                await actualizarFechaInicial({ codigo_credito, fecha_inicial: nuevaFecha });
             }
-            if (!tasaFinConfig) {
-                alert('No se encontró configuración de la tasa de financiación.');
-                return;
-            }
+            // Tasa: cotización primero, config global como fallback
+            const tasaCotizacion = Number(cotData?.tasa_financiacion ?? 0);
+            const tasaConfigFallback = tasaFinConfig
+                ? (tasaFinConfig.tipo_valor === '%' ? tasaFinConfig.valor : tasaFinConfig.valor * 100)
+                : 1.9122;
+            const tasaMensualPorcentaje = tasaCotizacion > 0 ? tasaCotizacion : tasaConfigFallback;
 
-            // Convertir a porcentaje mensual
-            const tasaMensualPorcentaje =
-                tasaFinConfig.tipo_valor === '%'
-                    ? tasaFinConfig.valor
-                    : tasaFinConfig.valor * 100;
-
-            // Construir nombre del cliente desde informacion_personal
             const nombreCliente = [
                 informacion_personal?.primer_nombre,
                 informacion_personal?.segundo_nombre,
                 informacion_personal?.primer_apellido,
                 informacion_personal?.segundo_apellido,
-            ]
-                .filter(Boolean)
-                .join(' ') || undefined;
+            ].filter(Boolean).join(' ') || undefined;
 
             const blob = await pdf(
                 <TablaAmortizacionPDFDoc
@@ -320,7 +359,7 @@ const CreditoDetalle: React.FC = () => {
                     tasaMensualPorcentaje={tasaMensualPorcentaje}
                     tasaGarantiaPorcentaje={Number(cotData?.tasa_garantia ?? 1.5)}
                     codigoPlan={String(codigo_credito)}
-                    fechaPlan={credito.fecha_inicial ?? credito.fecha_creacion}
+                    fechaPlan={fechaPlan}
                     empresa={empresaPDF}
                     cliente={{
                         nombre: nombreCliente,
@@ -337,7 +376,7 @@ const CreditoDetalle: React.FC = () => {
             window.open(url, '_blank');
         } catch (err) {
             console.error(err);
-            alert('No fue posible generar la tabla de amortización.');
+            Swal.fire({ icon: 'error', title: 'Error', text: 'No fue posible generar la tabla de amortización.' });
         }
     };
 

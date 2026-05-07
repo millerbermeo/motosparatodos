@@ -318,6 +318,8 @@ const InfoProductoFormulario: React.FC = () => {
             credito={creditoParaTabla}
             fechaCreacion={fechaCreacionCredito}
             cotizacionId={Number(creditoBackend?.cotizacion_id ?? 0)}
+            tasaFinanciacion={Number(cotObj?.tasa_financiacion) > 0 ? Number(cotObj.tasa_financiacion) : undefined}
+            tasaGarantia={Number(cotObj?.tasa_garantia) > 0 ? Number(cotObj.tasa_garantia) : undefined}
             nombreCliente={nombreCliente}
             cedula={cedulaCot}
             direccion={infoPers?.direccion_residencia}
