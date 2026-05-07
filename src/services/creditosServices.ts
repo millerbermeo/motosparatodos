@@ -835,3 +835,43 @@ export const useActualizarEstadoCredito = () => {
     },
   });
 };
+
+
+/* ─────────────────────────────────────────────────────────────
+   HOOK: Actualizar fecha inicial del crédito
+   PUT /actualizar_fecha_inicial.php?codigo_credito=XXX
+   Body: { fecha_inicial: "YYYY-MM-DD" }
+───────────────────────────────────────────────────────────── */
+export type ActualizarFechaInicialInput = {
+  codigo_credito: string | number;
+  fecha_inicial: string; // "YYYY-MM-DD"
+};
+
+export const useActualizarFechaInicial = () => {
+  const qc = useQueryClient();
+
+  return useMutation<{ success: boolean; message?: string }, AxiosError<ServerError>, ActualizarFechaInicialInput>({
+    mutationFn: async ({ codigo_credito, fecha_inicial }) => {
+      const { data } = await api.put(
+        "/actualizar_fecha_inicial.php",
+        { fecha_inicial },
+        {
+          params: { codigo_credito },
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+      return data;
+    },
+    onSuccess: async (_resp, vars) => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["credito", vars.codigo_credito] }),
+        qc.invalidateQueries({ queryKey: ["creditos"] }),
+      ]);
+    },
+    onError: (error) => {
+      const raw = error.response?.data?.message ?? "Error al actualizar la fecha inicial";
+      const arr = Array.isArray(raw) ? raw : [raw];
+      Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
+    },
+  });
+};

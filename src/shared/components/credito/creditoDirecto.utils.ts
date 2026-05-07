@@ -61,8 +61,6 @@ export const calcularSeguroDeudorMensual = (
   return Math.round(saldo * tasaSeguroDecimal);
 };
 
-const round2 = (n: number) => Number(n.toFixed(2));
-
 export const calcularCreditoDirectoMoto = (
   input: CreditoMotoInput
 ): CreditoMotoResultado => {
@@ -88,7 +86,8 @@ export const calcularCreditoDirectoMoto = (
           (1 - Math.pow(1 + tasaGarantiaPct / 100, -meses)))
       : 0;
 
-  const cuotaGarantiaExtendida = round2(cuotaGarantiaRaw);
+  // Math.floor del valor positivo = mismo criterio que tabla y PDF de amortización
+  const cuotaGarantiaExtendida = Math.floor(cuotaGarantiaRaw);
 
   /**
    * 🔥 SEGURO
@@ -98,22 +97,16 @@ export const calcularCreditoDirectoMoto = (
   /**
    * 🔥 GARANTÍA + SEGURO
    */
-  const garantiaMasSeguro = Math.round(
-    cuotaGarantiaExtendida + seguroDeudor
-  );
+  const garantiaMasSeguro = cuotaGarantiaExtendida + seguroDeudor;
 
   /**
-   * 🔥 CUOTA NEGOCIO (REDONDEAR.MENOS EXACTO)
+   * 🔥 CUOTA NEGOCIO — Math.floor(abs) = mismo criterio que tabla y PDF de amortización
    */
   const cuotaNegocio =
     meses > 0 && saldoFinanciar > 0
-      ? Math.abs(
-          Math.floor(
-            calcularCuotaPMT(
-              saldoFinanciar,
-              tasaFinanciacionPct,
-              meses
-            ) + 1e-7 // 🔥 FIX CLAVE
+      ? Math.floor(
+          Math.abs(
+            calcularCuotaPMT(saldoFinanciar, tasaFinanciacionPct, meses)
           )
         )
       : 0;

@@ -61,6 +61,7 @@ import type { ActividadItem, DocItem } from './types';
 import {
   calcularCreditoDirectoMoto,
 } from '../../shared/components/credito/creditoDirecto.utils';
+import { useTasasCotizacion } from '../../services/tasaCotiService';
 
 
 const EMPTY_EMPRESA_PDF = {
@@ -230,8 +231,12 @@ const DetalleCotizacion: React.FC = () => {
   const isCreditoTerceros = tipoPagoNorm.includes('terceros');
 
 
-  const tasaFinanciacionCot = Number((q as any)?.tasa_financiacion ?? 1.9122);
-  const tasaGarantiaCot = Number((q as any)?.tasa_garantia ?? 1.5);
+  const { data: tasasCot } = useTasasCotizacion(Number(id));
+  // Cotización primero (campo ya cargado), hook como fallback
+  const _tasaFinCot = Number((q as any)?.tasa_financiacion ?? 0);
+  const _tasaGarCot = Number((q as any)?.tasa_garantia ?? 0);
+  const tasaFinanciacionCot = _tasaFinCot > 0 ? _tasaFinCot : (tasasCot?.tasa_financiacion ?? 1.9122);
+  const tasaGarantiaCot = _tasaGarCot > 0 ? _tasaGarCot : (tasasCot?.tasa_garantia ?? 1.5);
 
 
 
@@ -290,14 +295,18 @@ const DetalleCotizacion: React.FC = () => {
 
 
   const creditoMotoActual = React.useMemo(() => {
-    return calcularCreditoDirectoMoto({
+    const input = {
       incluir: isCreditoPropio && !!moto,
       mesesGarantia: moto?.garantiaExtendidaMeses ?? 0,
       valorGarantia: moto?.garantiaExtendidaValor ?? 0,
       saldoFinanciar: saldoConTodo,
       tasaFinanciacionPct: tasaFinanciacionCot,
       tasaGarantiaPct: tasaGarantiaCot,
-    });
+    };
+    console.log("[V1-PDF] creditoDirecto input:", input);
+    const res = calcularCreditoDirectoMoto(input);
+    console.log("[V1-PDF] creditoDirecto resultado:", res);
+    return res;
   }, [isCreditoPropio, moto, saldoConTodo, tasaFinanciacionCot, tasaGarantiaCot]);
 
 

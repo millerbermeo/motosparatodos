@@ -413,6 +413,24 @@ const buildAbsUrl = (path?: string | null): string | null => {
 };
 
 // Solo imagen real (sin fallback) para ahorrar alto en A; B puede verse sin imagen si no hay
+const calcCuotaForPlazo = (n: number, cd: CreditoMotoResultado): number => {
+  if (n === cd.meses) {
+    console.log(`[V1 calcCuotaForPlazo] plazo=${n} === cd.meses → cuotaTotal=${cd.cuotaTotal}`);
+    return cd.cuotaTotal;
+  }
+  const r = cd.tasaFinanciacionPct / 100;
+  const pv = cd.saldoFinanciar;
+  const cuotaN =
+    pv > 0 && n > 0
+      ? r > 0
+        ? Math.floor(Math.abs((r * pv) / (1 - Math.pow(1 + r, -n)) + 1e-7))
+        : Math.floor(pv / n)
+      : 0;
+  const result = cuotaN + Math.floor(cd.cuotaGarantiaExtendida) + cd.seguroDeudor;
+  console.log(`[V1 calcCuotaForPlazo] plazo=${n}, saldo=${pv}, cuotaN=${cuotaN}, cuotaG=${Math.floor(cd.cuotaGarantiaExtendida)}, seguro=${cd.seguroDeudor} → total=${result}`);
+  return result;
+};
+
 const resolveMotoImg = (d: any, side: "A" | "B", override?: string): string | null => {
   if (override) return override;
 
@@ -456,6 +474,7 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
   motoFotoBUrl,
   creditoDirecto
 }) => {
+  console.log("[V1-PDF-DOC] creditoDirecto recibido:", creditoDirecto);
   const d = cotizacion?.data || {};
   const g = garantiaExt?.data || {};
 
@@ -662,9 +681,9 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
     if (showGarantiaExtendida) {
       leftRows.push({
         k: v.geMeses > 0
-          ? `Cuota garantía (${v.geMeses} meses)`
-          : "Cuota garantía",
-        v: v.geMeses > 0 ? creditoDirecto?.cuotaGarantiaExtendida ?? null : null,
+          ? `Garantía y seguros (${v.geMeses} meses)`
+          : "Garantía y seguros",
+        v: v.geMeses > 0 ? creditoDirecto?.garantiaMasSeguro ?? null : null,
         type: "moneyOrDash",
       });
     }
@@ -764,13 +783,20 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
                       <Text style={[styles.t3h, styles.t3Last]}>Tipo</Text>
                     </View>
 
-                    {cuotasList.map(([p, val]) => (
-                      <View style={styles.table3Row} key={`C-${side}-${p}`}>
-                        <Text style={styles.t3c}>{p} meses</Text>
-                        <Text style={styles.t3c}>{fmtCOP(val)}</Text>
-                        <Text style={[styles.t3c, styles.t3Last]}>{tipoPago}</Text>
-                      </View>
-                    ))}
+                    {cuotasList.map(([p, val]) => {
+                      const mesesPlazo = Number(p);
+                      const displayVal =
+                        isCreditoPropio && creditoDirecto
+                          ? calcCuotaForPlazo(mesesPlazo, creditoDirecto)
+                          : Number(val);
+                      return (
+                        <View style={styles.table3Row} key={`C-${side}-${p}`}>
+                          <Text style={styles.t3c}>{p} meses</Text>
+                          <Text style={styles.t3c}>{fmtCOP(displayVal)}</Text>
+                          <Text style={[styles.t3c, styles.t3Last]}>{tipoPago}</Text>
+                        </View>
+                      );
+                    })}
                   </View>
                 </View>
               ) : null}
