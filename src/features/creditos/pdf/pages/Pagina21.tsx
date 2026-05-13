@@ -252,7 +252,7 @@ export const Pagina21: React.FC<Pagina21Props> = ({
       <Text style={{ fontSize: 8.3, marginBottom: 6 }}>Atentamente,</Text>
 
       {/* FIRMAS */}
-      <View style={styles.firmasRow}>
+      <View wrap={false} style={styles.firmasRow}>
         {/* COMPRADOR */}
         <View style={styles.firmaCol}>
           <View style={styles.firmaBox} />

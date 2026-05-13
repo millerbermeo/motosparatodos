@@ -2,6 +2,7 @@ import React from 'react';
 import {
     BadgeCheck, Building2, CalendarDays, Check, CheckCircle2, CheckSquare, Download,
     FileDown, FileMinusIcon, FileSignature, History, Info, LibraryBig,
+    Mail,
     MessageCircle,
     MessageSquarePlus,
     ShieldCheck, User2, Wrench,
@@ -31,6 +32,9 @@ import { useConfigPlazoByCodigo } from '../../services/configuracionPlazoService
 
 // 🔹 NUEVO: Paquete de crédito (25 páginas)
 import { PaqueteCreditoPDFDoc } from './pdf/PaqueteCreditoPDF';
+import { GarantiaExtendidaPDFDoc } from './pdf/GarantiaExtendidaPDF';
+import { CartaAprobacionPDFDoc } from './pdf/CartaAprobacionPDF';
+import { SolicitudCreditoPDFDoc } from './pdf/SolicitudCreditoPDF';
 import { CotizacionSingleMotoPDFButton } from '../cotizaciones/CotizacionSingleMotoPDFButton';
 import { useCotizacionById } from '../../services/cotizacionesServices';
 import { useEmpresaById } from '../../services/empresasServices';
@@ -186,6 +190,9 @@ const CreditoDetalle: React.FC = () => {
         valorCuota: undefined,
         numeroMotor: creditoAjustado?.numero_motor,
         fechaEntrega: creditoAjustado?.fecha_entrega,
+        color: creditoAjustado?.color ?? null,
+        capacidad: creditoAjustado?.capacidad ?? null,
+        cilindraje: creditoAjustado?.cilindraje ?? null,
     };
 
 
@@ -516,13 +523,13 @@ const CreditoDetalle: React.FC = () => {
             ? `${BaseUrl}/${credito.firmas}`
             : undefined;
 
-    const formatoReferenciaHref: string | undefined =
-        typeof credito?.formato_referencia === 'string' && credito.formato_referencia.length > 0
-            ? `${BaseUrl}/${credito.formato_referencia.startsWith('docs_creditos/')
-                ? credito.formato_referencia
-                : `docs_creditos/${credito.formato_referencia}`
-            }`
-            : undefined;
+    // const formatoReferenciaHref: string | undefined =
+    //     typeof credito?.formato_referencia === 'string' && credito.formato_referencia.length > 0
+    //         ? `${BaseUrl}/${credito.formato_referencia.startsWith('docs_creditos/')
+    //             ? credito.formato_referencia
+    //             : `docs_creditos/${credito.formato_referencia}`
+    //         }`
+    //         : undefined;
 
     const formatoDatacreditoHref: string | undefined =
         typeof credito?.formato_datacredito === 'string' && credito.formato_datacredito.length > 0
@@ -627,11 +634,13 @@ const CreditoDetalle: React.FC = () => {
                 salarioTitular1: informacion_laboral?.salario,
 
                 // ---- Datos de la moto / crédito ----
-                marca: moto.modelo ?? 'HERO',
-                linea: moto.modelo ?? moto.modelo ?? 'XOOM 110',
-                modeloMoto: moto.modelo,
-                modelo: moto.modelo ?? '2026',
-                color: 'negro',
+                marca: cotData?.[`marca_${sufCot}`] ?? moto.modelo ?? '',
+                linea: cotData?.[`linea_${sufCot}`] ?? moto.modelo ?? '',
+                modeloMoto: cotData?.[`modelo_${sufCot}`] ?? moto.modelo ?? '',
+                modelo: cotData?.[`modelo_${sufCot}`] ?? moto.modelo ?? '',
+                color: moto.color ?? '',
+                capacidad: moto.capacidad ?? '',
+                cilindraje: moto.cilindraje ?? '',
                 motor: moto.numeroMotor ?? '00',
                 chasis: moto.numeroChasis ?? '00',
                 placa: moto.placa ?? '00',
@@ -671,6 +680,136 @@ const CreditoDetalle: React.FC = () => {
         } catch (err) {
             console.error(err);
             alert('No fue posible generar el paquete de crédito.');
+        }
+    };
+
+    const handleDownloadGarantia = async () => {
+        try {
+            if (!credito) {
+                alert('No hay información de crédito para generar la garantía.');
+                return;
+            }
+
+            const nombreCompleto = [
+                informacion_personal?.primer_nombre,
+                informacion_personal?.segundo_nombre,
+                informacion_personal?.primer_apellido,
+                informacion_personal?.segundo_apellido,
+            ].filter(Boolean).join(' ') || '';
+
+            const valorMotoNum = moto.valorMotocicleta ?? 0;
+            const anios = moto.numeroCuotas ? Math.ceil(Number(moto.numeroCuotas) / 12) : 3;
+
+            const blob = await pdf(
+                <GarantiaExtendidaPDFDoc
+                    codigo={String(codigo_credito)}
+                    fecha={String(credito.fecha_creacion ?? '').split('T')[0]}
+                    agencia={agencia}
+                    logoSrc="/verificarte.jpg"
+                    nombreTitular={nombreCompleto}
+                    ccTitular={informacion_personal?.numero_documento ?? ''}
+                    direccionTitular={informacion_personal?.direccion_residencia ?? ''}
+                    ciudadTitular={informacion_personal?.ciudad_residencia ?? 'Cali'}
+                    telefonoTitular={informacion_personal?.celular ?? ''}
+                    emailTitular={informacion_personal?.email ?? ''}
+                    marca={cotData?.[`marca_${sufCot}`] ?? moto.modelo ?? ''}
+                    linea={cotData?.[`linea_${sufCot}`] ?? moto.modelo ?? ''}
+                    modelo={cotData?.[`modelo_${sufCot}`] ?? moto.modelo ?? ''}
+                    color={moto.color ?? ''}
+                    numeroMotor={moto.numeroMotor ?? ''}
+                    numeroChasis={moto.numeroChasis ?? ''}
+                    placa={moto.placa ?? ''}
+                    ciudadMatricula={informacion_personal?.ciudad_residencia ?? 'Cali'}
+                    valorMotoNum={Number(valorMotoNum)}
+                    garantiaAnios={anios}
+                    fechaExpedicion={String(credito.fecha_creacion ?? '').split('T')[0]}
+                    ciudadExpedicion={informacion_personal?.ciudad_residencia ?? 'Cali'}
+                    formaPago="Crédito"
+                    nombreVendedor={credito.asesor ?? ''}
+                    puntoDeVenta={agencia}
+                />
+            ).toBlob();
+
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        } catch (err) {
+            console.error(err);
+            alert('No fue posible generar la garantía extendida.');
+        }
+    };
+
+    const handleDownloadCarta = async () => {
+        try {
+            if (!credito) {
+                alert('No hay información de crédito para generar la carta.');
+                return;
+            }
+
+            const nombreCompleto = [
+                informacion_personal?.primer_nombre,
+                informacion_personal?.segundo_nombre,
+                informacion_personal?.primer_apellido,
+                informacion_personal?.segundo_apellido,
+            ].filter(Boolean).join(' ') || '';
+
+            const precioVentaTotal = moto.valorMotocicleta ?? 0;
+            const cuotaInicialNum = moto.cuotaInicial ?? 0;
+            const garantiaExt = Number(creditoAjustado?.garantia_extendida_valor ?? 0);
+            const valorAFinanciar = Math.max(precioVentaTotal - cuotaInicialNum, 0);
+            const valorCuota = moto.valorCuota ?? 0;
+            const productoNombre = [
+                cotData?.[`marca_${sufCot}`],
+                cotData?.[`linea_${sufCot}`],
+            ].filter(Boolean).join(' ') || moto.modelo || '';
+            const modeloAnio = cotData?.[`modelo_${sufCot}`] ?? moto.modelo ?? '';
+            const fechaStr = String(credito.fecha_creacion ?? '').split('T')[0];
+
+            const blob = await pdf(
+                <CartaAprobacionPDFDoc
+                    codigo={String(codigo_credito)}
+                    fecha={fechaStr}
+                    ciudad={informacion_personal?.ciudad_residencia ?? 'Cali'}
+                    logoSrc="/verificarte.jpg"
+                    nombreCliente={nombreCompleto}
+                    ccCliente={informacion_personal?.numero_documento ?? ''}
+                    nombreAsesor={credito.asesor ?? ''}
+                    producto={productoNombre}
+                    modeloMoto={modeloAnio}
+                    plazo={Number(moto.numeroCuotas ?? 36)}
+                    precioVentaTotal={Number(precioVentaTotal)}
+                    cuotaInicial={Number(cuotaInicialNum)}
+                    garantiaExtendida={garantiaExt}
+                    valorAFinanciar={Number(valorAFinanciar)}
+                    valorCuotaMensual={Number(valorCuota)}
+                    fechaVencimientoPrimeraCuota={creditoAjustado?.fecha_inicial ?? ''}
+                />
+            ).toBlob();
+
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        } catch (err) {
+            console.error(err);
+            alert('No fue posible generar la carta de aprobación.');
+        }
+    };
+
+    const handleDownloadSolicitud = async () => {
+        try {
+            const blob = await pdf(
+                <SolicitudCreditoPDFDoc
+                    codigo_credito={String(codigo_credito)}
+                    credito={creditoAjustado}
+                    deudorData={deudorData}
+                    logoUrl="/verificarte.jpg"
+                    cotData={cotData}
+                    sufCot={sufCot}
+                />
+            ).toBlob();
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        } catch (err) {
+            console.error(err);
+            alert('No fue posible generar la solicitud de crédito.');
         }
     };
 
@@ -785,25 +924,15 @@ const CreditoDetalle: React.FC = () => {
                                         <ChipButton
                                             label="Descargar formato"
                                             icon={<FileSignature className="w-4 h-4" />}
-                                            onClick={
-                                                formatoReferenciaHref
-                                                    ? () => window.open(formatoReferenciaHref, '_blank')
-                                                    : fakeDownload('Formato de referenciación')
-                                            }
+                                            onClick={handleDownloadSolicitud}
                                             color="bg-green-500 hover:bg-green-600"
                                         />
-                                        {/* <ChipButton
+                                        <ChipButton
                                             label="Descargar carta"
                                             icon={<Mail className="w-4 h-4" />}
-                                            onClick={fakeDownload('Carta de aprobación')}
+                                            onClick={handleDownloadCarta}
                                             color="bg-purple-500 hover:bg-purple-600"
                                         />
-                                        <ChipButton
-                                            label="Descargar RUNT"
-                                            icon={<Fingerprint className="w-4 h-4" />}
-                                            onClick={fakeDownload('RUNT')}
-                                            color="bg-orange-500 hover:bg-orange-600"
-                                        /> */}
                                     </div>
                                 )}
                             </div>
@@ -863,7 +992,7 @@ const CreditoDetalle: React.FC = () => {
                                             <ChipButton
                                                 label="Descargar Garantía"
                                                 icon={<BadgeCheck className="w-4 h-4" />}
-                                                onClick={fakeDownload('Garantía extendida')}
+                                                onClick={handleDownloadGarantia}
                                                 color="bg-red-500 hover:bg-red-600"
                                             />
                                         </>
@@ -904,18 +1033,19 @@ const CreditoDetalle: React.FC = () => {
                                 <Row label="Tipo de vivienda" value={informacion_personal?.tipo_vivienda} />
                                 <Row label="Costo del arriendo" value={fmtCOP(Number(informacion_personal?.costo_arriendo))} />
                                 <Row label="Finca raíz" value={informacion_personal?.finca_raiz} />
+                                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <ChipButton
+                                        label="Datacrédito"
+                                        icon={<Download className="w-4 h-4" />}
+                                        onClick={
+                                            formatoDatacreditoHref
+                                                ? () => window.open(formatoDatacreditoHref, '_blank')
+                                                : fakeDownload('Datacrédito')
+                                        }
+                                        color="bg-green-500 hover:bg-green-600"
+                                    />
+                                </div>
                             </div>
-                        </div>
-                        <div className="mt-4">
-                            <ChipButton
-                                label="Descargar Datacrédito"
-                                icon={<Download className="w-4 h-4" />}
-                                onClick={
-                                    formatoDatacreditoHref
-                                        ? () => window.open(formatoDatacreditoHref, '_blank')
-                                        : fakeDownload('Datacrédito')
-                                }
-                            />
                         </div>
                     </div>
                 </section>

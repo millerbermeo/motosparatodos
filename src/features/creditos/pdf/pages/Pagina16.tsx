@@ -193,7 +193,7 @@ export const Pagina16: React.FC<Pagina16Props> = ({
       <Text style={styles.firmaTitulo}>Atentamente,</Text>
 
       {/* FILA SUPERIOR: JEFE CARTERA / DEUDOR */}
-      <View style={styles.firmaBoxesRowTop}>
+      <View wrap={false} style={styles.firmaBoxesRowTop}>
         <View style={styles.firmaBoxWrap}>
           <View style={styles.firmaBox} />
           <View style={styles.firmaLine} />

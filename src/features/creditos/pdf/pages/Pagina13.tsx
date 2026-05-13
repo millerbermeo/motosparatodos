@@ -189,7 +189,7 @@ export const Pagina13: React.FC<Pagina13Props> = ({
       </Text>
 
       {/* FIRMAS */}
-      <View style={styles.firmasRow}>
+      <View wrap={false} style={styles.firmasRow}>
         {/* ACREEDOR */}
         <View style={styles.firmaBlock}>
           {acreedorFirmaSrc && (

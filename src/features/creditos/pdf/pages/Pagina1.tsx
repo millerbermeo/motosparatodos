@@ -172,7 +172,7 @@ export const Pagina1: React.FC<Pagina1Props> = ({
       </Text>
 
       {/* FIRMAS */}
-      <View style={styles.signaturesContainer}>
+      <View wrap={false} style={styles.signaturesContainer}>
         <View style={styles.signatureBlock}>
           <View style={styles.signatureBox} />
           <View style={styles.signatureLine} />

@@ -499,7 +499,7 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
 
   // Igual que UI:
   const showGarantiaExtendida = isCreditoPropio;
-  const polizaLabel = (isContado || isCreditoTerceros) ? "Garantía extendida" : "Póliza";
+  const polizaLabel = (isContado || isCreditoTerceros) ? "Garantía y seguros" : "Póliza";
 
   const motoImgA = resolveMotoImg(d, "A", motoFotoAUrl);
   const motoImgB = hayMotoB ? resolveMotoImg(d, "B", motoFotoBUrl) : null;
@@ -678,7 +678,8 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
 
     ];
 
-    if (showGarantiaExtendida) {
+    // Garantía (fila tabla — oculta, conservar para uso futuro)
+    if (false && showGarantiaExtendida) {
       leftRows.push({
         k: v.geMeses > 0
           ? `Garantía y seguros (${v.geMeses} meses)`
@@ -816,6 +817,15 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
               ) : null}
             </View>
           </View>
+        </View>
+
+        {/* SEGUROS Y GARANTÍA — descripción fija */}
+        <SectionTitle title="Garantía y seguros" />
+        <View style={styles.box} wrap={false}>
+          <Text style={[styles.value, { lineHeight: 1.4 }]}>
+            <Text style={styles.label}>Seguros y Garantía: </Text>
+            {"Seguro deudor, Seguro responsabilidad civil daños materiales a terceros hasta $25millones, Seguro Accidentes personales hasta $15millones, 80% en reposición para nueva moto por perdida total por accidente o robo, descuento de 10% en mano de obra y repuestos en nuestros talleres, asistencias: llanta estallada, cerrajería hogar, llaves moto, hurto calificado casco, varada por gasolina, grúa por avería, un evento por año de cada una hasta $100.000 por evento."}
+          </Text>
         </View>
       </>
     );

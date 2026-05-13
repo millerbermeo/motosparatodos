@@ -198,7 +198,7 @@ export const Pagina24: React.FC<Pagina24Props> = ({
       </Text>
 
       {/* FIRMAS */}
-      <View style={styles.firmasRow}>
+      <View wrap={false} style={styles.firmasRow}>
         {/* COMPRADOR */}
         <View style={styles.firmaCol}>
           <View style={styles.firmaBox} />
