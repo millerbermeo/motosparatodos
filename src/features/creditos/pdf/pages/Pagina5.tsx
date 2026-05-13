@@ -250,7 +250,7 @@ export const Pagina5: React.FC<Pagina5Props> = ({
       </Text>
 
       {/* FIRMAS */}
-      <View style={styles.firmasRow}>
+      <View wrap={false} style={styles.firmasRow}>
         {/* DEUDOR */}
         <View style={styles.firmaBlock}>
           <Text style={styles.labelMini}>NOMBRE:</Text>

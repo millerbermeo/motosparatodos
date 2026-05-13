@@ -356,7 +356,7 @@ export const Pagina22: React.FC<Pagina22Props> = ({
       </Text>
 
       {/* FIRMAS FILA 1: VENDEDORES */}
-      <View style={styles.firmasRow1}>
+      <View wrap={false} style={styles.firmasRow1}>
         <View style={styles.firmaCol}>
           <View style={styles.firmaBox} />
           <View style={styles.firmaLine} />
@@ -373,7 +373,7 @@ export const Pagina22: React.FC<Pagina22Props> = ({
       </View>
 
       {/* FIRMAS FILA 2: COMPRADORES */}
-      <View style={styles.firmasRow2}>
+      <View wrap={false} style={styles.firmasRow2}>
         <View style={styles.firmaCol}>
           <View style={styles.firmaBox} />
           <View style={styles.firmaLine} />

@@ -297,7 +297,7 @@ export const Pagina9: React.FC<Pagina9Props> = ({
       </Text>
 
       {/* FIRMA */}
-      <View style={styles.signatureBlock}>
+      <View wrap={false} style={styles.signatureBlock}>
         <View style={styles.signatureBox} />
         <View style={styles.firmaLine} />
         <Text style={styles.firmaLabel}>CC. No. {deudorCc}</Text>

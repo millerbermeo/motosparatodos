@@ -469,7 +469,8 @@ export interface CreditoLine {
 
   color?: string | null;
   capacidad?: string | null;
-  
+  cilindraje?: string | null;
+
 }
 
 

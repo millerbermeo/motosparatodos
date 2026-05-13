@@ -63,17 +63,14 @@ export interface PaqueteCreditoPDFDocProps {
   data: any; // luego lo tipeamos bonito, por ahora “mientras”
 }
 
-/**
- * Adaptador: toma tu objeto `data` y crea alias para que coincida con
- * los nombres de props que usan las páginas (nombreTitular1, numeroMotor, etc).
- */
+const VERIFICARTE_NOMBRE = "VERIFICARTE AAA S.A.S.";
+const VERIFICARTE_NIT = "901155548-8";
+
 const adaptData = (data: any) => {
-  // normalizar algunas fechas (por si vienen con hora)
   const safeFecha = (data.fecha ?? "").toString().split(" ")[0] || data.fecha;
   const safeFechaNac = (data.fechaNacimiento ?? "").toString().split("T")[0];
   const safeFechaExp = (data.fechaExpedicion ?? "").toString().split("T")[0];
 
-  // nombre completo
   const nombreCompleto =
     data.nombre ||
     data.nombreTitular1 ||
@@ -86,13 +83,19 @@ const adaptData = (data: any) => {
       .filter(Boolean)
       .join(" ");
 
+  const doc = data.numeroDocumento ?? data.cc ?? "";
+  const dir = data.direccionResidencia ?? data.direccionTitular1 ?? "";
+  const tel = data.celular ?? data.telefonoTitular1 ?? "";
+  const ciudad = data.ciudad ?? data.ciudadResidencia ?? "Cali";
+  const lugarExp = data.lugarExpedicion ?? data.lugarExpedicionTitular1 ?? "";
+
   return {
     ...data,
 
     // ======== GENERALES / ENCABEZADO =========
     codigo: data.codigo,
     fecha: safeFecha,
-    ciudad: data.ciudad ?? data.ciudadResidencia ?? "Cali",
+    ciudad,
     logoSrc: data.logoSrc ?? "/verificarte.jpg",
     estadoCredito: data.estadoCredito,
     agencia: data.agencia,
@@ -101,45 +104,42 @@ const adaptData = (data: any) => {
     // ======== TITULAR / DEUDOR =========
     nombre: nombreCompleto,
     nombreTitular1: data.nombreTitular1 ?? nombreCompleto,
-    nombreCompleto: nombreCompleto,
+    nombreCompleto,
 
-    tipoDocumento: data.tipoDocumento,
-    numeroDocumento: data.numeroDocumento,
-    tipoDocumentoTitular1:
-      data.tipoDocumentoTitular1 ?? data.tipoDocumento ?? "Cédula de ciudadanía",
-    numeroDocumentoTitular1:
-      data.numeroDocumentoTitular1 ?? data.numeroDocumento,
-    cc: data.cc ?? data.numeroDocumento,
-    ccTitular1: data.ccTitular1 ?? data.cc ?? data.numeroDocumento,
+    tipoDocumento: data.tipoDocumento ?? "Cédula de ciudadanía",
+    numeroDocumento: doc,
+    tipoDocumentoTitular1: data.tipoDocumentoTitular1 ?? data.tipoDocumento ?? "Cédula de ciudadanía",
+    numeroDocumentoTitular1: data.numeroDocumentoTitular1 ?? doc,
+    cc: data.cc ?? doc,
+    ccTitular1: data.ccTitular1 ?? data.cc ?? doc,
 
     fechaExpedicion: safeFechaExp,
-    lugarExpedicion: data.lugarExpedicion,
+    lugarExpedicion: lugarExp,
     fechaExpedicionTitular1: safeFechaExp,
-    lugarExpedicionTitular1: data.lugarExpedicion,
+    lugarExpedicionTitular1: lugarExp,
 
     fechaNacimiento: safeFechaNac,
     fechaNacimientoTitular1: safeFechaNac,
 
-    ciudadResidencia: data.ciudadResidencia ?? data.ciudad,
+    ciudadResidencia: data.ciudadResidencia ?? ciudad,
     barrioResidencia: data.barrioResidencia ?? "",
-    direccionResidencia: data.direccionResidencia,
+    direccionResidencia: dir,
     telefonoFijo: data.telefonoFijo ?? "",
-    celular: data.celular,
-    email: data.email,
-    estadoCivil: data.estadoCivil,
-    personasACargo: data.personasACargo,
-    tipoVivienda: data.tipoVivienda,
-    costoArriendo: data.costoArriendo,
-    fincaRaiz: data.fincaRaiz,
+    celular: tel,
+    email: data.email ?? "",
+    estadoCivil: data.estadoCivil ?? "",
+    personasACargo: data.personasACargo ?? "",
+    tipoVivienda: data.tipoVivienda ?? "",
+    costoArriendo: data.costoArriendo ?? "",
+    fincaRaiz: data.fincaRaiz ?? "",
 
-    ciudadTitular1: data.ciudadTitular1 ?? data.ciudadResidencia ?? data.ciudad,
+    ciudadTitular1: data.ciudadTitular1 ?? data.ciudadResidencia ?? ciudad,
     barrioTitular1: data.barrioTitular1 ?? data.barrioResidencia ?? "",
-    direccionTitular1:
-      data.direccionTitular1 ?? data.direccionResidencia ?? "",
-    telefonoTitular1: data.telefonoTitular1 ?? data.celular,
-    telefonoFijoTitular1: data.telefonoFijoTitular1 ?? data.telefonoFijo,
-    emailTitular1: data.emailTitular1 ?? data.email,
-    estadoCivilTitular1: data.estadoCivilTitular1 ?? data.estadoCivil,
+    direccionTitular1: data.direccionTitular1 ?? dir,
+    telefonoTitular1: data.telefonoTitular1 ?? tel,
+    telefonoFijoTitular1: data.telefonoFijoTitular1 ?? data.telefonoFijo ?? "",
+    emailTitular1: data.emailTitular1 ?? data.email ?? "",
+    estadoCivilTitular1: data.estadoCivilTitular1 ?? data.estadoCivil ?? "",
 
     // ======== LABORAL TITULAR =========
     empresaTitular1: data.empresaTitular1 ?? "",
@@ -151,28 +151,130 @@ const adaptData = (data: any) => {
     salarioTitular1: data.salarioTitular1 ?? "0.00",
 
     // ======== MOTO / CRÉDITO =========
-    marca: data.marca,
-    linea: data.linea ?? data.modeloMoto ?? data.modelo,
-    modeloMoto: data.modeloMoto ?? data.modelo,
-    modelo: data.modeloMoto ?? data.modelo,
-    color: data.color ?? "negro",
-    motor: data.motor,
-    numeroMotor: data.numeroMotor ?? data.motor,
-    chasis: data.chasis,
-    numeroChasis: data.numeroChasis ?? data.chasis,
-    placa: data.placa,
-    valorMoto: data.valorMoto,
-    cuotaInicial: data.cuotaInicial,
-    cuotas: data.cuotas,
-    valorCuota: data.valorCuota,
-    fechaEntrega: data.fechaEntrega,
+    marca: data.marca ?? "",
+    linea: data.linea ?? data.modeloMoto ?? data.modelo ?? "",
+    modeloMoto: data.modeloMoto ?? data.modelo ?? "",
+    modelo: data.modeloMoto ?? data.modelo ?? "",
+    color: data.color ?? "",
+    motor: data.motor ?? "",
+    numeroMotor: data.numeroMotor ?? data.motor ?? "",
+    chasis: data.chasis ?? "",
+    numeroChasis: data.numeroChasis ?? data.chasis ?? "",
+    placa: data.placa ?? "",
+    valorMoto: data.valorMoto ?? "",
+    cuotaInicial: data.cuotaInicial ?? "",
+    cuotas: data.cuotas ?? "",
+    valorCuota: data.valorCuota ?? "",
+    fechaEntrega: data.fechaEntrega ?? "",
 
-    // ====== otros alias típicos por si alguna página los pide ======
+    // ======== ALIAS CLIENTE (páginas usan distintos nombres) =========
     nombreCliente: nombreCompleto,
-    documentoCliente: data.numeroDocumento,
-    ciudadCliente: data.ciudadResidencia ?? data.ciudad,
-    direccionCliente: data.direccionResidencia,
-    telefonoCliente: data.celular,
+    clienteNombre: nombreCompleto,
+    clienteCc: doc,
+    clienteLugarExpedicion: lugarExp,
+    documentoCliente: doc,
+    ciudadCliente: data.ciudadResidencia ?? ciudad,
+    direccionCliente: dir,
+    telefonoCliente: tel,
+
+    // ======== ALIAS DEUDOR (páginas 5,6,9,10,11,12,13,14,15,19) =========
+    deudorNombre: nombreCompleto,
+    deudorCc: doc,
+    deudorCcNit: doc,
+    deudorDocumento: doc,
+    deudorTipoId: data.tipoDocumento ?? "CC",
+    deudorDireccion: dir,
+    deudorTelefono: tel,
+    deudorCiudadExpedicion: lugarExp,
+
+    // ======== PAGARÉ (páginas 3,4) =========
+    pagareNumero: data.codigo,
+    deudor1Nombre: nombreCompleto,
+    deudor1Cc: doc,
+    deudor2Nombre: data.deudor2Nombre ?? "",
+    deudor2Cc: data.deudor2Cc ?? "",
+
+    // ======== CODEUDOR (opcional — si llega en data) =========
+    codeudorNombre: data.codeudorNombre ?? "",
+    codeudorCcNit: data.codeudorCcNit ?? "",
+    codeudorDireccion: data.codeudorDireccion ?? "",
+    codeudorTelefono: data.codeudorTelefono ?? "",
+    codeudorCc: data.codeudorCc ?? "",
+
+    // ======== MANDANTE / PODER (páginas 7,8) =========
+    mandanteNombre: nombreCompleto,
+    mandanteCc: doc,
+    mandatarioNombre: VERIFICARTE_NOMBRE,
+    mandatarioCc: VERIFICARTE_NIT,
+    poderdanteNombre: nombreCompleto,
+    poderdanteCc: doc,
+    poderdanteCiudadExpedicion: lugarExp,
+    apoderadoNombre: VERIFICARTE_NOMBRE,
+
+    // ======== ACREEDOR (páginas 11,12,13,14,15) =========
+    acreedorNombre: VERIFICARTE_NOMBRE,
+    acreedorId: VERIFICARTE_NIT,
+    acreedorNit: VERIFICARTE_NIT,
+    acreedorCc: VERIFICARTE_NIT,
+
+    // ======== VENDEDOR / COMPRADOR (página 22,24) =========
+    vendedorNombre: VERIFICARTE_NOMBRE,
+    vendedorId: VERIFICARTE_NIT,
+    vendedorDireccion: "Cali, Valle del Cauca",
+    vendedorTelefono: "",
+    compradorNombre: nombreCompleto,
+    compradorId: doc,
+    compradorDireccion: dir,
+    compradorTelefono: tel,
+    compradorCc: doc,
+    ciudadContrato: ciudad,
+    fechaContrato: safeFecha,
+
+    // ======== DATOS VEHÍCULO (campos fijos para documentos) =========
+    clase: "Motocicleta",
+    tipo: "Motocicleta",
+    cilindraje: data.cilindraje ?? "",
+    servicio: "Particular",
+    capacidad: data.capacidad ?? "",
+    actaManifiesto: "",
+    sitioMatricula: ciudad,
+    ciudadMatricula: ciudad,
+    departamentoMatricula: "Valle del Cauca",
+    precio: data.valorMoto ?? "",
+
+    // ======== ALIAS MOTO (páginas 20,21,23,24) =========
+    marcaMoto: data.marca ?? "",
+    lineaMoto: data.linea ?? data.modeloMoto ?? data.modelo ?? "",
+    colorMoto: data.color ?? "",
+    valorTotal: data.valorMoto ?? "",
+    numeroCuotas: data.cuotas ?? "",
+    valorCuotaMensual: data.valorCuota ?? "",
+    fechaDocumento: safeFecha,
+
+    // ======== EMPRESA / ACREEDOR (páginas 16,17,18,19) =========
+    nombreEmpresa: VERIFICARTE_NOMBRE,
+    nitEmpresa: VERIFICARTE_NIT,
+    empresaNombre: VERIFICARTE_NOMBRE,
+    destinatarioNombre: nombreCompleto,
+    deudorNombreEmpresa: data.empresaTitular1 ?? "",
+    fechaPagoPactada: safeFecha,
+    fechaComunicacion: safeFecha,
+    jefeCarteraNombre: "",
+    ciudadEntrega: ciudad,
+    montoAdeudado: data.valorMoto ?? "",
+    bancoNombre: "BANCOLOMBIA",
+    tipoCuenta: "CUENTA DE AHORROS",
+    numeroCuenta: "",
+
+    // ======== PÁGINA 25 =========
+    fechaDiligenciamiento: safeFecha,
+    numeroSolicitud: data.codigo,
+    nombreSolicitante: nombreCompleto,
+    apellidosSolicitante: "",
+    codigoDesembolso: "",
+    nombreBeneficiario: VERIFICARTE_NOMBRE,
+    docBeneficiario: VERIFICARTE_NIT,
+    banco: "BANCOLOMBIA",
   };
 };
 

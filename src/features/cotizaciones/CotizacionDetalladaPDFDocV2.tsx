@@ -802,10 +802,10 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
           </View>
         </View>
 
-        {/* GARANTÍA EXTENDIDA (opcional) */}
-        {ge.meses > 0 ? (
+        {/* GARANTÍA EXTENDIDA (tabla original — oculta, conservar para uso futuro) */}
+        {false && ge.meses > 0 ? (
           <>
-            <SectionTitle title="Garantía extendida" />
+            <SectionTitle title="Garantía y seguros" />
             <View style={styles.box} wrap={false}>
               <Text style={[styles.value, { marginBottom: 3 }]}>
                 <Text style={styles.label}>Plan: </Text>
@@ -826,6 +826,15 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
             </View>
           </>
         ) : null}
+
+        {/* SEGUROS Y GARANTÍA — descripción fija */}
+        <SectionTitle title="Garantía y seguros" />
+        <View style={styles.box} wrap={false}>
+          <Text style={[styles.value, { lineHeight: 1.4 }]}>
+            <Text style={styles.label}>Seguros y Garantía: </Text>
+            {"Seguro deudor, Seguro responsabilidad civil daños materiales a terceros hasta $25millones, Seguro Accidentes personales hasta $15millones, 80% en reposición para nueva moto por perdida total por accidente o robo, descuento de 10% en mano de obra y repuestos en nuestros talleres, asistencias: llanta estallada, cerrajería hogar, llaves moto, hurto calificado casco, varada por gasolina, grúa por avería, un evento por año de cada una hasta $100.000 por evento."}
+          </Text>
+        </View>
 
         {/* HABEAS + FIRMAS + FOOTER */}
         {renderHabeasFirmasFooter()}

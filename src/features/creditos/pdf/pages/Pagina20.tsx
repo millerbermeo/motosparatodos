@@ -327,7 +327,7 @@ export const Pagina20: React.FC<Pagina20Props> = ({
       </Text>
 
       {/* FIRMAS */}
-      <View style={styles.firmasRow}>
+      <View wrap={false} style={styles.firmasRow}>
         <View style={styles.firmaCol}>
           <View style={styles.boxFirma} />
           <View style={styles.firmaLine} />
