@@ -187,7 +187,7 @@ const CreditoDetalle: React.FC = () => {
         placa: creditoAjustado?.placa,
         valorMotocicleta: creditoAjustado?.valor_producto,
         cuotaInicial: typeof creditoAjustado?.cuota_inicial === 'number' ? creditoAjustado.cuota_inicial : undefined,
-        valorCuota: undefined,
+        valorCuota: creditoAjustado?.valor_cuota != null ? Number(creditoAjustado.valor_cuota) : undefined,
         numeroMotor: creditoAjustado?.numero_motor,
         fechaEntrega: creditoAjustado?.fecha_entrega,
         color: creditoAjustado?.color ?? null,
@@ -200,6 +200,32 @@ const CreditoDetalle: React.FC = () => {
     const { data: cotizacion } = useCotizacionById(Number(idCot));
 
     const cotData = cotizacion?.data;
+
+    // Cuota mensual calculada igual que TablaAmortizacionPDFDoc
+    const cuotaMensualCalculada = React.useMemo(() => {
+        const tasaCot = Number(cotData?.tasa_financiacion ?? 0);
+        const tasaFallback = tasaFinConfig
+            ? (tasaFinConfig.tipo_valor === '%' ? tasaFinConfig.valor : tasaFinConfig.valor * 100)
+            : 1.9122;
+        const tasaFin = tasaCot > 0 ? tasaCot : tasaFallback;
+        const tasaGar = Number(cotData?.tasa_garantia ?? 1.5);
+        const plazo = Number(moto.numeroCuotas ?? 36);
+        const valorProd = Number(moto.valorMotocicleta ?? 0);
+        const cuotaIni = Number(moto.cuotaInicial ?? 0);
+        const garantia = Math.max(Number(creditoAjustado?.garantia_extendida_valor ?? 0), 0);
+        const saldoNeg = Math.max(valorProd - cuotaIni, 0);
+        const pmtFn = (p: number, tPct: number, n: number) => {
+            if (p <= 0 || n <= 0) return 0;
+            const r = tPct / 100;
+            if (r === 0) return p / n;
+            return (r * p) / (1 - Math.pow(1 + r, -n));
+        };
+        const cuotaNeg = Math.floor(pmtFn(saldoNeg, tasaFin, plazo));
+        const cuotaGar = Math.floor(pmtFn(garantia, tasaGar, plazo));
+        const seguro = saldoNeg > 0 ? Math.round(saldoNeg * 0.00043) : 0;
+        return cuotaNeg + cuotaGar + seguro;
+    }, [cotData, tasaFinConfig, moto, creditoAjustado]);
+
     const motoSel = cotData?.moto_seleccionada ?? 1;
     const sufCot = motoSel === 2 ? "b" : "a";
     const productoCot = [cotData?.[`marca_${sufCot}`], cotData?.[`linea_${sufCot}`]]
@@ -752,17 +778,29 @@ const CreditoDetalle: React.FC = () => {
                 informacion_personal?.segundo_apellido,
             ].filter(Boolean).join(' ') || '';
 
-            const precioVentaTotal = moto.valorMotocicleta ?? 0;
+            const precioMoto = Number(moto.valorMotocicleta ?? 0);      // valor moto sin garantía
             const cuotaInicialNum = moto.cuotaInicial ?? 0;
             const garantiaExt = Number(creditoAjustado?.garantia_extendida_valor ?? 0);
-            const valorAFinanciar = Math.max(precioVentaTotal - cuotaInicialNum, 0);
-            const valorCuota = moto.valorCuota ?? 0;
+            const precioVentaTotal = precioMoto + garantiaExt;          // precio completo = Tabla "Valor"
+            const valorAFinanciar = Math.max(precioMoto - cuotaInicialNum, 0); // saldoNegocio = Tabla "Valor a financiar"
+
+            const valorCuota = cuotaMensualCalculada;
             const productoNombre = [
                 cotData?.[`marca_${sufCot}`],
                 cotData?.[`linea_${sufCot}`],
             ].filter(Boolean).join(' ') || moto.modelo || '';
             const modeloAnio = cotData?.[`modelo_${sufCot}`] ?? moto.modelo ?? '';
             const fechaStr = String(credito.fecha_creacion ?? '').split('T')[0];
+
+            // Fecha vencimiento primera cuota: fecha_inicial o fecha_creacion, + 1 mes mismo día
+            const fechaBaseVenc = (creditoAjustado?.fecha_inicial || credito.fecha_creacion || '').substring(0, 10);
+            const fechaVencPrimeraCuota = (() => {
+                if (!fechaBaseVenc) return '';
+                const d = new Date(fechaBaseVenc + 'T00:00:00');
+                if (isNaN(d.getTime())) return '';
+                d.setMonth(d.getMonth() + 1);
+                return d.toISOString().split('T')[0];
+            })();
 
             const blob = await pdf(
                 <CartaAprobacionPDFDoc
@@ -781,7 +819,7 @@ const CreditoDetalle: React.FC = () => {
                     garantiaExtendida={garantiaExt}
                     valorAFinanciar={Number(valorAFinanciar)}
                     valorCuotaMensual={Number(valorCuota)}
-                    fechaVencimientoPrimeraCuota={creditoAjustado?.fecha_inicial ?? ''}
+                    fechaVencimientoPrimeraCuota={fechaVencPrimeraCuota}
                 />
             ).toBlob();
 
@@ -941,7 +979,7 @@ const CreditoDetalle: React.FC = () => {
                             <div className="rounded-xl p-4 ring-1 ring-slate-200 bg-slate-50">
                                 <Row label="Valor de motocicleta" value={moto?.valorMotocicleta != null ? fmtCOP(moto.valorMotocicleta) : '—'} />
                                 <Row label="Cuota inicial" value={moto?.cuotaInicial != null ? fmtCOP(moto.cuotaInicial) : 'Crédito no facturado actualmente'} />
-                                <Row label="Valor cuota" value={moto?.valorCuota != null ? fmtCOP(moto.valorCuota) : 'Crédito no facturado actualmente'} /> {/* estático si no hay */}
+                                <Row label="Valor cuota" value={cuotaMensualCalculada > 0 ? fmtCOP(cuotaMensualCalculada) : 'Crédito no facturado actualmente'} />
                                 <Row label="Número de motor" value={moto?.numeroMotor} />
                                 <Row label="Fecha de entrega" value={moto?.fechaEntrega} />
 
