@@ -294,18 +294,38 @@ export const SolicitudCreditoPDFDoc: React.FC<SolicitudCreditoPDFProps> = ({
   const modeloCot = cotData?.[`modelo_${sufCot}`];
   const producto = [marcaCot, lineaCot, modeloCot].filter(Boolean).join(" ") || safe(credito?.producto);
 
-  // valores financieros
-  const precioVenta = Number(credito?.valor_producto ?? 0);
-  const gastosMatricula = Number(credito?.gasto_matricula ?? 0);
-  const soatVal = Number(credito?.soat ?? 0);
-  const segurosOtros = 0;
-  const descuento = 0;
-  const garantiaExt = Number(credito?.garantia_extendida_valor ?? 0);
-  const cuotaInicial = Number(credito?.cuota_inicial ?? 0);
-  const precioTotal = precioVenta + gastosMatricula + soatVal;
-  const valorFinanciar = Math.max(0, precioTotal + garantiaExt - cuotaInicial);
-  const plazo = credito?.plazo_meses ?? "—";
-  const cuotaMensual = credito?.valor_cuota ?? null;
+  // valores financieros — cotData como fuente principal, credito como fallback
+  const precioBase      = Number(cotData?.[`precio_base_${sufCot}`]  ?? 0) || Number(credito?.valor_producto ?? 0);
+  const gastosMatricula = Number(cotData?.[`matricula_${sufCot}`]    ?? credito?.matricula   ?? 0);
+  const soatVal         = Number(cotData?.[`soat_${sufCot}`]         ?? credito?.soat        ?? 0);
+  const marcacion       = Number(cotData?.[`marcacion_${sufCot}`]    ?? credito?.accesorios_total ?? 0);
+  const valorGps        = Number(cotData?.[`valor_gps_${sufCot}`]    ?? 0);
+  const seguroVida      = Number(cotData?.[`seguro_vida_${sufCot}`]  ?? 0);
+  const otroSeguro      = Number(cotData?.[`otro_seguro_${sufCot}`]  ?? credito?.precio_seguros ?? 0);
+  const segurosOtros    = marcacion + valorGps + seguroVida + otroSeguro;
+  const descuento       = Number(cotData?.[`descuentos_${sufCot}`]   ?? 0);
+  const garantiaExt     = Number(credito?.garantia_extendida_valor   ?? 0);
+  const cuotaInicial    = Number(credito?.cuota_inicial              ?? 0);
+  const plazoNum        = Number(credito?.plazo_meses                ?? 0);
+  const plazo           = plazoNum > 0 ? plazoNum : "—";
+
+  const precioTotal   = precioBase + gastosMatricula + soatVal + segurosOtros - descuento;
+  const saldoNegocio  = Math.max(precioTotal - cuotaInicial, 0);
+  const valorFinanciar = Math.max(0, saldoNegocio + garantiaExt);
+
+  // cuota mensual — misma fórmula que TablaAmortizacionPDFDoc
+  const tasaFin = Number(cotData?.tasa_financiacion ?? 1.9122);
+  const tasaGar = Number(cotData?.tasa_garantia     ?? 1.5);
+  const pmtFn = (p: number, tPct: number, n: number): number => {
+    if (p <= 0 || n <= 0) return 0;
+    const r = tPct / 100;
+    if (r === 0) return p / n;
+    return (r * p) / (1 - Math.pow(1 + r, -n));
+  };
+  const cuotaNeg     = Math.floor(pmtFn(saldoNegocio, tasaFin, plazoNum));
+  const cuotaGar     = Math.floor(pmtFn(garantiaExt,  tasaGar, plazoNum));
+  const seguroDeudor = saldoNegocio > 0 ? Math.round(saldoNegocio * 0.00043) : 0;
+  const cuotaMensual = plazoNum > 0 ? cuotaNeg + cuotaGar + seguroDeudor : null;
 
   const firmaCc = ip?.numero_documento ? `CC ${ip.numero_documento}` : "";
 
@@ -432,7 +452,7 @@ export const SolicitudCreditoPDFDoc: React.FC<SolicitudCreditoPDFProps> = ({
             </View>
             <View style={S.lineItem}>
               <Text style={S.lineKey}>+ Precio de venta</Text>
-              <Text style={S.lineVal}>{fmtCOP(precioVenta)}</Text>
+              <Text style={S.lineVal}>{fmtCOP(precioBase)}</Text>
             </View>
             <View style={S.lineItem}>
               <Text style={S.lineKey}>+ Gastos de matrícula</Text>
