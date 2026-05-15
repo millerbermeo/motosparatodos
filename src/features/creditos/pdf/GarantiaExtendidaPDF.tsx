@@ -401,7 +401,7 @@ const SERVICIOS = [
   },
   {
     servicio:
-      "TODAS LAS MOTOCICLETAS 70% PERDIDA TOTAL POR DAÑOS",
+      "TODAS LAS MOTOCICLETAS PERDIDA TOTAL POR DAÑOS",
     periodo:
       "DURANTE EL PERIODO DEL CREDITO Y CUMPLIENDO CON EL PLAN DE MANTENIMIENTO PREVENTIVO DEFINIDO POR EL FABRICANTE DE LA MOTOCICLETA.",
     condiciones:
@@ -409,7 +409,7 @@ const SERVICIOS = [
   },
   {
     servicio:
-      "TODAS LAS MOTOCICLETAS 70% DEL VALOR DE LA MOTO POR PERDIDA TOTAL POR HURTO",
+      "TODAS LAS MOTOCICLETAS DEL VALOR DE LA MOTO POR PERDIDA TOTAL POR HURTO",
     periodo:
       "DURANTE EL PERIODO DEL CREDITO Y CUMPLIENDO CON EL PLAN DE MANTENIMIENTO PREVENTIVO DEFINIDO POR EL FABRICANTE DE LA MOTOCICLETA.",
     condiciones:
@@ -417,7 +417,7 @@ const SERVICIOS = [
   },
   {
     servicio:
-      "TODAS LAS MOTOCICLETAS 10% DE DESCUENTO EN REPUESTOS Y MANO DE OBRA DURANTE TODO EL PERIODO DEL CREDITO.",
+      "TODAS LAS MOTOCICLETAS DE DESCUENTO EN REPUESTOS Y MANO DE OBRA DURANTE TODO EL PERIODO DEL CREDITO.",
     periodo: "DURANTE EL PERIODO DEL CREDITO",
     condiciones:
       "ESTAR AL DIA POR TODO CONCEPTO CON EL PAGO DE LA GARANTIA EXTENDIDA.",
@@ -541,7 +541,7 @@ export const GarantiaExtendidaPDFDoc: React.FC<GarantiaExtendidaPDFProps> = ({
         <View style={S.valorTable} wrap={false}>
           {Array.from({ length: garantiaAnios }, (_, i) => (
             <View style={S.valorRow} key={i}>
-              <Text style={S.valorCellKey}>AÑO {i + 1} (13% VALOR MOTO)</Text>
+              <Text style={S.valorCellKey}>AÑO {i + 1} (VALOR MOTO)</Text>
               <Text style={S.valorCellVal}>{fmtCOP(valorAnio)}</Text>
             </View>
           ))}
