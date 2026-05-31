@@ -242,7 +242,7 @@ const DetalleCotizacion: React.FC = () => {
 
 
   const showGarantiaExtendida = isCreditoPropio;
-  const polizaLabel = isContado || isCreditoTerceros ? 'Garantía extendida' : 'Póliza';
+  const polizaLabel = isContado || isCreditoTerceros ? 'Garantía y seguros' : 'Póliza';
 
   const isFacturado = normalizarTexto(q?.estado).includes('facturado');
   const tipoVehiculo = isCreditoPropio ? (1 as const) : (2 as const);
@@ -666,7 +666,7 @@ const DetalleCotizacion: React.FC = () => {
 
                           <>
                             <DataRowText
-                              label="Garantía extendida"
+                              label="Garantía y seguros"
                               value={
                                 typeof moto.garantiaExtendidaMeses === 'number' &&
                                   (moto.garantiaExtendidaMeses ?? 0) > 0
@@ -677,7 +677,7 @@ const DetalleCotizacion: React.FC = () => {
 
 
                             <DataRow
-                              label="Cuota garantía extendida"
+                              label="Cuota garantía y seguros"
                               value={fmtCOP(Number(creditoMotoActual.cuotaGarantiaExtendida ?? 0))}
                             />
 
@@ -710,7 +710,7 @@ const DetalleCotizacion: React.FC = () => {
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2">
                   <BadgeCheck className="w-5 h-5" />
-                  <h2 className="card-title text-lg">Garantía extendida</h2>
+                  <h2 className="card-title text-lg">Garantía y seguros</h2>
                   {geLoading && <span className="loading loading-spinner loading-xs" />}
                 </div>
 
@@ -756,7 +756,7 @@ const DetalleCotizacion: React.FC = () => {
 
 
                   <DataRow
-                    label="Cuota garantía extendida"
+                    label="Cuota garantía y seguros"
                     value={
                       typeof garantiaExtendidaTabData.meses === 'number' &&
                         garantiaExtendidaTabData.meses > 0

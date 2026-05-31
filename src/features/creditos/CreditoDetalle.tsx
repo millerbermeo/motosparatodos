@@ -416,7 +416,7 @@ const CreditoDetalle: React.FC = () => {
 
     const handleEliminar = async () => {
         const result = await Swal.fire({
-            title: "¿Eliminar garantía extendida?",
+            title: "¿Eliminar garantía y seguros?",
             text: "Esta acción no se puede deshacer",
             icon: "warning",
             showCancelButton: true,
@@ -429,7 +429,7 @@ const CreditoDetalle: React.FC = () => {
         if (result.isConfirmed) {
             await Swal.fire({
                 title: "Eliminada",
-                text: "La garantía extendida fue eliminada correctamente ✅",
+                text: "La garantía y seguros fue eliminada correctamente ✅",
                 icon: "success",
                 confirmButtonText: "OK",
             });
@@ -760,7 +760,7 @@ const CreditoDetalle: React.FC = () => {
             window.open(url, '_blank');
         } catch (err) {
             console.error(err);
-            alert('No fue posible generar la garantía extendida.');
+            alert('No fue posible generar la garantía y seguros.');
         }
     };
 
@@ -783,6 +783,16 @@ const CreditoDetalle: React.FC = () => {
             const garantiaExt = Number(creditoAjustado?.garantia_extendida_valor ?? 0);
             const precioVentaTotal = precioMoto + garantiaExt;          // precio completo = Tabla "Valor"
             const valorAFinanciar = Math.max(precioMoto - cuotaInicialNum, 0); // saldoNegocio = Tabla "Valor a financiar"
+
+            const tasaGarCarta = Number(cotData?.tasa_garantia ?? 1.5);
+            const plazoCarta = Number(moto.numeroCuotas ?? 36);
+            const pmtFnCarta = (p: number, tPct: number, n: number) => {
+                if (p <= 0 || n <= 0) return 0;
+                const r = tPct / 100;
+                if (r === 0) return p / n;
+                return (r * p) / (1 - Math.pow(1 + r, -n));
+            };
+            const garantiaExtMensual = Math.floor(pmtFnCarta(garantiaExt, tasaGarCarta, plazoCarta));
 
             const valorCuota = cuotaMensualCalculada;
             const productoNombre = [
@@ -816,7 +826,7 @@ const CreditoDetalle: React.FC = () => {
                     plazo={Number(moto.numeroCuotas ?? 36)}
                     precioVentaTotal={Number(precioVentaTotal)}
                     cuotaInicial={Number(cuotaInicialNum)}
-                    garantiaExtendida={garantiaExt}
+                    garantiaExtendida={garantiaExtMensual}
                     valorAFinanciar={Number(valorAFinanciar)}
                     valorCuotaMensual={Number(valorCuota)}
                     fechaVencimientoPrimeraCuota={fechaVencPrimeraCuota}
@@ -1326,7 +1336,7 @@ const CreditoDetalle: React.FC = () => {
                                     onClick={handleEliminar}
                                 >
                                     <X className="w-4 h-4" />
-                                    Eliminar garantía extendida
+                                    Eliminar garantía y seguros
                                 </button>
 
                                 <button

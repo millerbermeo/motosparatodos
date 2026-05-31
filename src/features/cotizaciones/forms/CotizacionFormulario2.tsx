@@ -998,8 +998,8 @@ const CotizacionFormulario: React.FC = () => {
     const hideGarantiaExtendida = metodo === "contado" || metodo === "terceros";
     const showGarantiaExtendida = showMotos && !hideGarantiaExtendida;
 
-    const polizaLabel = hideGarantiaExtendida ? "Garantía extendida" : "Póliza todo riesgo";
-    const polizaValorLabel = hideGarantiaExtendida ? "Valor garantía extendida" : "Valor póliza";
+    const polizaLabel = hideGarantiaExtendida ? "Garantía y seguros" : "Póliza todo riesgo";
+    const polizaValorLabel = hideGarantiaExtendida ? "Valor garantía y seguros" : "Valor póliza";
 
     React.useEffect(() => {
         const gpsComoContado = metodo === "contado" || metodo === "terceros";
@@ -1671,7 +1671,7 @@ const CotizacionFormulario: React.FC = () => {
                                                 <>
                                                     <FormSelect<FormValuesCotizacion>
                                                         name="garantiaExtendida1"
-                                                        label="Garantia Extendida"
+                                                        label="Garantía y seguros"
                                                         control={control}
                                                         options={garantiaExtendidaOptions}
                                                         placeholder="Seleccione..."
@@ -1681,7 +1681,7 @@ const CotizacionFormulario: React.FC = () => {
                                                                 if (esCreditoDirecto2 && incluirMoto1) {
                                                                     return v && v !== "no"
                                                                         ? true
-                                                                        : "La garantía extendida es obligatoria para crédito directo.";
+                                                                        : "La garantía y seguros es obligatoria para crédito directo.";
                                                                 }
                                                                 return true;
                                                             },
@@ -1691,14 +1691,14 @@ const CotizacionFormulario: React.FC = () => {
                                                     {garantiaExtendida1Value !== "no" && (
                                                         <FormInput<FormValuesCotizacion>
                                                             name="valor_garantia_extendida_a"
-                                                            label="Valor garantía extendida A"
+                                                            label="Valor garantía y seguros A"
                                                             type="number"
                                                             formatThousands
                                                             control={control}
                                                             placeholder="0"
                                                             disabled={!showMotos || !incluirMoto1}
                                                             rules={{
-                                                                required: "Ingresa el valor de la garantía extendida",
+                                                                required: "Ingresa el valor de la garantía y seguros",
                                                                 min: { value: 0, message: "No puede ser negativo" },
                                                                 setValueAs: (v) => (v === "" ? "" : String(v)),
                                                             }}
@@ -2057,7 +2057,7 @@ const CotizacionFormulario: React.FC = () => {
                                                             {/* 🔒 Valor total (oculto por ahora, por si luego lo necesitan) */}
                                                             <div className="hidden justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
                                                                 <span className="font-medium text-gray-700">
-                                                                    Garantía extendida ({garantiaExt1Sel} meses):
+                                                                    Garantía y seguros ({garantiaExt1Sel} meses):
                                                                 </span>
                                                                 <span>{fmtCOP(garantiaExtVal1)} COP</span>
                                                             </div>
@@ -2065,7 +2065,7 @@ const CotizacionFormulario: React.FC = () => {
                                                             {/* ✅ Valor correcto mostrado (cuota mensual) */}
                                                             <div className="hidden justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
                                                                 <span className="font-medium text-gray-700">
-                                                                    Garantía extendida ({garantiaExt1Sel} meses):
+                                                                    Garantía y seguros ({garantiaExt1Sel} meses):
                                                                 </span>
                                                                 <span>
                                                                     {fmtCOP(cuotaGarantiaExtendidaMoto1)} / mes
@@ -2231,7 +2231,7 @@ const CotizacionFormulario: React.FC = () => {
                                                 <>
                                                     <FormSelect<FormValuesCotizacion>
                                                         name="garantiaExtendida2"
-                                                        label="Garantia Extendida"
+                                                        label="Garantía y seguros"
                                                         control={control}
                                                         options={garantiaExtendidaOptions}
                                                         placeholder="Seleccione..."
@@ -2241,7 +2241,7 @@ const CotizacionFormulario: React.FC = () => {
                                                                 if (esCreditoDirecto2 && incluirMoto2) {
                                                                     return v && v !== "no"
                                                                         ? true
-                                                                        : "La garantía extendida es obligatoria para crédito directo.";
+                                                                        : "La garantía y seguros es obligatoria para crédito directo.";
                                                                 }
                                                                 return true;
                                                             },
@@ -2251,14 +2251,14 @@ const CotizacionFormulario: React.FC = () => {
                                                     {garantiaExtendida2Value !== "no" && (
                                                         <FormInput<FormValuesCotizacion>
                                                             name="valor_garantia_extendida_b"
-                                                            label="Valor garantía extendida B"
+                                                            label="Valor garantía y seguros B"
                                                             type="number"
                                                             formatThousands
                                                             control={control}
                                                             placeholder="0"
                                                             disabled={!showMotos || !incluirMoto2}
                                                             rules={{
-                                                                required: "Ingresa el valor de la garantía extendida",
+                                                                required: "Ingresa el valor de la garantía y seguros",
                                                                 min: { value: 0, message: "No puede ser negativo" },
                                                                 setValueAs: (v) => (v === "" ? "" : String(v)),
                                                             }}
@@ -2611,7 +2611,7 @@ const CotizacionFormulario: React.FC = () => {
                                                             {/* 🔒 Valor total (oculto por ahora, por si luego lo necesitan) */}
                                                             <div className="hidden justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
                                                                 <span className="font-medium text-gray-700">
-                                                                    Garantía extendida ({garantiaExt2Sel} meses):
+                                                                    Garantía y seguros ({garantiaExt2Sel} meses):
                                                                 </span>
                                                                 <span>{fmtCOP(garantiaExtVal2)} COP</span>
                                                             </div>
@@ -2619,7 +2619,7 @@ const CotizacionFormulario: React.FC = () => {
                                                             {/* ✅ Valor correcto mostrado (cuota mensual) */}
                                                             <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
                                                                 <span className="font-medium text-gray-700">
-                                                                    Garantía extendida ({garantiaExt2Sel} meses):
+                                                                    Garantía y seguros ({garantiaExt2Sel} meses):
                                                                 </span>
                                                                 <span>
                                                                     {fmtCOP(cuotaGarantiaExtendidaMoto2)} / mes

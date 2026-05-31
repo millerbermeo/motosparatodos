@@ -264,7 +264,7 @@ const FacturarCredito: React.FC = () => {
       ? Math.max(totalGeneral - cuotaInicial, 0)
       : undefined;
 
-  // Garantía extendida (si existe)
+  // Garantía y seguros (si existe)
   const garantiaExtendida: MaybeNum = toNum(
     (credito as any)?.garantia_extendida_valor
   );
@@ -522,7 +522,7 @@ const FacturarCredito: React.FC = () => {
               </span>
             </li>
             <li>
-              La garantía extendida tiene un valor de{' '}
+              La garantía y seguros tiene un valor de{' '}
               <span className="font-semibold text-slate-900">
                 {fmtCOP(garantiaExtendida)}
               </span>

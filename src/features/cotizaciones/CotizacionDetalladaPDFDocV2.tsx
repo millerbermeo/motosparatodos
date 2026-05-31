@@ -708,8 +708,8 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
 
                     {
                       k: ge.meses > 0
-                        ? `${esCreditoDirecto ? "Garantía y seguros" : "Valor garantía extendida"} (${ge.meses} meses)`
-                        : `${esCreditoDirecto ? "Garantía y seguros" : "Valor garantía extendida"}`,
+                        ? `${esCreditoDirecto ? "Garantía y seguros" : "Valor garantía y seguros"} (${ge.meses} meses)`
+                        : `${esCreditoDirecto ? "Garantía y seguros" : "Valor garantía y seguros"}`,
                       vv: esCreditoDirecto
                         ? (creditoDirecto?.garantiaMasSeguro ?? null)
                         : (ge.meses > 0 ? ge.valor : null),
