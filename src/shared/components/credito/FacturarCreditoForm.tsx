@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useRegistrarSolicitudFacturacion } from "../../../services/solicitudServices";
-import { useAuthStore } from "../../../store/auth.store";
 import { HeaderSolicitud } from "../solicitar-facturacion/HeaderSolicitud";
 
 const AGENCIAS = ["Sucursal Norte", "Sucursal Centro", "Sucursal Sur"];
@@ -205,9 +204,6 @@ const FacturarCreditoForm: React.FC<Props> = ({
   loadingDistribuidoras,
   errorDistribuidoras,
 }) => {
-  const navigate = useNavigate();
-  const user = useAuthStore((s) => s.user);
-
   const { mutate: registrarSolicitud, isPending } =
     useRegistrarSolicitudFacturacion();
 
@@ -304,13 +300,7 @@ const FacturarCreditoForm: React.FC<Props> = ({
 
       registrarSolicitud(fd, {
         onSuccess: () => {
-          const isAdmin =
-            user?.rol === "Administrador" ||
-            user?.rol === "Lider_credito_cartera" ||
-            user?.rol === "Aux_cartera";
-
-          if (isAdmin) navigate("/solicitudes");
-          else navigate(`/creditos/detalle/facturar-credito/${codigoCredito}`);
+          window.location.reload();
         },
       });
     },
@@ -325,8 +315,6 @@ const FacturarCreditoForm: React.FC<Props> = ({
       loggedUserName,
       observaciones,
       registrarSolicitud,
-      navigate,
-      user?.rol,
       distribuidoraSeleccionada,
     ]
   );

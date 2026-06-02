@@ -97,7 +97,7 @@ const opcionesEstados = (row: any): any[] => {
     { value: '3', label: 'Continúa interesado' },
     { value: '4', label: 'Alto interés' },
     soloCreditoEnDirecto ? { value: '5', label: 'Solicitar crédito' } : { value: '6', label: 'Solicitar facturación' },
-    { value: '7', label: 'Solicitar crédito express' },
+    // { value: '7', label: 'Solicitar crédito express' },
     { value: '2', label: 'Sin interés' },
   ];
 };

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useCredito, useDeudor } from '../../../services/creditosServices';
 import { CalendarDays, User2 } from 'lucide-react';
@@ -71,14 +71,11 @@ const FacturarCredito: React.FC = () => {
 
   // ➕ Consultar si ya hay solicitud para este crédito
   const { data: solicitudesCredito, isLoading: loadingSolic } =
-    useSolicitudesPorCodigoCredito(codigo_credito);
+    useSolicitudesPorCodigoCredito(id_cotizacion);
   const solicitud = solicitudesCredito?.[0] ?? null;
 
-  // si hay solicitud -> ocultar formulario
-  const [yaRegistrada, setYaRegistrada] = useState(false);
-  useEffect(() => {
-    setYaRegistrada(!!solicitud);
-  }, [solicitud]);
+  // ocultar formulario si ya existe solicitud (y carga terminó)
+  const yaRegistrada = !loadingSolic && !!solicitud;
 
   // -------------------- Distribuidoras (HOOK DINÁMICO) --------------------
   const {

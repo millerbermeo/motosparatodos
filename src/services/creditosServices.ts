@@ -291,8 +291,9 @@ export interface CreditoRaw {
   deudor_id?: string | number;        // "6"
   cotizacion_id: string | number;        // "6"
   codeudor_id: string | number;
-  cedula_cliente?: string
-
+  cedula_cliente?: string;
+  credito_cerrado?: number | string;
+  solicitar_facturacion?: number | string;
 }
 
 export interface Credito {
@@ -314,8 +315,9 @@ export interface Credito {
   deudor_id: number;
   cotizacion_id: string | number;        // "6"
   codeudor_id: string | number;
-  cedula_cliente?: string
-
+  cedula_cliente?: string;
+  credito_cerrado: number;
+  solicitar_facturacion: number;
 }
 
 export interface PaginationMeta {
@@ -358,8 +360,9 @@ const mapCredito = (r: CreditoRaw): Credito => ({
   deudor_id: toNumberSafe(r.deudor_id),
   cotizacion_id: toNumberSafe(r.cotizacion_id),
   codeudor_id: toNumberSafe(r.codeudor_id),
-  cedula_cliente: r.cedula_cliente
-
+  cedula_cliente: r.cedula_cliente,
+  credito_cerrado: toNumberSafe(r.credito_cerrado),
+  solicitar_facturacion: toNumberSafe(r.solicitar_facturacion),
 });
 
 /**

@@ -38,12 +38,19 @@ const btnEllipsis = "btn btn-xs rounded-xl min-w-8 h-8 px-3 bg-base-200 text-bas
 
 const moneyCOP = (n: number) => `${Number(n || 0).toLocaleString()} COP`;
 
-const badgeSiNo = (v?: string) => {
-    const value = (v || "").trim().toLowerCase();
-    const isYes = value === "si" || value === "sí" || value === "s";
-    const isNo = value === "no" || value === "n";
-    const cls = isYes ? "badge-success" : isNo ? "badge-ghost" : "badge-ghost";
-    const text = isYes ? "Sí" : isNo ? "No" : v ?? "-";
+// const badgeSiNo = (v?: string) => {
+//     const value = (v || "").trim().toLowerCase();
+//     const isYes = value === "si" || value === "sí" || value === "s";
+//     const isNo = value === "no" || value === "n";
+//     const cls = isYes ? "badge-success" : isNo ? "badge-ghost" : "badge-ghost";
+//     const text = isYes ? "Sí" : isNo ? "No" : v ?? "-";
+//     return <span className={`badge ${cls}`}>{text}</span>;
+// };
+
+const badgeNum = (v?: number | string | null) => {
+    const n = Number(v);
+    const cls = n === 1 ? "badge-success" : "badge-ghost";
+    const text = n === 1 ? "Sí" : "No";
     return <span className={`badge ${cls}`}>{text}</span>;
 };
 
@@ -241,12 +248,14 @@ const TablaCreditos: React.FC = () => {
                             <th>Valor producto</th>
                             <th>Plazo(meses)</th>
                             <th>Estado</th>
-                            <th>Preaprobado</th>
-                            <th>Analista</th>
-                            <th>Revisado</th>
+                            <th>Credito Cerrado</th>
+                            <th>Solicitar Facturacion</th>
+                            {/* <th>Preaprobado</th>
+                            <th>Analista</th> */}
+                            {/* <th>Revisado</th>
                             <th>¿Entrega autorizada?</th>
                             <th>¿Entregado?</th>
-                            <th>¿Cambio CI?</th>
+                            <th>¿Cambio CI?</th> */}
                             <th>Actualizado</th>
                         </tr>
                     </thead>
@@ -295,12 +304,14 @@ const TablaCreditos: React.FC = () => {
                                 <td className="whitespace-nowrap">{moneyCOP(c.valor_producto)}</td>
                                 <td className="text-center">{c.plazo_meses ?? "-"}</td>
                                 <td>{badgeEstado(c.estado)}</td>
-                                <td>{badgeSiNo(c.proaprobado)}</td>
-                                <td>{c.analista || "-"}</td>
+                                {/* <td>{badgeSiNo(c.proaprobado)}</td> */}
+                                {/* <td>{c.analista || "-"}</td>
                                 <td>{badgeSiNo(c.revisado)}</td>
                                 <td>{badgeSiNo(c.entrega_autorizada)}</td>
                                 <td>{badgeSiNo((c as any).entregado ?? "No")}</td>
-                                <td>{badgeSiNo(c.cambio_ci)}</td>
+                                <td>{badgeSiNo(c.cambio_ci)}</td> */}
+                                <td>{badgeNum(c.credito_cerrado)}</td>
+                                <td>{badgeNum(c.solicitar_facturacion)}</td>
                                 <td className="whitespace-nowrap">{timeAgo(c.actualizado)}</td>
                             </tr>
                         ))}
