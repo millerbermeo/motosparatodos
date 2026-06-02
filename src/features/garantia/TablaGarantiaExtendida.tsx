@@ -148,7 +148,7 @@ const TablaGarantiaExtendida: React.FC = () => {
   if (isError) {
     return (
       <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4 text-error">
-        Error al cargar garantía extendida
+        Error al cargar garantía y seguros
       </div>
     );
   }

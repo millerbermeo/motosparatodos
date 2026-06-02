@@ -321,7 +321,7 @@ export const CartaAprobacionPDFDoc: React.FC<CartaAprobacionPDFProps> = ({
           <DataRow label="Precio de venta total" value={fmtCOP(precioVentaTotal)} />
           <DataRow label="Cuota inicial" value={fmtCOP(cuotaInicial)} />
           {garantiaExtendida > 0 && (
-            <DataRow label="Garantía extendida" value={fmtCOP(garantiaExtendida)} />
+            <DataRow label="Garantía y seguros" value={fmtCOP(garantiaExtendida)} />
           )}
           <DataRow label="Valor a financiar" value={fmtCOP(valorAFinanciar)} />
           <DataRow
@@ -406,7 +406,7 @@ export const CartaAprobacionPDFDoc: React.FC<CartaAprobacionPDFProps> = ({
         />
         <ListItem
           n={6}
-          text="Es muy importante aclarar que, a todos estos beneficios, además de los puntos contratados con la empresa que le vende el vehículo con garantía extendida y complementaria, podrá acceder si mantiene su crédito al día. Nuestro aliado IKIGAI SEGUROS, ofrece las mejores soluciones en seguros para las personas, para la movilidad y para las empresas."
+          text="Es muy importante aclarar que, a todos estos beneficios, además de los puntos contratados con la empresa que le vende el vehículo con garantía y seguros y complementaria, podrá acceder si mantiene su crédito al día. Nuestro aliado IKIGAI SEGUROS, ofrece las mejores soluciones en seguros para las personas, para la movilidad y para las empresas."
         />
         <ListItem
           n={7}

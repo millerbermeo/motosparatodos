@@ -96,13 +96,7 @@ const styles = StyleSheet.create({
   },
   signatureBlock: {
     marginTop: 4,
-    width: 180,
-  },
-  signatureBox: {
-    width: 90,
-    height: 100,
-    borderWidth: 1,
-    marginBottom: 10,
+    width: 240,
   },
   firmaLine: {
     borderTopWidth: 1,
@@ -111,6 +105,19 @@ const styles = StyleSheet.create({
   },
   firmaLabel: {
     fontSize: 8,
+  },
+  huellaBox: {
+    width: 55,
+    height: 68,
+    borderWidth: 1,
+    borderColor: "#111",
+    borderRadius: 4,
+  },
+  huellaLabel: {
+    fontSize: 7,
+    marginTop: 2,
+    color: "#333",
+    textAlign: "center",
   },
   footer: {
     position: "absolute",
@@ -258,10 +265,17 @@ export const Pagina10: React.FC<Pagina10Props> = ({
 
       {/* FIRMA */}
       <View style={styles.signatureBlock}>
-        <View style={styles.signatureBox} />
-        <View style={styles.firmaLine} />
-        <Text style={styles.firmaLabel}>DEUDOR</Text>
-        <Text style={styles.firmaLabel}>C.C. No. {deudorCc}</Text>
+        <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
+          <View style={{ flex: 1, marginRight: 8 }}>
+            <View style={styles.firmaLine} />
+            <Text style={styles.firmaLabel}>DEUDOR</Text>
+            <Text style={styles.firmaLabel}>C.C. No. {deudorCc}</Text>
+          </View>
+          <View>
+            <View style={styles.huellaBox} />
+            <Text style={styles.huellaLabel}>Huella</Text>
+          </View>
+        </View>
       </View>
 
       {/* FOOTER */}

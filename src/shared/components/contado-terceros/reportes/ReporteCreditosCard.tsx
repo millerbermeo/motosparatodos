@@ -49,7 +49,7 @@ type ReportRow = {
   SOAT: string;
   Impuestos: string;
   Accesorios: string;
-  "Garantía extendida": string;
+  "Garantía y seguros": string;
   Seguros: string;
   Total: string;
 
@@ -83,7 +83,7 @@ const COLUMNS = [
   "SOAT",
   "Impuestos",
   "Accesorios",
-  "Garantía extendida",
+  "Garantía y seguros",
   "Seguros",
   "Total",
   "Placa",
@@ -178,7 +178,7 @@ const ReporteCreditosCard: React.FC = () => {
           SOAT: formatCOP(c.soat),
           Impuestos: formatCOP(c.impuestos),
           Accesorios: formatCOP(c.accesorios_total),
-          "Garantía extendida": formatCOP(c.garantia_extendida_valor),
+          "Garantía y seguros": formatCOP(c.garantia_extendida_valor),
           Seguros: formatCOP(c.precio_seguros),
           Total: formatCOP(c.total),
 

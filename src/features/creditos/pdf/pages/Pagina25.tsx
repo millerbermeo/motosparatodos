@@ -109,19 +109,26 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     marginTop: 20,
   },
-  firmaBox: {
-    width: 90,
-    height: 90,
-    borderWidth: 1,
-    marginRight: 16,
-  },
   firmaLine: {
     borderTopWidth: 1,
-    width: 220,
+    width: "100%",
     marginBottom: 3,
   },
   firmaLabel: {
     fontSize: 8,
+  },
+  huellaBox: {
+    width: 60,
+    height: 74,
+    borderWidth: 1,
+    borderColor: "#111",
+    borderRadius: 4,
+  },
+  huellaLabel: {
+    fontSize: 7.5,
+    marginTop: 2,
+    color: "#333",
+    textAlign: "center",
   },
   strong: {
     fontWeight: "bold",
@@ -271,10 +278,13 @@ export const Pagina25: React.FC<Pagina25Props> = ({
 
       {/* FIRMA */}
       <View style={styles.firmaRow}>
-        <View style={styles.firmaBox} />
-        <View>
+        <View style={{ width: 230 }}>
           <View style={styles.firmaLine} />
           <Text style={styles.firmaLabel}>Firma del solicitante del crédito</Text>
+        </View>
+        <View style={{ marginLeft: 16 }}>
+          <View style={styles.huellaBox} />
+          <Text style={styles.huellaLabel}>Huella dactilar</Text>
         </View>
       </View>
 

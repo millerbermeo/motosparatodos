@@ -97,7 +97,7 @@ const opcionesEstados = (row: any): any[] => {
     { value: '3', label: 'Continúa interesado' },
     { value: '4', label: 'Alto interés' },
     soloCreditoEnDirecto ? { value: '5', label: 'Solicitar crédito' } : { value: '6', label: 'Solicitar facturación' },
-    { value: '7', label: 'Solicitar crédito express' },
+    // { value: '7', label: 'Solicitar crédito express' },
     { value: '2', label: 'Sin interés' },
   ];
 };
@@ -136,7 +136,7 @@ const garantiaTexto = (row: any, side: 'a' | 'b') => {
 
   if (baseSi && extSi) return 'Garantía de fábrica + extendida';
   if (baseSi) return 'Garantía de fábrica';
-  if (extSi) return 'Garantía extendida';
+  if (extSi) return 'Garantía y seguros';
   return 'Sin garantía adicional';
 };
 
@@ -326,7 +326,7 @@ type MotoUI = {
   // adicionales completos (sin omitir nada)
   adicionales: Adicionales;
 
-  // póliza / garantía extendida (si existen)
+  // póliza / garantía y seguros (si existen)
   polizaCodigo: string | null;
   polizaValor: number;
   garantiaExtendidaMeses: number | null;
@@ -1000,7 +1000,7 @@ const DetalleCambiarEstado: React.FC = () => {
                   <InfoKV label="Bono ensambladora:" value={`- ${fmtCOP(motoA.bonoEnsambladora)}`} />
                 )}
 
-                {/* Póliza / garantía extendida (si existen) */}
+                {/* Póliza / garantía y seguros (si existen) */}
                 {(motoA.polizaCodigo || motoA.polizaValor > 0) && (
                   <>
                     <InfoKV label="Póliza:" value={motoA.polizaCodigo || '—'} />
@@ -1010,9 +1010,9 @@ const DetalleCambiarEstado: React.FC = () => {
 
                 {motoA.garantiaExtendidaMeses ? (
                   <>
-                    <InfoKV label="Garantía extendida (meses):" value={`${motoA.garantiaExtendidaMeses} meses`} />
+                    <InfoKV label="Garantía y seguros (meses):" value={`${motoA.garantiaExtendidaMeses} meses`} />
                     <InfoKV
-                      label="Cuota garantía extendida:"
+                      label="Cuota garantía y seguros:"
                       value={fmtCOP(motoA.cuotaGarantiaExtendida)}
                     />      </>
                 ) : null}
@@ -1102,8 +1102,8 @@ const DetalleCambiarEstado: React.FC = () => {
 
                 {motoB.garantiaExtendidaMeses ? (
                   <>
-                    <InfoKV label="Garantía extendida (meses):" value={`${motoB.garantiaExtendidaMeses} meses`} />
-                    <InfoKV label="Cuota garantía extendida:" value={fmtCOP(motoB.cuotaGarantiaExtendida)} />
+                    <InfoKV label="Garantía y seguros (meses):" value={`${motoB.garantiaExtendidaMeses} meses`} />
+                    <InfoKV label="Cuota garantía y seguros:" value={fmtCOP(motoB.cuotaGarantiaExtendida)} />
                   </>
                 ) : null}
 

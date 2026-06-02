@@ -251,7 +251,7 @@ const TablaCotizaciones: React.FC = () => {
                         <option value="Continúa interesado">Continúa interesado</option>
                         <option value="Alto interés">Alto interés</option>
                         <option value="Solicitar crédito">Solicitud de crédito</option>
-                        <option value="En facturación">En facturación</option>
+                        <option value="Solicitar facturación">En facturación</option>
                         <option value="Facturado">Facturado</option>
                     </select>
 

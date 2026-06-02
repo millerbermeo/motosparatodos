@@ -79,14 +79,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   firmaCol: {
-    width: "45%",
-    alignItems: "center",
-  },
-  firmaBox: {
-    width: 90,
-    height: 90,
-    borderWidth: 1,
-    marginBottom: 8,
+    width: "47%",
   },
   firmaLine: {
     borderTopWidth: 1,
@@ -95,6 +88,18 @@ const styles = StyleSheet.create({
   },
   firmaLabel: {
     fontSize: 8,
+  },
+  huellaBox: {
+    width: 50,
+    height: 62,
+    borderWidth: 1,
+    borderColor: "#111",
+    borderRadius: 4,
+  },
+  huellaLabel: {
+    fontSize: 7,
+    marginTop: 2,
+    color: "#333",
     textAlign: "center",
   },
   footer: {
@@ -201,18 +206,32 @@ export const Pagina24: React.FC<Pagina24Props> = ({
       <View wrap={false} style={styles.firmasRow}>
         {/* COMPRADOR */}
         <View style={styles.firmaCol}>
-          <View style={styles.firmaBox} />
-          <View style={styles.firmaLine} />
-          <Text style={styles.firmaLabel}>COMPRADOR</Text>
-          <Text style={styles.firmaLabel}>CC. No. {compradorCc}</Text>
+          <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
+            <View style={{ flex: 1, marginRight: 6 }}>
+              <View style={styles.firmaLine} />
+              <Text style={styles.firmaLabel}>COMPRADOR</Text>
+              <Text style={styles.firmaLabel}>CC. No. {compradorCc}</Text>
+            </View>
+            <View>
+              <View style={styles.huellaBox} />
+              <Text style={styles.huellaLabel}>Huella</Text>
+            </View>
+          </View>
         </View>
 
         {/* CODEUDOR */}
         <View style={styles.firmaCol}>
-          <View style={styles.firmaBox} />
-          <View style={styles.firmaLine} />
-          <Text style={styles.firmaLabel}>CODEUDOR</Text>
-          <Text style={styles.firmaLabel}>CC. No. {codeudorCc}</Text>
+          <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
+            <View style={{ flex: 1, marginRight: 6 }}>
+              <View style={styles.firmaLine} />
+              <Text style={styles.firmaLabel}>CODEUDOR</Text>
+              <Text style={styles.firmaLabel}>CC. No. {codeudorCc}</Text>
+            </View>
+            <View>
+              <View style={styles.huellaBox} />
+              <Text style={styles.huellaLabel}>Huella</Text>
+            </View>
+          </View>
         </View>
       </View>
 

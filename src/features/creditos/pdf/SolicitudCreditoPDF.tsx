@@ -229,6 +229,48 @@ const S = StyleSheet.create({
   firmaText: { fontSize: 8, marginTop: 2 },
   firmaSub: { fontSize: 7, color: "#555", marginTop: 1 },
 
+  // HUELLA
+  huellaBox: {
+    width: 60,
+    height: 74,
+    borderWidth: 1,
+    borderColor: "#111",
+    borderRadius: 4,
+    marginTop: 6,
+  },
+  huellaOval1: {
+    position: "absolute",
+    width: 44,
+    height: 58,
+    borderWidth: 0.6,
+    borderColor: "#aaa",
+    borderRadius: 100,
+    top: 8,
+    left: 8,
+  },
+  huellaOval2: {
+    position: "absolute",
+    width: 28,
+    height: 38,
+    borderWidth: 0.6,
+    borderColor: "#aaa",
+    borderRadius: 100,
+    top: 18,
+    left: 16,
+  },
+  huellaOval3: {
+    position: "absolute",
+    width: 14,
+    height: 20,
+    borderWidth: 0.6,
+    borderColor: "#aaa",
+    borderRadius: 100,
+    top: 27,
+    left: 23,
+  },
+  huellaLine: { width: 60, borderTopWidth: 0.8, borderTopColor: "#111", marginTop: 5 },
+  huellaLabel: { fontSize: 7.5, marginTop: 2, color: "#333" },
+
   // FOOTER
   footer: { position: "absolute", left: 28, bottom: 10, fontSize: 6.5, color: "#888" },
 });
@@ -484,7 +526,7 @@ export const SolicitudCreditoPDFDoc: React.FC<SolicitudCreditoPDFProps> = ({
               <Text style={S.lineVal}>{fmtCOP(cuotaInicial)}</Text>
             </View>
             <View style={S.lineItem}>
-              <Text style={S.lineKey}>+ Garantía extendida</Text>
+              <Text style={S.lineKey}>+ Garantía y seguros</Text>
               <Text style={S.lineVal}>{fmtCOP(garantiaExt)}</Text>
             </View>
             <View style={S.lineItem}>
@@ -518,12 +560,21 @@ export const SolicitudCreditoPDFDoc: React.FC<SolicitudCreditoPDFProps> = ({
           Declaro que conozco previamente las condiciones de aprobación del crédito solicitado dadas a conocer previamente por el asesor comercial, agencia, portal web, correo electrónico o telefónicamente y acepto lo establecido en ellas por lo cual autorizo a VERIFICARTE AAA S.A.S que el desembolso del crédito aprobado a mi nombre sea realizado a la cuenta bancaria indicada por mí.
         </Text>
 
-        {/* ── FIRMA ── */}
-        <View wrap={false}>
-          <View style={S.firmaBox} />
-          <View style={S.firmaLine} />
-          <Text style={S.firmaText}>Firma Deudor 1</Text>
-          <Text style={S.firmaSub}>{firmaCc}</Text>
+        {/* ── FIRMA + HUELLA ── */}
+        <View wrap={false} style={{ flexDirection: "row", alignItems: "flex-end" }}>
+          {/* Firma */}
+          <View style={{ marginRight: 24 }}>
+            <View style={S.firmaLine} />
+            <Text style={S.firmaText}>Firma Deudor 1</Text>
+            <Text style={S.firmaSub}>{firmaCc}</Text>
+          </View>
+
+          {/* Huella dactilar */}
+          <View>
+            <View style={S.huellaBox} />
+            <View style={S.huellaLine} />
+            <Text style={S.huellaLabel}>Huella dactilar</Text>
+          </View>
         </View>
 
         {/* ── FOOTER ── */}

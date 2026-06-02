@@ -67,22 +67,17 @@ const styles = StyleSheet.create({
   firmaBoxesRowTop: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "flex-end",
     marginTop: 8,
   },
   firmaBoxesRowBottom: {
     flexDirection: "row",
     justifyContent: "flex-start",
+    alignItems: "flex-end",
     marginTop: 16,
   },
   firmaBoxWrap: {
-    width: 150,
-    alignItems: "center",
-  },
-  firmaBox: {
-    width: 90,
-    height: 90,
-    borderWidth: 1,
-    marginBottom: 12,
+    width: 210,
   },
   firmaLine: {
     borderTopWidth: 1,
@@ -91,6 +86,18 @@ const styles = StyleSheet.create({
   },
   firmaLabel: {
     fontSize: 7.5,
+  },
+  huellaBox: {
+    width: 50,
+    height: 62,
+    borderWidth: 1,
+    borderColor: "#111",
+    borderRadius: 4,
+  },
+  huellaLabel: {
+    fontSize: 7,
+    marginTop: 2,
+    color: "#333",
     textAlign: "center",
   },
   footer: {
@@ -195,16 +202,22 @@ export const Pagina16: React.FC<Pagina16Props> = ({
       {/* FILA SUPERIOR: JEFE CARTERA / DEUDOR */}
       <View wrap={false} style={styles.firmaBoxesRowTop}>
         <View style={styles.firmaBoxWrap}>
-          <View style={styles.firmaBox} />
           <View style={styles.firmaLine} />
           <Text style={styles.firmaLabel}>{jefeCarteraNombre}</Text>
         </View>
 
         <View style={styles.firmaBoxWrap}>
-          <View style={styles.firmaBox} />
-          <View style={styles.firmaLine} />
-          <Text style={styles.firmaLabel}>DEUDOR</Text>
-          <Text style={styles.firmaLabel}>{deudorNombre}</Text>
+          <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
+            <View style={{ flex: 1, marginRight: 6 }}>
+              <View style={styles.firmaLine} />
+              <Text style={styles.firmaLabel}>DEUDOR</Text>
+              <Text style={styles.firmaLabel}>{deudorNombre}</Text>
+            </View>
+            <View>
+              <View style={styles.huellaBox} />
+              <Text style={styles.huellaLabel}>Huella</Text>
+            </View>
+          </View>
         </View>
       </View>
 
@@ -212,10 +225,17 @@ export const Pagina16: React.FC<Pagina16Props> = ({
       {codeudorNombre && (
         <View style={styles.firmaBoxesRowBottom}>
           <View style={styles.firmaBoxWrap}>
-            <View style={styles.firmaBox} />
-            <View style={styles.firmaLine} />
-            <Text style={styles.firmaLabel}>CODEUDOR</Text>
-            <Text style={styles.firmaLabel}>{codeudorNombre}</Text>
+            <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
+              <View style={{ flex: 1, marginRight: 6 }}>
+                <View style={styles.firmaLine} />
+                <Text style={styles.firmaLabel}>CODEUDOR</Text>
+                <Text style={styles.firmaLabel}>{codeudorNombre}</Text>
+              </View>
+              <View>
+                <View style={styles.huellaBox} />
+                <Text style={styles.huellaLabel}>Huella</Text>
+              </View>
+            </View>
           </View>
         </View>
       )}

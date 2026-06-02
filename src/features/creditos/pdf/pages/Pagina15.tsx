@@ -66,23 +66,17 @@ const styles = StyleSheet.create({
   firmasRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "flex-end",
     marginTop: 6,
   },
   firmaBlock: {
     width: "45%",
-    alignItems: "center",
   },
   acreedorSignatureImage: {
     width: 140,
     height: 40,
     marginBottom: 8,
     objectFit: "contain",
-  },
-  signatureBox: {
-    width: 90,
-    height: 100,
-    borderWidth: 1,
-    marginBottom: 10,
   },
   firmaLine: {
     borderTopWidth: 1,
@@ -91,6 +85,19 @@ const styles = StyleSheet.create({
   },
   firmaLabel: {
     fontSize: 8,
+  },
+  huellaBox: {
+    width: 50,
+    height: 62,
+    borderWidth: 1,
+    borderColor: "#111",
+    borderRadius: 4,
+  },
+  huellaLabel: {
+    fontSize: 7,
+    marginTop: 2,
+    color: "#333",
+    textAlign: "center",
   },
   footer: {
     position: "absolute",
@@ -211,11 +218,18 @@ export const Pagina15: React.FC<Pagina15Props> = ({
 
         {/* DEUDOR */}
         <View style={styles.firmaBlock}>
-          <View style={styles.signatureBox} />
-          <View style={styles.firmaLine} />
-          <Text style={styles.firmaLabel}>DEUDOR</Text>
-          <Text style={styles.firmaLabel}>{deudorNombre}</Text>
-          <Text style={styles.firmaLabel}>C.C. No. {deudorCc}</Text>
+          <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
+            <View style={{ flex: 1, marginRight: 6 }}>
+              <View style={styles.firmaLine} />
+              <Text style={styles.firmaLabel}>DEUDOR</Text>
+              <Text style={styles.firmaLabel}>{deudorNombre}</Text>
+              <Text style={styles.firmaLabel}>C.C. No. {deudorCc}</Text>
+            </View>
+            <View>
+              <View style={styles.huellaBox} />
+              <Text style={styles.huellaLabel}>Huella</Text>
+            </View>
+          </View>
         </View>
       </View>
 

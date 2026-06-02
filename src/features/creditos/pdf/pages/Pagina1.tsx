@@ -69,14 +69,7 @@ const styles = StyleSheet.create({
     marginTop: 35
   },
   signatureBlock: {
-    width: 140,
-    alignItems: "center"
-  },
-  signatureBox: {
-    width: 80,
-    height: 100,
-    borderWidth: 1,
-    marginBottom: 18
+    width: 210,
   },
   signatureLine: {
     borderTopWidth: 1,
@@ -85,7 +78,19 @@ const styles = StyleSheet.create({
   },
   signatureLabel: {
     fontSize: 7,
-    textAlign: "center"
+  },
+  huellaBox: {
+    width: 50,
+    height: 62,
+    borderWidth: 1,
+    borderColor: "#111",
+    borderRadius: 4,
+  },
+  huellaLabel: {
+    fontSize: 6.5,
+    marginTop: 2,
+    color: "#333",
+    textAlign: "center",
   },
   footer: {
     position: "absolute",
@@ -174,20 +179,32 @@ export const Pagina1: React.FC<Pagina1Props> = ({
       {/* FIRMAS */}
       <View wrap={false} style={styles.signaturesContainer}>
         <View style={styles.signatureBlock}>
-          <View style={styles.signatureBox} />
-          <View style={styles.signatureLine} />
-          <Text style={styles.signatureLabel}>Firma del titular del dato</Text>
-          <Text style={styles.signatureLabel}>{nombreTitular1}</Text>
+          <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
+            <View style={{ flex: 1, marginRight: 6 }}>
+              <View style={styles.signatureLine} />
+              <Text style={styles.signatureLabel}>Firma del titular del dato</Text>
+              <Text style={styles.signatureLabel}>{nombreTitular1}</Text>
+            </View>
+            <View>
+              <View style={styles.huellaBox} />
+              <Text style={styles.huellaLabel}>Huella</Text>
+            </View>
+          </View>
         </View>
 
         {nombreTitular2 && (
           <View style={styles.signatureBlock}>
-            <View style={styles.signatureBox} />
-            <View style={styles.signatureLine} />
-            <Text style={styles.signatureLabel}>
-              Firma del titular del dato
-            </Text>
-            <Text style={styles.signatureLabel}>{nombreTitular2}</Text>
+            <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
+              <View style={{ flex: 1, marginRight: 6 }}>
+                <View style={styles.signatureLine} />
+                <Text style={styles.signatureLabel}>Firma del titular del dato</Text>
+                <Text style={styles.signatureLabel}>{nombreTitular2}</Text>
+              </View>
+              <View>
+                <View style={styles.huellaBox} />
+                <Text style={styles.huellaLabel}>Huella</Text>
+              </View>
+            </View>
           </View>
         )}
       </View>

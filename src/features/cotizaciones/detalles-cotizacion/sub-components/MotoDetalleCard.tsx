@@ -36,7 +36,7 @@ const MotoDetalleCard: React.FC<Props> = ({
   totalConTodo,
   saldoConTodo,
 }) => {
-  const polizaLabel = (isContado || isCreditoTerceros) ? 'Garantía extendida' : 'Póliza';
+  const polizaLabel = (isContado || isCreditoTerceros) ? 'Garantía y seguros' : 'Póliza';
 
   return (
     <section className="card bg-base-100 border border-base-300/60 shadow-sm rounded-2xl">
@@ -156,7 +156,7 @@ const MotoDetalleCard: React.FC<Props> = ({
 
                   {showGarantiaExtendida && (
                     <DataRowText
-                      label="Garantía extendida"
+                      label="Garantía y seguros"
                       value={
                         typeof moto.garantiaExtendidaMeses === 'number' &&
                         (moto.garantiaExtendidaMeses ?? 0) > 0
@@ -215,7 +215,7 @@ const MotoDetalleCard: React.FC<Props> = ({
 
                     {showGarantiaExtendida && (
                       <DataRow
-                        label="Valor garantía extendida"
+                        label="Valor garantía y seguros"
                         value={fmtCOP(Number(moto.garantiaExtendidaValor ?? 0))}
                       />
                     )}
