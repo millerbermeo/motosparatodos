@@ -15,6 +15,8 @@ type FormSelectProps<T extends FieldValues> = {
   disabled?: boolean;
   className?: string;
   loading?: boolean;
+  /** Se dispara solo cuando el usuario cambia el valor (después de field.onChange) */
+  onValueChange?: (value: string) => void;
 };
 
 export function FormSelect<T extends FieldValues>({
@@ -27,6 +29,7 @@ export function FormSelect<T extends FieldValues>({
   disabled,
   className = "",
   loading = false,
+  onValueChange,
 }: FormSelectProps<T>) {
   const id = useId();
 
@@ -72,6 +75,10 @@ export function FormSelect<T extends FieldValues>({
                 aria-describedby={errorMsg ? `${id}-error` : undefined}
                 {...field}
                 value={field.value ?? ""}
+                onChange={(e) => {
+                  field.onChange(e);
+                  onValueChange?.(e.target.value);
+                }}
               >
                 <option value="" disabled>
                   {loading ? "Cargando…" : placeholder}

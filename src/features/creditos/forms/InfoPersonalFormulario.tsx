@@ -18,18 +18,16 @@ const toNumberPesos = (v: unknown): number => {
   return Number.isFinite(n) ? n : 0;
 };
 
-/** Centavos (DB) -> string de pesos sin formato (para que FormInput lo enmascare) */
-const centsToPesosStr = (cents: unknown): string => {
-  const n = Number(cents);
+/** Número (DB, pesos) -> string de pesos sin formato (para que FormInput lo enmascare) */
+const pesosToStr = (value: unknown): string => {
+  const n = Number(value);
   if (!Number.isFinite(n)) return "0";
-  const pesos = Math.trunc(n / 100);
-  return String(pesos);
+  return String(Math.trunc(n));
 };
 
-/** String de pesos formateado -> número en centavos (DB) */
-const pesosStrToCentsNumber = (value: unknown): number => {
-  const pesos = toNumberPesos(value);
-  return pesos * 100;
+/** String de pesos formateado -> número en pesos (DB) */
+const strToPesosNumber = (value: unknown): number => {
+  return toNumberPesos(value);
 };
 
 // ============================ Tipos ============================
@@ -330,7 +328,7 @@ const InfoPersonalFormulario: React.FC = () => {
       estado_civil: p.estado_civil ?? "",
       personas_a_cargo: toNumber(p.personas_a_cargo ?? 0),
       tipo_vivienda: p.tipo_vivienda ?? "",
-      costo_arriendo: centsToPesosStr(p.costo_arriendo ?? 0),
+      costo_arriendo: pesosToStr(p.costo_arriendo ?? 0),
       finca_raiz: mapFincaRaiz(p.finca_raiz),
 
       informacion_laboral: {
@@ -339,7 +337,7 @@ const InfoPersonalFormulario: React.FC = () => {
         telefono_empleador: l.telefono_empleador ?? "",
         cargo: l.cargo ?? "",
         tipo_contrato: l.tipo_contrato,
-        salario: centsToPesosStr(l.salario ?? 0),
+        salario: pesosToStr(l.salario ?? 0),
         tiempo_servicio: l.tiempo_servicio ?? "",
       },
 
@@ -355,17 +353,16 @@ const InfoPersonalFormulario: React.FC = () => {
     });
   }, [data, reset, id]);
 
-  // Si NO es arriendo → costo_arriendo = 0
   const tipoVivienda = watch("tipo_vivienda");
-  React.useEffect(() => {
-    if (tipoVivienda == null) return;
-    if (tipoVivienda !== "Arriendo") {
-      const curr = getValues("costo_arriendo");
-      if (curr == null || curr === "") {
-        setValue("costo_arriendo", "0", { shouldDirty: false });
-      }
+
+  // Limpiar costo_arriendo SOLO cuando el usuario cambia tipo_vivienda (no en carga/reset).
+  const handleTipoViviendaChange = (value: string) => {
+    if (value !== "Arriendo") {
+      setValue("costo_arriendo", "0", { shouldDirty: true, shouldValidate: false });
+    } else {
+      setValue("costo_arriendo", "", { shouldDirty: true, shouldValidate: true });
     }
-  }, [tipoVivienda, setValue, getValues]);
+  };
 
   // Submit
   const mapFincaRaizToBackend = (v: string | undefined) => {
@@ -422,7 +419,7 @@ const InfoPersonalFormulario: React.FC = () => {
       estado_civil: values.estado_civil,
       personas_a_cargo: toNumber(values.personas_a_cargo),
       tipo_vivienda: values.tipo_vivienda,
-      costo_arriendo: pesosStrToCentsNumber(values.costo_arriendo),
+      costo_arriendo: strToPesosNumber(values.costo_arriendo),
       finca_raiz: mapFincaRaizToBackend(values.finca_raiz as string),
     };
 
@@ -432,7 +429,7 @@ const InfoPersonalFormulario: React.FC = () => {
       telefono_empleador: values.informacion_laboral?.telefono_empleador?.trim() || "",
       cargo: values.informacion_laboral?.cargo?.trim() || "",
       tipo_contrato: values.informacion_laboral?.tipo_contrato?.trim() || null,
-      salario: pesosStrToCentsNumber(values.informacion_laboral?.salario),
+      salario: strToPesosNumber(values.informacion_laboral?.salario),
       tiempo_servicio: values.informacion_laboral?.tiempo_servicio?.trim() || "",
     };
 
@@ -659,25 +656,28 @@ const InfoPersonalFormulario: React.FC = () => {
             control={control}
             options={tipoViviendaOptions}
             rules={{ required: "Requerido" }}
+            onValueChange={handleTipoViviendaChange}
           />
 
-          <FormInput
-            name="costo_arriendo"
-            className="mt-6"
-            label="Costo del arriendo (COP)"
-            type="number"
-            control={control}
-            placeholder="0"
-            formatThousands
-            rules={{
-              validate: (v) => {
-                if (watch("tipo_vivienda") !== "Arriendo") return true;
-                const n = toNumber(v);
-                if (!n) return "Indique un valor";
-                return n > 0 || "Indique un valor mayor a 0";
-              },
-            }}
-          />
+          {tipoVivienda === "Arriendo" && (
+            <FormInput
+              name="costo_arriendo"
+              className="mt-6"
+              label="Costo del arriendo (COP)*"
+              type="number"
+              control={control}
+              placeholder="0"
+              formatThousands
+              rules={{
+                validate: (v) => {
+                  if (watch("tipo_vivienda") !== "Arriendo") return true;
+                  const n = toNumber(v);
+                  if (!n) return "Indique un valor";
+                  return n > 0 || "Indique un valor mayor a 0";
+                },
+              }}
+            />
+          )}
 
           <FormSelect
             name="finca_raiz"
