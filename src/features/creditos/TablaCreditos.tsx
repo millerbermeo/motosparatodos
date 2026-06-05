@@ -249,7 +249,7 @@ const TablaCreditos: React.FC = () => {
                             <th>Plazo(meses)</th>
                             <th>Estado</th>
                             <th>Credito Cerrado</th>
-                            <th>Solicitar Facturacion</th>
+                            <th>En Facturacion</th>
                             {/* <th>Preaprobado</th>
                             <th>Analista</th> */}
                             {/* <th>Revisado</th>

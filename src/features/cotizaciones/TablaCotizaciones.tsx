@@ -56,6 +56,7 @@ const btnEllipsis = 'btn btn-xs rounded-xl min-w-8 h-8 px-3 bg-base-200 text-bas
 
 const estadoLabel = (estado?: string) => {
     if (!estado || estado === 'Sin estado') return 'Sin revisar';
+    if (estado === 'Solicitar facturación') return 'En facturación';
     return estado;
 };
 
@@ -120,25 +121,30 @@ const prospectoFrom = (r: any) => {
     return has(r?.pregunta) || has(r?.comentario) ? 'SI' : 'NO';
 };
 
+const tipoBadgeClass = (tipo?: string) => {
+    const t = (tipo ?? '').toLowerCase();
+    if (t.includes('tercero')) return 'badge-warning';
+    if (t.includes('credito') || t.includes('crédito')) return 'badge-info';
+    if (t.includes('contado') || t.includes('directo')) return 'badge-success';
+    return 'badge-ghost';
+};
+
 const estadoBadgeClass = (estado?: string) => {
     switch (estado) {
         case 'Continúa interesado':
             return 'badge-warning';
         case 'Alto interés':
-            return 'badge-warning';
+            return 'badge-secondary';
         case 'Solicitar facturación':
             return 'badge-success';
         case 'Solicitar crédito express':
             return 'badge-info';
         case 'Sin interés':
             return 'badge-error';
-
         case 'Solicitar crédito':
-            return 'badge-info';
+            return 'badge-primary';
         case 'Facturado':
             return 'badge-accent';
-
-
         default:
             return 'badge-ghost';
     }
@@ -378,7 +384,11 @@ const TablaCotizaciones: React.FC = () => {
                                 <td className="text-sm text-base-content/70">{r?.asesor || '—'}</td>
                                 <td className="font-medium">{fullName(r)}</td>
                                 <td className="text-sm text-base-content/70">{r.celular || ''}</td>
-                                <td>{r.tipo_pago}</td>
+                                <td>
+                                    <span className={`badge whitespace-nowrap ${tipoBadgeClass(r?.tipo_pago)}`}>
+                                        {r.tipo_pago}
+                                    </span>
+                                </td>
                                 <td className="whitespace-nowrap">
                                     <span className={`badge whitespace-nowrap ${estadoBadgeClass(r?.estado)}`}>
                                         {estadoLabel(r?.estado)}

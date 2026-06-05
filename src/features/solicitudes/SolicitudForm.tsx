@@ -110,7 +110,7 @@ const SolicitudForm: React.FC = () => {
   const {
     control,
     handleSubmit,
-    formState: { isSubmitting, isValid },
+    formState: { isSubmitting },
     reset,
     watch,
     setValue,
@@ -653,8 +653,7 @@ const SolicitudForm: React.FC = () => {
               <button
                 type="submit"
                 className="btn btn-success shadow-md shadow-emerald-500/30 px-6"
-                disabled={!isValid || isSubmitting || isPending}
-                onClick={handleSubmit(onSubmit)}
+                disabled={isSubmitting || isPending}
               >
                 {isSubmitting || isPending ? "Procesando..." : "Continuar"}
               </button>
