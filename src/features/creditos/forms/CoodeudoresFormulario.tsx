@@ -50,17 +50,16 @@ export function buildPastDateValidation(optional = true) {
 
 
 
-/** Centavos (DB, escala 2) → string de pesos (sin formato) para el form */
-const centsToPesosStr = (cents: unknown): string => {
-  const n = Number(cents);
+/** Número (DB, pesos) → string de pesos (sin formato) para el form */
+const pesosToStr = (value: unknown): string => {
+  const n = Number(value);
   if (!Number.isFinite(n)) return "0";
-  return String(Math.trunc(n / 100)); // 123456 -> "1234"
+  return String(Math.trunc(n));
 };
 
-/** String de pesos (con máscara) → número en centavos para DB */
-const pesosStrToCentsNumber = (value: unknown): number => {
-  const pesos = toNumberPesos(value);
-  return pesos * 100;
+/** String de pesos (con máscara) → número en pesos para DB */
+const strToPesosNumber = (value: unknown): number => {
+  return toNumberPesos(value);
 };
 
 /* ========================= Tipos del form ========================= */
@@ -262,11 +261,11 @@ const toBackendPayload = (c: Coodeudor, credito?: string,) => {
   // Dinero → DB en centavos (solo si aplica)
   const costo_arriendo_num =
     c.tipoVivienda === "Arriendo"
-      ? pesosStrToCentsNumber(c.costoArriendo)
+      ? strToPesosNumber(c.costoArriendo)
       : 0;
 
   const salario =
-    c.salario === "" ? undefined : pesosStrToCentsNumber(c.salario);
+    c.salario === "" ? undefined : strToPesosNumber(c.salario);
 
   const referencias = [
     c.ref1Nombre || c.ref1Tipo || c.ref1Direccion || c.ref1Telefono
@@ -365,7 +364,7 @@ const fromBackendToForm = (data: any): Coodeudor => {
     estadoCivil: normalizeEstadoCivil(p.estado_civil),
     personasACargo: p.personas_a_cargo ?? "",
     tipoVivienda: normalizeTipoVivienda(p.tipo_vivienda),
-    costoArriendo: centsToPesosStr(p.costo_arriendo ?? 0),
+    costoArriendo: pesosToStr(p.costo_arriendo ?? 0),
     fincaRaiz: (p.finca_raiz as Coodeudor["fincaRaiz"]) ?? "No",
 
     empresaLabora: l.empresa ?? "",
@@ -373,7 +372,7 @@ const fromBackendToForm = (data: any): Coodeudor => {
     telEmpleador: l.telefono_empleador ?? "",
     cargo: l.cargo ?? "",
     tipoContrato: l.tipo_contrato ?? "Indefinido",
-    salario: centsToPesosStr(l.salario ?? 0),
+    salario: pesosToStr(l.salario ?? 0),
     tiempoServicio: l.tiempo_servicio ?? "",
 
     vehPlaca: v?.placa ?? "",
