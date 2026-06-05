@@ -118,11 +118,12 @@ const styles = StyleSheet.create({
     fontSize: 8,
   },
   huellaBox: {
-    width: 60,
+    width: 72,
     height: 74,
     borderWidth: 1,
     borderColor: "#111",
     borderRadius: 4,
+    marginBottom: 7
   },
   huellaLabel: {
     fontSize: 7.5,
@@ -277,15 +278,15 @@ export const Pagina25: React.FC<Pagina25Props> = ({
       </View>
 
       {/* FIRMA */}
-      <View style={styles.firmaRow}>
-        <View style={{ width: 230 }}>
-          <View style={styles.firmaLine} />
-          <Text style={styles.firmaLabel}>Firma del solicitante del crédito</Text>
+      <View style={{ marginTop: 20, width: 250 }}>
+        <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" }}>
+          <View style={{ flex: 1, minHeight: 50, marginRight: 16 }} />
+          <View style={{ alignItems: "center" }}>
+            <View style={styles.huellaBox} />
+          </View>
         </View>
-        <View style={{ marginLeft: 16 }}>
-          <View style={styles.huellaBox} />
-          <Text style={styles.huellaLabel}>Huella dactilar</Text>
-        </View>
+        <View style={styles.firmaLine} />
+        <Text style={styles.firmaLabel}>Firma del solicitante del crédito</Text>
       </View>
 
       {/* FOOTER */}

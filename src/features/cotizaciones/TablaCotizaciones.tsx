@@ -57,6 +57,7 @@ const btnEllipsis = 'btn btn-xs rounded-xl min-w-8 h-8 px-3 bg-base-200 text-bas
 const estadoLabel = (estado?: string) => {
     if (!estado || estado === 'Sin estado') return 'Sin revisar';
     if (estado === 'Solicitar facturación') return 'En facturación';
+    if (estado === 'Solicitar prefacturación') return 'Solicitud de Facturación';
     return estado;
 };
 
@@ -137,6 +138,8 @@ const estadoBadgeClass = (estado?: string) => {
             return 'badge-secondary';
         case 'Solicitar facturación':
             return 'badge-success';
+        case 'Solicitar prefacturación':
+            return 'badge-info';
         case 'Solicitar crédito express':
             return 'badge-info';
         case 'Sin interés':
@@ -256,6 +259,7 @@ const TablaCotizaciones: React.FC = () => {
                         <option value="Sin interés">Sin interés</option>
                         <option value="Continúa interesado">Continúa interesado</option>
                         <option value="Alto interés">Alto interés</option>
+                        <option value="Solicitar prefacturación">Solicitud de Facturacion</option>
                         <option value="Solicitar crédito">Solicitud de crédito</option>
                         <option value="Solicitar facturación">En facturación</option>
                         <option value="Facturado">Facturado</option>
@@ -364,7 +368,7 @@ const TablaCotizaciones: React.FC = () => {
 
 
                                         {user?.rol === "Asesor" &&
-                                            r?.estado === "Solicitar facturación" && (
+                                            (r?.estado === "Solicitar facturación" || r?.estado === "Solicitar prefacturación") && (
                                                 <Link
                                                     to={`/solicitudes/${r.id}`}
                                                     className="btn btn-sm bg-white btn-circle"

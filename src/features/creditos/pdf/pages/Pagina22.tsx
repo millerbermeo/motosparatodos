@@ -120,11 +120,12 @@ const styles = StyleSheet.create({
     fontSize: 7.5,
   },
   huellaBox: {
-    width: 50,
+    width: 72,
     height: 62,
     borderWidth: 1,
     borderColor: "#111",
     borderRadius: 4,
+    marginBottom: 7
   },
   huellaLabel: {
     fontSize: 7,
@@ -378,32 +379,32 @@ export const Pagina22: React.FC<Pagina22Props> = ({
       {/* FIRMAS FILA 2: COMPRADORES */}
       <View wrap={false} style={styles.firmasRow2}>
         <View style={styles.firmaCol}>
-          <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
-            <View style={{ flex: 1, marginRight: 6 }}>
-              <View style={styles.firmaLine} />
-              <Text style={styles.firmaLabel}>LOS COMPRADORES</Text>
-              <Text style={styles.firmaLabel}>C.C. No. {compradorId}</Text>
+          <View>
+            <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" }}>
+              <View style={{ flex: 1, minHeight: 40, marginRight: 6 }} />
+              <View style={{ alignItems: "center" }}>
+                <View style={styles.huellaBox} />
+              </View>
             </View>
-            <View>
-              <View style={styles.huellaBox} />
-              <Text style={styles.huellaLabel}>Huella</Text>
-            </View>
+            <View style={styles.firmaLine} />
+            <Text style={styles.firmaLabel}>LOS COMPRADORES</Text>
+            <Text style={styles.firmaLabel}>C.C. No. {compradorId}</Text>
           </View>
         </View>
 
         <View style={styles.firmaCol}>
-          <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
-            <View style={{ flex: 1, marginRight: 6 }}>
-              <View style={styles.firmaLine} />
-              <Text style={styles.firmaLabel}>LOS COMPRADORES</Text>
-              <Text style={styles.firmaLabel}>
-                C.C. No. {comprador2Id || "____________"}
-              </Text>
+          <View>
+            <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" }}>
+              <View style={{ flex: 1, minHeight: 40, marginRight: 6 }} />
+              <View style={{ alignItems: "center" }}>
+                <View style={styles.huellaBox} />
+              </View>
             </View>
-            <View>
-              <View style={styles.huellaBox} />
-              <Text style={styles.huellaLabel}>Huella</Text>
-            </View>
+            <View style={styles.firmaLine} />
+            <Text style={styles.firmaLabel}>LOS COMPRADORES</Text>
+            <Text style={styles.firmaLabel}>
+              C.C. No. {comprador2Id || "____________"}
+            </Text>
           </View>
         </View>
       </View>

@@ -275,6 +275,22 @@ const S = StyleSheet.create({
   },
   firmaLine: { borderTopWidth: 1, width: "100%", marginBottom: 3 },
   firmaLabel: { fontSize: 7.5, textAlign: "center" },
+  huellaBox: {
+    width: 72,
+    height: 62,
+    borderWidth: 1,
+    borderColor: "#111",
+    borderRadius: 4,
+    marginBottom: 7
+  },
+  huellaLabel: { fontSize: 7, marginBottom: 2, color: "#333", textAlign: "center" },
+  firmaHuellaRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  firmaSpace: { flex: 1, minHeight: 50, marginRight: 6 },
 
   // FIRMA SIMPLE (página 5)
   firmaColSingle: { alignItems: "flex-start", width: "50%", marginTop: 12 },
@@ -592,12 +608,22 @@ export const GarantiaExtendidaPDFDoc: React.FC<GarantiaExtendidaPDFProps> = ({
         {/* FIRMAS */}
         <View style={S.firmasRow} wrap={false}>
           <View style={S.firmaCol}>
-            <View style={S.firmaBox} />
+            <View style={S.firmaHuellaRow}>
+              <View style={S.firmaSpace} />
+              <View style={{ alignItems: "center" }}>
+                <View style={S.huellaBox} />
+              </View>
+            </View>
             <View style={S.firmaLine} />
             <Text style={S.firmaLabel}>Firma autorizada</Text>
           </View>
           <View style={S.firmaCol}>
-            <View style={S.firmaBox} />
+            <View style={S.firmaHuellaRow}>
+              <View style={S.firmaSpace} />
+              <View style={{ alignItems: "center" }}>
+                <View style={S.huellaBox} />
+              </View>
+            </View>
             <View style={S.firmaLine} />
             <Text style={S.firmaLabel}>Firma vendedor</Text>
           </View>
@@ -693,13 +719,23 @@ export const GarantiaExtendidaPDFDoc: React.FC<GarantiaExtendidaPDFProps> = ({
         <View wrap={false}>
           <View style={S.firmasRow}>
             <View style={S.firmaCol}>
-              <View style={S.firmaBox} />
+              <View style={S.firmaHuellaRow}>
+                <View style={S.firmaSpace} />
+                <View style={{ alignItems: "center" }}>
+                  <View style={S.huellaBox} />
+                </View>
+              </View>
               <View style={S.firmaLine} />
               <Text style={S.firmaLabel}>EMPRESA</Text>
               <Text style={S.firmaLabel}>Firma autorizada</Text>
             </View>
             <View style={S.firmaCol}>
-              <View style={S.firmaBox} />
+              <View style={S.firmaHuellaRow}>
+                <View style={S.firmaSpace} />
+                <View style={{ alignItems: "center" }}>
+                  <View style={S.huellaBox} />
+                </View>
+              </View>
               <View style={S.firmaLine} />
               <Text style={S.firmaLabel}>TITULAR</Text>
               <Text style={S.firmaLabel}>{safe(nombreTitular)}</Text>
@@ -709,7 +745,12 @@ export const GarantiaExtendidaPDFDoc: React.FC<GarantiaExtendidaPDFProps> = ({
 
           <View style={[S.firmasRow, { justifyContent: "flex-start", marginLeft: 40 }]}>
             <View style={S.firmaCol}>
-              <View style={S.firmaBox} />
+              <View style={S.firmaHuellaRow}>
+                <View style={S.firmaSpace} />
+                <View style={{ alignItems: "center" }}>
+                  <View style={S.huellaBox} />
+                </View>
+              </View>
               <View style={S.firmaLine} />
               <Text style={S.firmaLabel}>BENEFICIARIO</Text>
               <Text style={S.firmaLabel}>{safe(benefNombre)}</Text>
@@ -745,8 +786,13 @@ export const GarantiaExtendidaPDFDoc: React.FC<GarantiaExtendidaPDFProps> = ({
           <InfoRow label="PLACA" value={safe(placa)} last />
         </View>
 
-        <View wrap={false} style={{ marginTop: 16 }}>
-          <View style={S.firmaBox} />
+        <View wrap={false} style={{ marginTop: 16, width: "45%" }}>
+          <View style={S.firmaHuellaRow}>
+            <View style={S.firmaSpace} />
+            <View style={{ alignItems: "center" }}>
+              <View style={S.huellaBox} />
+            </View>
+          </View>
           <View style={S.firmaLine} />
           <Text style={S.firmaLabel}>TITULAR</Text>
           <Text style={S.firmaLabel}>{safe(nombreTitular)}</Text>

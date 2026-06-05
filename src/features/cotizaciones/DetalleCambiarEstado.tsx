@@ -96,8 +96,8 @@ const opcionesEstados = (row: any): any[] => {
   return [
     { value: '3', label: 'Continúa interesado' },
     { value: '4', label: 'Alto interés' },
-    soloCreditoEnDirecto ? { value: '5', label: 'Solicitar crédito' } : { value: '6', label: 'Solicitar facturación' },
-    // { value: '7', label: 'Solicitar crédito express' },
+    soloCreditoEnDirecto ? { value: '5', label: 'Solicitar crédito' } : { value: '6', label: 'Solicitar prefacturación', displayLabel: 'Solicitar Facturación' },
+
     { value: '2', label: 'Sin interés' },
   ];
 };
@@ -582,7 +582,8 @@ const DetalleCambiarEstado: React.FC = () => {
       .replace(/\p{Diacritic}/gu, '')
       .toLowerCase();
 
-    const esFacturacion = estado === 'solicitar facturacion';
+    const esFacturacion = estado === 'solicitar facturacion' || estado === 'solicitar prefacturacion';
+
 
     // ✅ 1) PRIORIDAD: ya existe solicitud
     if (isState === 1) {
@@ -1022,7 +1023,7 @@ const DetalleCambiarEstado: React.FC = () => {
                 <InfoKV label="Total:" value={fmtCOP(motoA.total)} />
 
                 {/* GPS */}
-                <InfoKV label="GPS (meses):" value={gpsLabel(motoA.gpsMeses)} showCOP={false}/>
+                <InfoKV label="GPS (meses):" value={gpsLabel(motoA.gpsMeses)} showCOP={false} />
                 <InfoKV label="Valor GPS:" value={gpsValorLabel(motoA.gpsMeses, motoA.gpsValor)} />
               </div>
 
@@ -1046,7 +1047,7 @@ const DetalleCambiarEstado: React.FC = () => {
 
               {/* Forma de pago / cuotas */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-                <InfoKV label="Tipo de pago" value={safeText(row?.tipo_pago) || safeText(row?.metodo_pago) || '—'} showCOP={false}/>
+                <InfoKV label="Tipo de pago" value={safeText(row?.tipo_pago) || safeText(row?.metodo_pago) || '—'} showCOP={false} />
                 <InfoKV label="Cuota inicial:" value={fmtCOP(motoA.cuotaInicial)} />
                 <InfoKV label="Saldo a financiar:" value={fmtCOP(motoA.saldoFinanciar)} />
               </div>
@@ -1068,9 +1069,9 @@ const DetalleCambiarEstado: React.FC = () => {
 
               {/* Ficha básica de la moto */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border-b border-base-300/60">
-                <InfoKV label="Marca" value={marcaMoto(row, 'b')} showCOP={false}/>
-                <InfoKV label="Línea" value={lineaMoto(row, 'b')} showCOP={false}/>
-                <InfoKV label="Modelo (año)" value={anioModeloMoto(row, 'b')} showCOP={false}/>
+                <InfoKV label="Marca" value={marcaMoto(row, 'b')} showCOP={false} />
+                <InfoKV label="Línea" value={lineaMoto(row, 'b')} showCOP={false} />
+                <InfoKV label="Modelo (año)" value={anioModeloMoto(row, 'b')} showCOP={false} />
                 <InfoKV label="Garantía" value={garantiaTexto(row, 'b')} showCOP={false} />
               </div>
 
@@ -1135,7 +1136,7 @@ const DetalleCambiarEstado: React.FC = () => {
 
               {/* Forma de pago / cuotas */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-                <InfoKV label="Tipo de pago" value={safeText(row?.tipo_pago) || safeText(row?.metodo_pago) || '—'}  showCOP={false}/>
+                <InfoKV label="Tipo de pago" value={safeText(row?.tipo_pago) || safeText(row?.metodo_pago) || '—'} showCOP={false} />
                 <InfoKV label="Cuota inicial:" value={fmtCOP(motoB.cuotaInicial)} />
                 <InfoKV label="Saldo a financiar:" value={fmtCOP(motoB.saldoFinanciar)} />
               </div>
@@ -1168,9 +1169,9 @@ const DetalleCambiarEstado: React.FC = () => {
                     </option>
                   )}
 
-                  {opts.map(({ value, label }) => (
+                  {opts.map(({ value, label, displayLabel }) => (
                     <option key={value} value={label}>
-                      {label}
+                      {displayLabel ?? label}
                     </option>
                   ))}
                 </select>
@@ -1249,8 +1250,8 @@ const InfoRow: React.FC<{ label: string; value: React.ReactNode }> = ({ label, v
   </div>
 );
 
-const InfoKV: React.FC<{ 
-  label: string; 
+const InfoKV: React.FC<{
+  label: string;
   value: React.ReactNode;
   showCOP?: boolean;
 }> = ({ label, value, showCOP = true }) => {

@@ -300,23 +300,28 @@ export const useRegistrarSolicitudFacturacion = (
       // Intentamos obtener el código de crédito desde el formdata para invalidar caches asociadas
       const cc = formData.get("codigo_credito")?.toString();
 
+      const texto =
+        Array.isArray(resp.message) ? resp.message.join("\n") :
+        resp.message ?? "Solicitud de facturación registrada correctamente";
+
+      // 1) Mostrar el alert y esperar a que el usuario presione "Aceptar"
+      await Swal.fire({
+        icon: "success",
+        title: "Solicitud registrada",
+        text: texto,
+        confirmButtonText: "Aceptar",
+        allowOutsideClick: false,
+      });
+
+      // 2) Invalidar caches asociadas
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["solicitudes-facturacion"] }),
         cc ? qc.invalidateQueries({ queryKey: ["credito", cc] }) : Promise.resolve(),
         cc ? qc.invalidateQueries({ queryKey: ["credito_detalle", cc] }) : Promise.resolve(),
       ]);
 
-      const texto =
-        Array.isArray(resp.message) ? resp.message.join("\n") :
-        resp.message ?? "Solicitud de facturación registrada correctamente";
-
-      Swal.fire({
-        icon: "success",
-        title: "Solicitud registrada",
-        text: texto,
-        timer: 1600,
-        showConfirmButton: false,
-      });
+      // 3) Recargar la vista
+      window.location.reload();
     },
     onError: (error) => {
       const raw = error.response?.data?.message ?? "No se pudo registrar la solicitud";
