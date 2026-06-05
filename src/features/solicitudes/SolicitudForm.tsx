@@ -5,6 +5,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { FormInput } from "../../shared/components/FormInput";
 import { useRegistrarProcesoContado } from "../../services/procesoContadoServices";
 import { useGetProcesoContadoPorCotizacionYMoto } from "../../services/procesoContadoHooks";
+import { useCotizacionById } from "../../services/cotizacionesServices";
 import { ClipboardList, UserRound, Bike } from "lucide-react";
 import { useLoaderStore } from "../../store/loader.store";
 
@@ -110,7 +111,7 @@ const SolicitudForm: React.FC = () => {
   const {
     control,
     handleSubmit,
-    formState: { isSubmitting, isValid },
+    formState: { isSubmitting },
     reset,
     watch,
     setValue,
@@ -179,9 +180,17 @@ const SolicitudForm: React.FC = () => {
     [id, incoming?.cotizacionId]
   );
   const { data: pcData, isFetching: pcLoading } =
-    useGetProcesoContadoPorCotizacionYMoto({
-      cotizacion_id: cotizacionId,
-    });
+    useGetProcesoContadoPorCotizacionYMoto(
+      { cotizacion_id: cotizacionId },
+      { retry: false } // si no existe proceso, no reintentar -> resuelve rápido
+    );
+
+  // ⬇️ Cotización por id: solo para defaults cuando NO existe proceso aún
+  const { data: cotizResp } = useCotizacionById(cotizacionId);
+  const cotizRow = React.useMemo<any>(() => {
+    const raw = (cotizResp as any)?.data ?? cotizResp;
+    return Array.isArray(raw) ? raw[0] : raw;
+  }, [cotizResp]);
 
 
   // Aplicar autocompletado UNA sola vez cuando pcData llega
@@ -210,6 +219,34 @@ const SolicitudForm: React.FC = () => {
     didAutofillRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pcData]);
+
+  // ============ Defaults desde la cotización (solo si NO existe proceso) ============
+  const didCotizFillRef = React.useRef(false);
+  React.useEffect(() => {
+    if (didCotizFillRef.current) return;
+    if (pcLoading) return;        // espera a que resuelva listar_proceso_list
+    if (pcData) return;           // ya existe proceso -> usar esos datos, no defaults
+    if (!cotizRow) return;        // sin cotización, nada que setear
+
+    const safe = (v: any) => (v === null || v === undefined ? "" : String(v).trim());
+
+    // Solo rellenar campos de cliente que estén vacíos (no pisar lo ya cargado)
+    reset((prev) => ({
+      ...prev,
+      primerNombre: prev.primerNombre || safe(cotizRow.name),
+      segundoNombre: prev.segundoNombre || safe(cotizRow.s_name),
+      primerApellido: prev.primerApellido || safe(cotizRow.last_name),
+      segundoApellido: prev.segundoApellido || safe(cotizRow.s_last_name),
+      numeroDocumento: prev.numeroDocumento || safe(cotizRow.cedula),
+      numeroCelular: prev.numeroCelular || safe(cotizRow.celular),
+      fechaNacimiento: prev.fechaNacimiento || safe(cotizRow.fecha_nacimiento).slice(0, 10),
+      ciudadResidencia: prev.ciudadResidencia || safe(cotizRow.ciudad),
+      direccionResidencia: prev.direccionResidencia || safe(cotizRow.direccion),
+    }));
+
+    didCotizFillRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pcLoading, pcData, cotizRow]);
 
   // ============================ Submit ============================
   const onSubmit = (values: SolicitudFormValues) => {
@@ -653,8 +690,7 @@ const SolicitudForm: React.FC = () => {
               <button
                 type="submit"
                 className="btn btn-success shadow-md shadow-emerald-500/30 px-6"
-                disabled={!isValid || isSubmitting || isPending}
-                onClick={handleSubmit(onSubmit)}
+                disabled={isSubmitting || isPending}
               >
                 {isSubmitting || isPending ? "Procesando..." : "Continuar"}
               </button>

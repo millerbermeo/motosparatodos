@@ -231,12 +231,13 @@ const S = StyleSheet.create({
 
   // HUELLA
   huellaBox: {
-    width: 60,
+    width: 72,
     height: 74,
     borderWidth: 1,
     borderColor: "#111",
     borderRadius: 4,
     marginTop: 6,
+    marginBottom: 7
   },
   huellaOval1: {
     position: "absolute",
@@ -561,20 +562,17 @@ export const SolicitudCreditoPDFDoc: React.FC<SolicitudCreditoPDFProps> = ({
         </Text>
 
         {/* ── FIRMA + HUELLA ── */}
-        <View wrap={false} style={{ flexDirection: "row", alignItems: "flex-end" }}>
-          {/* Firma */}
-          <View style={{ marginRight: 24 }}>
-            <View style={S.firmaLine} />
-            <Text style={S.firmaText}>Firma Deudor 1</Text>
-            <Text style={S.firmaSub}>{firmaCc}</Text>
+        <View wrap={false} style={{ width: 250 }}>
+          {/* Firma (espacio) + Huella al lado, descansando sobre la misma línea */}
+          <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" }}>
+            <View style={{ flex: 1, minHeight: 50, marginRight: 16 }} />
+            <View style={{ alignItems: "center" }}>
+              <View style={S.huellaBox} />
+            </View>
           </View>
-
-          {/* Huella dactilar */}
-          <View>
-            <View style={S.huellaBox} />
-            <View style={S.huellaLine} />
-            <Text style={S.huellaLabel}>Huella dactilar</Text>
-          </View>
+          <View style={[S.firmaLine, { width: "100%" }]} />
+          <Text style={S.firmaText}>Firma Deudor 1</Text>
+          <Text style={S.firmaSub}>{firmaCc}</Text>
         </View>
 
         {/* ── FOOTER ── */}

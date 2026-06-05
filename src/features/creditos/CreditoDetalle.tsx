@@ -8,7 +8,7 @@ import {
     ShieldCheck, User2, Wrench,
     X,
 } from 'lucide-react';
-import { useActualizarEstadoCredito, useActualizarFechaInicial, useCredito, useDeudor } from '../../services/creditosServices';
+import { useActualizarEstadoCredito, useActualizarFechaInicial, useCredito, useCodeudoresByDeudor, useDeudor } from '../../services/creditosServices';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ChipButton from '../../shared/components/ChipButton';
 import ChatThread from './ChatThread';
@@ -39,6 +39,7 @@ import { CotizacionSingleMotoPDFButton } from '../cotizaciones/CotizacionSingleM
 import { useCotizacionById } from '../../services/cotizacionesServices';
 import { useEmpresaById } from '../../services/empresasServices';
 import CambiarEstadoCredito from './forms/CambiarEstadoCredito';
+import CodeudoresDetalle from './CodeudoresDetalle';
 
 const fmtCOP = (v: number) =>
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
@@ -101,6 +102,12 @@ const CreditoDetalle: React.FC = () => {
         isLoading: loadingDeudor,
         error: errorDeudor,
     } = useDeudor(codigo_credito);
+
+    // 🔹 Codeudores del crédito
+    const { data: codeudoresResp } = useCodeudoresByDeudor(codigo_credito);
+    const codeudores: any[] = Array.isArray((codeudoresResp as any)?.data)
+        ? (codeudoresResp as any).data
+        : [];
 
     // 🔹 NUEVO: obtener configuración de tasa (TASA_FIN)
     const {
@@ -1144,6 +1151,9 @@ const CreditoDetalle: React.FC = () => {
                         )}
                     </div>
                 </section>
+
+                {/* Codeudores */}
+                <CodeudoresDetalle codeudores={codeudores} />
 
                 {/* Soportes */}
                 <section>

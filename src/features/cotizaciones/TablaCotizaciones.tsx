@@ -56,6 +56,8 @@ const btnEllipsis = 'btn btn-xs rounded-xl min-w-8 h-8 px-3 bg-base-200 text-bas
 
 const estadoLabel = (estado?: string) => {
     if (!estado || estado === 'Sin estado') return 'Sin revisar';
+    if (estado === 'Solicitar facturación') return 'En facturación';
+    if (estado === 'Solicitar prefacturación') return 'Solicitud de Facturación';
     return estado;
 };
 
@@ -120,25 +122,32 @@ const prospectoFrom = (r: any) => {
     return has(r?.pregunta) || has(r?.comentario) ? 'SI' : 'NO';
 };
 
+const tipoBadgeClass = (tipo?: string) => {
+    const t = (tipo ?? '').toLowerCase();
+    if (t.includes('tercero')) return 'badge-warning';
+    if (t.includes('credito') || t.includes('crédito')) return 'badge-info';
+    if (t.includes('contado') || t.includes('directo')) return 'badge-success';
+    return 'badge-ghost';
+};
+
 const estadoBadgeClass = (estado?: string) => {
     switch (estado) {
         case 'Continúa interesado':
             return 'badge-warning';
         case 'Alto interés':
-            return 'badge-warning';
+            return 'badge-secondary';
         case 'Solicitar facturación':
             return 'badge-success';
+        case 'Solicitar prefacturación':
+            return 'badge-info';
         case 'Solicitar crédito express':
             return 'badge-info';
         case 'Sin interés':
             return 'badge-error';
-
         case 'Solicitar crédito':
-            return 'badge-info';
+            return 'badge-primary';
         case 'Facturado':
             return 'badge-accent';
-
-
         default:
             return 'badge-ghost';
     }
@@ -250,6 +259,7 @@ const TablaCotizaciones: React.FC = () => {
                         <option value="Sin interés">Sin interés</option>
                         <option value="Continúa interesado">Continúa interesado</option>
                         <option value="Alto interés">Alto interés</option>
+                        <option value="Solicitar prefacturación">Solicitud de Facturacion</option>
                         <option value="Solicitar crédito">Solicitud de crédito</option>
                         <option value="Solicitar facturación">En facturación</option>
                         <option value="Facturado">Facturado</option>
@@ -358,7 +368,7 @@ const TablaCotizaciones: React.FC = () => {
 
 
                                         {user?.rol === "Asesor" &&
-                                            r?.estado === "Solicitar facturación" && (
+                                            (r?.estado === "Solicitar facturación" || r?.estado === "Solicitar prefacturación") && (
                                                 <Link
                                                     to={`/solicitudes/${r.id}`}
                                                     className="btn btn-sm bg-white btn-circle"
@@ -378,7 +388,11 @@ const TablaCotizaciones: React.FC = () => {
                                 <td className="text-sm text-base-content/70">{r?.asesor || '—'}</td>
                                 <td className="font-medium">{fullName(r)}</td>
                                 <td className="text-sm text-base-content/70">{r.celular || ''}</td>
-                                <td>{r.tipo_pago}</td>
+                                <td>
+                                    <span className={`badge whitespace-nowrap ${tipoBadgeClass(r?.tipo_pago)}`}>
+                                        {r.tipo_pago}
+                                    </span>
+                                </td>
                                 <td className="whitespace-nowrap">
                                     <span className={`badge whitespace-nowrap ${estadoBadgeClass(r?.estado)}`}>
                                         {estadoLabel(r?.estado)}
