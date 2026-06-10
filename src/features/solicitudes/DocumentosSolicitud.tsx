@@ -75,6 +75,7 @@ const DocumentosSolicitud: React.FC<Props> = ({
     window.open(finalUrl, "_blank", "noopener,noreferrer");
   };
 
+  console.log(estadoCotizacion)
   const estaFinalizado =
     finalizado === 1 || finalizado === "1" || finalizado === true;
 
