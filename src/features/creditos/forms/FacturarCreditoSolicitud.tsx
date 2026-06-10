@@ -26,13 +26,13 @@ type MaybeNum = number | undefined | null;
 const fmtCOP = (v?: MaybeNum) =>
   typeof v === 'number' && Number.isFinite(v)
     ? new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        maximumFractionDigits: 0,
-      }).format(v)
+      style: 'currency',
+      currency: 'COP',
+      maximumFractionDigits: 0,
+    }).format(v)
     : v === 0
-    ? '0 COP'
-    : '';
+      ? '0 COP'
+      : '';
 
 // 👇 NUEVOS helpers para mostrar “—” si no hay dato y para convertir a número seguro
 const fmtOptCOP = (v?: string | number | null) => {
@@ -91,7 +91,6 @@ const FacturarCreditoSolicitud: React.FC = () => {
   const solicitud = (SolicitudFacturacion as any)?.solicitud ?? null;
   const cotizacion = (SolicitudFacturacion as any)?.cotizacion ?? null;
 
-  console.log('222', solicitud);
 
   // Estado para decidir formulario vs detalle: si ya hay solicitud => detalle
   const [yaRegistrada, setYaRegistrada] = useState<boolean>(false);
@@ -404,7 +403,7 @@ const FacturarCreditoSolicitud: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="md:col-span-1">
               <div className="h-full rounded-lg bg-[#F1FCF6] border border-success p-4 flex flex-col justify-center md:justify-end md:items-end">
                 <div className="text-right">
@@ -485,7 +484,7 @@ const FacturarCreditoSolicitud: React.FC = () => {
                 value={fmtOptCOP(
                   accesoriosYSeguros
                     ? (accesoriosYSeguros as number) -
-                        Math.round((accesoriosYSeguros as number) / 1.19)
+                    Math.round((accesoriosYSeguros as number) / 1.19)
                     : undefined
                 )}
               />
@@ -909,9 +908,8 @@ const RowRight: React.FC<{
   <div className="px-5 py-3 grid grid-cols-12 items-center text-sm">
     <div className="col-span-8 sm:col-span-10 text-slate-700">{label}</div>
     <div
-      className={`col-span-4 sm:col-span-2 text-right ${
-        bold ? 'font-semibold text-slate-900' : 'font-medium text-slate-800'
-      }`}
+      className={`col-span-4 sm:col-span-2 text-right ${bold ? 'font-semibold text-slate-900' : 'font-medium text-slate-800'
+        }`}
     >
       {badge ? <span className={badge}>{value}</span> : value}
     </div>

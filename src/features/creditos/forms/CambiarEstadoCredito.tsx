@@ -117,13 +117,11 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
     navigate("/creditos");
   };
 
-  console.log("data del credito", data);
 
   // ====== DATA PARA LA TABLA DE AMORTIZACIÓN (PANTALLA) ======
   const creditoTabla = useMemo(() => {
     if (!data) return null;
 
-    console.log("wwwwwwww", data.credito)
     return {
       valor_producto: Number(
         data?.credito?.valor_producto ??

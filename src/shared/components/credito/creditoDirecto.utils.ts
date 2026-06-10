@@ -82,8 +82,8 @@ export const calcularCreditoDirectoMoto = (
   const cuotaGarantiaRaw =
     meses > 0
       ? valorGarantia *
-        ((tasaGarantiaPct / 100) /
-          (1 - Math.pow(1 + tasaGarantiaPct / 100, -meses)))
+      ((tasaGarantiaPct / 100) /
+        (1 - Math.pow(1 + tasaGarantiaPct / 100, -meses)))
       : 0;
 
   // Math.floor del valor positivo = mismo criterio que tabla y PDF de amortización
@@ -105,10 +105,10 @@ export const calcularCreditoDirectoMoto = (
   const cuotaNegocio =
     meses > 0 && saldoFinanciar > 0
       ? Math.floor(
-          Math.abs(
-            calcularCuotaPMT(saldoFinanciar, tasaFinanciacionPct, meses)
-          )
+        Math.abs(
+          calcularCuotaPMT(saldoFinanciar, tasaFinanciacionPct, meses)
         )
+      )
       : 0;
 
   /**
@@ -136,18 +136,6 @@ export const logCreditoDirectoMoto = (
   label: string,
   data: CreditoMotoResultado
 ) => {
-  console.group(`CRÉDITO DIRECTO ${label}`);
-  console.log("Meses garantía:", data.meses);
-  console.log("Valor garantía:", data.valorGarantia);
-  console.log("Saldo financiar:", data.saldoFinanciar);
-  console.log("Tasa financiación %:", data.tasaFinanciacionPct);
-  console.log("Tasa garantía %:", data.tasaGarantiaPct);
-  console.log("Tasa financiación decimal:", data.tasaFinanciacionDecimal);
-  console.log("Tasa garantía decimal:", data.tasaGarantiaDecimal);
-  console.log("Cuota garantía extendida:", data.cuotaGarantiaExtendida);
-  console.log("Seguro deudor:", data.seguroDeudor);
-  console.log("Garantía + seguro:", data.garantiaMasSeguro);
-  console.log("Cuota negocio:", data.cuotaNegocio);
-  console.log("Cuota total:", data.cuotaTotal);
+  console.group(`CRÉDITO DIRECTO ${label} ${data}`);
   console.groupEnd();
 };

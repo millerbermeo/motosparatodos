@@ -4,6 +4,7 @@ import {
   useCotizacionActividades,
   useCotizacionById,
 } from '../../services/cotizacionesServices';
+import { useCotizacionFullById } from '../../services/fullServices';
 import {
   UserRound,
   Bike,
@@ -90,6 +91,12 @@ const DetalleCotizacion: React.FC = () => {
     [payload]
   );
 
+  const tipoPagoNorm = normalizarTexto(q?.comercial?.tipo_pago);
+  const isContado = tipoPagoNorm.includes('contado');
+  const isCreditoPropio =
+    tipoPagoNorm.includes('directo') || tipoPagoNorm.includes('credibike');
+  const isCreditoTerceros = tipoPagoNorm.includes('terceros');
+
   const rawIdEmpresa = payload?.id_empresa_a ?? payload?.id_empresa_b;
   const idEmpresa = Number(rawIdEmpresa);
   const hasEmpresa = Number.isFinite(idEmpresa) && idEmpresa > 0;
@@ -140,6 +147,10 @@ const DetalleCotizacion: React.FC = () => {
   const { data: geResp, isLoading: geLoading } = useGarantiaExtByCotizacionId(id);
   const ge = geResp?.data;
 
+  const { data: fullCotData } = useCotizacionFullById(
+    isCreditoPropio && !!id ? id : undefined
+  );
+
   const actividadItems = React.useMemo<ActividadItem[]>(
     () =>
       (actividades ?? []).map((r: any) => ({
@@ -167,6 +178,13 @@ const DetalleCotizacion: React.FC = () => {
   const moto = tab === 'A' ? q?.motoA : q?.motoB;
 
   const cuotas = moto?.cuotas ?? ({} as Cuotas);
+
+  const cuotaInicialCredito = Number(
+    fullCotData?.data?.creditos?.cuota_inicial ?? 0
+  );
+  const cuotaInicialEfectiva = isCreditoPropio && cuotaInicialCredito > 0
+    ? cuotaInicialCredito
+    : Number(cuotas?.inicial ?? 0);
 
   const totalDocumentos = React.useMemo(() => {
     if (!moto) return 0;
@@ -206,9 +224,8 @@ const DetalleCotizacion: React.FC = () => {
 
   const saldoConTodo = React.useMemo(() => {
     if (!moto) return 0;
-    const inicial = Number(cuotas?.inicial ?? 0);
-    return Math.max(totalConTodo - inicial, 0);
-  }, [moto, cuotas, totalConTodo]);
+    return Math.max(totalConTodo - cuotaInicialEfectiva, 0);
+  }, [moto, cuotaInicialEfectiva, totalConTodo]);
 
 
 
@@ -216,7 +233,7 @@ const DetalleCotizacion: React.FC = () => {
     if (!moto) return false;
 
     return (
-      (cuotas.inicial ?? 0) > 0 ||
+      cuotaInicialEfectiva > 0 ||
       typeof cuotas.meses6 === 'number' ||
       typeof cuotas.meses12 === 'number' ||
       typeof cuotas.meses18 === 'number' ||
@@ -224,14 +241,7 @@ const DetalleCotizacion: React.FC = () => {
       typeof cuotas.meses30 === 'number' ||
       typeof cuotas.meses36 === 'number'
     );
-  }, [moto, cuotas]);
-
-  const tipoPagoNorm = normalizarTexto(q?.comercial?.tipo_pago);
-  const isContado = tipoPagoNorm.includes('contado');
-  const isCreditoPropio =
-    tipoPagoNorm.includes('directo') || tipoPagoNorm.includes('credibike');
-  const isCreditoTerceros = tipoPagoNorm.includes('terceros');
-
+  }, [moto, cuotas, cuotaInicialEfectiva]);
 
   const { data: tasasCot } = useTasasCotizacion(Number(id));
   // Cotización primero (campo ya cargado), hook como fallback
@@ -310,12 +320,18 @@ const DetalleCotizacion: React.FC = () => {
       tasaFinanciacionPct: tasaFinanciacionCot,
       tasaGarantiaPct: tasaGarantiaCot,
     };
-    console.log("[V1-PDF] creditoDirecto input:", input);
     const res = calcularCreditoDirectoMoto(input);
-    console.log("[V1-PDF] creditoDirecto resultado:", res);
     return res;
   }, [isCreditoPropio, moto, saldoConTodo, tasaFinanciacionCot, tasaGarantiaCot]);
 
+  const payloadParaPDF = React.useMemo(() => {
+    if (!isCreditoPropio || cuotaInicialCredito <= 0) return payload;
+    const suf = tab.toLowerCase() as 'a' | 'b';
+    return {
+      ...payload,
+      [`cuota_inicial_${suf}`]: cuotaInicialCredito,
+    };
+  }, [isCreditoPropio, cuotaInicialCredito, payload, tab]);
 
   const handleDownloadPaquete = React.useCallback(async () => {
     try {
@@ -362,7 +378,7 @@ const DetalleCotizacion: React.FC = () => {
         chasis: vehiculoCampos?.numero_chasis ?? '',
         placa: vehiculoCampos?.placa ?? '',
         valorMoto: moto.precioBase != null ? fmtCOP(moto.precioBase) : '',
-        cuotaInicial: (cuotas.inicial ?? 0) > 0 ? fmtCOP(cuotas.inicial) : '',
+        cuotaInicial: cuotaInicialEfectiva > 0 ? fmtCOP(cuotaInicialEfectiva) : '',
         cuotas: 36,
         valorCuota: cuotas.meses36 != null ? fmtCOP(cuotas.meses36) : '',
         fechaEntrega: '',
@@ -375,7 +391,7 @@ const DetalleCotizacion: React.FC = () => {
       console.error(err);
       alert('No fue posible generar el paquete de crédito.');
     }
-  }, [q, moto, tab, payload, logoUrl, cuotas, vehiculoCampos]);
+  }, [q, moto, tab, payload, logoUrl, cuotas, vehiculoCampos, cuotaInicialEfectiva]);
 
   const handleDescargarRunt = React.useCallback(() => {
     const link = document.createElement('a');
@@ -704,10 +720,10 @@ const DetalleCotizacion: React.FC = () => {
                             </>
                           )}
 
-                        {(cuotas?.inicial ?? 0) > 0 && (
+                        {cuotaInicialEfectiva > 0 && (
                           <DataRow
                             label="Cuota inicial"
-                            value={fmtCOP(cuotas.inicial)}
+                            value={fmtCOP(cuotaInicialEfectiva)}
                             valueClass="text-error font-semibold"
                           />
                         )}
@@ -848,10 +864,10 @@ const DetalleCotizacion: React.FC = () => {
 
               <>
                 <div className="grid-cols-1 hidden md:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {typeof cuotas.inicial === 'number' && cuotas.inicial > 0 && (
+                  {cuotaInicialEfectiva > 0 && (
                     <StatTile
                       label="Cuota inicial"
-                      value={fmtCOP(cuotas.inicial)}
+                      value={fmtCOP(cuotaInicialEfectiva)}
                       badge="Inicial"
                     />
                   )}
@@ -970,7 +986,7 @@ const DetalleCotizacion: React.FC = () => {
             <PDFDownloadLink
               document={
                 <CotizacionDetalladaPDFDoc
-                  cotizacion={{ success: true, data: payload }}
+                  cotizacion={{ success: true, data: payloadParaPDF }}
                   garantiaExt={ge ? { success: true, data: ge } : undefined}
                   logoUrl={logoUrl}
                   empresa={empresaPDF}
@@ -1011,7 +1027,7 @@ const DetalleCotizacion: React.FC = () => {
           <button
             disabled
             className="btn btn-success btn-sm"
-            onClick={() => console.log('Crear recordatorio', q?.id)}
+            onClick={() => { }}
             title="Crear recordatorio"
           >
             <CalendarPlus className="w-4 h-4" />

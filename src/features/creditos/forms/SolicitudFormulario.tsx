@@ -45,7 +45,6 @@ const SolicitudFormulario: React.FC = () => {
     const cotizacionId = creditoBackend?.cotizacion_id;
 
 // y en cualquier parte del componente:
-console.log("ID de la cotización:", cotizacionId);
 
 
   const firmasUrl = React.useMemo(

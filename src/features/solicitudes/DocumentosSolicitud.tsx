@@ -179,8 +179,6 @@ const DocumentosSolicitud: React.FC<Props> = ({
     );
   };
 
-  console.log(estadoCotizacion);
-  console.log({ tiene_factura });
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">

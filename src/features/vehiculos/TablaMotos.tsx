@@ -238,10 +238,8 @@ const TablaMotos: React.FC = () => {
       <div className="px-4 pb-3">
         <div className="bg-white rounded-xl border border-base-200 p-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Marca</span>
-              </label>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-base-content">Marca</label>
               <select
                 className="select select-bordered"
                 value={filters.marca ?? ""}
@@ -254,10 +252,8 @@ const TablaMotos: React.FC = () => {
               </select>
             </div>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Línea</span>
-              </label>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-base-content">Línea</label>
               <select
                 className="select select-bordered"
                 value={filters.linea ?? ""}
@@ -270,10 +266,8 @@ const TablaMotos: React.FC = () => {
               </select>
             </div>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Modelo</span>
-              </label>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-base-content">Modelo</label>
               <select
                 className="select select-bordered"
                 value={filters.modelo ?? ""}
@@ -286,10 +280,8 @@ const TablaMotos: React.FC = () => {
               </select>
             </div>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Empresa</span>
-              </label>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-base-content">Empresa</label>
               <select
                 className="select select-bordered"
                 value={filters.empresa ?? ""}
@@ -302,10 +294,8 @@ const TablaMotos: React.FC = () => {
               </select>
             </div>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Estado</span>
-              </label>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-base-content">Estado</label>
               <select
                 className="select select-bordered"
                 value={filters.estado ?? ""}

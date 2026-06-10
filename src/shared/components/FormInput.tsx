@@ -98,7 +98,6 @@ export function FormInput<T extends FieldValues>({
                 // 👇 "modo nuclear": bloquea autofill al montar y lo habilita al enfocar
                 readOnly={ro}
                 onFocus={(e) => {
-                  console.log("Input focused, disabling readOnly to prevent autofill", e);
                   setRo(false);
                 }}
 

@@ -93,7 +93,6 @@ const ManifiestoUploader: React.FC<Props> = ({
     fd.append("manifiesto", file);
 
     // ✅ Debug real (para ver que sí va un File)
-    // for (const [k, v] of fd.entries()) console.log("FD:", k, v);
 
     subirManifiesto(fd, {
       onSuccess: () => {

@@ -25,6 +25,7 @@ import { desglosarConIva } from "../shared/components/facturacion/desglosarIva";
 import { toAbsoluteUrl } from "../utils/files";
 import { alert } from "../utils/alerts";
 import { max0, pick, sum } from "../shared/components/facturacion/utilsFacturacion";
+import { normalizarTexto } from "../utils/text";
 
 
 const DetallesFacturacion: React.FC = () => {
@@ -214,19 +215,15 @@ const DetallesFacturacion: React.FC = () => {
     (sol as any)?.estado_facturacion ||
     undefined;
 
-  // Tipo de pago unificado
-  const tipoPagoTexto = (
+  // Tipo de pago normalizado (sin tildes, minúsculas) — igual que DetalleCotizacion
+  const tipoPagoNorm = normalizarTexto(
     cot?.tipo_pago ?? cred?.tipo_pago ?? sol?.tipo_solicitud ?? ""
-  )
-    .toString()
-    .toLowerCase();
+  );
 
-  const esContado = tipoPagoTexto.includes("contado");
-
-  // Crédito de terceros (con o sin tilde)
-  const esCreditoTerceros =
-    tipoPagoTexto.includes("crédito de terceros") ||
-    tipoPagoTexto.includes("credito de terceros");
+  const esContado = tipoPagoNorm.includes("contado");
+  const esCreditoTerceros = tipoPagoNorm.includes("terceros");
+  const isCreditoDirecto =
+    tipoPagoNorm.includes("directo") || tipoPagoNorm.includes("credibike");
 
   const ultimaSolRegistro: any =
     (ultimaSolData as any)?.registro ?? ultimaSolData ?? null;
@@ -517,7 +514,7 @@ const DetallesFacturacion: React.FC = () => {
   //   (seguros_total || 0);
 
 
-  // 1) Cuota inicial desde el crédito (si existe registro en la tabla de créditos)
+  // 1) Cuota inicial desde el crédito
   const cuotaInicialCredito = toNum(cred?.cuota_inicial);
 
   // 2) Cuota inicial desde la cotización, según la moto seleccionada (A o B)
@@ -526,11 +523,13 @@ const DetallesFacturacion: React.FC = () => {
       ? toNum((cot as any)?.cuota_inicial_b)
       : toNum((cot as any)?.cuota_inicial_a);
 
-  // 3) Cuota inicial unificada:
-  const cuota_inicial =
-    cuotaInicialCredito ??
-    cuotaInicialCotizacion ??
-    0;
+  // 3) Para crédito directo: usa el crédito si tiene valor > 0, sino la cotización.
+  //    Para otros tipos de pago: usa la cotización directo.
+  const cuota_inicial = isCreditoDirecto
+    ? (cuotaInicialCredito != null && cuotaInicialCredito > 0
+        ? cuotaInicialCredito
+        : cuotaInicialCotizacion ?? 0)
+    : (cuotaInicialCotizacion ?? 0);
 
   // Financiador: primero lo que venga de créditos, si no, lo que trae la cotización
   const financiador =

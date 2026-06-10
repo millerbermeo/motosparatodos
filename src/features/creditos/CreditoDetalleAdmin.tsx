@@ -58,7 +58,6 @@ const CreditoDetalleAdmin: React.FC = () => {
     const { data: deudor } = useDeudor(codigo_credito);
 
 
-    console.log("este el deusdor", deudor)
     const deudorData = (deudor as any)?.data ?? (datos as any)?.data ?? {};
 
     // Evita crasheos al desestructurar

@@ -259,7 +259,6 @@ const CreditoDetalle: React.FC = () => {
     // Normalizar la empresa (por si viene anidada en .data)
     const empresaApi = (empresaSeleccionada as any)?.data ?? empresaSeleccionada ?? null;
 
-    console.log("empresaApi", empresaApi);
 
 
     // Objeto que espera el PDF

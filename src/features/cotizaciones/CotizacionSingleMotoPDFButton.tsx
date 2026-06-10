@@ -233,9 +233,7 @@ export const CotizacionSingleMotoPDFButton: React.FC<Props> = ({
       tasaFinanciacionPct: tasaFin,
       tasaGarantiaPct: tasaGar,
     };
-    console.log("[V2-PDF] creditoDirecto input:", input);
     const resultado = calcularCreditoDirectoMoto(input);
-    console.log("[V2-PDF] creditoDirecto resultado:", resultado);
     return resultado;
   }, [payload, tasasCot]);
 

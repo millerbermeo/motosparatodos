@@ -19,7 +19,6 @@ const MarcasFormulario: React.FC = () => {
   });
 
   const onSubmit = (data: FormValues) => {
-    console.log("payload:", data);
   };
 
   return (
