@@ -61,10 +61,9 @@ export const useCreatePunto = () => {
 export const useUpdatePunto = () => {
   const qc = useQueryClient();
   const close = useModalStore((s) => s.close);
-  
+
   return useMutation({
     mutationFn: async (payload: Punto) => {
-console.log("payload",payload)
       const { data } = await api.post("/puntos.php", payload, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -93,7 +92,7 @@ export const useDeletePunto = () => {
   return useMutation({
     // Llama a .../puntos.php?id=22 (query string)
     mutationFn: async (id: number) => {
-   const { data } = await api.delete("/puntos.php", { params: { id } });
+      const { data } = await api.delete("/puntos.php", { params: { id } });
 
       return data;
     },

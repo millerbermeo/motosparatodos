@@ -20,7 +20,7 @@ const LineCreditos: React.FC = () => {
       <WizardTimeline
         steps={steps}
         initialStepId="info"
-        onChangeStep={(id: any) => console.log('step ->', id)}
+        onChangeStep={() => {}}
       />
     </main>
   );

@@ -274,7 +274,7 @@ const TablaCreditos: React.FC = () => {
                                         useAuthStore.getState().user?.rol === "Administrador" ||
                                         useAuthStore.getState().user?.rol === "Lider_marca" ||
                                         useAuthStore.getState().user?.rol === "Lider_punto"
-                                    ) && c.estado !== "Aprobado" && (
+                                    ) && c.estado !== "Aprobado" && c.estado !== "Facturado" && (
                                             <Link to={`/creditos/detalle/${c.codigo_credito}`}>
                                                 <button className="btn btn-sm text-warning bg-white btn-circle" title="Editar Estado">
                                                     <Pencil size="18px" />

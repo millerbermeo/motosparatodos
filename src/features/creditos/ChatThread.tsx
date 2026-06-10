@@ -101,7 +101,6 @@ const ChatThread: React.FC<ChatThreadProps> = ({ className = "" }) => {
 
   const { data, isLoading, error } = useComentariosCredito(codigo_credito, !!codigo_credito);
 
-  console.log("messages", data);
 
   const messages: ChatMessage[] = useMemo(() => {
     return (data ?? []).map((c) => ({

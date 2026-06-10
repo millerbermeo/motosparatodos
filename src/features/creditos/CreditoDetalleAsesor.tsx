@@ -57,7 +57,6 @@ const CreditoDetalleAsesor: React.FC = () => {
     const { data: deudor } = useDeudor(codigo_credito);
 
 
-    console.log("este el deusdor", deudor)
     const deudorData = (deudor as any)?.data ?? (datos as any)?.data ?? {};
 
     // Evita crasheos al desestructurar
@@ -71,7 +70,6 @@ const CreditoDetalleAsesor: React.FC = () => {
     const credito = datos?.creditos?.[0];
 
 
-    console.log("este es el credito", credito)
 
     // Fallbacks seguros para evitar crasheos
     // Asignación directa sin fallbacks
@@ -253,13 +251,13 @@ const CreditoDetalleAsesor: React.FC = () => {
                             {/* CERRAR CREDITO */}
 
                             <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
-                                <CerrarCreditoFormulario   initialValues={{
-    color: credito?.color ?? "",
-    capacidad: credito?.capacidad ?? "",
-    numero_motor: credito?.numero_motor ?? "",
-    numero_chasis: credito?.numero_chasis ?? "",
-    placa: credito?.placa ?? "",
-  }} codigo_credito={codigo_credito} id_cotizacion={id_cotizacion} />
+                                <CerrarCreditoFormulario initialValues={{
+                                    color: credito?.color ?? "",
+                                    capacidad: credito?.capacidad ?? "",
+                                    numero_motor: credito?.numero_motor ?? "",
+                                    numero_chasis: credito?.numero_chasis ?? "",
+                                    placa: credito?.placa ?? "",
+                                }} codigo_credito={codigo_credito} id_cotizacion={id_cotizacion} />
                             </section>
 
                         </>

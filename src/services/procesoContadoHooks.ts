@@ -59,7 +59,6 @@ export const useGetProcesoContadoPorCotizacionYMoto = (
     queryFn: async () => {
       const payload = { cotizacion_id: Number(cotizacion_id) };
 
-      console.log("📤 Enviando payload:", payload);
 
       // ✅ POST JSON al backend (el PHP ya acepta application/json)
       const { data } = await api.post<ApiSuccess | ApiError>(

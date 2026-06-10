@@ -385,7 +385,6 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
       ...(mode === "create" ? rangoPayload : {}),
     };
 
-    console.log("[MOTOS] payload enviado:", payload);
 
     if (mode === "edit" && initialValues?.id != null) {
       update.mutate(

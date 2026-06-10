@@ -104,7 +104,6 @@ const InfoProductoFormulario: React.FC = () => {
   const cedulaCot = cotObj?.cedula ?? infoPers?.numero_documento ?? undefined;
 
 
-  console.log("bakedn", creditoBackend)
   // ✅ Sincroniza FORM apenas llega backend (plazoCuotas = número)
   React.useEffect(() => {
     if (!creditoBackend) return;

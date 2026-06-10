@@ -230,7 +230,6 @@ const InfoPersonalFormulario: React.FC = () => {
   const isFirst = useWizardStore((s) => s.isFirst);
 
   const { id } = useParams<{ id: string }>();
-  console.log("ID recibido:", id);
 
   if (!id) {
     return <div>Error: no se encontró el parámetro en la URL</div>;
@@ -468,7 +467,6 @@ const InfoPersonalFormulario: React.FC = () => {
 
   const { data: cotizacion } = useCotizacionByCodigoCredito(id);
 
-  console.log("Datos de cotización obtenidos:", cotizacion);
 
   // Precargar desde la COTIZACIÓN si NO hay datos de deudor
   const prefilledFromCotRef = React.useRef(false);

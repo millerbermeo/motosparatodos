@@ -415,7 +415,6 @@ const buildAbsUrl = (path?: string | null): string | null => {
 // Solo imagen real (sin fallback) para ahorrar alto en A; B puede verse sin imagen si no hay
 const calcCuotaForPlazo = (n: number, cd: CreditoMotoResultado): number => {
   if (n === cd.meses) {
-    console.log(`[V1 calcCuotaForPlazo] plazo=${n} === cd.meses → cuotaTotal=${cd.cuotaTotal}`);
     return cd.cuotaTotal;
   }
   const r = cd.tasaFinanciacionPct / 100;
@@ -427,7 +426,6 @@ const calcCuotaForPlazo = (n: number, cd: CreditoMotoResultado): number => {
         : Math.floor(pv / n)
       : 0;
   const result = cuotaN + Math.floor(cd.cuotaGarantiaExtendida) + cd.seguroDeudor;
-  console.log(`[V1 calcCuotaForPlazo] plazo=${n}, saldo=${pv}, cuotaN=${cuotaN}, cuotaG=${Math.floor(cd.cuotaGarantiaExtendida)}, seguro=${cd.seguroDeudor} → total=${result}`);
   return result;
 };
 
@@ -474,7 +472,6 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
   motoFotoBUrl,
   creditoDirecto
 }) => {
-  console.log("[V1-PDF-DOC] creditoDirecto recibido:", creditoDirecto);
   const d = cotizacion?.data || {};
   const g = garantiaExt?.data || {};
 

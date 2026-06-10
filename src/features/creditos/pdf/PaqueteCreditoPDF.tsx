@@ -283,8 +283,6 @@ export const PaqueteCreditoPDFDoc: React.FC<PaqueteCreditoPDFDocProps> = ({
 }) => {
   const datosAdaptados = adaptData(data);
 
-  console.log("Generando PDF con data original:", data);
-  console.log("Generando PDF con data adaptada:", datosAdaptados);
 
   return (
     <Document>

@@ -355,7 +355,6 @@ const buildAbsUrl = (path?: string | null): string | null => {
 
 const calcCuotaForPlazo = (n: number, cd: CreditoMotoResultado): number => {
   if (n === cd.meses) {
-    console.log(`[V2 calcCuotaForPlazo] plazo=${n} === cd.meses → cuotaTotal=${cd.cuotaTotal}`);
     return cd.cuotaTotal;
   }
   const r = cd.tasaFinanciacionPct / 100;
@@ -367,7 +366,6 @@ const calcCuotaForPlazo = (n: number, cd: CreditoMotoResultado): number => {
         : Math.floor(pv / n)
       : 0;
   const result = cuotaN + Math.floor(cd.cuotaGarantiaExtendida) + cd.seguroDeudor;
-  console.log(`[V2 calcCuotaForPlazo] plazo=${n}, saldo=${pv}, cuotaN=${cuotaN}, cuotaG=${Math.floor(cd.cuotaGarantiaExtendida)}, seguro=${cd.seguroDeudor} → total=${result}`);
   return result;
 };
 
@@ -407,12 +405,11 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
   motoFotoUrl,
   creditoDirecto
 }) => {
-  console.log("[V2-PDF-DOC] creditoDirecto recibido:", creditoDirecto);
   const d = cotizacion?.data || {};
   const g = garantiaExt?.data || {};
 
 
-  
+
   const nombreCompletoCliente = [d.name, d.s_name, d.last_name, d.s_last_name]
     .filter(Boolean)
     .join(" ");

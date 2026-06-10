@@ -551,8 +551,9 @@ export const useActualizarCredito = () => {
 
 
 type Params =
-  | { codigo_credito: string | number; id?: never }
-  | { id: string | number; codigo_credito?: never };
+  | { codigo_credito: string | number; id?: never; cotizacion_id?: never }
+  | { id: string | number; codigo_credito?: never; cotizacion_id?: never }
+  | { cotizacion_id: string | number; id?: never; codigo_credito?: never };
 
 export const useCredito = (params: Params, enabled = true) => {
   return useQuery<ApiResponseCreditos, AxiosError>({

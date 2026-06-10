@@ -9,6 +9,7 @@ import {
     X,
 } from 'lucide-react';
 import { useActualizarEstadoCredito, useActualizarFechaInicial, useCredito, useCodeudoresByDeudor, useDeudor } from '../../services/creditosServices';
+import { useVehiculoCampos } from '../../services/vehiculoCamposService';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ChipButton from '../../shared/components/ChipButton';
 import ChatThread from './ChatThread';
@@ -206,6 +207,11 @@ const CreditoDetalle: React.FC = () => {
     const idCot = credito?.cotizacion_id ?? null;
     const { data: cotizacion } = useCotizacionById(Number(idCot));
 
+    const { data: vehiculoCampos } = useVehiculoCampos(
+        { tipo: 1, idCotizacion: idCot ?? undefined },
+        { enabled: !!idCot }
+    );
+
     const cotData = cotizacion?.data;
 
     // Cuota mensual calculada igual que TablaAmortizacionPDFDoc
@@ -253,7 +259,6 @@ const CreditoDetalle: React.FC = () => {
     // Normalizar la empresa (por si viene anidada en .data)
     const empresaApi = (empresaSeleccionada as any)?.data ?? empresaSeleccionada ?? null;
 
-    console.log("empresaApi", empresaApi);
 
 
     // Objeto que espera el PDF
@@ -674,9 +679,9 @@ const CreditoDetalle: React.FC = () => {
                 color: moto.color ?? '',
                 capacidad: moto.capacidad ?? '',
                 cilindraje: moto.cilindraje ?? '',
-                motor: moto.numeroMotor ?? '00',
-                chasis: moto.numeroChasis ?? '00',
-                placa: moto.placa ?? '00',
+                motor: vehiculoCampos?.numero_motor ?? moto.numeroMotor ?? '',
+                chasis: vehiculoCampos?.numero_chasis ?? moto.numeroChasis ?? '',
+                placa: vehiculoCampos?.placa ?? moto.placa ?? '',
                 valorMoto:
                     moto.valorMotocicleta != null ? fmtCOP(moto.valorMotocicleta) : '',
                 cuotaInicial:
@@ -953,7 +958,7 @@ const CreditoDetalle: React.FC = () => {
                                 <Row label="Placa" value={moto?.placa} />
 
 
-                                {estado != 'Aprobado' && idCot && (
+                                {(estado !== 'Aprobado' && estado !== 'Facturado') && idCot && (
                                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         <CotizacionSingleMotoPDFButton
                                             id={idCot}
@@ -963,13 +968,13 @@ const CreditoDetalle: React.FC = () => {
                                     </div>
                                 )}
 
-                                {estado != 'Aprobado' && !idCot && (
+                                {(estado !== 'Aprobado' && estado !== 'Facturado') && !idCot && (
                                     <div className="mt-4 text-xs text-amber-600">
                                         No hay cotización asociada a este crédito (idCot vacío).
                                     </div>
                                 )}
 
-                                {estado === 'Aprobado' && (
+                                {(estado === 'Aprobado' || estado === 'Facturado') && (
                                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         <CotizacionSingleMotoPDFButton
                                             id={Number(idCot)}
@@ -1018,7 +1023,7 @@ const CreditoDetalle: React.FC = () => {
  */}
 
                                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    {estado === 'Aprobado' && firmasHref && (
+                                    {(estado === 'Aprobado' || estado === 'Facturado') && firmasHref && (
                                         <ChipButton
                                             label="Descargar firmas de solicitud"
                                             icon={<FileDown className="w-4 h-4" />}
@@ -1035,7 +1040,7 @@ const CreditoDetalle: React.FC = () => {
                                         onClick={handleDownloadTabla}
                                         color="bg-indigo-500 hover:bg-indigo-600"
                                     />
-                                    {estado === 'Aprobado' && (
+                                    {(estado === 'Aprobado' || estado === 'Facturado') && (
                                         <>
                                             <ChipButton
                                                 label="Descargar paquete"
@@ -1337,7 +1342,7 @@ const CreditoDetalle: React.FC = () => {
                         useAuthStore.getState().user?.rol === "Administrador" ||
                         useAuthStore.getState().user?.rol === "Lider_marca" ||
                         useAuthStore.getState().user?.rol === "Lider_punto"
-                    ) && (
+                    ) && estado !== "Facturado" && estado !== "Aprobado" && (
 
                             <>
                                 <button
@@ -1390,7 +1395,7 @@ const CreditoDetalle: React.FC = () => {
                     useAuthStore.getState().user?.rol === "Administrador" ||
                     useAuthStore.getState().user?.rol === "Lider_marca" ||
                     useAuthStore.getState().user?.rol === "Lider_punto"
-                ) && estado !== "Aprobado" && (
+                ) && estado !== "Aprobado" && estado !== "Facturado" && (
                         <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
                             {camposCompletosMinimos ? (
                                 <CambiarEstadoCredito codigo_credito={codigo_credito} data={{

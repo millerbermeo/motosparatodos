@@ -6,7 +6,6 @@ import { useUsuarioById, useUpdateUsuario } from "../../services/usersServices";
 import type { Usuario } from "../../shared/types/users";
 
 interface Props { id: number; }
-type ApiResponse = { usuarios?: Usuario[] };
 
 type FormValues = {
   name: string;
@@ -18,8 +17,8 @@ type FormValues = {
 
 const UserPerfil: React.FC<Props> = ({ id }) => {
   const { data, isPending, isError } = useUsuarioById(String(id));
-  const res = (data as ApiResponse | undefined);
-  const u = res?.usuarios?.[0];
+  const u: Usuario | undefined =
+    (data as any)?.data ?? (data as any)?.usuarios?.[0];
   const update = useUpdateUsuario();
 
   const {
