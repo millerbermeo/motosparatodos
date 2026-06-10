@@ -1,7 +1,8 @@
 // src/components/Navbar/Navbar.tsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, LogOut, Menu, Settings, User as UserIcon, Shield } from "lucide-react";
+import { LogOut, Menu, Settings, User as UserIcon, Shield } from "lucide-react";
+import NotificacionesPanel from "./NotificacionesPanel";
 import Swal from "sweetalert2";
 import { useAuthStore } from "../../store/auth.store";
 
@@ -63,12 +64,8 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="indicator">
-          <span className="indicator-item badge badge-error badge-xs top-0 right-0"></span>
-          <button className="btn btn-ghost btn-circle" aria-label="Notificaciones" title="Notificaciones">
-            <Bell className="w-5 h-5 text-gray-700" />
-          </button>
-        </div>
+        
+        <NotificacionesPanel />
 
         <div className="dropdown dropdown-end">
           <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar" aria-label="Menú de usuario" title="Cuenta">

@@ -21,7 +21,8 @@ import {
   Phone,
 } from 'lucide-react';
 import ButtonLink from '../../shared/components/ButtonLink';
-import { PDFDownloadLink } from '@react-pdf/renderer';
+import { PDFDownloadLink, pdf } from '@react-pdf/renderer';
+import { PaqueteCreditoPDFDoc } from '../creditos/pdf/PaqueteCreditoPDF';
 import { useAuthStore } from '../../store/auth.store';
 import { useLoaderStore } from '../../store/loader.store';
 import { useGarantiaExtByCotizacionId } from '../../services/garantiaExtServices';
@@ -32,6 +33,7 @@ import {
   useUltimaSolicitudPorIdCotizacion,
 } from '../../services/solicitudServices';
 import { VehiculoCamposCollapse } from '../../shared/components/VehiculoCamposCollapse';
+import { useVehiculoCampos } from '../../services/vehiculoCamposService';
 
 import {
   DocumentosFacturacionCards,
@@ -247,6 +249,11 @@ const DetalleCotizacion: React.FC = () => {
   const isFacturado = normalizarTexto(q?.estado).includes('facturado');
   const tipoVehiculo = isCreditoPropio ? (1 as const) : (2 as const);
 
+  const { data: vehiculoCampos } = useVehiculoCampos(
+    { tipo: tipoVehiculo, idCotizacion: id },
+    { enabled: isFacturado && !!id }
+  );
+
   const puedeCambiarEstado =
     user?.rol === 'Asesor' &&
     q?.estado !== 'Sin interés' &&
@@ -309,6 +316,66 @@ const DetalleCotizacion: React.FC = () => {
     return res;
   }, [isCreditoPropio, moto, saldoConTodo, tasaFinanciacionCot, tasaGarantiaCot]);
 
+
+  const handleDownloadPaquete = React.useCallback(async () => {
+    try {
+      if (!q || !moto) {
+        alert('No hay información suficiente para generar el paquete.');
+        return;
+      }
+
+      const suf = tab.toLowerCase() as 'a' | 'b';
+      const nombre = [q.cliente.nombres, q.cliente.apellidos].filter(Boolean).join(' ');
+      const cc = q.cliente.cedula || '';
+
+      const dataBase: any = {
+        codigo: String(q.id),
+        fecha: q.creada,
+        ciudad: 'Cali',
+        logoSrc: logoUrl || '/verificarte.jpg',
+        estadoCredito: q.estado,
+        agencia: 'Agencia',
+        asesor: q.comercial?.asesor,
+
+        nombre,
+        nombreTitular1: nombre,
+        cc,
+        ccTitular1: cc,
+        tipoDocumento: '',
+        numeroDocumento: cc,
+        tipoDocumentoTitular1: '',
+        numeroDocumentoTitular1: cc,
+
+        celular: q.cliente.celular || '',
+        email: q.cliente.email || '',
+        telefonoTitular1: q.cliente.celular || '',
+        emailTitular1: q.cliente.email || '',
+
+        marca: payload?.[`marca_${suf}`] ?? moto.modelo ?? '',
+        linea: payload?.[`linea_${suf}`] ?? moto.modelo ?? '',
+        modeloMoto: payload?.[`modelo_${suf}`] ?? '',
+        modelo: payload?.[`modelo_${suf}`] ?? '',
+        color: vehiculoCampos?.color ?? payload?.[`color_${suf}`] ?? '',
+        capacidad: payload?.[`capacidad_${suf}`] ?? '',
+        cilindraje: payload?.[`cilindraje_${suf}`] ?? '',
+        motor: vehiculoCampos?.numero_motor ?? '',
+        chasis: vehiculoCampos?.numero_chasis ?? '',
+        placa: vehiculoCampos?.placa ?? '',
+        valorMoto: moto.precioBase != null ? fmtCOP(moto.precioBase) : '',
+        cuotaInicial: (cuotas.inicial ?? 0) > 0 ? fmtCOP(cuotas.inicial) : '',
+        cuotas: 36,
+        valorCuota: cuotas.meses36 != null ? fmtCOP(cuotas.meses36) : '',
+        fechaEntrega: '',
+      };
+
+      const blob = await pdf(<PaqueteCreditoPDFDoc data={dataBase} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (err) {
+      console.error(err);
+      alert('No fue posible generar el paquete de crédito.');
+    }
+  }, [q, moto, tab, payload, logoUrl, cuotas, vehiculoCampos]);
 
   const handleDescargarRunt = React.useCallback(() => {
     const link = document.createElement('a');
@@ -862,6 +929,19 @@ const DetalleCotizacion: React.FC = () => {
             tipo={tipoVehiculo}
             titulo={tipoVehiculo === 1 ? 'Datos vehículo (Crédito)' : 'Datos vehículo (Facturación)'}
           />
+
+          {isCreditoPropio && (
+            <div className="mt-4 bg-white p-3 rounded-2xl">
+              <button
+                type="button"
+                className="btn btn-teal-500 bg-teal-500 hover:bg-teal-600 text-white btn-sm"
+                onClick={handleDownloadPaquete}
+              >
+                <FileDown className="w-4 h-4" />
+                Descargar paquete de crédito
+              </button>
+            </div>
+          )}
 
           <div className="mt-4">
             <DocumentosFacturacionCards

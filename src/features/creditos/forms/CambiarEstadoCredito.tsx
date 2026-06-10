@@ -1,5 +1,5 @@
 // src/components/creditos/CambiarEstadoCredito.tsx
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { FormInput } from "../../../shared/components/FormInput";
 import { FormSelect, type SelectOption } from "../../../shared/components/FormSelect";
@@ -7,6 +7,15 @@ import Swal from "sweetalert2";
 import { useCambiarEstadoCredito } from "../../../services/creditosServices";
 import { useAuthStore } from "../../../store/auth.store";
 import { useNavigate } from "react-router-dom";
+import { FileText, X as XIcon } from "lucide-react";
+
+const BaseUrl = import.meta.env.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
+
+const buildDocUrl = (filename?: string): string | undefined => {
+  if (!filename) return undefined;
+  const path = filename.startsWith("docs_creditos/") ? filename : `docs_creditos/${filename}`;
+  return `${BaseUrl.replace(/\/+$/, "")}/${path}`;
+};
 
 // Tabla en pantalla
 import TablaAmortizacionCredito from "../TablaAmortizacionCredito";
@@ -43,6 +52,9 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
 
+  const [clearedRef, setClearedRef] = useState(false);
+  const [clearedDc, setClearedDc] = useState(false);
+
   const {
     control,
     handleSubmit,
@@ -55,6 +67,11 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
 
 
   const isAprobado = watch("estado") === "Aprobado";
+
+  const existingRef = data?.credito?.formato_referencia as string | undefined;
+  const existingDc = data?.credito?.formato_datacredito as string | undefined;
+  const showExistingRef = !!existingRef && !clearedRef;
+  const showExistingDc = !!existingDc && !clearedDc;
 
   const onSubmit = async (values: CambiarEstadoValues) => {
     const nombre_usuario = user?.name ?? "Usuario";
@@ -237,11 +254,11 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
           <Controller
             name="formato_referenciacion"
             control={control}
-            rules={{ required: "El formato de referenciación es obligatorio" }}
+            rules={{ required: !showExistingRef ? "El formato de referenciación es obligatorio" : false }}
             render={({ field, fieldState }) => (
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Formato de referenciación *</span>
+                  <span className="label-text">Formato de referenciación {!showExistingRef && "*"}</span>
                 </label>
                 <input
                   type="file"
@@ -253,6 +270,27 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
                     {fieldState.error.message}
                   </span>
                 )}
+                {showExistingRef && (
+                  <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 border border-green-200 text-sm">
+                    <FileText className="w-4 h-4 text-green-600 shrink-0" />
+                    <a
+                      href={buildDocUrl(existingRef)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 truncate text-green-700 hover:underline text-xs"
+                    >
+                      {existingRef}
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setClearedRef(true)}
+                      className="text-red-400 hover:text-red-600 shrink-0"
+                      title="Quitar documento existente"
+                    >
+                      <XIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           />
@@ -260,11 +298,11 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
           <Controller
             name="datacredito_deudor1"
             control={control}
-            rules={{ required: "El Datacrédito del deudor 1 es obligatorio" }}
+            rules={{ required: !showExistingDc ? "El Datacrédito del deudor 1 es obligatorio" : false }}
             render={({ field, fieldState }) => (
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Datacrédito deudor 1 *</span>
+                  <span className="label-text">Datacrédito deudor 1 {!showExistingDc && "*"}</span>
                 </label>
                 <input
                   type="file"
@@ -275,6 +313,27 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
                   <span className="text-error text-xs mt-1">
                     {fieldState.error.message}
                   </span>
+                )}
+                {showExistingDc && (
+                  <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 border border-green-200 text-sm">
+                    <FileText className="w-4 h-4 text-green-600 shrink-0" />
+                    <a
+                      href={buildDocUrl(existingDc)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 truncate text-green-700 hover:underline text-xs"
+                    >
+                      {existingDc}
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setClearedDc(true)}
+                      className="text-red-400 hover:text-red-600 shrink-0"
+                      title="Quitar documento existente"
+                    >
+                      <XIcon className="w-4 h-4" />
+                    </button>
+                  </div>
                 )}
               </div>
             )}

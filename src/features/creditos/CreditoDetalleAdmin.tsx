@@ -267,7 +267,7 @@ const CreditoDetalleAdmin: React.FC = () => {
                     useAuthStore.getState().user?.rol === "Administrador" ||
                     useAuthStore.getState().user?.rol === "Lider_marca" ||
                     useAuthStore.getState().user?.rol === "Lider_punto"
-                ) && estado !== "Aprobado" && (
+                ) && estado !== "Aprobado" && estado !== "Facturado" && (
                         <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
                             {camposCompletosMinimos ? (
                                 <CambiarEstadoCredito codigo_credito={codigo_credito} data={{
