@@ -911,6 +911,7 @@ const InfoPersonalFormulario: React.FC = () => {
         )}
 
         <button
+          data-wizard-save
           className="btn btn-warning"
           type="submit"
           onMouseDown={setDirFromEvent}

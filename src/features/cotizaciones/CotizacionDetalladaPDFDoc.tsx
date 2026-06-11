@@ -675,8 +675,8 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
 
     ];
 
-    // Garantía (fila tabla — oculta, conservar para uso futuro)
-    if (false && showGarantiaExtendida) {
+    // Garantía y seguros (fila tabla)
+    if (showGarantiaExtendida) {
       leftRows.push({
         k: v.geMeses > 0
           ? `Garantía y seguros (${v.geMeses} meses)`

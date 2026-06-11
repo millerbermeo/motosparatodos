@@ -141,10 +141,7 @@ const FacturarCreditoSolicitud: React.FC = () => {
       : undefined;
 
   // Seguros individuales (cuando vengan como números sueltos)
-  const seguroVidaA: MaybeNum =
-    typeof cotizacion?.seguro_vida_a === 'number'
-      ? cotizacion?.seguro_vida_a
-      : undefined;
+  // porcentaje_seguro_vida es un porcentaje (no un monto) — no se suma aquí
   const otroSeguroA: MaybeNum =
     typeof cotizacion?.otro_seguro_a === 'number'
       ? cotizacion?.otro_seguro_a
@@ -194,11 +191,11 @@ const FacturarCreditoSolicitud: React.FC = () => {
   );
 
   const accesoriosYSeguros: MaybeNum = useMemo(() => {
-    const parts = [accesoriosA, seguroVidaA, otroSeguroA, totalSegurosLista].filter(
+    const parts = [accesoriosA, otroSeguroA, totalSegurosLista].filter(
       (n): n is number => typeof n === 'number' && Number.isFinite(n)
     );
     return parts.length ? parts.reduce((a, b) => a + b, 0) : undefined;
-  }, [accesoriosA, seguroVidaA, otroSeguroA, totalSegurosLista]);
+  }, [accesoriosA, otroSeguroA, totalSegurosLista]);
 
   // 👇 NUEVO: Otros rubros con fallback (solicitud -> cotización B -> cotización A -> “—”)
   const soat: MaybeNum = useMemo(

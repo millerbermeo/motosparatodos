@@ -41,6 +41,7 @@ import { useCotizacionById } from '../../services/cotizacionesServices';
 import { useEmpresaById } from '../../services/empresasServices';
 import CambiarEstadoCredito from './forms/CambiarEstadoCredito';
 import CodeudoresDetalle from './CodeudoresDetalle';
+import { resolverTasaSeguroVidaDecimal } from '../../shared/components/credito/creditoDirecto.utils';
 
 const fmtCOP = (v: number) =>
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
@@ -235,7 +236,8 @@ const CreditoDetalle: React.FC = () => {
         };
         const cuotaNeg = Math.floor(pmtFn(saldoNeg, tasaFin, plazo));
         const cuotaGar = Math.floor(pmtFn(garantia, tasaGar, plazo));
-        const seguro = saldoNeg > 0 ? Math.round(saldoNeg * 0.00043) : 0;
+        const tasaSegVida = resolverTasaSeguroVidaDecimal(cotData?.porcentaje_seguro_vida);
+        const seguro = saldoNeg > 0 ? Math.round(saldoNeg * tasaSegVida) : 0;
         return cuotaNeg + cuotaGar + seguro;
     }, [cotData, tasaFinConfig, moto, creditoAjustado]);
 
@@ -403,6 +405,7 @@ const CreditoDetalle: React.FC = () => {
                     credito={creditoAjustado as any}
                     tasaMensualPorcentaje={tasaMensualPorcentaje}
                     tasaGarantiaPorcentaje={Number(cotData?.tasa_garantia ?? 1.5)}
+                    tasaSeguroVidaDecimal={resolverTasaSeguroVidaDecimal(cotData?.porcentaje_seguro_vida)}
                     codigoPlan={String(codigo_credito)}
                     fechaPlan={fechaPlan}
                     empresa={empresaPDF}
@@ -611,6 +614,19 @@ const CreditoDetalle: React.FC = () => {
             const ref2 = referencias[1] ?? {};
             const ref3 = referencias[2] ?? {};
 
+            // CODEUDOR — si hay más de uno, siempre el primero; si no hay, queda vacío
+            const cod1 = Array.isArray(codeudores) ? codeudores[0] : undefined;
+            const cod1Pers = cod1?.informacion_personal ?? {};
+            const codeudor1Nombre = [
+                cod1Pers.primer_nombre,
+                cod1Pers.segundo_nombre,
+                cod1Pers.primer_apellido,
+                cod1Pers.segundo_apellido,
+            ].filter(Boolean).join(' ').trim();
+            const codeudor1Cc = cod1Pers.numero_documento ?? '';
+            const codeudor1Direccion = cod1Pers.direccion_residencia ?? '';
+            const codeudor1Telefono = cod1Pers.celular ?? '';
+
             // 🔵 datos base que reutilizan TODAS tus páginas
             const dataBase: any = {
                 // ---- Datos generales del crédito ----
@@ -709,6 +725,13 @@ const CreditoDetalle: React.FC = () => {
                 ref3Direccion: ref3.direccion,
                 ref3Telefono: ref3.telefono,
                 ref3Tipo: ref3.tipo_referencia,
+
+                // ---- Codeudor (primer codeudor; vacío si no hay) ----
+                codeudorNombre: codeudor1Nombre,
+                codeudorCc: codeudor1Cc,
+                codeudorCcNit: codeudor1Cc,
+                codeudorDireccion: codeudor1Direccion,
+                codeudorTelefono: codeudor1Telefono,
             };
 
             const blob = await pdf(<PaqueteCreditoPDFDoc data={dataBase} />).toBlob();
@@ -806,6 +829,12 @@ const CreditoDetalle: React.FC = () => {
             };
             const garantiaExtMensual = Math.floor(pmtFnCarta(garantiaExt, tasaGarCarta, plazoCarta));
 
+            // Seguro deudor mensual = round(saldo a financiar * tasa seguro vida de la cotización)
+            const tasaSegVidaCarta = resolverTasaSeguroVidaDecimal(cotData?.porcentaje_seguro_vida);
+            const seguroDeudorCarta = valorAFinanciar > 0 ? Math.round(valorAFinanciar * tasaSegVidaCarta) : 0;
+            // "Garantía y seguros" = cuota garantía extendida + seguro deudor (coincide con la cotización)
+            const garantiaYSeguros = garantiaExtMensual + seguroDeudorCarta;
+
             const valorCuota = cuotaMensualCalculada;
             const productoNombre = [
                 cotData?.[`marca_${sufCot}`],
@@ -838,7 +867,7 @@ const CreditoDetalle: React.FC = () => {
                     plazo={Number(moto.numeroCuotas ?? 36)}
                     precioVentaTotal={Number(precioVentaTotal)}
                     cuotaInicial={Number(cuotaInicialNum)}
-                    garantiaExtendida={garantiaExtMensual}
+                    garantiaExtendida={garantiaYSeguros}
                     valorAFinanciar={Number(valorAFinanciar)}
                     valorCuotaMensual={Number(valorCuota)}
                     fechaVencimientoPrimeraCuota={fechaVencPrimeraCuota}

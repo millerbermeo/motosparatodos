@@ -652,24 +652,24 @@ const CoodeudoresFormulario: React.FC = () => {
               <FormInput className="mt-6" control={control} name={`codeudores.${idx}.personasACargo`} label="Personas a cargo" type="number" rules={{ validate: (v) => (v === "" || Number(v) >= 0) || "Debe ser >= 0" }} />
 
               <FormSelect control={control} name={`codeudores.${idx}.tipoVivienda`} label="Tipo de vivienda" options={tipoViviendaOptions} />
-              <FormInput
-                className="mt-6"
-                control={control}
-                name={`codeudores.${idx}.costoArriendo`}
-                label="Costo del arriendo (COP)"
-                type="number"
-                formatThousands
-                rules={{
-                  validate: (v) => {
-                    if (watch(`codeudores.${idx}.tipoVivienda`) !== "Arriendo") return true;
-                    const n = toNumberPesos(v);
-                    if (!n) return "Indique un valor";
-                    return n > 0 || "Indique un valor > 0";
-                  },
-                }}
-              // disabled={watch(`codeudores.${idx}.tipoVivienda`) !== "Arriendo"}
-              // rules={{ validate: (v) => (v === "" || Number(v) > 0 || "Indique un valor > 0") }}
-              />
+              {watch(`codeudores.${idx}.tipoVivienda`) === "Arriendo" && (
+                <FormInput
+                  className="mt-6"
+                  control={control}
+                  name={`codeudores.${idx}.costoArriendo`}
+                  label="Costo del arriendo (COP)"
+                  type="number"
+                  formatThousands
+                  rules={{
+                    validate: (v) => {
+                      if (watch(`codeudores.${idx}.tipoVivienda`) !== "Arriendo") return true;
+                      const n = toNumberPesos(v);
+                      if (!n) return "Indique un valor";
+                      return n > 0 || "Indique un valor > 0";
+                    },
+                  }}
+                />
+              )}
               <FormSelect control={control} name={`codeudores.${idx}.fincaRaiz`} label="Finca raíz" options={fincaRaizOptions} />
             </div>
 
@@ -800,7 +800,7 @@ const CoodeudoresFormulario: React.FC = () => {
             </button>
 
             {/* Guardar/Actualizar: avanza SOLO si todas las mutaciones fueron OK */}
-            <button type="submit" className="btn btn-warning" disabled={isSaving}>
+            <button data-wizard-save type="submit" className="btn btn-warning" disabled={isSaving}>
               {isSaving
                 ? "Guardando…"
                 : editingIds.some(Boolean)

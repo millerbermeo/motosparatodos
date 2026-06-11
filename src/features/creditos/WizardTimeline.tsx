@@ -1,5 +1,8 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import { useWizardStore } from '../../store/wizardStore';
+import { useCreditoProgreso } from '../../services/creditoProgresoService';
+import { alert } from '../../utils/alerts';
 
 export type Step = {
   id: string;
@@ -23,6 +26,71 @@ const WizardTimeline: React.FC<WizardProps> = ({
 }) => {
   const {  setSteps, idx, next, prev, goTo } = useWizardStore();
   const activeId = useWizardStore(s => s.activeId);
+
+  // credito_id viene de la ruta /creditos/registrar/:id
+  const { id: creditoId } = useParams<{ id: string }>();
+  const { data: progreso, refetch: refetchProgreso } = useCreditoProgreso(creditoId);
+
+  // refrescar progreso cuando cambia el paso (un form pudo completar el paso en backend)
+  useEffect(() => {
+    if (creditoId) refetchProgreso();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx, creditoId]);
+
+  // ¿paso índice (0-based) completo? → lee paso_{idx+1}_completo del backend
+  const pasoCompleto = useCallback(
+    (stepIndex: number): boolean => {
+      if (!progreso) return false;
+      const key = `paso_${stepIndex + 1}_completo` as keyof typeof progreso;
+      return Boolean(progreso[key]);
+    },
+    [progreso]
+  );
+
+  // primer paso incompleto en [0, i-1]; -1 si todos los anteriores están completos
+  const firstIncompleteBefore = useCallback(
+    (i: number): number => {
+      for (let j = 0; j < i; j++) {
+        if (!pasoCompleto(j)) return j;
+      }
+      return -1;
+    },
+    [pasoCompleto]
+  );
+
+  // ¿se puede navegar al paso índice i desde el timeline?
+  // retroceder o quedarse: libre.
+  // últimos dos pasos (Solicitud y firmas, Soportes): siempre libres.
+  // avanzar al resto: requiere los pasos anteriores completos.
+  const canGoTo = useCallback(
+    (i: number): boolean => {
+      if (i <= idx) return true;
+      if (i >= steps.length - 2) return true;
+      return firstIncompleteBefore(i) === -1;
+    },
+    [idx, firstIncompleteBefore, steps.length]
+  );
+
+  // goTo gateado: solo aplica al click en iconos del timeline
+  const handleGoTo = useCallback(
+    (i: number) => {
+      if (canGoTo(i)) {
+        goTo(i);
+        return;
+      }
+      // hay un paso anterior sin completar → llevar a ese paso y avisar
+      const blocker = firstIncompleteBefore(i);
+      const stepName = steps[blocker]?.title ?? '';
+      const msg =
+        blocker === 0
+          ? 'Completa los datos de Información personal'
+          : `Completa el paso anterior: ${stepName}`;
+
+      if (blocker !== idx) goTo(blocker);
+      alert.warn('Paso bloqueado', msg);
+    },
+    [canGoTo, firstIncompleteBefore, goTo, idx, steps]
+  );
 
   // montar/actualizar steps en el store
   useEffect(() => {
@@ -76,9 +144,11 @@ const WizardTimeline: React.FC<WizardProps> = ({
             {steps.map((s, i) => {
               const isDone = i < idx;
               const isCurrent = i === idx;
+              const isLocked = !canGoTo(i);
               const dotClasses = [
-                'w-12 h-12 rounded-full flex items-center justify-center cursor-pointer select-none',
-                'ring-2 transition-all hover:shadow-md',
+                'w-12 h-12 rounded-full flex items-center justify-center select-none',
+                isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:shadow-md',
+                'ring-2 transition-all',
                 isDone
                   ? 'bg-success text-success-content ring-success'
                   : isCurrent
@@ -93,11 +163,12 @@ const WizardTimeline: React.FC<WizardProps> = ({
                     type="button"
                     role="tab"
                     aria-selected={isCurrent}
+                    aria-disabled={isLocked}
                     aria-label={s.title}
                     tabIndex={0}
                     className={dotClasses}
-                    onClick={() => goTo(i)}
-                    onKeyDown={(e) => e.key === 'Enter' && goTo(i)}
+                    onClick={() => handleGoTo(i)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleGoTo(i)}
                   >
                     <s.icon className={isCurrent ? 'w-6 h-6 text-success' : 'w-6 h-6'} />
                   </button>

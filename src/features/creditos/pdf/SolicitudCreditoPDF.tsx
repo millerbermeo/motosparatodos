@@ -7,6 +7,7 @@ import {
   Image,
   StyleSheet,
 } from "@react-pdf/renderer";
+import { resolverTasaSeguroVidaDecimal } from "../../../shared/components/credito/creditoDirecto.utils";
 
 // ─── utils ─────────────────────────────────────────────────────────────────
 
@@ -343,9 +344,9 @@ export const SolicitudCreditoPDFDoc: React.FC<SolicitudCreditoPDFProps> = ({
   const soatVal         = Number(cotData?.[`soat_${sufCot}`]         ?? credito?.soat        ?? 0);
   const marcacion       = Number(cotData?.[`marcacion_${sufCot}`]    ?? credito?.accesorios_total ?? 0);
   const valorGps        = Number(cotData?.[`valor_gps_${sufCot}`]    ?? 0);
-  const seguroVida      = Number(cotData?.[`seguro_vida_${sufCot}`]  ?? 0);
+  // seguro_vida es un porcentaje (no un monto) — no se suma aquí
   const otroSeguro      = Number(cotData?.[`otro_seguro_${sufCot}`]  ?? credito?.precio_seguros ?? 0);
-  const segurosOtros    = marcacion + valorGps + seguroVida + otroSeguro;
+  const segurosOtros    = marcacion + valorGps + otroSeguro;
   const descuento       = Number(cotData?.[`descuentos_${sufCot}`]   ?? 0);
   const garantiaExt     = Number(credito?.garantia_extendida_valor   ?? 0);
   const cuotaInicial    = Number(credito?.cuota_inicial              ?? 0);
@@ -367,7 +368,8 @@ export const SolicitudCreditoPDFDoc: React.FC<SolicitudCreditoPDFProps> = ({
   };
   const cuotaNeg     = Math.floor(pmtFn(saldoNegocio, tasaFin, plazoNum));
   const cuotaGar     = Math.floor(pmtFn(garantiaExt,  tasaGar, plazoNum));
-  const seguroDeudor = saldoNegocio > 0 ? Math.round(saldoNegocio * 0.00043) : 0;
+  const tasaSegVida = resolverTasaSeguroVidaDecimal(cotData?.porcentaje_seguro_vida);
+  const seguroDeudor = saldoNegocio > 0 ? Math.round(saldoNegocio * tasaSegVida) : 0;
   const cuotaMensual = plazoNum > 0 ? cuotaNeg + cuotaGar + seguroDeudor : null;
 
   const firmaCc = ip?.numero_documento ? `CC ${ip.numero_documento}` : "";

@@ -7,8 +7,8 @@ import { useWizardStore } from "../../../store/wizardStore";
 import Swal from "sweetalert2";
 import { CotizacionSingleMotoPDFButton } from "../../cotizaciones/CotizacionSingleMotoPDFButton";
 
-// 🔧 BASE URL PARA ARCHIVOS DEL BACK
-const BASE_URL_BACK = "https://tuclick.vozipcolombia.net.co/motos/back/";
+// 🔧 BASE URL PARA ARCHIVOS DEL BACK — derivada de VITE_API_URL (mismo back que axios)
+const BASE_URL_BACK = `${String(import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "")}/`;
 
 const buildFirmasUrl = (path?: string | null): string | null => {
   if (!path) return null;
@@ -189,11 +189,12 @@ const SolicitudFormulario: React.FC = () => {
             disabled={isUploading || !file}
             className="btn btn-primary disabled:opacity-50"
           >
-            {isUploading ? "Subiendo..." : "📤 Subir firma"}
+            {isUploading ? "Subiendo..." : firmasUrl ? "📤 Actualizar firma" : "📤 Subir firma"}
           </button>
 
           {/* ✅ Avanzar sin subir (firma opcional) */}
           <button
+            data-wizard-save
             type="button"
             className="btn btn-warning"
             onClick={() => {

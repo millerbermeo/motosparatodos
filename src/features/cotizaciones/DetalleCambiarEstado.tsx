@@ -8,7 +8,7 @@ import { UserRound, CalendarDays, Mail, Phone, BadgeInfo, Bike } from 'lucide-re
 import ButtonLink from '../../shared/components/ButtonLink';
 import { useLoaderStore } from '../../store/loader.store';
 import { useAuthStore } from '../../store/auth.store';
-import { calcularCreditoDirectoMoto } from '../../shared/components/credito/creditoDirecto.utils';
+import { calcularCreditoDirectoMoto, resolverTasaSeguroVidaDecimal } from '../../shared/components/credito/creditoDirecto.utils';
 
 
 /* =======================
@@ -248,8 +248,8 @@ const buildMotoCalc = (row: any, side: 'a' | 'b'): MotoCalc => {
   const seguros =
     typeof segurosFromJson === 'number'
       ? segurosFromJson
-      : (Number(row?.[`seguro_vida${sfx}`]) || 0) +
-      (Number(row?.[`seguro_mascota_s${sfx}`]) || 0) +
+      // seguro_vida es un porcentaje (no un monto) — no se suma aquí
+      : (Number(row?.[`seguro_mascota_s${sfx}`]) || 0) +
       (Number(row?.[`seguro_mascota_a${sfx}`]) || 0) +
       (Number(row?.[`otro_seguro${sfx}`]) || 0);
 
@@ -395,8 +395,8 @@ const buildMotoUI = (row: any, side: 'a' | 'b'): MotoUI => {
   const seguros =
     typeof segurosFromJson === 'number'
       ? segurosFromJson
-      : (Number(row?.[`seguro_vida${sfx}`]) || 0) +
-      (Number(row?.[`seguro_mascota_s${sfx}`]) || 0) +
+      // seguro_vida es un porcentaje (no un monto) — no se suma aquí
+      : (Number(row?.[`seguro_mascota_s${sfx}`]) || 0) +
       (Number(row?.[`seguro_mascota_a${sfx}`]) || 0) +
       (Number(row?.[`otro_seguro${sfx}`]) || 0);
 
@@ -457,6 +457,7 @@ const buildMotoUI = (row: any, side: 'a' | 'b'): MotoUI => {
     saldoFinanciar,
     tasaFinanciacionPct,
     tasaGarantiaPct,
+    tasaSeguroVidaDecimal: resolverTasaSeguroVidaDecimal(row?.porcentaje_seguro_vida),
   });
 
 
