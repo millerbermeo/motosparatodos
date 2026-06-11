@@ -41,7 +41,7 @@ import { useCotizacionById } from '../../services/cotizacionesServices';
 import { useEmpresaById } from '../../services/empresasServices';
 import CambiarEstadoCredito from './forms/CambiarEstadoCredito';
 import CodeudoresDetalle from './CodeudoresDetalle';
-import { resolverTasaSeguroVidaDecimal } from '../../shared/components/credito/creditoDirecto.utils';
+import { resolverTasaSeguroVidaDecimal, calcularCreditoDirectoMoto } from '../../shared/components/credito/creditoDirecto.utils';
 
 const fmtCOP = (v: number) =>
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
@@ -761,6 +761,24 @@ const CreditoDetalle: React.FC = () => {
             const valorMotoNum = moto.valorMotocicleta ?? 0;
             const anios = moto.numeroCuotas ? Math.ceil(Number(moto.numeroCuotas) / 12) : 3;
 
+            // Cuota mensual garantía y seguros (misma función que tabla, carta y cotización)
+            const plazoGar = Number(moto.numeroCuotas ?? 36);
+            const cuotaInicialGar = moto.cuotaInicial ?? 0;
+            const tasaFinGar = Number(cotData?.tasa_financiacion ?? 0) > 0
+                ? Number(cotData?.tasa_financiacion)
+                : (tasaFinConfig
+                    ? (tasaFinConfig.tipo_valor === '%' ? tasaFinConfig.valor : tasaFinConfig.valor * 100)
+                    : 1.9122);
+            const garantiaYSegurosGar = calcularCreditoDirectoMoto({
+                incluir: true,
+                mesesGarantia: plazoGar,
+                valorGarantia: Math.max(Number(creditoAjustado?.garantia_extendida_valor ?? 0), 0),
+                saldoFinanciar: Math.max(Number(valorMotoNum) - cuotaInicialGar, 0),
+                tasaFinanciacionPct: tasaFinGar,
+                tasaGarantiaPct: Number(cotData?.tasa_garantia ?? 1.5),
+                tasaSeguroVidaDecimal: resolverTasaSeguroVidaDecimal(cotData?.porcentaje_seguro_vida),
+            }).garantiaMasSeguro;
+
             const blob = await pdf(
                 <GarantiaExtendidaPDFDoc
                     codigo={String(codigo_credito)}
@@ -783,6 +801,8 @@ const CreditoDetalle: React.FC = () => {
                     ciudadMatricula={informacion_personal?.ciudad_residencia ?? 'Cali'}
                     valorMotoNum={Number(valorMotoNum)}
                     garantiaAnios={anios}
+                    valorGarantiaCuota={garantiaYSegurosGar}
+                    plazoMeses={plazoGar}
                     fechaExpedicion={String(credito.fecha_creacion ?? '').split('T')[0]}
                     ciudadExpedicion={informacion_personal?.ciudad_residencia ?? 'Cali'}
                     formaPago="Crédito"

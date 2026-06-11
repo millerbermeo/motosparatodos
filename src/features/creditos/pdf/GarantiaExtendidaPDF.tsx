@@ -55,8 +55,10 @@ export interface GarantiaExtendidaPDFProps {
   ciudadMatricula?: string;
 
   // financiero
-  valorMotoNum: number;        // número entero para calcular 13 %
+  valorMotoNum: number;        // valor moto sin documentos
   garantiaAnios?: number;      // cuántos años cubre (default 3)
+  valorGarantiaCuota?: number; // cuota mensual garantía y seguros
+  plazoMeses?: number;         // número de cuotas (plazo)
 
   // vigencia
   fechaDesde?: string;
@@ -473,6 +475,8 @@ export const GarantiaExtendidaPDFDoc: React.FC<GarantiaExtendidaPDFProps> = ({
   ciudadMatricula = "",
   valorMotoNum,
   garantiaAnios = 3,
+  valorGarantiaCuota = 0,
+  plazoMeses = 0,
   fechaDesde = "",
   fechaHasta = "",
   fechaExpedicion = fecha,
@@ -484,10 +488,6 @@ export const GarantiaExtendidaPDFDoc: React.FC<GarantiaExtendidaPDFProps> = ({
 }) => {
   const benefNombre = safe(nombreBeneficiario, nombreTitular);
   const benefCc = safe(ccBeneficiario, ccTitular);
-
-  const pct = 0.13;
-  const valorAnio = Math.round(valorMotoNum * pct);
-  const valorTotal = valorAnio * garantiaAnios;
 
   const headerProps = { logoSrc, codigo, fecha, agencia };
 
@@ -555,15 +555,17 @@ export const GarantiaExtendidaPDFDoc: React.FC<GarantiaExtendidaPDFProps> = ({
         {/* VALOR CONTRATO */}
         <Text style={S.sectionLabel}>VALOR CONTRATO GARANTIA EXTENDIDA Y COMPLEMENTARIA</Text>
         <View style={S.valorTable} wrap={false}>
-          {Array.from({ length: garantiaAnios }, (_, i) => (
-            <View style={S.valorRow} key={i}>
-              <Text style={S.valorCellKey}>AÑO {i + 1} (VALOR MOTO)</Text>
-              <Text style={S.valorCellVal}>{fmtCOP(valorAnio)}</Text>
-            </View>
-          ))}
+          <View style={S.valorRow}>
+            <Text style={S.valorCellKey}>VALOR MOTO SIN DOCUMENTOS</Text>
+            <Text style={S.valorCellVal}>{fmtCOP(valorMotoNum)}</Text>
+          </View>
+          <View style={S.valorRow}>
+            <Text style={S.valorCellKey}>VALOR DE LA GARANTIA EXTENDIDA</Text>
+            <Text style={S.valorCellVal}>{fmtCOP(valorGarantiaCuota)}</Text>
+          </View>
           <View style={S.valorRowLast}>
-            <Text style={[S.valorCellKey, { backgroundColor: "#c0c0c0" }]}>TOTAL</Text>
-            <Text style={S.valorCellVal}>{fmtCOP(valorTotal)}</Text>
+            <Text style={S.valorCellKey}>PLAZO</Text>
+            <Text style={S.valorCellVal}>{plazoMeses || ""}</Text>
           </View>
         </View>
 
