@@ -5,6 +5,29 @@ export type CreditoMotoInput = {
   saldoFinanciar?: number | string | null;
   tasaFinanciacionPct?: number | string | null; // ej: 1.9122
   tasaGarantiaPct?: number | string | null;     // ej: 1.5000
+  tasaSeguroVidaDecimal?: number | string | null; // decimal, ej: 0.00043
+};
+
+/** Fallback histórico del seguro de vida (decimal mensual sobre el saldo). */
+export const SEGURO_VIDA_FALLBACK_DECIMAL = 0.00043;
+
+/**
+ * Resuelve la tasa de seguro de vida (decimal) desde la cotización.
+ * porcentaje_seguro_vida viene como PORCENTAJE (ej. 0.043) y aplica a cualquier moto.
+ * Si no existe, usa el fallback histórico.
+ */
+export const resolverTasaSeguroVidaDecimal = (
+  porcentajeSeguroVida: unknown
+): number => {
+  if (
+    porcentajeSeguroVida === null ||
+    porcentajeSeguroVida === undefined ||
+    porcentajeSeguroVida === ""
+  ) {
+    return SEGURO_VIDA_FALLBACK_DECIMAL;
+  }
+  const n = Number(porcentajeSeguroVida);
+  return Number.isFinite(n) ? n / 100 : SEGURO_VIDA_FALLBACK_DECIMAL;
 };
 
 export type CreditoMotoResultado = {
@@ -54,7 +77,7 @@ export const calcularCuotaPMT = (
  */
 export const calcularSeguroDeudorMensual = (
   saldoFinanciar: unknown,
-  tasaSeguroDecimal = 0.00043
+  tasaSeguroDecimal = SEGURO_VIDA_FALLBACK_DECIMAL
 ): number => {
   const saldo = toNumberSafe(saldoFinanciar, 0);
   if (saldo <= 0) return 0;
@@ -92,7 +115,14 @@ export const calcularCreditoDirectoMoto = (
   /**
    * 🔥 SEGURO
    */
-  const seguroDeudor = calcularSeguroDeudorMensual(saldoFinanciar);
+  const tasaSeguroVidaDecimal = toNumberSafe(
+    input.tasaSeguroVidaDecimal,
+    SEGURO_VIDA_FALLBACK_DECIMAL
+  );
+  const seguroDeudor = calcularSeguroDeudorMensual(
+    saldoFinanciar,
+    tasaSeguroVidaDecimal
+  );
 
   /**
    * 🔥 GARANTÍA + SEGURO

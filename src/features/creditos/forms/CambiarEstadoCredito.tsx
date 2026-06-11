@@ -23,6 +23,7 @@ import TablaAmortizacionCredito from "../TablaAmortizacionCredito";
 // PDF
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import TablaAmortizacionPDFDoc from "../pdf/TablaAmortizacionPDFDoc";
+import { resolverTasaSeguroVidaDecimal } from "../../../shared/components/credito/creditoDirecto.utils";
 
 type Props = { codigo_credito: string | number; data?: any };
 
@@ -354,6 +355,7 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
                         credito={creditoTabla}
                         tasaMensualPorcentaje={tasaMensualPorcentaje}
                         tasaGarantiaPorcentaje={Number(data?.cotizacion?.tasa_garantia ?? 1.5)}
+                        tasaSeguroVidaDecimal={resolverTasaSeguroVidaDecimal(data?.cotizacion?.porcentaje_seguro_vida)}
                         empresa={{
                           nombre: 'VERIFICARTE AAA S.A.S',
                           ciudad: 'Cali',

@@ -300,6 +300,7 @@ const InfoProductoFormulario: React.FC = () => {
 
           <div className="flex gap-2">
             <button
+              data-wizard-save
               type="submit"
               className="btn btn-warning"
               disabled={isSaving}

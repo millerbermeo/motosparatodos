@@ -23,7 +23,7 @@ import { dateNotTodayOrFuture } from "../../../utils/dateValidatorFutura";
 import { polizaOptions } from "../../../shared/components/options/poliza-options";
 import { calcGarantia, calcGps, calcPoliza, getMatricula } from "./cotizacion.helpers";
 import { useIvaDecimal } from "../../../services/ivaServices";
-import { calcularCreditoDirectoMoto, logCreditoDirectoMoto } from "../../../shared/components/credito/creditoDirecto.utils";
+import { calcularCreditoDirectoMoto, logCreditoDirectoMoto, SEGURO_VIDA_FALLBACK_DECIMAL } from "../../../shared/components/credito/creditoDirecto.utils";
 import { useBuscarClientePorCedula } from "../../../services/clientesServices";
 import { Search } from "lucide-react";
 
@@ -721,8 +721,6 @@ const CotizacionFormulario: React.FC = () => {
         const valorGarantiaA = toNumberSafe(data.valor_garantia_extendida_a);
         const valorGarantiaB = toNumberSafe(data.valor_garantia_extendida_b);
 
-        const seg1 = (data.segurosIds1 ?? []).reduce((acc, id) => acc + findSeguroValor(String(id)), 0);
-        const seg2 = (data.segurosIds2 ?? []).reduce((acc, id) => acc + findSeguroValor(String(id)), 0);
 
         const gpsA = toNumberSafe(data.gps_a);
         const gpsB = toNumberSafe(data.gps_b);
@@ -772,7 +770,8 @@ const CotizacionFormulario: React.FC = () => {
             garantia_extendida_a: incluirMoto1 ? (data.garantiaExtendida1 || "no") : "no",
 
             accesorios_a: incluirMoto1 ? accesorios1 : 0,
-            seguro_vida_a: incluirMoto1 ? seg1 : 0,
+            // Porcentaje de seguro de vida — columna única, aplica a cualquier moto
+            porcentaje_seguro_vida: segVidaValor,
             seguro_mascota_s_a: 0,
             seguro_mascota_a_a: 0,
             otro_seguro_a: incluirMoto1 ? otroSeguro1 : 0,
@@ -787,7 +786,6 @@ const CotizacionFormulario: React.FC = () => {
             garantia_extendida_b: incluirMoto2 ? (data.garantiaExtendida2 || "no") : null,
 
             accesorios_b: incluirMoto2 ? accesorios2 : null,
-            seguro_vida_b: incluirMoto2 ? seg2 : null,
             seguro_mascota_s_b: incluirMoto2 ? 0 : null,
             seguro_mascota_a_b: incluirMoto2 ? 0 : null,
             otro_seguro_b: incluirMoto2 ? otroSeguro2 : null,
@@ -1076,20 +1074,7 @@ const CotizacionFormulario: React.FC = () => {
     const { data: polTranquiPlus } = useConfigPlazoByCodigo("TRANQUI_PLUS");
 
     const { data: marcacionCoti } = useConfigPlazoByCodigo("MARC");
-    // const { data: segVidaCfg } = useConfigPlazoByCodigo("SEG_VIDA");
-
-    // const calcSeguroVidaMensual = (saldo: number, cfg: any | null): number => {
-    //     if (!cfg || saldo <= 0) return 0;
-
-    //     const v = Number(cfg.valor) || 0;
-
-    //     if (cfg.tipo_valor === "%") {
-    //         return Math.round(saldo * (v / 100));
-    //     }
-
-    //     return Math.round((saldo / 1000) * v);
-    // };
-
+    const { data: segVidaCfg } = useConfigPlazoByCodigo("SEG_VIDA");
 
     const saldoFinanciar1SinGarantia = Math.max(
         saldoFinanciar1 - (garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0),
@@ -1101,15 +1086,11 @@ const CotizacionFormulario: React.FC = () => {
         0
     );
 
-    // const segVidaMensualA =
-    //   metodo === "credibike" && incluirMoto1
-    //     ? calcSeguroVidaMensual(saldoFinanciar1SinGarantia, segVidaCfg ?? null)
-    //     : 0;
-
-    // const segVidaMensualB =
-    //   metodo === "credibike" && incluirMoto2
-    //     ? calcSeguroVidaMensual(saldoFinanciar2SinGarantia, segVidaCfg ?? null)
-    //     : 0;
+    // Seguro de vida (SEG_VIDA): es un PORCENTAJE; se envía el valor de la configuración tal cual
+    // (mismo valor para ambas motos). Se usará más adelante para la garantía extendida.
+    const segVidaValor = Number(segVidaCfg?.valor ?? 0);
+    // Tasa decimal del seguro de vida para los cálculos (porcentaje / 100); fallback histórico si no hay config.
+    const segVidaDecimal = segVidaValor > 0 ? segVidaValor / 100 : SEGURO_VIDA_FALLBACK_DECIMAL;
 
 
     const calcularCuotaProyectadaMoto = (
@@ -1127,6 +1108,7 @@ const CotizacionFormulario: React.FC = () => {
             saldoFinanciar: saldoSinGarantia,
             tasaFinanciacionPct: tasaDecimal * 100,
             tasaGarantiaPct: TASA_GARANTIA_MENSUAL,
+            tasaSeguroVidaDecimal: segVidaDecimal,
         });
 
         return credito.cuotaTotal;
@@ -1352,6 +1334,7 @@ const CotizacionFormulario: React.FC = () => {
         saldoFinanciar: saldoFinanciar1SinGarantia,
         tasaFinanciacionPct: tasaDecimal * 100,
         tasaGarantiaPct: TASA_GARANTIA_MENSUAL,
+        tasaSeguroVidaDecimal: segVidaDecimal,
     });
 
     const creditoMoto2 = calcularCreditoDirectoMoto({
@@ -1364,6 +1347,7 @@ const CotizacionFormulario: React.FC = () => {
         saldoFinanciar: saldoFinanciar2SinGarantia,
         tasaFinanciacionPct: tasaDecimal * 100,
         tasaGarantiaPct: TASA_GARANTIA_MENSUAL,
+        tasaSeguroVidaDecimal: segVidaDecimal,
     });
 
 

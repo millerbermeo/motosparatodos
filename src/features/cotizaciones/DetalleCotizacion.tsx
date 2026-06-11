@@ -5,6 +5,7 @@ import {
   useCotizacionById,
 } from '../../services/cotizacionesServices';
 import { useCotizacionFullById } from '../../services/fullServices';
+import { useCodeudoresByDeudor } from '../../services/creditosServices';
 import {
   UserRound,
   Bike,
@@ -63,6 +64,7 @@ import {
 import type { ActividadItem, DocItem } from './types';
 import {
   calcularCreditoDirectoMoto,
+  resolverTasaSeguroVidaDecimal,
 } from '../../shared/components/credito/creditoDirecto.utils';
 import { useTasasCotizacion } from '../../services/tasaCotiService';
 
@@ -150,6 +152,15 @@ const DetalleCotizacion: React.FC = () => {
   const { data: fullCotData } = useCotizacionFullById(
     isCreditoPropio && !!id ? id : undefined
   );
+
+  // 🔹 Codeudores del crédito asociado a la cotización (si ya existe crédito)
+  const codigoCreditoCot = fullCotData?.data?.creditos?.codigo_credito;
+  const { data: codeudoresResp } = useCodeudoresByDeudor(
+    codigoCreditoCot ? String(codigoCreditoCot) : ''
+  );
+  const codeudores: any[] = Array.isArray((codeudoresResp as any)?.data)
+    ? (codeudoresResp as any).data
+    : [];
 
   const actividadItems = React.useMemo<ActividadItem[]>(
     () =>
@@ -319,10 +330,11 @@ const DetalleCotizacion: React.FC = () => {
       saldoFinanciar: saldoConTodo,
       tasaFinanciacionPct: tasaFinanciacionCot,
       tasaGarantiaPct: tasaGarantiaCot,
+      tasaSeguroVidaDecimal: resolverTasaSeguroVidaDecimal((q as any)?.porcentaje_seguro_vida),
     };
     const res = calcularCreditoDirectoMoto(input);
     return res;
-  }, [isCreditoPropio, moto, saldoConTodo, tasaFinanciacionCot, tasaGarantiaCot]);
+  }, [isCreditoPropio, moto, saldoConTodo, tasaFinanciacionCot, tasaGarantiaCot, q]);
 
   const payloadParaPDF = React.useMemo(() => {
     if (!isCreditoPropio || cuotaInicialCredito <= 0) return payload;
@@ -343,6 +355,19 @@ const DetalleCotizacion: React.FC = () => {
       const suf = tab.toLowerCase() as 'a' | 'b';
       const nombre = [q.cliente.nombres, q.cliente.apellidos].filter(Boolean).join(' ');
       const cc = q.cliente.cedula || '';
+
+      // CODEUDOR — si hay más de uno, siempre el primero; si no hay, queda vacío
+      const cod1 = Array.isArray(codeudores) ? codeudores[0] : undefined;
+      const cod1Pers = cod1?.informacion_personal ?? {};
+      const codeudor1Nombre = [
+        cod1Pers.primer_nombre,
+        cod1Pers.segundo_nombre,
+        cod1Pers.primer_apellido,
+        cod1Pers.segundo_apellido,
+      ].filter(Boolean).join(' ').trim();
+      const codeudor1Cc = cod1Pers.numero_documento ?? '';
+      const codeudor1Direccion = cod1Pers.direccion_residencia ?? '';
+      const codeudor1Telefono = cod1Pers.celular ?? '';
 
       const dataBase: any = {
         codigo: String(q.id),
@@ -382,6 +407,13 @@ const DetalleCotizacion: React.FC = () => {
         cuotas: 36,
         valorCuota: cuotas.meses36 != null ? fmtCOP(cuotas.meses36) : '',
         fechaEntrega: '',
+
+        // ---- Codeudor (primer codeudor; vacío si no hay) ----
+        codeudorNombre: codeudor1Nombre,
+        codeudorCc: codeudor1Cc,
+        codeudorCcNit: codeudor1Cc,
+        codeudorDireccion: codeudor1Direccion,
+        codeudorTelefono: codeudor1Telefono,
       };
 
       const blob = await pdf(<PaqueteCreditoPDFDoc data={dataBase} />).toBlob();
@@ -391,7 +423,7 @@ const DetalleCotizacion: React.FC = () => {
       console.error(err);
       alert('No fue posible generar el paquete de crédito.');
     }
-  }, [q, moto, tab, payload, logoUrl, cuotas, vehiculoCampos, cuotaInicialEfectiva]);
+  }, [q, moto, tab, payload, logoUrl, cuotas, vehiculoCampos, cuotaInicialEfectiva, codeudores]);
 
   const handleDescargarRunt = React.useCallback(() => {
     const link = document.createElement('a');

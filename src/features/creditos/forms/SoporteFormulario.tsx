@@ -307,6 +307,7 @@ const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
           </button>
 
           <button
+            data-wizard-save
             type="button"
             className="btn btn-success"
             onClick={handleRegisterAndFinish}

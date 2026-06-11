@@ -15,7 +15,7 @@ import type {
 
 import { useCotizacionById } from "../../services/cotizacionesServices";
 import { useEmpresaById } from "../../services/empresasServices";
-import { calcularCreditoDirectoMoto, type CreditoMotoResultado } from "../../shared/components/credito/creditoDirecto.utils";
+import { calcularCreditoDirectoMoto, resolverTasaSeguroVidaDecimal, type CreditoMotoResultado } from "../../shared/components/credito/creditoDirecto.utils";
 import { useTasasCotizacion } from "../../services/tasaCotiService";
 
 type Id = number | string;
@@ -126,7 +126,6 @@ const buildSingleMotoPayload = (payload: any): any => {
     "garantia",
     "accesorios",
     "marcacion",
-    "seguro_vida",
     "seguro_mascota_s",
     "seguro_mascota_a",
     "otro_seguro",
@@ -232,6 +231,7 @@ export const CotizacionSingleMotoPDFButton: React.FC<Props> = ({
       saldoFinanciar: saldoNegocio,
       tasaFinanciacionPct: tasaFin,
       tasaGarantiaPct: tasaGar,
+      tasaSeguroVidaDecimal: resolverTasaSeguroVidaDecimal(payload?.porcentaje_seguro_vida),
     };
     const resultado = calcularCreditoDirectoMoto(input);
     return resultado;

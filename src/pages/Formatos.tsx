@@ -12,7 +12,7 @@ type UiFormato = {
 };
 
 // === Helpers URL/Visor ===
-const backendBase = "https://tuclick.vozipcolombia.net.co/motos/back/";
+const backendBase = `${String(import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "")}/`;
 
 const toAbsoluteUrl = (ruta: string) =>
   /^https?:\/\//i.test(ruta) ? ruta : `${backendBase}${ruta.replace(/^\/+/, "")}`;

@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Image,
 } from "@react-pdf/renderer";
+import { SEGURO_VIDA_FALLBACK_DECIMAL } from "../../../shared/components/credito/creditoDirecto.utils";
 
 /* ============================================================
    Tipos
@@ -44,6 +45,8 @@ export type TablaAmortizacionPDFProps = {
   tasaMensualPorcentaje: number;
   /** Tasa de garantía mensual como % (ej: 1.5) */
   tasaGarantiaPorcentaje?: number;
+  /** Tasa de seguro de vida como decimal mensual (ej: 0.00043) — de la cotización */
+  tasaSeguroVidaDecimal?: number;
   codigoPlan?: string;
   fechaPlan?: string;
   empresa?: EmpresaInfo;
@@ -291,8 +294,10 @@ const pmt = (principal: number, tasaPct: number, meses: number): number => {
 };
 
 /* Seguro deudor — igual a calcularSeguroDeudorMensual */
-const calcSeguro = (saldo: number): number =>
-  saldo > 0 ? Math.round(saldo * 0.00043) : 0;
+const calcSeguro = (
+  saldo: number,
+  tasaDecimal = SEGURO_VIDA_FALLBACK_DECIMAL
+): number => (saldo > 0 ? Math.round(saldo * tasaDecimal) : 0);
 
 /* ============================================================
    Tipo fila
@@ -361,6 +366,7 @@ export const TablaAmortizacionPDFDoc: React.FC<TablaAmortizacionPDFProps> = ({
   credito,
   tasaMensualPorcentaje,
   tasaGarantiaPorcentaje = 1.5,
+  tasaSeguroVidaDecimal = SEGURO_VIDA_FALLBACK_DECIMAL,
   empresa,
   cliente,
   producto,
@@ -383,7 +389,7 @@ export const TablaAmortizacionPDFDoc: React.FC<TablaAmortizacionPDFProps> = ({
 
   const cuotaNegocio    = Math.floor(pmt(saldoNegocio,  tasaMensualPorcentaje,  plazo));
   const cuotaGarantia   = Math.floor(pmt(saldoGarantia, tasaGarantiaPorcentaje, plazo));
-  const seguroFijo      = Math.floor(calcSeguro(saldoNegocio));
+  const seguroFijo      = Math.floor(calcSeguro(saldoNegocio, tasaSeguroVidaDecimal));
   const garantiaYSeg    = cuotaGarantia + seguroFijo;
   const cuotaTotalMes   = cuotaNegocio + garantiaYSeg;
 
