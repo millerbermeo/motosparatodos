@@ -48,29 +48,46 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
   };
 
   return (
-    <div className="w-full bg-white backdrop-blur border-b border-gray-200 px-4 py-4 flex items-center justify-between">
-      <div className="flex items-center gap-3">
+    <div className="w-full bg-white/90 backdrop-blur-md border-b border-gray-200/80 shadow-sm px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         {/* Hamburguesa solo en móvil */}
         <button
-          className="btn btn-ghost btn-circle lg:hidden"
+          className="btn btn-ghost btn-circle btn-sm lg:hidden hover:bg-gray-100"
           onClick={onMenuClick}
           aria-label="Abrir menú"
         >
           <Menu className="w-5 h-5 text-gray-700" />
         </button>
-        <h1 className="text-[15px] md:text-base font-medium text-gray-700">
-          Panel de Administración
-        </h1>
+        <div className="min-w-0">
+          <h1 className="text-[15px] md:text-base font-semibold text-gray-800 truncate leading-tight">
+            Panel de Administración
+          </h1>
+          <p className="hidden sm:block text-[11px] text-gray-400 leading-tight truncate">
+            MotosParaTodos
+          </p>
+        </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        
+      <div className="flex items-center gap-1.5 sm:gap-2">
+
         <NotificacionesPanel />
 
+        <div className="hidden md:block h-8 w-px bg-gray-200 mx-1" />
+
         <div className="dropdown dropdown-end">
-          <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar" aria-label="Menú de usuario" title="Cuenta">
-            <div className="w-9 rounded-full ring-1 ring-gray-200">
-              <img alt="avatar" src="https://cdn-icons-png.flaticon.com/512/204/204191.png" />
+          <div tabIndex={0} role="button" className="flex items-center gap-2 rounded-full p-1 pr-1 md:pr-3 hover:bg-gray-100 transition-colors cursor-pointer" aria-label="Menú de usuario" title="Cuenta">
+            <div className="avatar">
+              <div className="w-9 rounded-full ring-2 ring-gray-100 ring-offset-1">
+                <img alt="avatar" src="https://cdn-icons-png.flaticon.com/512/204/204191.png" />
+              </div>
+            </div>
+            <div className="hidden md:flex flex-col items-start min-w-0 max-w-[140px]">
+              <span className="text-[13px] font-semibold text-gray-800 leading-tight truncate w-full">
+                {user?.name ?? "Usuario"}
+              </span>
+              <span className="text-[11px] text-gray-400 leading-tight truncate w-full">
+                {user?.rol ?? "Sin rol"}
+              </span>
             </div>
           </div>
 

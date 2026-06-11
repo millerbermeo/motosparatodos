@@ -52,7 +52,7 @@ const MainLayout: React.FC = () => {
   const effectiveCollapsed = isDesktop ? collapsed : false;
 
   return (
-    <div className="flex relative w-full overflow-x-hidden">
+    <div className="flex relative w-full h-dvh overflow-hidden">
       {/* Overlay móvil */}
       {mobileOpen && !isDesktop && (
         <div
@@ -84,19 +84,19 @@ const MainLayout: React.FC = () => {
       {/* Contenido */}
       <div
         className={`
-          flex-1 min-h-dvh bg-[#F5F5F5]
+          flex-1 flex flex-col min-h-0 h-dvh bg-[#F5F5F5]
           transition-all duration-300
           ml-0
           ${effectiveCollapsed ? "lg:ml-16" : "lg:ml-64"}
           min-w-0
         `}
       >
-        {/* Navbar */}
-        <div className="sticky top-0 z-30 w-full">
+        {/* Navbar fijo arriba */}
+        <div className="shrink-0 z-30 w-full">
           <Navbar onMenuClick={() => setMobileOpen((p) => !p)} />
         </div>
 
-        <main className="px-5 py-4 w-full min-w-0">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden px-5 py-4 w-full min-w-0">
           <Outlet />
         </main>
       </div>
