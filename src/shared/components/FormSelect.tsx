@@ -80,7 +80,7 @@ export function FormSelect<T extends FieldValues>({
                   onValueChange?.(e.target.value);
                 }}
               >
-                <option value="" disabled>
+                <option value="">
                   {loading ? "Cargando…" : placeholder}
                 </option>
                 {options.map((opt) => (

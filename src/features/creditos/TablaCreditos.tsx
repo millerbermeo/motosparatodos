@@ -66,7 +66,7 @@ const badgeEstado = (estado?: string) => {
   else if (e.includes("en factura")) cls = "badge-primary";
   else if (e.includes("factur")) cls = "badge-info";
 
-  return <span className={`badge ${cls}`}>{estado ?? "-"}</span>;
+  return <span className={`badge ${cls} whitespace-nowrap`}>{estado ?? "-"}</span>;
 };
 
 const timeAgo = (iso?: string) => {

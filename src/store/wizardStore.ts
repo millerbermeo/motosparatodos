@@ -43,6 +43,14 @@ export const useWizardStore = create<WizardState>((set, get) => ({
     const isFirst = idx <= 0;
     const isLast = idx >= stepIds.length - 1;
     set({ activeId, idx, isFirst, isLast });
+
+    // Scroll al inicio al cambiar de paso (ej. tras Guardar/Actualizar).
+    // El contenido scrollea dentro de <main> (MainLayout), no en window.
+    if (typeof document !== "undefined") {
+      const scroller = document.querySelector("main");
+      scroller?.scrollTo({ top: 0, behavior: "smooth" });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   },
 
   next: () => {
