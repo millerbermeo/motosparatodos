@@ -268,7 +268,7 @@ const TablaSolicitudes: React.FC = () => {
 
           {/* Filtros */}
           <form onSubmit={onSubmitBuscar}>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-7">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-end">
               {/* <div className="2xl:col-span-3">
           <label className="label pb-1">
             <span className="label-text text-sm text-base-content/70">
@@ -284,7 +284,7 @@ const TablaSolicitudes: React.FC = () => {
           />
         </div> */}
 
-              <div className="2xl:col-span-2">
+              <div className="sm:col-span-2 lg:col-span-1">
                 <label className="label pb-1">
                   <span className="label-text text-sm text-base-content/70">
                     Buscar Cliente
@@ -292,6 +292,7 @@ const TablaSolicitudes: React.FC = () => {
                 </label>
                 <div className="w-full">
                   <SelectCotizaciones
+                    className="w-full min-w-0"
                     onSelect={(id) => {
                       setIdCotizacion(id ? String(id) : "");
                       setPage(1);

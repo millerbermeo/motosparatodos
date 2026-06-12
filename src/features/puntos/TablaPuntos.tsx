@@ -282,11 +282,11 @@ const TablaPuntos: React.FC = () => {
 
     return (
         <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
-            <div className="px-4 pt-4 flex items-center justify-between gap-3 flex-wrap my-3">
+            <div className="px-4 pt-4 my-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <h3 className="text-sm font-semibold tracking-wide text-base-content/70">
                     Módulo de Agencias
                 </h3>
-                <button className="btn bg-[#2BB352] text-white" onClick={openCrear}>
+                <button className="btn bg-[#2BB352] text-white w-full sm:w-auto" onClick={openCrear}>
                     Crear Punto
                 </button>
             </div>

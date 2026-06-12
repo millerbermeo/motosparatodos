@@ -179,8 +179,8 @@ const TablaCreditos: React.FC = () => {
     return (
         <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
             {/* Toolbar */}
-            <div className="px-4 pt-4 my-3 justify-between flex flex-wrap gap-3">
-                <div className="flex flex-wrap gap-3 flex-1 min-w-62.5">
+            <div className="px-4 pt-4 my-3 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 w-full lg:flex-1 lg:min-w-0">
                     {/* Selector que setea el ID → modo detalle */}
                     <SelectCreditos onSelect={(id) => { setCreditoId(id ?? null); }} />
 
@@ -198,7 +198,7 @@ const TablaCreditos: React.FC = () => {
               </label> */}
 
                             <select
-                                className="select select-md select-bordered"
+                                className="select select-md select-bordered w-full sm:w-auto sm:flex-1 sm:min-w-[11rem] sm:max-w-[14rem]"
                                 value={estadoFilter}
                                 onChange={(e) => { setEstadoFilter(e.target.value); }}
                             >
@@ -208,12 +208,12 @@ const TablaCreditos: React.FC = () => {
                         </>
                     )}
 
-                    <button onClick={cleanFilters} className="btn btn-accent min-w-37.5">
+                    <button onClick={cleanFilters} className="btn btn-accent w-full sm:w-auto sm:min-w-[9rem]">
                         Limpiar Filtros
                     </button>
                 </div>
 
-                <div className="flex items-center gap-3 min-w-55 justify-end">
+                <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
                     {!isDetail && (
                         <>
                             <label className="text-xs opacity-70">Filas:</label>
@@ -288,7 +288,7 @@ const TablaCreditos: React.FC = () => {
                                             <Eye size="18px" />
                                         </button>
                                     </Link>
-                                    {useAuthStore.getState().user?.rol === "Asesor" && (
+                                    {useAuthStore.getState().user?.rol === "Asesor" && c.estado !== "Facturado" && (
                                         <Link to={`/creditos/registrar/${c.codigo_credito}`}>
                                             <button className="btn btn-sm text-warning bg-white btn-circle" title="Editar">
                                                 <Pen size="18px" />

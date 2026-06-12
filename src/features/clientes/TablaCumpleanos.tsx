@@ -82,10 +82,10 @@ const TablaCumpleanos: React.FC = () => {
   return (
     <div className="rounded-2xl border border-base-300 bg-base-100 shadow-xl N">
       {/* Header filtros */}
-      <div className="p-4 flex flex-wrap gap-3 items-center justify-between">
-        <div className="flex flex-wrap gap-3">
+      <div className="p-4 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 w-full lg:w-auto">
           <input
-            className="input input-bordered w-64"
+            className="input input-bordered w-full sm:w-auto sm:flex-1 sm:min-w-[12rem] sm:max-w-[16rem]"
             placeholder="Buscar por cédula..."
             value={cedula}
             onChange={(e) => setCedula(e.target.value)}
@@ -93,7 +93,7 @@ const TablaCumpleanos: React.FC = () => {
           />
 
           <select
-            className="select select-bordered w-40"
+            className="select select-bordered w-full sm:w-auto sm:min-w-[10rem]"
             value={month}
             onChange={(e) => {
               setMonth(e.target.value);
@@ -108,7 +108,7 @@ const TablaCumpleanos: React.FC = () => {
           </select>
 
           <select
-            className="select select-bordered w-40"
+            className="select select-bordered w-full sm:w-auto sm:min-w-[10rem]"
             value={status}
             onChange={(e) => {
               setStatus(e.target.value);
@@ -123,19 +123,19 @@ const TablaCumpleanos: React.FC = () => {
           </select>
 
           <button
-            className="btn btn-primary"
+            className="btn btn-primary w-full sm:w-auto"
             onClick={() => query.refetch()}
             disabled={query.isFetching}
           >
             Buscar
           </button>
 
-          <button className="btn btn-accent" onClick={cleanFilters}>
+          <button className="btn btn-accent w-full sm:w-auto" onClick={cleanFilters}>
             Limpiar
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full lg:w-auto justify-between lg:justify-end">
           <label className="text-xs opacity-70">Filas:</label>
           <select
             className="select select-accent select-sm select-bordered w-20"

@@ -237,11 +237,12 @@ const TablaCotizaciones: React.FC = () => {
         <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
 
 
-            <div className="px-4 pt-4 flex flex-wrap items-center justify-between gap-4 my-3">
+            <div className="px-4 pt-4 my-3 flex flex-col gap-3">
 
                 {/* Filtros */}
-                <div className="flex flex-wrap gap-3 flex-1 min-w-62.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 items-end">
                     <SelectCotizaciones
+                        className="w-full min-w-0"
                         onSelect={(id: string | number | null) => {
                             if (id === null || id === '') return setCotizacionId(null);
                             const n = typeof id === 'string' ? Number(id) : id;
@@ -250,7 +251,7 @@ const TablaCotizaciones: React.FC = () => {
                     />
 
                     <select
-                        className="select select-bordered select-md min-w-45 max-w-50 flex-1"
+                        className="select select-bordered select-md w-full"
                         value={estadoFilter}
                         onChange={(e) => { setEstadoFilter(e.target.value); setPage(1); }}
                     >
@@ -266,7 +267,7 @@ const TablaCotizaciones: React.FC = () => {
                     </select>
 
                     <select
-                        className="select select-bordered select-md min-w-45 max-w-50 flex-1"
+                        className="select select-bordered select-md w-full"
                         value={tipoFilter}
                         onChange={(e) => { setTipoFilter(e.target.value); setPage(1); }}
                     >
@@ -278,35 +279,37 @@ const TablaCotizaciones: React.FC = () => {
 
                     <button
                         onClick={cleanFilters}
-                        className="btn btn-accent min-w-37.5"
+                        className="btn btn-accent w-full"
                     >
                         Limpiar Filtros
                     </button>
                 </div>
 
                 {/* Opciones de paginación y crear */}
-                <div className="flex flex-wrap items-center gap-3 min-w-55 justify-end">
-                    <label className="text-xs opacity-70">Filas:</label>
-                    <select
-                        className="select select-accent select-sm select-bordered w-20"
-                        value={serverPerPage}
-                        onChange={(e) => {
-                            const v = Number(e.target.value) || 10;
-                            setPerPage(v);
-                            setPage(1);
-                        }}
-                    >
-                        {[10, 20, 50].map((n) => (
-                            <option key={n} value={n}>
-                                {n}
-                            </option>
-                        ))}
-                    </select>
-                    {isFetching && <span className="loading loading-spinner loading-xs" />}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between border-t border-base-200 pt-3">
+                    <div className="flex items-center gap-3">
+                        <label className="text-xs opacity-70">Filas:</label>
+                        <select
+                            className="select select-accent select-sm select-bordered w-20"
+                            value={serverPerPage}
+                            onChange={(e) => {
+                                const v = Number(e.target.value) || 10;
+                                setPerPage(v);
+                                setPage(1);
+                            }}
+                        >
+                            {[10, 20, 50].map((n) => (
+                                <option key={n} value={n}>
+                                    {n}
+                                </option>
+                            ))}
+                        </select>
+                        {isFetching && <span className="loading loading-spinner loading-xs" />}
+                    </div>
 
                     {user?.rol === "Asesor" && (
-                        <Link to="/cotizaciones/crear-cotizaciones">
-                            <button className="btn bg-[#2BB352] text-white min-w-40">
+                        <Link to="/cotizaciones/crear-cotizaciones" className="w-full sm:w-auto">
+                            <button className="btn bg-[#2BB352] text-white w-full sm:w-auto sm:min-w-40">
                                 Crear Cotización
                             </button>
                         </Link>

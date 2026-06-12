@@ -29,6 +29,7 @@ type ProductoValues = {
   plazoCuotas: number;
   valorMoto: number | string;
   cuotaInicial: number | string;
+  descuento: number | string; // descuentos_a / descuentos_b de la moto seleccionada
   comentario?: string;
   fechaInicio: string; // fecha_inicial en backend — inicio real del crédito
 };
@@ -71,6 +72,7 @@ const InfoProductoFormulario: React.FC = () => {
       valorMoto: "0",
       plazoCuotas: 12,
       cuotaInicial: "0",
+      descuento: "0",
       comentario: "",
       fechaInicio: "",
     },
@@ -102,6 +104,17 @@ const InfoProductoFormulario: React.FC = () => {
   const productoCot = [cotObj?.[`marca_${sufCot}`], cotObj?.[`linea_${sufCot}`]]
     .filter(Boolean).join(" ") || undefined;
   const cedulaCot = cotObj?.cedula ?? infoPers?.numero_documento ?? undefined;
+
+  // Descuento de la moto seleccionada (descuentos_a / descuentos_b)
+  const motoSeleccionada = Number(cotObj?.moto_seleccionada ?? 1) || 1;
+  const descuentoCampo = `descuentos_${sufCot}`;
+  const descuentoMotoSel = Math.abs(Number((cotObj as any)?.[descuentoCampo] ?? 0)) || 0;
+
+  // Default del input descuento apenas llega la cotización
+  React.useEffect(() => {
+    if (!cotObj) return;
+    setValue("descuento", String(descuentoMotoSel), { shouldDirty: false });
+  }, [cotObj, descuentoMotoSel, setValue]);
 
 
   // ✅ Sincroniza FORM apenas llega backend (plazoCuotas = número)
@@ -145,6 +158,11 @@ const InfoProductoFormulario: React.FC = () => {
       cuota_inicial: toNumberPesos(v.cuotaInicial) || 0,
       comentario: (v.comentario?.trim() ?? "") || null,
       fecha_inicial: v.fechaInicio || null,
+      // Descuento de la moto seleccionada
+      descuento: toNumberPesos(v.descuento) || 0,
+      moto_seleccionada: motoSeleccionada,
+      descuento_campo: descuentoCampo,
+      cotizacion_id: Number(creditoBackend?.cotizacion_id ?? 0) || null,
     };
 
     actualizarCredito.mutate(
@@ -161,6 +179,9 @@ const InfoProductoFormulario: React.FC = () => {
           setValue("comentario", payload.comentario ?? "", {
             shouldDirty: false,
           });
+          setValue("descuento", String(payload.descuento ?? 0), {
+            shouldDirty: false,
+          });
           next();
         },
       }
@@ -170,7 +191,10 @@ const InfoProductoFormulario: React.FC = () => {
   // 👇 Leemos lo que hay en el form
   const plazoCuotasWatch = watch("plazoCuotas");
   const cuotaInicialWatch = watch("cuotaInicial");
+  const descuentoWatch = watch("descuento");
   const fechaInicioWatch = watch("fechaInicio");
+
+  const descuentoParaTabla = toNumberPesos(descuentoWatch ?? descuentoMotoSel);
 
   // ✅ Tabla: form → backend → 12 (pero ya todo es número)
   const plazoParaTabla = normalizePlazo(
@@ -184,7 +208,12 @@ const InfoProductoFormulario: React.FC = () => {
 
   const creditoParaTabla = creditoBackend
     ? {
-      valor_producto: (Number(creditoBackend.valor_producto) || 0) - (Number(creditoBackend.garantia_extendida_valor) || 0),
+      valor_producto: Math.max(
+        (Number(creditoBackend.valor_producto) || 0) -
+        (Number(creditoBackend.garantia_extendida_valor) || 0) -
+        descuentoParaTabla,
+        0
+      ),
       cuota_inicial: cuotaInicialParaTabla,
       plazo_meses: plazoParaTabla,
       soat: creditoBackend.soat ?? "0",
@@ -261,6 +290,18 @@ const InfoProductoFormulario: React.FC = () => {
             rules={{
               required: "Requerido",
               validate: (v) => toNumberPesos(v) >= 0 || "Debe ser >= 0",
+            }}
+          />
+
+          <FormInput
+            name="descuento"
+            label="Descuento / Plan de marca"
+            type="number"
+            control={control}
+            placeholder="0"
+            formatThousands
+            rules={{
+              validate: (val) => toNumberPesos(val) >= 0 || "Debe ser >= 0",
             }}
           />
 

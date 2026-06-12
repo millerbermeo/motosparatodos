@@ -15,11 +15,12 @@ interface Option {
 
 interface Props {
   onSelect: (id: number | null) => void;
+  className?: string;
 }
 
 const MIN_CHARS = 2;
 
-const SelectCotizaciones: React.FC<Props> = ({ onSelect }) => {
+const SelectCotizaciones: React.FC<Props> = ({ onSelect, className = "min-w-72 max-w-96 w-full" }) => {
   const [inputValue, setInputValue] = useState("");
   const [selectedOption, setSelectedOption] = useState<Option | null>(null);
 
@@ -69,7 +70,7 @@ const SelectCotizaciones: React.FC<Props> = ({ onSelect }) => {
 
   return (
     <Select<Option, false>
-      className="min-w-72 max-w-96 w-full"
+      className={className}
       classNamePrefix="react-select"
       value={selectedOption}
       inputValue={inputValue}
@@ -84,6 +85,14 @@ const SelectCotizaciones: React.FC<Props> = ({ onSelect }) => {
       styles={{
         menuPortal: (base) => ({ ...base, zIndex: 9999 }),
         menu: (base) => ({ ...base, zIndex: 9999 }),
+        control: (base) => ({
+          ...base,
+          minHeight: "calc(var(--size-field, 0.25rem) * 10)",
+          height: "calc(var(--size-field, 0.25rem) * 10)",
+          borderRadius: "var(--radius-field, 0.5rem)",
+        }),
+        valueContainer: (base) => ({ ...base, height: "100%", paddingTop: 0, paddingBottom: 0 }),
+        indicatorsContainer: (base) => ({ ...base, height: "100%" }),
       }}
       noOptionsMessage={() =>
         inputValue.trim().length < MIN_CHARS
