@@ -102,7 +102,7 @@ export const useUltimasNotificaciones = () => {
             );
             return data;
         },
-        refetchInterval: 15_000, // refresca cada 15s
+        refetchInterval: 5_000, // refresca cada 15s
         refetchIntervalInBackground: true,
         staleTime: 10_000,
     });

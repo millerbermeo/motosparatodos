@@ -96,8 +96,10 @@ const MainLayout: React.FC = () => {
           <Navbar onMenuClick={() => setMobileOpen((p) => !p)} />
         </div>
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden px-5 py-4 w-full min-w-0">
-          <Outlet />
+        <main className="flex-1 overflow-y-auto overflow-x-hidden w-full min-w-0">
+          <div className="px-5 py-4 w-full min-w-0">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

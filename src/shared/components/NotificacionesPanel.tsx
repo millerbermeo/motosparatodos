@@ -11,30 +11,15 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useUltimasNotificaciones } from "../../services/notificacionesService";
 import { useNotificacionesStore } from "../../store/notificaciones.store";
-import { useAuthStore } from "../../store/auth.store";
+import { moduloBadgeClass } from "../../utils/moduloColor";
 
 const NotificacionesPanel: React.FC = () => {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  const rol = useAuthStore((s) => s.user?.rol);
-
   const { data, isLoading } = useUltimasNotificaciones();
   const notificaciones = data?.data ?? [];
-
-  // Resuelve la URL destino de una notificación según módulo y rol.
-  // Créditos: si la URL apunta a "registrar" (crédito creado), el asesor entra
-  // a registrar y los demás roles al detalle (mismo código de la URL). Si la URL
-  // ya apunta a "detalle" (u otro), se usa tal cual para todos.
-  const resolverDestino = (n: any): string => {
-    const url: string = n?.url ?? "";
-    if (n?.modulo === "creditos" && url.includes("/registrar/") && rol !== "Asesor") {
-      const codigo = url.split("/").filter(Boolean).pop() ?? "";
-      return `/creditos/detalle/${codigo}`;
-    }
-    return url;
-  };
 
   // IDs visibles actuales (string estable para deps de efectos)
   const currentIds = useMemo<number[]>(
@@ -192,7 +177,7 @@ const NotificacionesPanel: React.FC = () => {
                     <p className="flex-1 text-[13px] font-bold text-slate-800 leading-tight truncate transition-colors duration-150 group-hover:text-blue-600">
                       {n.titulo}
                     </p>
-                    <span className="flex-shrink-0 text-[9px] font-bold uppercase tracking-wide text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                    <span className={`flex-shrink-0 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${moduloBadgeClass(n.modulo)}`}>
                       {n.modulo}
                     </span>
                   </div>
@@ -206,7 +191,7 @@ const NotificacionesPanel: React.FC = () => {
                       <button
                         onClick={() => {
                           setOpen(false);
-                          navigate(resolverDestino(n));
+                          navigate(n.url);
                         }}
                         className="flex items-center gap-1 px-2 py-1 text-[11px] font-bold rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm active:scale-95"
                       >

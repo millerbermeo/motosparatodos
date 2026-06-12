@@ -63,8 +63,8 @@ const badgeEstado = (estado?: string) => {
   else if (e.includes("revision") || e.includes("revisión")) cls = "badge-accent";
   else if (e.includes("incompleto")) cls = "badge-warning";
   else if (e.includes("viable") && e.includes("no")) cls = "badge-error";
-  else if (e.includes("factur")) cls = "badge-info";
   else if (e.includes("en factura")) cls = "badge-primary";
+  else if (e.includes("factur")) cls = "badge-info";
 
   return <span className={`badge ${cls}`}>{estado ?? "-"}</span>;
 };
@@ -128,6 +128,8 @@ const TablaCreditos: React.FC = () => {
     const estados = React.useMemo(() => {
         if (isDetail) return [];
         const set = new Set<string>();
+        // estados fijos garantizados aunque no estén en la página actual
+        set.add("En Facturación");
         (serverItems ?? []).forEach((c: any) => c?.estado && set.add(c.estado));
         return Array.from(set).sort();
     }, [serverItems, isDetail]);
@@ -249,7 +251,6 @@ const TablaCreditos: React.FC = () => {
                             <th>Plazo(meses)</th>
                             <th>Estado</th>
                             <th>Credito Cerrado</th>
-                            <th>En Facturacion</th>
                             {/* <th>Preaprobado</th>
                             <th>Analista</th> */}
                             {/* <th>Revisado</th>
@@ -262,7 +263,7 @@ const TablaCreditos: React.FC = () => {
 
                     <tbody className="[&>tr:hover]:bg-base-200/40">
                         {visible.length === 0 && (
-                            <tr><td colSpan={16} className="text-center py-8 text-base-content/60">Sin resultados</td></tr>
+                            <tr><td colSpan={15} className="text-center py-8 text-base-content/60">Sin resultados</td></tr>
                         )}
 
                         {visible.map((c: any) => (
@@ -311,7 +312,6 @@ const TablaCreditos: React.FC = () => {
                                 <td>{badgeSiNo((c as any).entregado ?? "No")}</td>
                                 <td>{badgeSiNo(c.cambio_ci)}</td> */}
                                 <td>{badgeNum(c.credito_cerrado)}</td>
-                                <td>{badgeNum(c.solicitar_facturacion)}</td>
                                 <td className="whitespace-nowrap">{timeAgo(c.actualizado)}</td>
                             </tr>
                         ))}

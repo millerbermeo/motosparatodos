@@ -1,7 +1,7 @@
 import React from 'react';
 import {
-    BadgeCheck, Building2, CalendarDays, Check, CheckCircle2, CheckSquare, Download,
-    FileDown, FileMinusIcon, FileSignature, History, Info, LibraryBig,
+    BadgeCheck, Building2, CalendarDays, Check, CheckCircle2, CheckSquare, ChevronDown, Download,
+    FileDown, FileMinusIcon, FileSignature, History, Info, LibraryBig, Car,
     Mail,
     MessageCircle,
     MessageSquarePlus,
@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { useActualizarEstadoCredito, useActualizarFechaInicial, useCredito, useCodeudoresByDeudor, useDeudor } from '../../services/creditosServices';
 import { useVehiculoCampos } from '../../services/vehiculoCamposService';
+import { VehiculoCamposCollapse } from '../../shared/components/VehiculoCamposCollapse';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ChipButton from '../../shared/components/ChipButton';
 import ChatThread from './ChatThread';
@@ -186,6 +188,13 @@ const CreditoDetalle: React.FC = () => {
     const agencia = 'Agencia';
     const creada = credito?.fecha_creacion;
     const registradaPor = credito?.asesor;
+
+    // Datos vehículo (Crédito): solo visible si el crédito ya fue facturado
+    const esFacturado = String(estado ?? '').toLowerCase().includes('facturado');
+    // Aprobado o posterior (En Facturación / Facturado): mismo trato que post-aprobación
+    const esAprobadoOMas = estado === 'Aprobado' || estado === 'En Facturación' || estado === 'Facturado';
+    const qc = useQueryClient();
+    const [vehAbierto, setVehAbierto] = React.useState(false);
 
     // Sección "motocicleta": solo mapear lo que venga en el crédito
     const moto = {
@@ -989,6 +998,36 @@ const CreditoDetalle: React.FC = () => {
                     </div>
                 </section>
 
+                {/* Datos vehículo (Crédito) — solo si está facturado */}
+                {esFacturado && idCot && (
+                    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                        <button
+                            type="button"
+                            onClick={() => setVehAbierto((v) => !v)}
+                            className="w-full flex items-center justify-between gap-2 p-4 sm:p-6 text-slate-800 hover:bg-slate-50 transition-colors"
+                        >
+                            <span className="inline-flex items-center gap-2">
+                                <Car className="w-5 h-5" />
+                                <span className="text-base sm:text-lg font-semibold">Datos del vehículo (Crédito)</span>
+                            </span>
+                            <ChevronDown
+                                className={`w-5 h-5 transition-transform duration-200 ${vehAbierto ? 'rotate-180' : ''}`}
+                            />
+                        </button>
+
+                        {vehAbierto && (
+                            <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                                <VehiculoCamposCollapse
+                                    idCotizacion={idCot}
+                                    tipo={1}
+                                    titulo="Datos vehículo (Crédito)"
+                                    onSaved={() => qc.invalidateQueries({ queryKey: ['credito'] })}
+                                />
+                            </div>
+                        )}
+                    </section>
+                )}
+
                 {/* Información de la motocicleta */}
                 <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <div className="p-4 sm:p-6">
@@ -1007,7 +1046,7 @@ const CreditoDetalle: React.FC = () => {
                                 <Row label="Placa" value={moto?.placa} />
 
 
-                                {(estado !== 'Aprobado' && estado !== 'Facturado') && idCot && (
+                                {!esAprobadoOMas && idCot && (
                                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         <CotizacionSingleMotoPDFButton
                                             id={idCot}
@@ -1017,13 +1056,13 @@ const CreditoDetalle: React.FC = () => {
                                     </div>
                                 )}
 
-                                {(estado !== 'Aprobado' && estado !== 'Facturado') && !idCot && (
+                                {!esAprobadoOMas && !idCot && (
                                     <div className="mt-4 text-xs text-amber-600">
                                         No hay cotización asociada a este crédito (idCot vacío).
                                     </div>
                                 )}
 
-                                {(estado === 'Aprobado' || estado === 'Facturado') && (
+                                {esAprobadoOMas && (
                                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         <CotizacionSingleMotoPDFButton
                                             id={Number(idCot)}
@@ -1072,7 +1111,7 @@ const CreditoDetalle: React.FC = () => {
  */}
 
                                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    {(estado === 'Aprobado' || estado === 'Facturado') && firmasHref && (
+                                    {esAprobadoOMas && firmasHref && (
                                         <ChipButton
                                             label="Descargar firmas de solicitud"
                                             icon={<FileDown className="w-4 h-4" />}
@@ -1089,7 +1128,7 @@ const CreditoDetalle: React.FC = () => {
                                         onClick={handleDownloadTabla}
                                         color="bg-indigo-500 hover:bg-indigo-600"
                                     />
-                                    {(estado === 'Aprobado' || estado === 'Facturado') && (
+                                    {esAprobadoOMas && (
                                         <>
                                             <ChipButton
                                                 label="Descargar paquete"
@@ -1391,7 +1430,7 @@ const CreditoDetalle: React.FC = () => {
                         useAuthStore.getState().user?.rol === "Administrador" ||
                         useAuthStore.getState().user?.rol === "Lider_marca" ||
                         useAuthStore.getState().user?.rol === "Lider_punto"
-                    ) && estado !== "Facturado" && estado !== "Aprobado" && (
+                    ) && !esAprobadoOMas && (
 
                             <>
                                 <button
@@ -1444,7 +1483,7 @@ const CreditoDetalle: React.FC = () => {
                     useAuthStore.getState().user?.rol === "Administrador" ||
                     useAuthStore.getState().user?.rol === "Lider_marca" ||
                     useAuthStore.getState().user?.rol === "Lider_punto"
-                ) && estado !== "Aprobado" && estado !== "Facturado" && (
+                ) && !esAprobadoOMas && (
                         <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
                             {camposCompletosMinimos ? (
                                 <CambiarEstadoCredito codigo_credito={codigo_credito} data={{

@@ -12,6 +12,7 @@ type Props = {
   idCotizacion: string | number;
   tipo: VehiculoTipo; // 1 creditos | 2 solicitar_estado_facturacion
   titulo?: string;
+  onSaved?: () => void; // se ejecuta tras guardar OK (ej: refrescar vista padre)
 };
 
 type VehiculoCamposForm = {
@@ -30,6 +31,7 @@ export const VehiculoCamposCollapse: React.FC<Props> = ({
   idCotizacion,
   tipo,
   titulo,
+  onSaved,
 }) => {
   const enabled = Boolean(idCotizacion) && Boolean(tipo);
 
@@ -79,24 +81,27 @@ export const VehiculoCamposCollapse: React.FC<Props> = ({
 const onSubmit = (values: VehiculoCamposForm) => {
   if (!enabled) return;
 
-  guardar({
-    tipo,
-    id_cotizacion: idCotizacion,
+  guardar(
+    {
+      tipo,
+      id_cotizacion: idCotizacion,
 
-    numero_motor: values.numero_motor,
-    numero_chasis: values.numero_chasis,
-    color: values.color,
-    placa: values.placa,
-    observacion_final: values.observacion_final,
+      numero_motor: values.numero_motor,
+      numero_chasis: values.numero_chasis,
+      color: values.color,
+      placa: values.placa,
+      observacion_final: values.observacion_final,
 
-    ...(tipo === 1
-      ? {
-          beneficiario_nombre: values.beneficiario_nombre,
-          beneficiario_cedula: values.beneficiario_cedula,
-          beneficiario_parentesco: values.beneficiario_parentesco,
-        }
-      : {}),
-  } as any);
+      ...(tipo === 1
+        ? {
+            beneficiario_nombre: values.beneficiario_nombre,
+            beneficiario_cedula: values.beneficiario_cedula,
+            beneficiario_parentesco: values.beneficiario_parentesco,
+          }
+        : {}),
+    } as any,
+    { onSuccess: () => onSaved?.() }
+  );
 };
 
   // ✅ AHORA sí: renders condicionales DESPUÉS de los hooks

@@ -370,7 +370,9 @@ export const SolicitudCreditoPDFDoc: React.FC<SolicitudCreditoPDFProps> = ({
   const cuotaGar     = Math.floor(pmtFn(garantiaExt,  tasaGar, plazoNum));
   const tasaSegVida = resolverTasaSeguroVidaDecimal(cotData?.porcentaje_seguro_vida);
   const seguroDeudor = saldoNegocio > 0 ? Math.round(saldoNegocio * tasaSegVida) : 0;
-  const cuotaMensual = plazoNum > 0 ? cuotaNeg + cuotaGar + seguroDeudor : null;
+  // mismo valor que PDF cotización/carta: garantiaMasSeguro = cuota garantía + seguro deudor
+  const garantiaMasSeguro = cuotaGar + seguroDeudor;
+  const cuotaMensual = plazoNum > 0 ? cuotaNeg + garantiaMasSeguro : null;
 
   const firmaCc = ip?.numero_documento ? `CC ${ip.numero_documento}` : "";
 
@@ -530,7 +532,7 @@ export const SolicitudCreditoPDFDoc: React.FC<SolicitudCreditoPDFProps> = ({
             </View>
             <View style={S.lineItem}>
               <Text style={S.lineKey}>+ Garantía y seguros</Text>
-              <Text style={S.lineVal}>{fmtCOP(garantiaExt)}</Text>
+              <Text style={S.lineVal}>{plazoNum > 0 ? fmtCOP(garantiaMasSeguro) : "—"}</Text>
             </View>
             <View style={S.lineItem}>
               <Text style={S.lineKey}>= Valor a financiar</Text>

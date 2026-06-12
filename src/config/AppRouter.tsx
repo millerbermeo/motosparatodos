@@ -49,6 +49,8 @@ const SolicitarFacturacionPage = lazy(() => import("../pages/SolicitarFacturacio
 
 const Dis = lazy(() => import("../pages/Dis"));
 
+const Notificaciones = lazy(() => import("../pages/Notificaciones"));
+
 const DetallesFacturacion = lazy(() => import("../pages/DetallesFacturacion"));
 const ActaFinal = lazy(() => import("../pages/ActaFinal"));
 const Fallback: React.FC = () => {
@@ -75,6 +77,9 @@ const AppRouter: React.FC = () => {
             <Route element={<MainLayout />}>
               {/* Home: solo autenticación */}
               <Route path="/" element={<Home />} />
+
+              {/* Notificaciones: disponible para todos los autenticados */}
+              <Route path="/notificaciones" element={<Notificaciones />} />
 
               <Route element={<RequireModule name="Clientes" />}>
                 <Route path="/clientes" element={<Clientes />} />
