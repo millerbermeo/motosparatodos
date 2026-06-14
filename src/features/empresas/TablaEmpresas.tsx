@@ -185,7 +185,7 @@ const TablaEmpresas: React.FC = () => {
                                             <Pen size="18px" color="green" />
                                         </button>
                                         <button
-                                            className="btn btn-sm bg-white btn-circle"
+                                            className="btn btn-sm bg-white btn-circle hidden"
                                             onClick={() => confirmarEliminar(Number(e.id), e.nombre_empresa)}
                                             title="Eliminar"
                                             aria-label="Eliminar empresa"

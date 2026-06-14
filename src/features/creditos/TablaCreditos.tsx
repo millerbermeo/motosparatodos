@@ -198,7 +198,7 @@ const TablaCreditos: React.FC = () => {
               </label> */}
 
                             <select
-                                className="select select-md select-bordered w-full sm:w-auto sm:flex-1 sm:min-w-[11rem] sm:max-w-[14rem]"
+                                className="select select-md select-bordered w-full sm:w-auto sm:flex-1 sm:min-w-44 sm:max-w-56"
                                 value={estadoFilter}
                                 onChange={(e) => { setEstadoFilter(e.target.value); }}
                             >
@@ -208,7 +208,7 @@ const TablaCreditos: React.FC = () => {
                         </>
                     )}
 
-                    <button onClick={cleanFilters} className="btn btn-accent w-full sm:w-auto sm:min-w-[9rem]">
+                    <button onClick={cleanFilters} className="btn btn-accent w-full sm:w-auto sm:min-w-36">
                         Limpiar Filtros
                     </button>
                 </div>
@@ -228,7 +228,7 @@ const TablaCreditos: React.FC = () => {
                     )}
 
                     {useAuthStore.getState().user?.rol === "Asesor" && (
-                        <Link to="/creditos/crear-cotizaciones-credito">
+                        <Link to="/creditos/crear-cotizaciones-credito?tipo=credibike">
                             <button className="btn bg-[#2BB352] text-white">Crear Crédito</button>
                         </Link>
                     )}

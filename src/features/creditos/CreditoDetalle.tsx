@@ -35,12 +35,13 @@ import { useConfigPlazoByCodigo } from '../../services/configuracionPlazoService
 
 // 🔹 NUEVO: Paquete de crédito (25 páginas)
 import { PaqueteCreditoPDFDoc } from './pdf/PaqueteCreditoPDF';
+import { generarPaqueteCreditoWord } from './word/PaqueteCreditoWord';
 import { GarantiaExtendidaPDFDoc } from './pdf/GarantiaExtendidaPDF';
 import { CartaAprobacionPDFDoc } from './pdf/CartaAprobacionPDF';
 import { SolicitudCreditoPDFDoc } from './pdf/SolicitudCreditoPDF';
 import { CotizacionSingleMotoPDFButton } from '../cotizaciones/CotizacionSingleMotoPDFButton';
 import { useCotizacionById } from '../../services/cotizacionesServices';
-import { useEmpresaById } from '../../services/empresasServices';
+import { useEmpresaById, useEmpresas } from '../../services/empresasServices';
 import CambiarEstadoCredito from './forms/CambiarEstadoCredito';
 import CodeudoresDetalle from './CodeudoresDetalle';
 import { resolverTasaSeguroVidaDecimal, calcularCreditoDirectoMoto } from '../../shared/components/credito/creditoDirecto.utils';
@@ -56,6 +57,44 @@ const buildImageUrl = (path?: string): string | undefined => {
     const root = (BaseUrl || "").replace(/\/+$/, "");
     const rel = String(path).replace(/^\/+/, "");
     return `${root}/${rel}`;
+};
+
+// Descarga el logo del endpoint y lo convierte a data URL.
+// react-pdf no carga imágenes remotas con CORS restringido; el data URL sí funciona.
+// Si la empresa no tiene logo (o falla), devuelve undefined → el header se muestra sin logo
+// (no se pinta un logo de otra marca).
+const resolveLogoDataUrl = async (url?: string): Promise<string | undefined> => {
+    if (!url) return undefined;
+    try {
+        const res = await fetch(url, { mode: "cors" });
+        if (!res.ok) return url;
+        const blob = await res.blob();
+        return await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(String(reader.result));
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    } catch {
+        // Si falla CORS/fetch, intenta con la URL directa
+        return url;
+    }
+};
+
+// Descarga el logo como ArrayBuffer (+ tipo) para incrustarlo en el Word.
+const resolveLogoArrayBuffer = async (
+    url?: string
+): Promise<{ data: ArrayBuffer; type: "png" | "jpg" } | undefined> => {
+    if (!url) return undefined;
+    try {
+        const res = await fetch(url, { mode: "cors" });
+        if (!res.ok) return undefined;
+        const buf = await res.arrayBuffer();
+        const type: "png" | "jpg" = /\.jpe?g($|\?)/i.test(url) ? "jpg" : "png";
+        return { data: buf, type };
+    } catch {
+        return undefined;
+    }
 };
 
 const BadgeEstado: React.FC<{ value?: string }> = ({ value }) => {
@@ -266,6 +305,14 @@ const CreditoDetalle: React.FC = () => {
 
     // 👉 muy importante: no llamar el hook si no hay id
     const { data: empresaSeleccionada } = useEmpresaById(empresaId);
+
+    // Empresas disponibles para el select del paquete (solo MOTO PARA TODOS y VERIFICARTE)
+    const { data: empresasAll = [] } = useEmpresas();
+    const EMPRESAS_PAQUETE = [3, 4];
+    const empresasPaquete = React.useMemo(
+        () => (empresasAll ?? []).filter((e: any) => EMPRESAS_PAQUETE.includes(Number(e.id))),
+        [empresasAll]
+    );
 
     // Normalizar la empresa (por si viene anidada en .data)
     const empresaApi = (empresaSeleccionada as any)?.data ?? empresaSeleccionada ?? null;
@@ -607,6 +654,86 @@ const CreditoDetalle: React.FC = () => {
                 return;
             }
 
+            // 🏢 Seleccionar empresa antes de generar el paquete
+            const opciones = (empresasPaquete.length ? empresasPaquete : [
+                { id: 3, nombre_empresa: 'MOTO PARA TODOS S.A.S', nit_empresa: '901608735-4' },
+                { id: 4, nombre_empresa: 'Verificarte AAA SAS', nit_empresa: '901155848-8' },
+            ]) as any[];
+
+            const optionsHtml = opciones
+                .map((e) => `<option value="${e.id}">${e.nombre_empresa}</option>`)
+                .join('');
+
+            const { value: empresaIdSel, isConfirmed } = await Swal.fire({
+                title: 'Paquete de crédito',
+                html: `
+                    <div style="text-align:left;box-sizing:border-box;width:100%">
+                        <p style="margin:0 0 14px;font-size:14px;color:#475569;line-height:1.5">
+                            ¿Con cuál empresa deseas imprimir el paquete de crédito?
+                            Selecciona la empresa que aparecerá en todos los documentos.
+                        </p>
+                        <label for="swal-empresa" style="display:block;margin:0 0 6px;font-size:12px;font-weight:600;color:#334155">
+                            Empresa
+                        </label>
+                        <select id="swal-empresa" style="
+                            width:100%;
+                            box-sizing:border-box;
+                            padding:11px 14px;
+                            font-size:14px;
+                            color:#0f172a;
+                            background:#f8fafc;
+                            border:1px solid #cbd5e1;
+                            border-radius:10px;
+                            outline:none;
+                            cursor:pointer;
+                            appearance:none;
+                            background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 fill=%22none%22 stroke=%22%23475569%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22/></svg>');
+                            background-repeat:no-repeat;
+                            background-position:right 12px center;
+                        ">${optionsHtml}</select>
+
+                        <p style="margin:16px 0 8px;font-size:12px;font-weight:600;color:#334155">Formato de descarga</p>
+                        <div style="display:flex;gap:18px">
+                            <label style="display:inline-flex;align-items:center;gap:6px;font-size:14px;color:#0f172a;cursor:pointer">
+                                <input type="radio" name="swal-formato" value="pdf" checked /> PDF
+                            </label>
+                            <label style="display:inline-flex;align-items:center;gap:6px;font-size:14px;color:#0f172a;cursor:pointer">
+                                <input type="radio" name="swal-formato" value="word" /> Word
+                            </label>
+                        </div>
+                    </div>
+                `,
+                width: 440,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'Generar paquete',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#6366f1',
+                cancelButtonColor: '#64748b',
+                preConfirm: () => {
+                    const sel = document.getElementById('swal-empresa') as HTMLSelectElement | null;
+                    const fmt = (document.querySelector('input[name="swal-formato"]:checked') as HTMLInputElement | null)?.value || 'pdf';
+                    return { empresaId: sel?.value, formato: fmt };
+                },
+            });
+
+            if (!isConfirmed || !empresaIdSel?.empresaId) return;
+
+            const formato = empresaIdSel.formato; // 'pdf' | 'word'
+            const empresaElegida = opciones.find((e) => String(e.id) === String(empresaIdSel.empresaId)) ?? opciones[0];
+
+            const logoUrl = empresaElegida.foto ? buildImageUrl(empresaElegida.foto) : undefined;
+
+            // Logo e info vienen del endpoint de empresas
+            const logoEmpresa = await resolveLogoDataUrl(logoUrl);
+
+            const empresaPaquete = {
+                nombre: empresaElegida.nombre_empresa,
+                nit: empresaElegida.nit_empresa,
+                logoSrc: logoEmpresa,
+                ciudad: informacion_personal?.ciudad_residencia ?? 'Cali',
+            };
+
             // Nombre completo del cliente
             const nombreCliente =
                 [
@@ -640,9 +767,9 @@ const CreditoDetalle: React.FC = () => {
             const dataBase: any = {
                 // ---- Datos generales del crédito ----
                 codigo: String(codigo_credito),
-                fecha: credito.fecha_creacion,
+                fecha: String(credito.fecha_creacion ?? '').split('T')[0].split(' ')[0],
                 ciudad: informacion_personal?.ciudad_residencia ?? 'Cali',
-                logoSrc: '/verificarte.jpg',
+                logoSrc: empresaPaquete.logoSrc,
                 estadoCredito: credito.estado,
                 agencia: 'Agencia',
                 asesor: credito.asesor,
@@ -743,10 +870,31 @@ const CreditoDetalle: React.FC = () => {
                 codeudorTelefono: codeudor1Telefono,
             };
 
-            const blob = await pdf(<PaqueteCreditoPDFDoc data={dataBase} />).toBlob();
+            const nombreBase = `${(empresaPaquete.nombre || 'Empresa').trim()} - Paquete de Credito`;
+            let blob: Blob;
+            let nombreArchivo: string;
+
+            if (formato === 'word') {
+                const logoWord = await resolveLogoArrayBuffer(logoUrl);
+                blob = await generarPaqueteCreditoWord(
+                    dataBase,
+                    { nombre: empresaPaquete.nombre, nit: empresaPaquete.nit, ciudad: empresaPaquete.ciudad },
+                    logoWord
+                );
+                nombreArchivo = `${nombreBase}.docx`;
+            } else {
+                blob = await pdf(<PaqueteCreditoPDFDoc data={dataBase} empresa={empresaPaquete} />).toBlob();
+                nombreArchivo = `${nombreBase}.pdf`;
+            }
 
             const url = URL.createObjectURL(blob);
-            window.open(url, '_blank'); // abrir en nueva pestaña
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = nombreArchivo;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         } catch (err) {
             console.error(err);
             alert('No fue posible generar el paquete de crédito.');
@@ -943,7 +1091,7 @@ const CreditoDetalle: React.FC = () => {
     return (
         <main className="min-h-screen w-full bg-linear-to-b from-white to-slate-50">
             {/* Header */}
-            <header className="sticky top-0 z-10 backdrop-blur px-3 bg-slate-100 border border-white">
+            <header className="z-10 backdrop-blur px-3 bg-sky-600 rounded-2xl">
 
                 <div className='pt-4 mb-3'>
                     <ButtonLink to="/creditos" label="Volver a creditos" direction="back" />
@@ -952,7 +1100,7 @@ const CreditoDetalle: React.FC = () => {
                 <div className="mx-auto max-w-6xl px-4 py-2.5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <LibraryBig className="w-6 h-6 text-success" />
-                        <h1 className="text-lg sm:text-xl font-bold tracking-tight text-success">
+                        <h1 className="text-lg sm:text-xl font-bold tracking-tight text-white">
                             Visualizar crédito
                         </h1>
                     </div>

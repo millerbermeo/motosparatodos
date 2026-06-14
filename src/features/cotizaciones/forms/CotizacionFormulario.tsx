@@ -7,7 +7,7 @@ import { useMarcas, useMotosPorMarca } from "../../../services/marcasServices";
 import { useCreateCotizaciones } from "../../../services/cotizacionesServices";
 import { useAuthStore } from "../../../store/auth.store";
 import ButtonLink from "../../../shared/components/ButtonLink";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useConfigPlazoByCodigo } from "../../../services/configuracionPlazoService";
 import type { FormValuesCotizacion } from "../types";
 import { fmtCOP, toNumberOrNullMoney, toNumberSafe } from "../../../utils/money";
@@ -36,7 +36,16 @@ const getMotoByIndex = <T,>(
     return Number.isNaN(index) ? null : (motos ?? [])[index] ?? null;
 };
 
+const METODOS_PAGO_VALIDOS = ["contado", "credibike", "terceros"] as const;
+type MetodoPago = (typeof METODOS_PAGO_VALIDOS)[number];
+
 const CotizacionFormulario: React.FC = () => {
+    const [searchParams] = useSearchParams();
+    const tipoParam = searchParams.get("tipo");
+    const metodoPagoInicial: MetodoPago = METODOS_PAGO_VALIDOS.includes(tipoParam as MetodoPago)
+        ? (tipoParam as MetodoPago)
+        : "contado";
+
     const {
         register,
         handleSubmit,
@@ -47,7 +56,7 @@ const CotizacionFormulario: React.FC = () => {
         reset,
     } = useForm<FormValuesCotizacion>({
         defaultValues: {
-            metodoPago: "contado",
+            metodoPago: metodoPagoInicial,
             canal: "",
             pregunta: "",
             categoria: "motos",
@@ -2112,7 +2121,7 @@ const CotizacionFormulario: React.FC = () => {
                                                             )} COP
                                                         </span>
                                                     </div>
-                                                    {esCreditoDirecto && (
+                                                    {esCreditoDirecto2 && (
                                                         <>
                                                             <div className="flex justify-between items-center bg-info/10 px-4 py-2 rounded-md border border-info/30 shadow-sm">
                                                                 <span className="font-semibold text-info">SALDO A FINANCIAR:</span>
@@ -2668,7 +2677,7 @@ const CotizacionFormulario: React.FC = () => {
                                                         </span>
                                                     </div>
 
-                                                    {esCreditoDirecto && (
+                                                    {esCreditoDirecto2 && (
                                                         <>
                                                             <div className="flex justify-between items-center bg-info/10 px-4 py-2 rounded-md border border-info/30 shadow-sm">
                                                                 <span className="font-semibold text-info">SALDO A FINANCIAR:</span>
