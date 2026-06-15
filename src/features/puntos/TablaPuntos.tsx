@@ -6,13 +6,11 @@ import { usePuntos, useDeletePunto } from "../../services/puntosServices";
 import { useEmpresas } from "../../services/empresasServices";
 import FormularioPuntos from "./FormularioPuntos";
 import { useLoaderStore } from "../../store/loader.store";
+import { BASE_URL } from "../../utils/url";
 
 const PAGE_SIZE = 10;
 const SIBLING_COUNT = 1;
 const BOUNDARY_COUNT = 1;
-
-const BASE_URL =
-    import.meta.env.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
 
 
 
@@ -292,8 +290,8 @@ const TablaPuntos: React.FC = () => {
             </div>
 
             <div className="relative overflow-x-auto max-w-full px-4">
-                <table className="table table-zebra table-pin-rows min-w-[900px]">
-                    <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
+                <table className="table table-zebra table-pin-rows min-w-225">
+                    <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-backdrop-filter:backdrop-blur-md">
                         <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
                             <th className="w-12">#</th>
                             <th>Pertenece a la Empresa</th>
@@ -313,21 +311,21 @@ const TablaPuntos: React.FC = () => {
                                 <th className="text-base-content/50">{p.id}</th>
 
                                 {/* ✅ Click para ver info importante */}
-                                <td className="max-w-[240px] cursor-pointer" title={nombreEmpresa(p)}>
+                                <td className="max-w-60 cursor-pointer" title={nombreEmpresa(p)}>
                                     <button
                                         type="button"
                                         onClick={() => openEmpresa(p)}
                                         className="flex items-center gap-2 w-full text-left hover:opacity-90"
                                     >
                                         <Eye size={16} className="shrink-0 cursor-pointer opacity-70" />
-                                        <span className="truncate link link-hover font-medium max-w-[210px]">
+                                        <span className="truncate link link-hover font-medium max-w-52.5">
                                             {nombreEmpresa(p)}
                                         </span>
                                     </button>
                                 </td>
 
 
-                                <td className="max-w-[180px] truncate" title={p?.nit_empresa ?? ""}>
+                                <td className="max-w-45 truncate" title={p?.nit_empresa ?? ""}>
                                     {(p?.nit_empresa ?? "—").toString().trim() || "—"}
                                 </td>
 

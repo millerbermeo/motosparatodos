@@ -46,10 +46,11 @@ import CambiarEstadoCredito from './forms/CambiarEstadoCredito';
 import CodeudoresDetalle from './CodeudoresDetalle';
 import { resolverTasaSeguroVidaDecimal, calcularCreditoDirectoMoto } from '../../shared/components/credito/creditoDirecto.utils';
 import { fmtFecha } from '../../utils/date';
+import { BASE_URL } from '../../utils/url';
 
 const fmtCOP = (v: number) =>
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
-const BaseUrl = import.meta.env.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
+const BaseUrl = BASE_URL;
 
 
 const buildImageUrl = (path?: string): string | undefined => {
@@ -613,7 +614,7 @@ const CreditoDetalle: React.FC = () => {
         ...soportesFromJson,
     ];
 
-    const BaseUrl = import.meta.env.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
+    const BaseUrl = BASE_URL;
 
     // URLs completas para abrir en nueva pestaña
     const firmasHref: string | undefined =

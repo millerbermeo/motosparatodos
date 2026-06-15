@@ -7,6 +7,7 @@ import {
   useSubirManifiestoSolicitud,
   useSubirCedulaSolicitud,
 } from "../../services/solicitudServices";
+import { BASE_URL } from "../../utils/url";
 
 type Docs = {
   manifiesto_url?: string | null;
@@ -32,9 +33,7 @@ type Props = {
   tiene_factura?: boolean;
 };
 
-const API_BASE =
-  (import.meta as any)?.env?.VITE_API_URL?.replace(/\/+$/, "") ||
-  "https://tuclick.vozipcolombia.net.co/motos/back";
+const API_BASE = BASE_URL.replace(/\/+$/, "");
 
 const resolveUrl = (url?: string | null): string | null => {
   if (!url) return null;

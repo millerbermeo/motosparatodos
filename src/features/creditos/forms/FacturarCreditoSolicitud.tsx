@@ -9,6 +9,7 @@ import {
 import { useDistribuidoras } from '../../../services/distribuidoraServices'; // 👈 nuevo import
 import FacturaFinalDownload from '../pdf/FacturaFinal';
 import ButtonLink from '../../../shared/components/ButtonLink';
+import { BASE_URL } from '../../../utils/url';
 
 const fmtSize = (bytes: number) => {
   if (!Number.isFinite(bytes)) return '';
@@ -348,8 +349,7 @@ const FacturarCreditoSolicitud: React.FC = () => {
     ]
   );
 
-  const BaseUrl =
-    import.meta.env.VITE_API_URL ?? 'https://tuclick.vozipcolombia.net.co/motos/back';
+  const BaseUrl = BASE_URL;
 
   return (
     <main className="min-h-screen w-full bg-slate-50">

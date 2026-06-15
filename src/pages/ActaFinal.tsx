@@ -15,10 +15,9 @@ import {
 } from "lucide-react";
 import { useLoaderStore } from "../store/loader.store";
 import { fmtFecha as fmtFechaGlobal } from "../utils/date";
+import { BASE_URL } from "../utils/url";
 
-const BaseUrl =
-  import.meta.env.VITE_API_URL ??
-  "https://tuclick.vozipcolombia.net.co/motos/back";
+const BaseUrl = BASE_URL;
 
 /* =======================
    Helpers

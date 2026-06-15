@@ -886,7 +886,7 @@ const DetalleCotizacion: React.FC = () => {
           </section>
         )}
 
-        {moto && hasCuotas && (isCreditoPropio || isCreditoTerceros) && (
+        {moto && hasCuotas && isCreditoPropio && (
           <section className="card flex bg-base-100 border border-base-300/60 shadow-sm rounded-2xl">
             <div className="card-body">
               <div className="flex items-center gap-2 mb-2">

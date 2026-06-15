@@ -8,8 +8,9 @@ import { useCambiarEstadoCredito } from "../../../services/creditosServices";
 import { useAuthStore } from "../../../store/auth.store";
 import { useNavigate } from "react-router-dom";
 import { FileText, X as XIcon } from "lucide-react";
+import { BASE_URL } from "../../../utils/url";
 
-const BaseUrl = import.meta.env.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
+const BaseUrl = BASE_URL;
 
 const buildDocUrl = (filename?: string): string | undefined => {
   if (!filename) return undefined;

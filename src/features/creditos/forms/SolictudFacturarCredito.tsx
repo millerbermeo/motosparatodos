@@ -26,6 +26,7 @@ import { useCotizacionFullById } from '../../../services/fullServices';
 import { useIvaDecimal } from '../../../services/ivaServices';
 import FacturarCreditoForm from '../../../shared/components/credito/FacturarCreditoForm';
 import { fmtFecha } from '../../../utils/date';
+import { BASE_URL } from '../../../utils/url';
 
 type MaybeNum = number | undefined | null;
 
@@ -280,9 +281,7 @@ const SolictudFacturarCredito: React.FC = () => {
   );
 
 
-  const BaseUrl =
-    import.meta.env.VITE_API_URL ??
-    'https://tuclick.vozipcolombia.net.co/motos/back';
+  const BaseUrl = BASE_URL;
 
   return (
     <main className="min-h-screen w-full bg-slate-50">

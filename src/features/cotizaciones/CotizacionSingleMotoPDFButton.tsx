@@ -2,6 +2,7 @@
 import React from "react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { Download } from "lucide-react";
+import { BASE_URL } from "../../utils/url";
 
 import {
   CotizacionDetalladaPDFDocV2,
@@ -60,9 +61,7 @@ const getMesesGarantia = (value: unknown): number => {
 
 
 
-const BaseUrl =
-  import.meta.env.VITE_API_URL ??
-  "https://tuclick.vozipcolombia.net.co/motos/back";
+const BaseUrl = BASE_URL;
 
 const sameChipStyles =
   "group flex w-full items-center cursor-pointer max-h-14 justify-between " +

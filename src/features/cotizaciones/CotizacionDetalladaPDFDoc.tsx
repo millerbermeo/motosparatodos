@@ -2,6 +2,7 @@
 import React from "react";
 import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
 import type { CreditoMotoResultado } from "../../shared/components/credito/creditoDirecto.utils";
+import { BASE_URL } from "../../utils/url";
 
 const formatSeguros = (raw: any): string => {
   if (!raw) return "—";
@@ -401,8 +402,7 @@ const fmtDateShort = (raw?: string) => {
 const safe = (v: any, fallback: string = "—") =>
   v === null || v === undefined || v === "" ? fallback : String(v);
 
-const BaseUrl =
-  (import.meta as any)?.env?.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
+const BaseUrl = BASE_URL;
 
 const buildAbsUrl = (path?: string | null): string | null => {
   if (!path) return null;
