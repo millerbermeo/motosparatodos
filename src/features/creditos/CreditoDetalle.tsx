@@ -1329,7 +1329,9 @@ const CreditoDetalle: React.FC = () => {
                                 <Row label="Estado civil" value={informacion_personal?.estado_civil} />
                                 <Row label="Personas a cargo" value={informacion_personal?.personas_a_cargo} />
                                 <Row label="Tipo de vivienda" value={informacion_personal?.tipo_vivienda} />
-                                <Row label="Costo del arriendo" value={fmtCOP(Number(informacion_personal?.costo_arriendo))} />
+                                {String(informacion_personal?.tipo_vivienda ?? '').toLowerCase().includes('arriend') && (
+                                    <Row label="Costo del arriendo" value={fmtCOP(Number(informacion_personal?.costo_arriendo))} />
+                                )}
                                 <Row label="Finca raíz" value={informacion_personal?.finca_raiz} />
                                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     <ChipButton

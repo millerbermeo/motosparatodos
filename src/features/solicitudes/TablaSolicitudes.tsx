@@ -373,33 +373,6 @@ const TablaSolicitudes: React.FC = () => {
               </div>
 
 
-              <div>
-                <label className="label pb-1">
-                  <span className="label-text text-sm text-base-content/70">
-                    Filas
-                  </span>
-                </label>
-
-                <div className="flex items-center gap-2">
-                  <select
-                    className="select select-bordered w-full"
-                    value={serverPerPage}
-                    onChange={(e) => {
-                      setPerPage(Number(e.target.value) || 10);
-                      setPage(1);
-                    }}
-                  >
-                    {[10, 20, 50].map((n) => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
-                  </select>
-
-                  {isFetching && <span className="loading loading-spinner loading-sm" />}
-                </div>
-              </div>
-
               <div className="flex flex-col justify-end">
                 <div className="flex gap-2">
                   <button
@@ -421,6 +394,25 @@ const TablaSolicitudes: React.FC = () => {
             </div>
           </form>
         </div>
+      </div>
+
+      <div className="flex items-center justify-end gap-2 px-4 py-3">
+        {isFetching && <span className="loading loading-spinner loading-sm" />}
+        <label className="text-xs opacity-70 whitespace-nowrap">Filas:</label>
+        <select
+          className="select select-accent select-sm select-bordered w-20"
+          value={serverPerPage}
+          onChange={(e) => {
+            setPerPage(Number(e.target.value) || 10);
+            setPage(1);
+          }}
+        >
+          {[10, 20, 50].map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="relative overflow-x-auto max-w-full px-4 pb-2">

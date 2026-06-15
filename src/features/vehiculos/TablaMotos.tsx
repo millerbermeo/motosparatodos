@@ -319,6 +319,26 @@ const TablaMotos: React.FC = () => {
         </div>
       </div>
 
+      {/* Filas: a la derecha, encima de la tabla */}
+      <div className="flex items-center justify-end gap-2 px-4 py-3">
+        {isFetching && <span className="loading loading-spinner loading-xs" />}
+        <label className="text-xs opacity-70 whitespace-nowrap">Filas:</label>
+        <select
+          className="select select-accent select-sm select-bordered w-20"
+          value={serverPerPage}
+          onChange={(e) => {
+            setPerPage(Number(e.target.value) || PAGE_SIZE);
+            setPage(1);
+          }}
+        >
+          {[10, 20, 50].map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* TABLA */}
       <div className="relative overflow-x-auto max-w-full px-4">
         <table className="table table-zebra table-pin-rows min-w-225">

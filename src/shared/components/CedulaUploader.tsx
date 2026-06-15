@@ -2,6 +2,7 @@ import React from "react";
 import Swal from "sweetalert2";
 import { UploadCloud } from "lucide-react";
 import { useSubirCedulaSolicitud } from "../../services/solicitudServices";
+import { validateFileInput, ACCEPT_ATTR } from "../../utils/fileValidation";
 
 type Props = {
   idSolicitud?: number;
@@ -21,6 +22,10 @@ const CedulaUploader: React.FC<Props> = ({
   const inputRef = React.useRef<HTMLInputElement | null>(null);
 
   const onChangeFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!validateFileInput(e)) {
+      setFile(null);
+      return;
+    }
     setFile(e.target.files?.[0] ?? null);
   };
 
@@ -84,7 +89,7 @@ const CedulaUploader: React.FC<Props> = ({
         <input
           ref={inputRef}
           type="file"
-          accept=".pdf,image/*"
+          accept={ACCEPT_ATTR}
           onChange={onChangeFile}
           disabled={isPending}
           className="block w-full text-xs text-slate-600

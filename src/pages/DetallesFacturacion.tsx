@@ -18,6 +18,7 @@ import ManifiestoUploader from "../shared/components/ManifiestoUploader";
 import CedulaUploader from "../shared/components/CedulaUploader";
 import { toNum } from "../utils/convertirNumeroSeguro";
 import { fmtFecha } from "../utils/date";
+import { validateFileInput } from "../utils/fileValidation";
 import { fmtCOP } from "../utils/money";
 import { RowRight } from "../shared/components/facturacion/RowRight";
 import { buildMotoFromCotizacion } from "../shared/components/facturacion/buildMotoFromCotizacion";
@@ -649,6 +650,10 @@ const DetallesFacturacion: React.FC = () => {
 
 
   const handleFacturaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!validateFileInput(e)) {
+      setFacturaFile(null);
+      return;
+    }
     const file = e.target.files?.[0] ?? null;
     setFacturaFile(file || null);
   };

@@ -271,36 +271,37 @@ const TablaCotizaciones: React.FC = () => {
                     </button>
                 </div>
 
-                {/* Opciones de paginación y crear */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between border-t border-base-200 pt-3">
-                    <div className="flex items-center gap-3">
-                        <label className="text-xs opacity-70">Filas:</label>
-                        <select
-                            className="select select-accent select-sm select-bordered w-20"
-                            value={serverPerPage}
-                            onChange={(e) => {
-                                const v = Number(e.target.value) || 10;
-                                setPerPage(v);
-                                setPage(1);
-                            }}
-                        >
-                            {[10, 20, 50].map((n) => (
-                                <option key={n} value={n}>
-                                    {n}
-                                </option>
-                            ))}
-                        </select>
-                        {isFetching && <span className="loading loading-spinner loading-xs" />}
-                    </div>
-
-                    {user?.rol === "Asesor" && (
+                {/* Crear (izquierda) */}
+                {user?.rol === "Asesor" && (
+                    <div className="flex border-t border-base-200 pt-3">
                         <Link to="/cotizaciones/crear-cotizaciones" className="w-full sm:w-auto">
                             <button className="btn bg-[#2BB352] text-white w-full sm:w-auto sm:min-w-40">
                                 Crear Cotización
                             </button>
                         </Link>
-                    )}
-                </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Filas: a la derecha, encima de la tabla */}
+            <div className="flex items-center justify-end gap-2 px-4 py-3">
+                {isFetching && <span className="loading loading-spinner loading-xs" />}
+                <label className="text-xs opacity-70 whitespace-nowrap">Filas:</label>
+                <select
+                    className="select select-accent select-sm select-bordered w-20"
+                    value={serverPerPage}
+                    onChange={(e) => {
+                        const v = Number(e.target.value) || 10;
+                        setPerPage(v);
+                        setPage(1);
+                    }}
+                >
+                    {[10, 20, 50].map((n) => (
+                        <option key={n} value={n}>
+                            {n}
+                        </option>
+                    ))}
+                </select>
             </div>
 
 

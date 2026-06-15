@@ -4,6 +4,7 @@ import { useModalStore } from "../../store/modalStore";
 import { useAuthStore } from "../../store/auth.store";
 import Swal from "sweetalert2";
 import { useRegistrarActaEntrega } from "../../services/solicitudServices"; // ajusta el path exacto
+import { validateFileInput, validateFile } from "../../utils/fileValidation";
 
 type EstadoActa = "borrador" | "cerrada";
 
@@ -70,12 +71,18 @@ const ActaEntregaFormulario: React.FC<Props> = ({
   }, [id_factura, fechaEntrega, responsable, firmaFile, files.length]);
 
   const onFirmaChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!validateFileInput(e)) {
+      setFirmaFile(null);
+      setFirmaPreview(null);
+      return;
+    }
     const f = e.target.files?.[0] ?? null;
     setFirmaFile(f);
     setFirmaPreview(f ? await readAsDataURL(f) : null);
   };
 
   const onFotosChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!validateFileInput(e)) return;
     const list = e.target.files;
     if (!list) return;
     const arr = Array.from(list);
@@ -88,8 +95,10 @@ const ActaEntregaFormulario: React.FC<Props> = ({
   const onDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const dropped = Array.from(e.dataTransfer.files || []).filter((f) =>
-      /image\/|\.png$|\.jpg$|\.jpeg$|\.webp$/i.test(f.type || f.name)
+    const dropped = Array.from(e.dataTransfer.files || []).filter(
+      (f) =>
+        /image\/|\.png$|\.jpg$|\.jpeg$|\.webp$/i.test(f.type || f.name) &&
+        validateFile(f).ok // tipo permitido + tamaño <= 1.5 MB
     );
     if (!dropped.length) return;
 

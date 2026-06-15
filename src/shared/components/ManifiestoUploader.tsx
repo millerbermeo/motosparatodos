@@ -2,6 +2,7 @@ import React from "react";
 import Swal from "sweetalert2";
 import { UploadCloud, RefreshCw } from "lucide-react";
 import { useSubirManifiestoSolicitud } from "../../services/solicitudServices";
+import { validateFileInput, ACCEPT_ATTR } from "../../utils/fileValidation";
 
 type Props = {
   idSolicitud?: number;
@@ -23,6 +24,10 @@ const ManifiestoUploader: React.FC<Props> = ({
   const inputRef = React.useRef<HTMLInputElement | null>(null);
 
   const onChangeFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!validateFileInput(e)) {
+      setFile(null);
+      return;
+    }
     const f = e.target.files?.[0] ?? null;
     setFile(f);
   };
@@ -129,7 +134,7 @@ const ManifiestoUploader: React.FC<Props> = ({
         <input
           ref={inputRef}
           type="file"
-          accept=".pdf,image/*"
+          accept={ACCEPT_ATTR}
           onChange={onChangeFile}
           className="block w-full text-xs text-slate-600
             file:mr-3 file:py-1.5 file:px-3

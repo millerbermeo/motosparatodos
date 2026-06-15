@@ -9,6 +9,7 @@ import { useAuthStore } from "../../../store/auth.store";
 import { useNavigate } from "react-router-dom";
 import { FileText, X as XIcon } from "lucide-react";
 import { BASE_URL } from "../../../utils/url";
+import { validateFileInput, ACCEPT_ATTR } from "../../../utils/fileValidation";
 
 const BaseUrl = BASE_URL;
 
@@ -262,8 +263,12 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
                 </label>
                 <input
                   type="file"
+                  accept={ACCEPT_ATTR}
                   className="file-input file-input-bordered w-full"
-                  onChange={(e) => field.onChange(e.target.files?.[0] ?? null)}
+                  onChange={(e) => {
+                    if (!validateFileInput(e)) return field.onChange(null);
+                    field.onChange(e.target.files?.[0] ?? null);
+                  }}
                 />
                 {fieldState.error && (
                   <span className="text-error text-xs mt-1">
@@ -306,8 +311,12 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
                 </label>
                 <input
                   type="file"
+                  accept={ACCEPT_ATTR}
                   className="file-input file-input-bordered w-full"
-                  onChange={(e) => field.onChange(e.target.files?.[0] ?? null)}
+                  onChange={(e) => {
+                    if (!validateFileInput(e)) return field.onChange(null);
+                    field.onChange(e.target.files?.[0] ?? null);
+                  }}
                 />
                 {fieldState.error && (
                   <span className="text-error text-xs mt-1">

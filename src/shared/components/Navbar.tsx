@@ -81,7 +81,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
                 <img alt="avatar" src="https://cdn-icons-png.flaticon.com/512/204/204191.png" />
               </div>
             </div>
-            <div className="hidden md:flex flex-col items-start min-w-0 max-w-[140px]">
+            <div className="hidden md:flex flex-col items-start min-w-0 max-w-35">
               <span className="text-[13px] font-semibold text-gray-800 leading-tight truncate w-full">
                 {user?.name ?? "Usuario"}
               </span>

@@ -6,10 +6,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useWizardStore } from "../../../store/wizardStore";
 import { Loader2, UploadCloud, FileText } from "lucide-react";
 import { useActualizarEstadoCredito } from "../../../services/creditosServices";
+import { validateFile, ACCEPT_ATTR } from "../../../utils/fileValidation";
 
 type Props = { maxSizeMB?: number };
 
-const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
+const SoporteFormulario: React.FC<Props> = () => {
   const [errors, setErrors] = useState<string[]>([]);
   const [selected, setSelected] = useState<File[]>([]);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -55,10 +56,8 @@ const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
     const validFiles: File[] = [];
 
     Array.from(incoming).forEach((f) => {
-      if (f.size > maxSizeMB * 1024 * 1024) {
-        errs.push(`"${f.name}" supera ${maxSizeMB} MB.`);
-        return;
-      }
+      // Valida tipo permitido (imágenes/PDF/Word/Excel) y tamaño <= 1.5 MB
+      if (!validateFile(f).ok) return; // validateFile ya muestra el alert
       validFiles.push(f);
     });
 
@@ -209,6 +208,7 @@ const SoporteFormulario: React.FC<Props> = ({ maxSizeMB = 2 }) => {
           ref={inputRef}
           type="file"
           multiple
+          accept={ACCEPT_ATTR}
           onChange={onInputChange}
           className="hidden"
           disabled={isUploading}

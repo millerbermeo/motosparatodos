@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useRegistrarSolicitudFacturacion } from "../../../services/solicitudServices";
 import { HeaderSolicitud } from "../solicitar-facturacion/HeaderSolicitud";
+import { validateFileInput } from "../../../utils/fileValidation";
 
 const AGENCIAS = ["Sucursal Norte", "Sucursal Centro", "Sucursal Sur"];
 
@@ -406,6 +407,7 @@ const FacturarCreditoForm: React.FC<Props> = ({
                 accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                 className="file-input file-input-bordered w-full bg-slate-50"
                 onChange={(e) => {
+                  if (!validateFileInput(e)) return setCedulaFiles([]);
                   const file = e.target.files?.[0] ?? null;
                   setCedulaFiles(file ? [file] : []);
                 }}
@@ -435,6 +437,7 @@ const FacturarCreditoForm: React.FC<Props> = ({
                 accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                 className="file-input file-input-bordered w-full bg-slate-50"
                 onChange={(e) => {
+                  if (!validateFileInput(e)) return setManifiestoFiles([]);
                   const file = e.target.files?.[0] ?? null;
                   setManifiestoFiles(file ? [file] : []);
                 }}
@@ -464,6 +467,7 @@ const FacturarCreditoForm: React.FC<Props> = ({
                 accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                 className="file-input file-input-bordered w-full bg-slate-50"
                 onChange={(e) => {
+                  if (!validateFileInput(e)) return; // valida tipo + tamaño
                   addOtrosDocs(e.target.files);
                   e.currentTarget.value = "";
                 }}

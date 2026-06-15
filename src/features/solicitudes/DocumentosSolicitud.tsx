@@ -8,6 +8,7 @@ import {
   useSubirCedulaSolicitud,
 } from "../../services/solicitudServices";
 import { BASE_URL } from "../../utils/url";
+import { validateFileInput } from "../../utils/fileValidation";
 
 type Docs = {
   manifiesto_url?: string | null;
@@ -354,7 +355,10 @@ const UploadCard: React.FC<{
       type="file"
       accept=".pdf,image/*"
       disabled={isPending}
-      onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
+      onChange={(e) => {
+        if (!validateFileInput(e)) return onFileChange(null);
+        onFileChange(e.target.files?.[0] ?? null);
+      }}
       className="block w-full text-xs text-slate-600
         file:mr-2 file:py-1 file:px-2 file:rounded file:border-0
         file:text-xs file:font-semibold file:bg-white file:text-slate-700

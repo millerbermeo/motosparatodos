@@ -11,6 +11,7 @@ import { FormInput } from "../../../shared/components/FormInput";
 import { FormSelect } from "../../../shared/components/FormSelect";
 import { useRegistrarSolicitudFacturacion2 } from "../../../services/solicitudServices";
 import { HeaderSolicitud } from "../solicitar-facturacion/HeaderSolicitud";
+import { withFileValidation, validateFileInput } from "../../../utils/fileValidation";
 
 export type FormValues = {
   documentos: "Si" | "No";
@@ -615,12 +616,12 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
                     accept=".pdf,.jpg,.jpeg,.png"
                     className={`file-input file-input-bordered w-full bg-slate-50 ${errors.cartaFile ? "file-input-error" : ""
                       }`}
-                    {...register("cartaFile", {
+                    {...withFileValidation(register("cartaFile", {
                       validate: (files) =>
                         !esCreditoTercerosCot ||
                         (files && files.length > 0) ||
                         "Requerido cuando es crédito de terceros",
-                    })}
+                    }))}
                   />
                 }
                 below={<NormalPreviewList items={cartaPreviews} />}
@@ -639,7 +640,7 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
                   accept=".pdf,.jpg,.jpeg,.png"
                   className={`file-input file-input-bordered w-full bg-slate-50 ${errors.manifiestoFile ? "file-input-error" : ""
                     }`}
-                  {...register("manifiestoFile")} // ✅ opcional
+                  {...withFileValidation(register("manifiestoFile"))} // ✅ opcional
                 />
               }
               below={<NormalPreviewList items={manifiestoPreviews} />}
@@ -726,12 +727,12 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
                   accept=".pdf,.jpg,.jpeg,.png"
                   className={`file-input file-input-bordered w-full bg-slate-50 ${errors.cedulaFile ? "file-input-error" : ""
                     }`}
-                  {...register("cedulaFile", {
+                  {...withFileValidation(register("cedulaFile", {
                     validate: (files) =>
                       docValue === "No" ||
                       (files && files.length > 0) ||
                       "Requerido",
-                  })}
+                  }))}
                 />
               }
               below={<NormalPreviewList items={cedulaPreviews} />}
@@ -753,6 +754,8 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
                   ref={otrosReg.ref}
                   onBlur={otrosReg.onBlur}
                   onChange={(e) => {
+                    if (!validateFileInput(e)) return; // valida tipo + tamaño
+
                     // RHF (mantiene el último FileList)
                     otrosReg.onChange(e);
 

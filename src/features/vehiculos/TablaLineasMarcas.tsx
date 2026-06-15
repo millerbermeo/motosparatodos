@@ -97,6 +97,7 @@ const TablaLineas: React.FC = () => {
   const lineasArr = Array.isArray(data) ? data : data ?? [];
 
   const [page, setPage] = React.useState(1);
+  const [perPage, setPerPage] = React.useState(PAGE_SIZE);
 
   // ✅ reset página al cambiar filtro
   React.useEffect(() => {
@@ -104,16 +105,16 @@ const TablaLineas: React.FC = () => {
   }, [debounced.marca, debounced.linea, debounced.cilindraje]);
 
   const totalPages = React.useMemo(
-    () => Math.max(1, Math.ceil(lineasArr.length / PAGE_SIZE)),
-    [lineasArr.length]
+    () => Math.max(1, Math.ceil(lineasArr.length / perPage)),
+    [lineasArr.length, perPage]
   );
 
   React.useEffect(() => {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
-  const start = (page - 1) * PAGE_SIZE;
-  const end = Math.min(start + PAGE_SIZE, lineasArr.length);
+  const start = (page - 1) * perPage;
+  const end = Math.min(start + perPage, lineasArr.length);
   const visible = lineasArr.slice(start, end);
   const items = getPaginationItems(page, totalPages);
 
@@ -238,9 +239,28 @@ const TablaLineas: React.FC = () => {
         </div>
       </div>
 
+      {/* Filas: a la derecha, encima de la tabla */}
+      <div className="flex items-center justify-end gap-2 px-4 py-3">
+        <label className="text-xs opacity-70 whitespace-nowrap">Filas:</label>
+        <select
+          className="select select-accent select-sm select-bordered w-20"
+          value={perPage}
+          onChange={(e) => {
+            setPerPage(Number(e.target.value) || PAGE_SIZE);
+            setPage(1);
+          }}
+        >
+          {[10, 20, 50].map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="relative overflow-x-auto max-w-full px-4">
         <table className="table table-zebra table-pin-rows">
-          <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
+          <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-backdrop-filter:backdrop-blur-md">
             <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
               <th className="w-12">#</th>
               <th className="py-4">Marca</th>

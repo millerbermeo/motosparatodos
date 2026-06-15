@@ -10,6 +10,7 @@ import { useDistribuidoras } from '../../../services/distribuidoraServices'; // 
 import FacturaFinalDownload from '../pdf/FacturaFinal';
 import ButtonLink from '../../../shared/components/ButtonLink';
 import { BASE_URL } from '../../../utils/url';
+import { validateFileInput } from '../../../utils/fileValidation';
 
 const fmtSize = (bytes: number) => {
   if (!Number.isFinite(bytes)) return '';
@@ -599,7 +600,10 @@ const FacturarCreditoSolicitud: React.FC = () => {
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                   className="file-input file-input-bordered w-full"
-                  onChange={(e) => setCedulaFile(e.target.files?.[0] ?? null)}
+                  onChange={(e) => {
+                    if (!validateFileInput(e)) return setCedulaFile(null);
+                    setCedulaFile(e.target.files?.[0] ?? null);
+                  }}
                   required
                 />
 
@@ -629,7 +633,10 @@ const FacturarCreditoSolicitud: React.FC = () => {
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                   className="file-input file-input-bordered w-full"
-                  onChange={(e) => setManifiestoFile(e.target.files?.[0] ?? null)}
+                  onChange={(e) => {
+                    if (!validateFileInput(e)) return setManifiestoFile(null);
+                    setManifiestoFile(e.target.files?.[0] ?? null);
+                  }}
                 />
 
                 {/* ✅ Vista pequeña + quitar manifiesto */}
@@ -664,6 +671,7 @@ const FacturarCreditoSolicitud: React.FC = () => {
                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                   className="file-input file-input-bordered w-full"
                   onChange={(e) => {
+                    if (!validateFileInput(e)) return; // valida tipo + tamaño y limpia
                     const files = Array.from(e.target.files ?? []);
                     if (files.length) {
                       setOtrosDocs((prev) => [...prev, ...files]); // 👈 acumula (no borra)
