@@ -39,13 +39,13 @@ const CreditoDetalle = lazy(() => import("../features/creditos/CreditoDetalle"))
 const CreditoDetalleAdmin = lazy(() => import("../features/creditos/CreditoDetalleAdmin")); // 👈 crea esta página simple
 const CreditoDetalleAsesor = lazy(() => import("../features/creditos/CreditoDetalleAsesor")); // 👈 crea esta página simple
 
-const FacturarCredito = lazy(() => import("../features/creditos/forms/FacturarCredito")); // 👈 crea esta página simple
+const FacturarCredito = lazy(() => import("../features/creditos/forms/SolictudFacturarCredito")); // 👈 crea esta página simple
 const FacturarCreditoSolicitud = lazy(() => import("../features/creditos/forms/FacturarCreditoSolicitud")); // 👈 crea esta página simple
 
 const RegistrarFacturacion = lazy(() => import("../pages/RegistrarFacturacion")); // 👈 crea esta página simple
 
 const Garantia = lazy(() => import("../pages/Garantia")); // 👈 crea esta página simple
-const SolicitarFacturacionPage = lazy(() => import("../pages/SolicitarFacturacionPage"));
+const SolicitarFacturacionPage = lazy(() => import("../pages/SolicitarFacturacionPageContadoTercero"));
 
 const Dis = lazy(() => import("../pages/Dis"));
 
@@ -101,7 +101,7 @@ const AppRouter: React.FC = () => {
                 <Route path="/cotizaciones/:id" element={<Detalles />} /> {/* 👈 aquí */}
                 <Route path="/cotizaciones/estado/:id" element={<DetalleEstado />} /> {/* 👈 aquí */}
                 <Route path="/garantia" element={<Garantia />} /> {/* 👈 aquí */}
-                <Route path="/cotizaciones/facturacion/:codigo" element={<SolicitarFacturacionPage />} />
+                <Route path="/cotizaciones/facturacion/:cotizacionId" element={<SolicitarFacturacionPage />} />
 
               </Route>
 

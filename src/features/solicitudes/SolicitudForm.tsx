@@ -58,6 +58,7 @@ type IncomingCotizacionState = {
   raw?: any; // payload completo original de la cotización (si lo envías)
   motoSeleccion?: "A" | "B" | ""; // en caso de que se haya elegido en la pantalla anterior
   esCreditoTerceros?: boolean; // 👈 NUEVO
+  tipo_pago?: string | null; // fallback para inferir crédito de terceros
 
 };
 
@@ -288,7 +289,13 @@ const SolicitudForm: React.FC = () => {
     };
     // =================================================
 
-    const esCreditoTerceros = incoming?.esCreditoTerceros === true;
+    const tipoPagoIncoming = (incoming?.tipo_pago ?? "")
+      .toString()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .toLowerCase();
+    const esCreditoTerceros =
+      incoming?.esCreditoTerceros === true || tipoPagoIncoming.includes("terceros");
 
     const numeroMoto =
       incoming.motoSeleccion === "A" ? "1" :
@@ -414,10 +421,10 @@ const SolicitudForm: React.FC = () => {
     // ✅ Aquí capturamos la respuesta para tomar el "codigo" y navegar
     registrar(fd, {
       onSuccess: (resp: any) => {
-        const codigo = resp?.codigo;
-        if (codigo) {
+        const cotIdResp = resp?.cotizacion_id ?? cotizacionId;
+        if (cotIdResp) {
           reset();
-          navigate(`/cotizaciones/facturacion/${encodeURIComponent(codigo)}`);
+          navigate(`/cotizaciones/facturacion/${encodeURIComponent(String(cotIdResp))}`);
         } else {
           reset();
           navigate(`/cotizaciones`);

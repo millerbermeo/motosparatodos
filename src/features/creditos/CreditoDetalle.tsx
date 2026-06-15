@@ -1568,7 +1568,7 @@ const CreditoDetalle: React.FC = () => {
                             <Link to={`/creditos/detalle/cerrar-credito/${encodeURIComponent(codigo_credito)}/${encodeURIComponent(idCot ?? '')}`}>
                                 <button className="btn flex btn-warning items-center gap-2">
                                     <FileMinusIcon className="w-4 h-4" />
-                                    Cerrar Crédito
+                                    {Number((credito as any)?.credito_cerrado) === 1 ? 'Ver cierre de crédito' : 'Cerrar Crédito'}
                                 </button>
                             </Link>
                         )}
@@ -1623,6 +1623,17 @@ const CreditoDetalle: React.FC = () => {
                                 </Link>
                             </>
                         )}
+
+                    {useAuthStore.getState().user?.rol === "Asesor" && idCot && Number((credito as any)?.credito_cerrado) === 1 && (
+                        <Link to={`/creditos/detalle/facturar-credito/${codigo_credito}/${encodeURIComponent(idCot ?? '')}`}>
+                            <button
+                                className="btn bg-sky-400 hover:bg-sky-500 text-white flex items-center gap-2"
+                            >
+                                <Check className="w-4 h-4" />
+                                Ver Solicitud de facturación
+                            </button>
+                        </Link>
+                    )}
                 </section>
 
 

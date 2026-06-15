@@ -717,6 +717,7 @@ const DetalleCambiarEstado: React.FC = () => {
             ...buildSolicitudState(row),
             motoSeleccion,
             motos: { seleccionada: motoSel },
+            esCreditoTerceros: tipoPagoLabel(row).includes('terceros'),
           },
         });
       } catch (err: any) {

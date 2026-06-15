@@ -81,13 +81,13 @@ type FacturacionData = {
   actualizado_en?: string;
 };
 
-export const useGetFacturacionPorCodigo = (codigo?: string) => {
+export const useGetFacturacionPorCotizacionId = (cotizacionId?: string | number) => {
   const query = useQuery<FacturacionData, AxiosError<ServerError>>({
-    queryKey: ["facturacion", codigo],
-    enabled: !!codigo,
+    queryKey: ["facturacion", cotizacionId],
+    enabled: cotizacionId !== undefined && cotizacionId !== null && cotizacionId !== "",
     queryFn: async () => {
       const { data } = await api.get(
-        `/solicitar_facturacion_get.php?codigo=${encodeURIComponent(codigo!)}`
+        `/solicitar_facturacion_get.php?cotizacion_id=${encodeURIComponent(String(cotizacionId!))}`
       );
       if (!data?.success) {
         throw new Error(data?.error || "No se encontró el registro");

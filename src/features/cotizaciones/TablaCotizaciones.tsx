@@ -1,6 +1,6 @@
 // src/components/cotizaciones/TablaCotizaciones.tsx
 import React, { useState } from 'react';
-import { Eye, ScanEye } from 'lucide-react';
+import { Eye, ReceiptText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCotizaciones } from '../../services/cotizacionesServices';
 import { useAuthStore } from '../../store/auth.store';
@@ -371,14 +371,38 @@ const TablaCotizaciones: React.FC = () => {
 
 
                                         {user?.rol === "Asesor" &&
-                                            (r?.estado === "Solicitar facturación" || r?.estado === "Solicitar prefacturación") && (
+                                            (r?.estado === "Solicitar facturación" || r?.estado === "Solicitar prefacturación") &&
+                                            !(() => {
+                                                const tp = String(r?.tipo_pago ?? '').toLowerCase();
+                                                return !tp.includes('tercero') &&
+                                                    (tp.includes('directo') || tp.includes('credito') || tp.includes('crédito') || tp.includes('propio'));
+                                            })() && (
                                                 <Link
                                                     to={`/solicitudes/${r.id}`}
                                                     className="btn btn-sm bg-white btn-circle"
                                                     title="Cambiar estado"
                                                 >
-                                                    <div className='text-warning'>
-                                                        <ScanEye size="18px" />
+                                                    <div className='text-success'>
+                                                        <ReceiptText size="18px" />
+                                                    </div>
+                                                </Link>
+                                            )}
+
+                                        {user?.rol === "Asesor" &&
+                                            (r?.estado === "Solicitar facturación" || r?.estado === "Solicitar prefacturación") &&
+                                            r?.codigo_credito &&
+                                            (() => {
+                                                const tp = String(r?.tipo_pago ?? '').toLowerCase();
+                                                return !tp.includes('tercero') &&
+                                                    (tp.includes('directo') || tp.includes('credito') || tp.includes('crédito') || tp.includes('propio'));
+                                            })() && (
+                                                <Link
+                                                    to={`/creditos/detalle/facturar-credito/${r.codigo_credito}/${r.id}`}
+                                                    className="btn btn-sm bg-white btn-circle"
+                                                    title="Solicitud de facturación"
+                                                >
+                                                    <div className='text-success'>
+                                                        <ReceiptText size="18px" />
                                                     </div>
                                                 </Link>
                                             )}

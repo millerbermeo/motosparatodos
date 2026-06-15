@@ -1008,6 +1008,44 @@ const CotizacionFormulario: React.FC = () => {
     const polizaLabel = hideGarantiaExtendida ? "Garantía y seguros" : "Póliza todo riesgo";
     const polizaValorLabel = hideGarantiaExtendida ? "Valor garantía y seguros" : "Valor póliza";
 
+    // Fix A: garantía extendida solo aplica en crédito propio (credibike).
+    // Al cambiar a contado/terceros el select se oculta; limpiamos para que no
+    // quede pegada en total ni payload.
+    React.useEffect(() => {
+        if (hideGarantiaExtendida) {
+            setValue("garantiaExtendida1", "no");
+            setValue("garantiaExtendida2", "no");
+            setValue("valor_garantia_extendida_a", "0");
+            setValue("valor_garantia_extendida_b", "0");
+        }
+    }, [hideGarantiaExtendida, setValue]);
+
+    // Fix B: productos solo aplican con categoría "otros" (credibike). Si la
+    // categoría no es "otros", limpiamos los campos de producto.
+    React.useEffect(() => {
+        if (categoria !== "otros") {
+            setValue("producto1Nombre", "");
+            setValue("producto1Descripcion", "");
+            setValue("producto1Precio", "0");
+            setValue("producto1CuotaInicial", "0");
+            setValue("producto2Nombre", "");
+            setValue("producto2Descripcion", "");
+            setValue("producto2Precio", "0");
+            setValue("producto2CuotaInicial", "0");
+        }
+    }, [categoria, setValue]);
+
+    // Fix C: cuotas manuales solo se capturan en crédito de terceros. Fuera de
+    // terceros las limpiamos para no enviar valores fantasma.
+    React.useEffect(() => {
+        if (metodo !== "terceros") {
+            ([
+                "cuota_6_a", "cuota_12_a", "cuota_18_a", "cuota_24_a", "cuota_30_a", "cuota_36_a",
+                "cuota_6_b", "cuota_12_b", "cuota_18_b", "cuota_24_b", "cuota_30_b", "cuota_36_b",
+            ] as const).forEach((f) => setValue(f, ""));
+        }
+    }, [metodo, setValue]);
+
     React.useEffect(() => {
         const gpsComoContado = metodo === "contado" || metodo === "terceros";
 
@@ -2121,23 +2159,23 @@ const CotizacionFormulario: React.FC = () => {
                                                             )} COP
                                                         </span>
                                                     </div>
+                                                    {esCreditoDirecto && (
+                                                        <div className="flex justify-between items-center bg-info/10 px-4 py-2 rounded-md border border-info/30 shadow-sm">
+                                                            <span className="font-semibold text-info">SALDO A FINANCIAR:</span>
+                                                            <span className="font-bold">
+                                                                {fmtCOP(
+                                                                    saldoFinanciar1 - (garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0)
+                                                                )} COP
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                     {esCreditoDirecto2 && (
-                                                        <>
-                                                            <div className="flex justify-between items-center bg-info/10 px-4 py-2 rounded-md border border-info/30 shadow-sm">
-                                                                <span className="font-semibold text-info">SALDO A FINANCIAR:</span>
-                                                                <span className="font-bold">
-                                                                    {fmtCOP(
-                                                                        saldoFinanciar1 - (garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0)
-                                                                    )} COP
-                                                                </span>
-                                                            </div>
-                                                            <div className="flex justify-between items-center bg-red-50 px-4 py-2 rounded-md border border-red-200 shadow-sm">
-                                                                <span className="font-semibold text-red-700">Cuota Garantía {garantiaExt1Sel} Meses:</span>
-                                                                <span className="font-bold text-red-900">
-                                                                    {fmtCOP(cuotaGarantiaExtendidaMoto1)} COP
-                                                                </span>
-                                                            </div>
-                                                        </>
+                                                        <div className="flex justify-between items-center bg-red-50 px-4 py-2 rounded-md border border-red-200 shadow-sm">
+                                                            <span className="font-semibold text-red-700">Cuota Garantía {garantiaExt1Sel} Meses:</span>
+                                                            <span className="font-bold text-red-900">
+                                                                {fmtCOP(cuotaGarantiaExtendidaMoto1)} COP
+                                                            </span>
+                                                        </div>
                                                     )}
 
 
@@ -2677,17 +2715,18 @@ const CotizacionFormulario: React.FC = () => {
                                                         </span>
                                                     </div>
 
+                                                    {esCreditoDirecto && (
+                                                        <div className="flex justify-between items-center bg-info/10 px-4 py-2 rounded-md border border-info/30 shadow-sm">
+                                                            <span className="font-semibold text-info">SALDO A FINANCIAR:</span>
+                                                            <span className="font-bold">
+                                                                {fmtCOP(
+                                                                    saldoFinanciar2 - (garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0)
+                                                                )} COP
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                     {esCreditoDirecto2 && (
                                                         <>
-                                                            <div className="flex justify-between items-center bg-info/10 px-4 py-2 rounded-md border border-info/30 shadow-sm">
-                                                                <span className="font-semibold text-info">SALDO A FINANCIAR:</span>
-                                                                <span className="font-bold">
-                                                                    {fmtCOP(
-                                                                        saldoFinanciar2 - (garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0)
-                                                                    )} COP
-                                                                </span>
-                                                            </div>
-
                                                             <div className="flex justify-between items-center bg-red-50 px-4 py-2 rounded-md border border-red-200 shadow-sm">
                                                                 <span className="font-semibold text-red-700">Cuota Garantía {garantiaExt2Sel} Meses:</span>
                                                                 <span className="font-bold text-red-900">

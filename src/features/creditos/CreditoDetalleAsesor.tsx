@@ -113,7 +113,7 @@ const CreditoDetalleAsesor: React.FC = () => {
     return (
         <main className="min-h-screen w-full bg-linear-to-b from-white to-slate-50">
             {/* Header */}
-            <header className="sticky top-0 z-10 backdrop-blur bg-slate-100 border border-white">
+            <header className="z-10 backdrop-blur px-3 bg-sky-600 rounded-2xl">
                 <div className='pt-4 mb-3'>
                     <ButtonLink to="/creditos" label="Volver a creditos" direction="back" />
                 </div>
@@ -122,7 +122,7 @@ const CreditoDetalleAsesor: React.FC = () => {
                 <div className="mx-auto max-w-6xl px-4 py-2.5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <LibraryBig className="w-6 h-6 text-success" />
-                        <h1 className="text-lg sm:text-xl font-bold tracking-tight text-success">
+                        <h1 className="text-lg sm:text-xl font-bold tracking-tight text-white">
                             Visualizar crédito
                         </h1>
                     </div>

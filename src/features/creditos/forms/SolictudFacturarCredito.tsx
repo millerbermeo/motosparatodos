@@ -1,7 +1,19 @@
 import React, { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useCredito, useDeudor } from '../../../services/creditosServices';
-import { CalendarDays, User2 } from 'lucide-react';
+import {
+  CalendarDays,
+  User2,
+  Bike,
+  FileText,
+  Receipt,
+  ShieldCheck,
+  Phone,
+  Mail,
+  MapPin,
+  Wallet,
+  ClipboardList,
+} from 'lucide-react';
 import {
   useSolicitudesPorCodigoCredito,
 } from '../../../services/solicitudServices';
@@ -41,7 +53,7 @@ const fmtCOP = (v?: MaybeNum | string) => {
 
 const safeStr = (v?: unknown) => (typeof v === 'string' ? v : '');
 
-const FacturarCredito: React.FC = () => {
+const SolictudFacturarCredito: React.FC = () => {
   const { id: codigoFromUrl, cot } = useParams<{ id: string; cot: string }>();
   const codigo_credito = String(codigoFromUrl ?? '');
   const id_cotizacion = String(cot ?? '');
@@ -276,35 +288,33 @@ const FacturarCredito: React.FC = () => {
 
 
       {/* Header / Migas */}
-     <div className='p-8 pb-0'>
-       <div className="border-b border-emerald-100 bg-[#EAF7F0]/80 backdrop-blur rounded-xl shadow">
-        <div className="w-full px-4 md:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className='p-4 md:p-8 pb-0 md:pb-0'>
+        <div className="border border-emerald-100 bg-linear-to-r from-[#EAF7F0]/90 to-emerald-50/50 backdrop-blur rounded-2xl shadow-sm">
+          <div className="w-full px-4 md:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
 
-          {/* IZQUIERDA: botón volver */}
-          <div className="flex items-center gap-3">
-            <ButtonLink
-              to="/solicitudes"
-              label="Volver a facturación"
-              direction="back"
-            />
-          </div>
-
-          {/* DERECHA: título */}
-          <div className="flex items-center gap-2 justify-center sm:justify-end">
-
-            <div className="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold border border-emerald-200">
-              Módulo
+            {/* IZQUIERDA: botón volver */}
+            <div className="flex items-center gap-3">
+              <ButtonLink
+                to="/solicitudes"
+                label="Volver a facturación"
+                direction="back"
+              />
             </div>
 
-            <h1 className="text-lg md:text-xl font-semibold text-slate-900 tracking-tight">
-              Solicitudes de facturación
-            </h1>
+            {/* DERECHA: título */}
+            <div className="flex items-center gap-3 justify-center sm:justify-end">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600/10 text-emerald-700">
+                <Receipt className="h-5 w-5" />
+              </div>
+              <h1 className="text-base md:text-xl font-bold text-slate-900 tracking-tight flex flex-wrap items-center gap-2">
+                Solicitud de facturación del crédito
+                <span className="badge badge-success text-white font-semibold">{codigo_credito}</span>
+              </h1>
+            </div>
 
           </div>
-
         </div>
       </div>
-     </div>
 
       <div className="max-w-full mx-auto px-6 py-8 space-y-6">
         {(isLoading ||
@@ -330,7 +340,8 @@ const FacturarCredito: React.FC = () => {
             {/* IZQUIERDA: Info cliente */}
             <div className="flex-1 space-y-2 text-center lg:text-left">
 
-              <h2 className="text-sm font-semibold text-blue-700 uppercase tracking-wide">
+              <h2 className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700 uppercase tracking-wide">
+                <User2 className="h-4 w-4" />
                 Información del cliente
               </h2>
 
@@ -342,16 +353,19 @@ const FacturarCredito: React.FC = () => {
                 {clienteDoc}
               </div>
 
-              <div className="text-sm text-slate-600">
-                {clienteDireccion}
+              <div className="flex items-center gap-1.5 text-sm text-slate-600 justify-center lg:justify-start">
+                <MapPin className="h-4 w-4 text-blue-500 shrink-0" />
+                {clienteDireccion || "—"}
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-slate-600 justify-center lg:justify-start">
-                <div>
+                <div className="flex items-center gap-1.5">
+                  <Phone className="h-4 w-4 text-blue-500 shrink-0" />
                   <span className="font-semibold text-slate-700">Tel:</span>{" "}
                   {clienteTelefono || "—"}
                 </div>
-                <div>
+                <div className="flex items-center gap-1.5">
+                  <Mail className="h-4 w-4 text-blue-500 shrink-0" />
                   <span className="font-semibold text-slate-700">Correo:</span>{" "}
                   {clienteCorreo || "—"}
                 </div>
@@ -385,28 +399,49 @@ const FacturarCredito: React.FC = () => {
 
         {/* Tabla: Motocicleta */}
         <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-          <div className="bg-linear-to-r from-sky-600 to-emerald-600 text-white font-semibold px-5 py-2.5 text-sm">
-            <div className="grid grid-cols-12 items-center">
+          <div className="bg-linear-to-r from-sky-600 to-emerald-600 text-white font-semibold px-5 py-2.5 text-sm flex items-center gap-2">
+            <Bike className="h-4 w-4" />
+            Motocicleta
+          </div>
+
+          {/* Desktop */}
+          <div className="hidden md:block">
+            <div className="grid grid-cols-12 items-center px-5 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 bg-slate-50 border-b border-slate-100">
               <div className="col-span-5">Motocicleta</div>
               <div className="col-span-2"># Motor</div>
               <div className="col-span-3"># Chasis</div>
               <div className="col-span-2 text-right pr-2">Color</div>
             </div>
-          </div>
-          <div className="px-5 py-3 text-sm text-slate-800">
-            <div className="grid grid-cols-12 items-center">
-              <div className="col-span-5 truncate">{motoNombre}</div>
-              <div className="col-span-2 truncate">{numMotor}</div>
-              <div className="col-span-3 truncate">{numChasis}</div>
-              <div className="col-span-2 text-right pr-2">{color}</div>
+            <div className="px-5 py-3 text-sm text-slate-800">
+              <div className="grid grid-cols-12 items-center">
+                <div className="col-span-5 truncate font-medium">{motoNombre}</div>
+                <div className="col-span-2 truncate">{numMotor || "—"}</div>
+                <div className="col-span-3 truncate">{numChasis || "—"}</div>
+                <div className="col-span-2 text-right pr-2">{color || "—"}</div>
+              </div>
             </div>
+          </div>
+
+          {/* Mobile */}
+          <div className="md:hidden divide-y divide-slate-100">
+            {[
+              ["Motocicleta", motoNombre],
+              ["# Motor", numMotor || "—"],
+              ["# Chasis", numChasis || "—"],
+              ["Color", color || "—"],
+            ].map(([label, value], i) => (
+              <div key={i} className="flex items-start justify-between gap-3 px-4 py-2.5 text-sm">
+                <span className="text-xs font-semibold text-slate-500">{label}</span>
+                <span className="text-slate-800 text-right">{value}</span>
+              </div>
+            ))}
           </div>
         </section>
 
         {/* Condiciones del negocio */}
         <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
           <div className="bg-emerald-600 text-white font-semibold px-5 py-2.5 text-sm flex items-center justify-between">
-            <span>Condiciones del negocio</span>
+            <span className="inline-flex items-center gap-2"><Wallet className="h-4 w-4" />Condiciones del negocio</span>
             <span>Costos</span>
           </div>
           <div className="divide-y divide-slate-200">
@@ -424,7 +459,8 @@ const FacturarCredito: React.FC = () => {
 
         {/* Precio de documentos */}
         <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-          <div className="bg-sky-700 text-white font-semibold px-5 py-2.5 text-sm">
+          <div className="bg-sky-700 text-white font-semibold px-5 py-2.5 text-sm flex items-center gap-2">
+            <FileText className="h-4 w-4" />
             Precio de documentos
           </div>
           <div className="divide-y divide-slate-200">
@@ -443,7 +479,8 @@ const FacturarCredito: React.FC = () => {
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Seguros y accesorios */}
           <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-            <div className="bg-sky-600 text-white font-semibold px-5 py-2.5 text-sm">
+            <div className="bg-sky-600 text-white font-semibold px-5 py-2.5 text-sm flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4" />
               Seguros y accesorios
             </div>
             <div className="divide-y divide-slate-200">
@@ -474,7 +511,8 @@ const FacturarCredito: React.FC = () => {
 
           {/* TOTAL */}
           <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-            <div className="bg-sky-600 text-white font-semibold px-5 py-2.5 text-sm">
+            <div className="bg-sky-600 text-white font-semibold px-5 py-2.5 text-sm flex items-center gap-2">
+              <Receipt className="h-4 w-4" />
               TOTAL
             </div>
             <div className="divide-y divide-slate-200">
@@ -498,7 +536,10 @@ const FacturarCredito: React.FC = () => {
 
         {/* Observaciones */}
         <section className="rounded-xl border border-success bg-[#F1FCF6] p-6 shadow-sm">
-          <h3 className="font-semibold text-slate-900 mb-4">Observaciones</h3>
+          <h3 className="inline-flex items-center gap-2 font-semibold text-slate-900 mb-4">
+            <ClipboardList className="h-4 w-4 text-emerald-600" />
+            Observaciones
+          </h3>
           <ul className="list-disc pl-6 text-sm leading-7 text-slate-700 space-y-1">
             <li>
               Crédito aprobado por{' '}
@@ -538,7 +579,18 @@ const FacturarCredito: React.FC = () => {
             errorDistribuidoras={errorDistribuidoras}
           />
         ) : (
-          /* Si hay solicitud registrada, mostramos el detalle */
+          <>
+          {/* Aviso: ya existe solicitud para este crédito */}
+          <div className="rounded-2xl border border-emerald-200 bg-white shadow-sm p-4 md:p-6">
+            <h3 className="font-semibold text-emerald-700">
+              Ya existe una solicitud de facturación para este crédito
+            </h3>
+            <p className="text-sm text-slate-600 mt-1">
+              Para evitar duplicados, el formulario no se mostrará.
+            </p>
+          </div>
+
+          {/* Si hay solicitud registrada, mostramos el detalle */}
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             {/* Encabezado */}
             <div className="flex items-center justify-between gap-3 mb-6">
@@ -751,6 +803,7 @@ const FacturarCredito: React.FC = () => {
               </Link>
             </div>
           </section>
+          </>
         )}
       </div>
     </main>
@@ -774,7 +827,7 @@ const RowRight: React.FC<{
   </div>
 );
 
-export default FacturarCredito;
+export default SolictudFacturarCredito;
 
 // Helper para badges DaisyUI
 const estadoBadge = (ok?: boolean) => ({
