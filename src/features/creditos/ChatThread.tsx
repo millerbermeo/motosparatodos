@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useComentariosCredito } from "../../services/comentariosServices";
 import { ShieldCheck, UserRound } from "lucide-react";
+import { fmtFecha } from "../../utils/date";
 
 export interface ChatMessage {
   id: string | number;
@@ -17,15 +18,7 @@ interface ChatThreadProps {
 }
 
 function formatDateEs(value: ChatMessage["timestamp"]) {
-  const d = new Date(value);
-  return new Intl.DateTimeFormat("es-ES", {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(d);
+  return fmtFecha(value as any);
 }
 
 const roleStyles = {

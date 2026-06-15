@@ -5,6 +5,7 @@ import { Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useGarantiasExt, useGarantiaExtById } from "../../services/garantiaExtServices";
 import { useLoaderStore } from "../../store/loader.store";
+import { fmtFecha } from "../../utils/date";
 
 /* ========= Paginación (mismo helper que cotizaciones) ========= */
 const SIBLING_COUNT = 1;
@@ -65,21 +66,7 @@ const humanizeDesde = (dateStr?: string | null) => {
   return "justo ahora";
 };
 
-const formatFechaLarga = (dateStr?: string | null) => {
-  if (!dateStr) return "—";
-  const d = new Date(String(dateStr).replace(" ", "T"));
-  if (isNaN(d.getTime())) return "—";
-  const fmt = new Intl.DateTimeFormat("es-CO", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
-  return fmt.format(d);
-};
+const formatFechaLarga = (dateStr?: string | null) => fmtFecha(dateStr) || "—";
 
 /* =================== Componente =================== */
 const TablaGarantiaExtendida: React.FC = () => {
@@ -161,7 +148,7 @@ const TablaGarantiaExtendida: React.FC = () => {
           {/* Buscar texto libre */}
           <input
             type="text"
-            className="input input-bordered w-full sm:w-auto sm:flex-1 sm:min-w-[13rem] sm:max-w-[18rem]"
+            className="input input-bordered w-full sm:w-auto sm:flex-1 sm:min-w-52 sm:max-w-[18rem]"
             placeholder="Buscar por cliente, cédula, moto, email…"
             value={q}
             onChange={(e) => {
@@ -215,7 +202,7 @@ const TablaGarantiaExtendida: React.FC = () => {
             }}
           />
 
-          <button onClick={cleanFilters} className="btn btn-accent w-full sm:w-auto sm:min-w-[9rem]">
+          <button onClick={cleanFilters} className="btn btn-accent w-full sm:w-auto sm:min-w-36">
             Limpiar Filtros
           </button>
         </div>

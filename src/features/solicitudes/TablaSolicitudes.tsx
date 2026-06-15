@@ -8,6 +8,7 @@ import {
 } from "../../services/solicitudServices";
 import { useLoaderStore } from "../../store/loader.store";
 import SelectCotizaciones from "../cotizaciones/SelectCotizaciones";
+import { fmtFecha } from "../../utils/date";
 
 const SIBLING_COUNT = 1;
 const BOUNDARY_COUNT = 1;
@@ -137,21 +138,7 @@ const humanizeDesde = (dateStr?: string | null) => {
   return "justo ahora";
 };
 
-const formatFechaLarga = (dateStr?: string | null) => {
-  if (!dateStr) return "—";
-  const d = new Date(dateStr.replace(" ", "T"));
-  if (isNaN(d.getTime())) return "—";
-
-  return new Intl.DateTimeFormat("es-CO", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  }).format(d);
-};
+const formatFechaLarga = (dateStr?: string | null) => fmtFecha(dateStr) || "—";
 
 const TablaSolicitudes: React.FC = () => {
   const [page, setPage] = React.useState(1);

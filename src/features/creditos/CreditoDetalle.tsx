@@ -45,6 +45,7 @@ import { useEmpresaById, useEmpresas } from '../../services/empresasServices';
 import CambiarEstadoCredito from './forms/CambiarEstadoCredito';
 import CodeudoresDetalle from './CodeudoresDetalle';
 import { resolverTasaSeguroVidaDecimal, calcularCreditoDirectoMoto } from '../../shared/components/credito/creditoDirecto.utils';
+import { fmtFecha } from '../../utils/date';
 
 const fmtCOP = (v: number) =>
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
@@ -1139,7 +1140,7 @@ const CreditoDetalle: React.FC = () => {
                             </div>
 
                             <div className="rounded-xl bg-[#3498DB] p-4 ring-1 ring-slate-200">
-                                <Row color='text-white' label="Creada" value={<span className="inline-flex items-center gap-2 text-white"><CalendarDays className="w-4 h-4" />{creada}</span>} />
+                                <Row color='text-white' label="Creada" value={<span className="inline-flex items-center gap-2 text-white"><CalendarDays className="w-4 h-4" />{fmtFecha(creada)}</span>} />
                                 <Row color='text-white' label="Registrada por" value={<span className="inline-flex items-center gap-2 text-white"><User2 className="w-4 h-4" />{registradaPor}</span>} />
                             </div>
                         </div>

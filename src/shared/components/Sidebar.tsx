@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, LogOut } from "lucide-react";
 import { MENU_ESTATICO } from "../../utils/arrayMenu";
 import type { MenuItem } from "../../shared/types/menu";
 import { useAuthStore } from "../../store/auth.store";
+import { useLoaderStore } from "../../store/loader.store";
 import { hasModuleNormalized, hasRoleNormalized } from "../../utils/permissions";
 import Swal from "sweetalert2";
 
@@ -124,7 +125,10 @@ const Sidebar: React.FC<SidebarProps> = ({
     setOpenGroup((prev) => (prev === groupName ? null : groupName));
   };
 
+  const { show } = useLoaderStore();
+
   const goTo = (ruta: string, nombre: string) => {
+    if (ruta && ruta !== location.pathname) show(); // loader mientras carga la nueva ruta/chunk
     navigate(ruta);
     setActiveKey(nombre);
     setOpenGroup(null);

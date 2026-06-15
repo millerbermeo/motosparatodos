@@ -7,6 +7,7 @@ import { useAuthStore } from '../../store/auth.store';
 import SelectCotizaciones from './SelectCotizaciones';
 import { useCotizacionById } from '../../services/cotizacionesServices';
 import { useLoaderStore } from '../../store/loader.store';
+import { fmtFecha } from '../../utils/date';
 
 
 /* =======================
@@ -93,23 +94,8 @@ const humanizeDesde = (dateStr?: string) => {
     return 'justo ahora';
 };
 
-// Absoluto: con AM/PM en es-CO. Descomenta timeZone si quieres fijar Bogotá.
-const formatFechaLarga = (dateStr?: string) => {
-    if (!dateStr) return '—';
-    const d = new Date(dateStr.replace(' ', 'T'));
-    if (isNaN(d.getTime())) return '—';
-    const fmt = new Intl.DateTimeFormat('es-CO', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: 'numeric',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true,
-        // timeZone: 'America/Bogota',
-    });
-    return fmt.format(d); // ej: 18/08/2025, 9:33:49 p. m.
-};
+// Absoluto: formato global (año-mes-día, hora 12h a. m./p. m.)
+const formatFechaLarga = (dateStr?: string) => fmtFecha(dateStr) || '—';
 
 // 1 = contado, 2 = Credibike, 3 = terceros
 
@@ -341,7 +327,7 @@ const TablaCotizaciones: React.FC = () => {
                                 <td className="text-sm text-base-content/70">{r?.id || '—'}</td>
                                 <td className="text-sm text-base-content/70">
                                     <div className="flex justify-start gap-2">
-                                        <Link to={`/cotizaciones/${r.id}`} className="btn btn-sm bg-white btn-circle" title="Ver cotización">
+                                        <Link to={`/cotizaciones/${r.id}`} onClick={() => show()} className="btn btn-sm bg-white btn-circle" title="Ver cotización">
                                             <div className='text-info'>
                                                 <Eye size="18px" />
                                             </div>

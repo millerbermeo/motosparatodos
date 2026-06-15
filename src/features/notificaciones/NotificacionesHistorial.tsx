@@ -13,6 +13,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useNotificaciones, type Notificacion } from "../../services/notificacionesService";
 import { moduloBadgeClass } from "../../utils/moduloColor";
+import { fmtFecha } from "../../utils/date";
 
 /* =======================
    Utils
@@ -35,19 +36,7 @@ const humanizeDesde = (dateStr?: string) => {
   return "justo ahora";
 };
 
-const formatFechaLarga = (dateStr?: string) => {
-  if (!dateStr) return "—";
-  const d = new Date(dateStr.replace(" ", "T"));
-  if (isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat("es-CO", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  }).format(d);
-};
+const formatFechaLarga = (dateStr?: string) => fmtFecha(dateStr) || "—";
 
 const getIcon = (tipo: string) => {
   switch (tipo) {
@@ -200,7 +189,7 @@ const NotificacionesHistorial: React.FC = () => {
       </div>
 
       {/* LISTA */}
-      <div className="divide-y divide-base-200 min-h-[300px]">
+      <div className="divide-y divide-base-200 min-h-75">
         {isLoading && rows.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-2">
             <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -230,19 +219,19 @@ const NotificacionesHistorial: React.FC = () => {
               } ${n.url ? "cursor-pointer" : ""}`}
               onClick={() => n.url && navigate(n.url)}
             >
-              <div className="flex-shrink-0 mt-0.5">{getIcon(n.tipo)}</div>
+              <div className="shrink-0 mt-0.5">{getIcon(n.tipo)}</div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
                     {n.titulo}
                   </p>
-                  <span className={`flex-shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded ${moduloBadgeClass(n.modulo)}`}>
+                  <span className={`shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded ${moduloBadgeClass(n.modulo)}`}>
                     {n.modulo}
                   </span>
                 </div>
 
-                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed break-words">{n.mensaje}</p>
+                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed wrap-break-word">{n.mensaje}</p>
 
                 <div className="flex items-center gap-3 mt-2">
                   <span className="text-[11px] text-slate-400" title={formatFechaLarga(n.created_at)}>
@@ -275,7 +264,7 @@ const NotificacionesHistorial: React.FC = () => {
             <button
               onClick={cargarMas}
               disabled={isFetching}
-              className="btn btn-sm btn-ghost rounded-xl bg-base-200 hover:bg-base-300 gap-2 min-w-[160px]"
+              className="btn btn-sm btn-ghost rounded-xl bg-base-200 hover:bg-base-300 gap-2 min-w-40"
             >
               {isFetching ? (
                 <>

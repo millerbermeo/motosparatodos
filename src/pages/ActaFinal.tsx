@@ -14,6 +14,7 @@ import {
   Download,
 } from "lucide-react";
 import { useLoaderStore } from "../store/loader.store";
+import { fmtFecha as fmtFechaGlobal } from "../utils/date";
 
 const BaseUrl =
   import.meta.env.VITE_API_URL ??
@@ -23,20 +24,7 @@ const BaseUrl =
    Helpers
    ======================= */
 
-const fmtFecha = (iso?: string) => {
-  if (!iso) return "—";
-  const d = new Date(iso.replace(" ", "T"));
-  if (isNaN(d.getTime())) return "—";
-  return d.toLocaleString("es-CO", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
-};
+const fmtFecha = (iso?: string) => fmtFechaGlobal(iso) || "—";
 
 const buildImageUrl = (path?: string | null): string | undefined => {
   if (!path) return undefined;
@@ -280,7 +268,7 @@ const ActaFinal: React.FC = () => {
   /* ===== Vista principal ===== */
 
   return (
-    <main className="w-full min-h-screen bg-gradient-to-b from-slate-50 via-slate-50 to-slate-100">
+    <main className="w-full min-h-screen bg-linear-to-b from-slate-50 via-slate-50 to-slate-100">
       {/* Header / volver */}
       <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-slate-200">
         <div className="max-w-9xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between gap-3">
@@ -439,7 +427,7 @@ const ActaFinal: React.FC = () => {
                         </h3>
                       </div>
 
-                      <div className="rounded-2xl bg-slate-50 border border-slate-200 px-4 py-3 shadow-sm min-h-[80px]">
+                      <div className="rounded-2xl bg-slate-50 border border-slate-200 px-4 py-3 shadow-sm min-h-20">
                         {acta.observaciones &&
                         acta.observaciones.trim() !== "" ? (
                           <p className="whitespace-pre-wrap text-sm text-slate-800">

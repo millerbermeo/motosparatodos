@@ -6,6 +6,7 @@ import { useCreditos } from "../../services/creditosServices"; // <— nuevo hoo
 import { useAuthStore } from "../../store/auth.store";
 import SelectCreditos from "./SelectCreditos";
 import { useLoaderStore } from "../../store/loader.store";
+import { fmtFecha } from "../../utils/date";
 
 const DEFAULT_PAGE_SIZE = 10;
 const SIBLING_COUNT = 1;
@@ -276,14 +277,14 @@ const TablaCreditos: React.FC = () => {
                                         useAuthStore.getState().user?.rol === "Lider_marca" ||
                                         useAuthStore.getState().user?.rol === "Lider_punto"
                                     ) && c.estado !== "Aprobado" && c.estado !== "Facturado" && (
-                                            <Link to={`/creditos/detalle/${c.codigo_credito}`}>
+                                            <Link to={`/creditos/detalle/${c.codigo_credito}`} onClick={() => show()}>
                                                 <button className="btn btn-sm text-warning bg-white btn-circle" title="Editar Estado">
                                                     <Pencil size="18px" />
                                                 </button>
                                             </Link>
                                         )}
 
-                                    <Link to={`/creditos/detalle/${c.codigo_credito}`}>
+                                    <Link to={`/creditos/detalle/${c.codigo_credito}`} onClick={() => show()}>
                                         <button className="btn btn-sm text-success bg-white btn-circle" title="Ver">
                                             <Eye size="18px" />
                                         </button>
@@ -312,7 +313,9 @@ const TablaCreditos: React.FC = () => {
                                 <td>{badgeSiNo((c as any).entregado ?? "No")}</td>
                                 <td>{badgeSiNo(c.cambio_ci)}</td> */}
                                 <td>{badgeNum(c.credito_cerrado)}</td>
-                                <td className="whitespace-nowrap">{timeAgo(c.actualizado)}</td>
+                                <td className="whitespace-nowrap text-sm text-base-content/70">
+                                    {timeAgo(c.actualizado)}{c.actualizado ? ` · ${fmtFecha(c.actualizado)}` : ""}
+                                </td>
                             </tr>
                         ))}
                     </tbody>

@@ -9,6 +9,7 @@ import ButtonLink from '../../shared/components/ButtonLink';
 import { useLoaderStore } from '../../store/loader.store';
 import { useAuthStore } from '../../store/auth.store';
 import { calcularCreditoDirectoMoto, resolverTasaSeguroVidaDecimal } from '../../shared/components/credito/creditoDirecto.utils';
+import { fmtFecha as fmtFechaGlobal } from '../../utils/date';
 
 
 /* =======================
@@ -36,21 +37,8 @@ const fullName = (r: any) =>
     .replace(/\s+/g, ' ')
     .trim() || '—';
 
-// "YYYY-MM-DD HH:mm:ss" → local es-CO
-const fmtFecha = (iso?: string) => {
-  if (!iso) return '—';
-  const d = new Date(iso.replace(' ', 'T'));
-  if (isNaN(d.getTime())) return '—';
-  return d.toLocaleString('es-CO', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: 'numeric',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: true,
-  });
-};
+// Formato global (año-mes-día, hora 12h a. m./p. m.)
+const fmtFecha = (iso?: string) => fmtFechaGlobal(iso) || '—';
 
 const fmtCOP = (v: any) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(

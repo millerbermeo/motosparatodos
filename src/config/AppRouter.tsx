@@ -1,6 +1,6 @@
 // routes/AppRouter.tsx
 import React, { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import PrivateRoute from "./PrivateRoute";
 import RequireModule from "./RequireModule"; // 👈
@@ -64,10 +64,25 @@ const Fallback: React.FC = () => {
   return <Loader />; // 👈 se renderiza el overlay
 };
 
+// Oculta el loader de navegación cuando la nueva ruta ya quedó montada.
+// Va dentro de <Suspense> y antes de <Routes>: solo se monta cuando el
+// contenido (chunk) terminó de cargar, así no apaga el loader durante la carga.
+const RouteChangeHide: React.FC = () => {
+  const location = useLocation();
+  const hide = useLoaderStore((s) => s.hide);
+
+  React.useEffect(() => {
+    hide();
+  }, [location.pathname, hide]);
+
+  return null;
+};
+
 const AppRouter: React.FC = () => {
   return (
     <BrowserRouter>
       <Suspense fallback={<Fallback />}>
+        <RouteChangeHide />
         <Routes>
           {/* Pública */}
           <Route path="/login" element={<Login />} />

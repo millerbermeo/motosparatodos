@@ -25,6 +25,7 @@ import { useDistribuidoras } from '../../../services/distribuidoraServices';
 import { useCotizacionFullById } from '../../../services/fullServices';
 import { useIvaDecimal } from '../../../services/ivaServices';
 import FacturarCreditoForm from '../../../shared/components/credito/FacturarCreditoForm';
+import { fmtFecha } from '../../../utils/date';
 
 type MaybeNum = number | undefined | null;
 
@@ -262,7 +263,7 @@ const SolictudFacturarCredito: React.FC = () => {
         return parts.length ? parts.reduce((a, b) => a + b, 0) : undefined;
       })();
 
-  const fechaCreacion = safeStr(credito?.fecha_creacion);
+  const fechaCreacion = fmtFecha(credito?.fecha_creacion);
   const asesor = safeStr(credito?.asesor);
   const numeroSolicitud = credito?.cotizacion_id ?? codigo_credito;
 
@@ -706,14 +707,14 @@ const SolictudFacturarCredito: React.FC = () => {
                   <div className="flex justify-between gap-4">
                     <dt className="text-slate-500">Creado</dt>
                     <dd className="font-medium text-right">
-                      {solicitud?.fechaCreacion ?? '—'}
+                      {fmtFecha(solicitud?.fechaCreacion) || (solicitud?.fechaCreacion ?? '—')}
                     </dd>
                   </div>
 
                   <div className="flex justify-between gap-4">
                     <dt className="text-slate-500">Actualizado</dt>
                     <dd className="font-medium text-right">
-                      {solicitud?.actualizado ?? '—'}
+                      {fmtFecha(solicitud?.actualizado) || (solicitud?.actualizado ?? '—')}
                     </dd>
                   </div>
                 </dl>

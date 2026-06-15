@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useClientes } from "../../services/clientesServices";
 import { useLoaderStore } from "../../store/loader.store";
+import { fmtFechaSolo } from "../../utils/date";
 
 /* =======================
    Paginación (mismo estilo que cotizaciones)
@@ -60,8 +61,7 @@ const fullName = (r: any) =>
 
 const formatDate = (date?: string) => {
   if (!date) return '—';
-  const d = new Date(date);
-  return isNaN(d.getTime()) ? date : d.toLocaleDateString('es-CO');
+  return fmtFechaSolo(date) || date;
 };
 
 /* =======================
@@ -149,7 +149,7 @@ const TablaClientes: React.FC = () => {
           <input
             type="text"
             placeholder="Buscar por nombre..."
-            className="input input-bordered input-md w-full sm:w-auto sm:flex-1 sm:min-w-[11rem] sm:max-w-[14rem]"
+            className="input input-bordered input-md w-full sm:w-auto sm:flex-1 sm:min-w-44 sm:max-w-56"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -157,7 +157,7 @@ const TablaClientes: React.FC = () => {
           <input
             type="text"
             placeholder="Filtrar por cédula"
-            className="input input-bordered input-md w-full sm:w-auto sm:flex-1 sm:min-w-[11rem] sm:max-w-[14rem]"
+            className="input input-bordered input-md w-full sm:w-auto sm:flex-1 sm:min-w-44 sm:max-w-56"
             value={filters.cedula}
             onChange={(e) => {
               setFilters({ ...filters, cedula: e.target.value });
@@ -167,7 +167,7 @@ const TablaClientes: React.FC = () => {
 
           <button
             onClick={cleanFilters}
-            className="btn btn-accent w-full sm:w-auto sm:min-w-[9rem]"
+            className="btn btn-accent w-full sm:w-auto sm:min-w-36"
           >
             Limpiar Filtros
           </button>
