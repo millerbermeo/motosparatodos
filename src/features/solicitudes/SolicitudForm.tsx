@@ -465,7 +465,7 @@ const SolicitudForm: React.FC = () => {
 
 
   return (
-    <main className="min-h-screen bg-linear-to-br from-base-200 via-slate-100 to-slate-200 px-4 py-6 md:py-10">
+    <main className="min-h-screen bg-linear-to-br from-base-200 via-base-200 to-base-300 px-4 py-6 md:py-10">
       <div className="max-w-9xl mx-auto space-y-6">
         {/* Encabezado / contexto de la solicitud */}
         <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

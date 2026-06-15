@@ -26,6 +26,8 @@ import { useIvaDecimal } from "../../../services/ivaServices";
 import { calcularCreditoDirectoMoto, logCreditoDirectoMoto, SEGURO_VIDA_FALLBACK_DECIMAL } from "../../../shared/components/credito/creditoDirecto.utils";
 import { useBuscarClientePorCedula } from "../../../services/clientesServices";
 import { Search } from "lucide-react";
+import Swal from "sweetalert2";
+import { useLoaderStore } from "../../../store/loader.store";
 
 
 const getMotoByIndex = <T,>(
@@ -159,6 +161,7 @@ const CotizacionFormulario: React.FC = () => {
     });
 
     const navigate = useNavigate();
+    const { show: showLoader, hide: hideLoader } = useLoaderStore();
 
     // HOOKS
     const { mutate: cotizacion, isPending } = useCreateCotizaciones();
@@ -929,14 +932,35 @@ const CotizacionFormulario: React.FC = () => {
             delete payload.gps_meses_b;
         }
 
-        cotizacion(payload, {
-            onSuccess: () => {
-                reset();
-                navigate(`/cotizaciones`);
-            },
-            onError: (err) => {
-                console.error(err);
-            },
+        Swal.fire({
+            icon: "question",
+            title: "¿Registrar cotización?",
+            text: "¿Estás seguro de registrar esta cotización?",
+            showCancelButton: true,
+            confirmButtonText: "Sí, registrar",
+            cancelButtonText: "Cancelar",
+            confirmButtonColor: "#2BB352",
+        }).then((res) => {
+            if (!res.isConfirmed) return;
+
+            showLoader(); // overlay mientras se registra
+            cotizacion(payload, {
+                onSuccess: () => {
+                    hideLoader();
+                    reset();
+                    Swal.fire({
+                        icon: "success",
+                        title: "Cotización registrada",
+                        timer: 1500,
+                        showConfirmButton: false,
+                    });
+                    navigate(`/cotizaciones`);
+                },
+                onError: (err) => {
+                    hideLoader();
+                    console.error(err);
+                },
+            });
         });
     };
 

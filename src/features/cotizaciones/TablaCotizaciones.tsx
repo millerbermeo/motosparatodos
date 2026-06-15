@@ -271,16 +271,7 @@ const TablaCotizaciones: React.FC = () => {
                     </button>
                 </div>
 
-                {/* Crear (izquierda) */}
-                {user?.rol === "Asesor" && (
-                    <div className="flex border-t border-base-200 pt-3">
-                        <Link to="/cotizaciones/crear-cotizaciones" className="w-full sm:w-auto">
-                            <button className="btn bg-[#2BB352] text-white w-full sm:w-auto sm:min-w-40">
-                                Crear Cotización
-                            </button>
-                        </Link>
-                    </div>
-                )}
+
             </div>
 
             {/* Filas: a la derecha, encima de la tabla */}
@@ -302,6 +293,18 @@ const TablaCotizaciones: React.FC = () => {
                         </option>
                     ))}
                 </select>
+
+                {/* Crear (izquierda) */}
+                {user?.rol === "Asesor" && (
+                    <div className="flex border-t border-base-200">
+                        <Link to="/cotizaciones/crear-cotizaciones" className="w-full sm:w-auto">
+                            <button className="btn bg-[#2BB352] text-white w-full sm:w-auto sm:min-w-40">
+                                Crear Cotización
+                            </button>
+                        </Link>
+                    </div>
+                )}
+                
             </div>
 
 

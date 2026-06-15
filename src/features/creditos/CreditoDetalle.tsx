@@ -2,6 +2,7 @@ import React from 'react';
 import {
     BadgeCheck, Building2, CalendarDays, Check, CheckCircle2, CheckSquare, ChevronDown, Download,
     FileDown, FileMinusIcon, FileSignature, History, Info, LibraryBig, Car,
+    ClipboardList,
     Mail,
     MessageCircle,
     MessageSquarePlus,
@@ -1066,6 +1067,16 @@ const CreditoDetalle: React.FC = () => {
         }
     };
 
+    const handleDownloadRunt = () => {
+        // Descarga el formulario RUNT estático ubicado en /public/runt.pdf
+        const a = document.createElement('a');
+        a.href = '/runt.pdf';
+        a.download = 'runt.pdf';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    };
+
     const handleDownloadSolicitud = async () => {
         try {
             const { pdf } = await import('@react-pdf/renderer');
@@ -1241,6 +1252,12 @@ const CreditoDetalle: React.FC = () => {
                                             icon={<Mail className="w-4 h-4" />}
                                             onClick={handleDownloadCarta}
                                             color="bg-purple-500 hover:bg-purple-600"
+                                        />
+                                        <ChipButton
+                                            label="Descargar RUNT"
+                                            icon={<ClipboardList className="w-4 h-4" />}
+                                            onClick={handleDownloadRunt}
+                                            color="bg-amber-500 hover:bg-amber-600"
                                         />
                                     </div>
                                 )}

@@ -420,7 +420,8 @@ const TablaSolicitudes: React.FC = () => {
           <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-backdrop-filter:backdrop-blur-md">
             <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
               <th>#</th>
-              <th>Acciones</th>
+              <th>Facturación</th>
+              <th className="text-center">Cotización</th>
               <th>Código solicitud</th>
               {/* <th>ID cotización</th> */}
               <th>Cliente solicitud</th>
@@ -453,6 +454,25 @@ const TablaSolicitudes: React.FC = () => {
                         <button
                           className="btn btn-sm text-warning bg-base-100 btn-circle"
                           title="Ver detalles"
+                        >
+                          <Eye size="18px" />
+                        </button>
+                      </Link>
+                    ) : (
+                      <span className="text-base-content/30 select-none">—</span>
+                    );
+                  })()}
+                </td>
+
+                <td className="text-center">
+                  {(() => {
+                    const idCoti = s.id_cotizacion ?? s.cotizacionId;
+                    const has = idCoti !== null && idCoti !== undefined && String(idCoti).trim() !== "";
+                    return has ? (
+                      <Link to={`/cotizaciones/${encodeURIComponent(String(idCoti))}`} onClick={() => show()}>
+                        <button
+                          className="btn btn-sm text-info bg-base-100 btn-circle"
+                          title="Ver cotización"
                         >
                           <Eye size="18px" />
                         </button>

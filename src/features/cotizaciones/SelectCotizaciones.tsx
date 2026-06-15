@@ -6,6 +6,7 @@ import Select, {
 
 import { useBuscarPersonas } from "../../services/cotizacionesServices";
 import type { Persona } from "../../services/cotizacionesServices";
+import { daisyReactSelectStyles } from "../../utils/reactSelectTheme";
 
 interface Option {
   value: number;
@@ -82,18 +83,7 @@ const SelectCotizaciones: React.FC<Props> = ({ onSelect, className = "min-w-72 m
       placeholder="Buscar persona..."
       filterOption={() => true}
       menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
-      styles={{
-        menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-        menu: (base) => ({ ...base, zIndex: 9999 }),
-        control: (base) => ({
-          ...base,
-          minHeight: "calc(var(--size-field, 0.25rem) * 10)",
-          height: "calc(var(--size-field, 0.25rem) * 10)",
-          borderRadius: "var(--radius-field, 0.5rem)",
-        }),
-        valueContainer: (base) => ({ ...base, height: "100%", paddingTop: 0, paddingBottom: 0 }),
-        indicatorsContainer: (base) => ({ ...base, height: "100%" }),
-      }}
+      styles={daisyReactSelectStyles<Option, false>()}
       noOptionsMessage={() =>
         inputValue.trim().length < MIN_CHARS
           ? `Escribe al menos ${MIN_CHARS} caracteres`

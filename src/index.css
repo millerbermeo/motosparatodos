@@ -7,6 +7,13 @@ button {
     cursor: pointer;
 }
 
+/* Opciones de selects nativos: respetan el tema (popup lo pinta el navegador) */
+select option,
+select optgroup {
+    background-color: var(--color-base-100);
+    color: var(--color-base-content);
+}
+
 .loader {
     --cell-size: 52px;
     --cell-spacing: 1px;

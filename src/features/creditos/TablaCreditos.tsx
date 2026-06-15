@@ -243,6 +243,7 @@ const TablaCreditos: React.FC = () => {
                         <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
                             <th>Id</th>
                             <th className="text-center">Acciones</th>
+                            <th className="text-center">Cotización</th>
                             <th>Asesor</th>
                             <th>Código del crédito</th>
                             <th>Nombre cliente</th>
@@ -297,6 +298,17 @@ const TablaCreditos: React.FC = () => {
                                         </Link>
                                     )}
 
+                                </td>
+                                <td className="text-center">
+                                    {c.cotizacion_id ? (
+                                        <Link to={`/cotizaciones/${c.cotizacion_id}`} onClick={() => show()}>
+                                            <button className="btn btn-sm text-info bg-base-100 btn-circle" title="Ver cotización">
+                                                <Eye size="18px" />
+                                            </button>
+                                        </Link>
+                                    ) : (
+                                        <span className="text-base-content/40">—</span>
+                                    )}
                                 </td>
                                 <td className="font-medium">{c.asesor || "-"}</td>
                                 <td>{c.codigo_credito || "-"}</td>
