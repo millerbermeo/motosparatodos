@@ -707,8 +707,8 @@ const DetallesFacturacion: React.FC = () => {
 
 
   return (
-    <main className="min-h-screen w-full bg-slate-50">
-      <header className="border-b border-slate-200 bg-white/70 backdrop-blur">
+    <main className="min-h-screen w-full bg-base-200">
+      <header className="border-b border-base-300 bg-base-100/70 backdrop-blur">
         <div className="max-w-full mx-auto px-6 py-4 flex items-center justify-between gap-5">
           <h1 className="text-xl font-semibold tracking-tight">
             Detalles de Facturación
@@ -724,13 +724,13 @@ const DetallesFacturacion: React.FC = () => {
 
       <div className="max-w-full mx-auto px-6 py-8 space-y-6">
         {isLoading && (
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-xl border border-base-300 bg-base-100 p-4 shadow-sm">
             Cargando información…
           </div>
         )}
 
         {isError && (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800 shadow-sm">
+          <div className="rounded-xl border border-error/30 bg-error/10 p-4 text-error shadow-sm">
             Error al cargar detalles: {String((error as any)?.message ?? "")}
           </div>
         )}
@@ -738,34 +738,34 @@ const DetallesFacturacion: React.FC = () => {
         {!isLoading && !isError && (
           <>
             {/* Cliente */}
-            <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <section className="rounded-xl border border-base-300 bg-base-100 shadow-sm">
               <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2">
-                  <h2 className="text-base font-semibold text-emerald-700 mb-3">
+                  <h2 className="text-base font-semibold text-success mb-3">
                     Cliente
                   </h2>
-                  <div className="text-sm leading-6 text-slate-700 space-y-1.5">
-                    <div className="font-medium text-slate-900">
+                  <div className="text-sm leading-6 text-base-content space-y-1.5">
+                    <div className="font-medium text-base-content">
                       {clienteNombre}
                     </div>
-                    <div className="text-slate-600">{clienteDocumento}</div>
+                    <div className="text-base-content/70">{clienteDocumento}</div>
                     <div>
-                      <span className="font-semibold text-slate-700">
+                      <span className="font-semibold text-base-content">
                         Teléfono:
                       </span>{" "}
-                      <span className="text-slate-600">
+                      <span className="text-base-content/70">
                         {clienteTelefono}
                       </span>
                     </div>
                     <div>
-                      <span className="font-semibold text-slate-700">
+                      <span className="font-semibold text-base-content">
                         Correo:
                       </span>{" "}
-                      <span className="text-slate-600">
+                      <span className="text-base-content/70">
                         {clienteEmail}
                       </span>
                     </div>
-                    <div className="pt-2 text-xs text-slate-500 space-y-0.5">
+                    <div className="pt-2 text-xs text-base-content/60 space-y-0.5">
                       {cot?.canal_contacto && (
                         <div>
                           <span className="font-semibold">
@@ -794,19 +794,19 @@ const DetallesFacturacion: React.FC = () => {
                   </div>
                 </div>
                 <div className="md:col-span-1">
-                  <div className="h-full rounded-lg bg-[#F1FCF6] border border-success p-4 flex flex-col justify-center md:justify-end md:items-end">
+                  <div className="h-full rounded-lg bg-success/10 border border-success p-4 flex flex-col justify-center md:justify-end md:items-end">
                     <div className="text-right">
-                      <div className="text-lg font-semibold text-slate-900">
+                      <div className="text-lg font-semibold text-base-content">
                         Solicitud #{codigoSolicitud}
                       </div>
-                      <div className="text-sm text-slate-600 mt-1">
+                      <div className="text-sm text-base-content/70 mt-1">
                         Creado: {fmtFecha(fechaCreacion)}
                       </div>
-                      <div className="text-sm text-slate-600 mt-1">
+                      <div className="text-sm text-base-content/70 mt-1">
                         Asesor: {asesor}
                       </div>
                       {estadoCotizacion && (
-                        <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border-emerald-200">
+                        <div className="mt-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-success/10 text-success border-success/30">
                           Estado: {estadoCotizacion}
                         </div>
                       )}
@@ -817,7 +817,7 @@ const DetallesFacturacion: React.FC = () => {
             </section>
 
             {observacionesFinal && (
-              <section className="rounded-xl border border-amber-200 bg-amber-50 shadow-sm">
+              <section className="rounded-xl border border-warning/30 bg-warning/10 shadow-sm">
                 <div className="p-6">
                   <h3 className="text-base font-semibold text-amber-900">Observaciones</h3>
                   <p className="mt-2 text-sm text-amber-900 whitespace-pre-wrap">
@@ -829,7 +829,7 @@ const DetallesFacturacion: React.FC = () => {
 
 
             {/* Motocicleta */}
-            <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+            <section className="rounded-xl border border-base-300 bg-base-100 overflow-hidden shadow-sm">
               <div className="bg-linear-to-r from-sky-600 to-emerald-600 text-white font-semibold px-5 py-2.5 text-sm">
                 <div className="grid grid-cols-12 items-center">
                   <div className="col-span-3"># Pago</div>
@@ -841,7 +841,7 @@ const DetallesFacturacion: React.FC = () => {
                 </div>
               </div>
 
-              <div className="px-5 py-3 text-sm text-slate-800">
+              <div className="px-5 py-3 text-sm text-base-content">
                 <div className="grid grid-cols-12 items-center">
                   <div className="col-span-3 truncate">
                     {numeroReciboSolicitud ?? resiboPagoSolicitud}
@@ -857,12 +857,12 @@ const DetallesFacturacion: React.FC = () => {
 
 
             {/* Condiciones del negocio */}
-            <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+            <section className="rounded-xl border border-base-300 bg-base-100 overflow-hidden shadow-sm">
               <div className="bg-emerald-600 text-white font-semibold px-5 py-2.5 text-sm flex items-center justify-between">
                 <span>Condiciones del negocio</span>
                 <span>Costos</span>
               </div>
-              <div className="divide-y divide-slate-200">
+              <div className="divide-y divide-base-300">
                 <RowRight
                   label="Valor bruto vehículo:"
                   value={fmtCOP(cn_bruto)}
@@ -880,7 +880,7 @@ const DetallesFacturacion: React.FC = () => {
                   label="Total vehículo sin descuento:"
                   value={fmtCOP((cn_total ?? 0) + Math.abs(descuentos ?? 0))}
                   bold
-                  badge="inline-block rounded-full bg-emerald-50 border-emerald-200 text-emerald-700 px-2 py-0.5"
+                  badge="inline-block rounded-full bg-success/10 border-success/30 text-success px-2 py-0.5"
                 />
 
 
@@ -893,11 +893,11 @@ const DetallesFacturacion: React.FC = () => {
                   label="Total vehículo:"
                   value={fmtCOP(cn_total)}
                   bold
-                  badge="inline-block rounded-full bg-emerald-50 border-emerald-200 text-emerald-700 px-2 py-0.5"
+                  badge="inline-block rounded-full bg-success/10 border-success/30 text-success px-2 py-0.5"
                 />
 
               </div>
-              {/* <div className="px-5 pb-3 pt-1 text-[11px] text-slate-500">
+              {/* <div className="px-5 pb-3 pt-1 text-[11px] text-base-content/60">
                 IVA calculado automáticamente a partir del total del vehículo
                 cuando no viene informado en la solicitud.
               </div> */}
@@ -906,12 +906,12 @@ const DetallesFacturacion: React.FC = () => {
 
             {mostrarSeccionDescuentosAutorizar && (
 
-              <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+              <section className="rounded-xl border border-base-300 bg-base-100 overflow-hidden shadow-sm">
                 <div className="bg-emerald-600 text-white font-semibold px-5 py-2.5 text-sm flex items-center justify-between">
                   <span>Descuentos Autorizar</span>
                   <span>Costos</span>
                 </div>
-                <div className="divide-y divide-slate-200">
+                <div className="divide-y divide-base-300">
 
 
                   <RowRight
@@ -928,7 +928,7 @@ const DetallesFacturacion: React.FC = () => {
                     label="Total a descontar (autorización):"
                     value={aplicaDescuentosAutorizados ? fmtCOP(-descuentoAutorizadoTotal) : "—"}
                     bold
-                    badge="inline-block rounded-full bg-red-50 border-red-200 text-red-700 px-2 py-0.5"
+                    badge="inline-block rounded-full bg-error/10 border-error/30 text-error px-2 py-0.5"
 
                   />
 
@@ -942,11 +942,11 @@ const DetallesFacturacion: React.FC = () => {
 
 
             {/* Documentos */}
-            <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+            <section className="rounded-xl border border-base-300 bg-base-100 overflow-hidden shadow-sm">
               <div className="bg-sky-700 text-white font-semibold px-5 py-2.5 text-sm">
                 Documentos
               </div>
-              <div className="divide-y divide-slate-200">
+              <div className="divide-y divide-base-300">
                 <RowRight label="SOAT:" value={fmtCOP(soat)} />
                 <RowRight label="Matrícula:" value={fmtCOP(matricula)} />
                 <RowRight label="Impuestos:" value={fmtCOP(impuestos)} />
@@ -954,7 +954,7 @@ const DetallesFacturacion: React.FC = () => {
                   label="Subtotal documentos:"
                   value={fmtCOP(subtotalDocs)}
                   bold
-                  badge="inline-block rounded-full bg-emerald-50 border-emerald-200 text-emerald-700 px-2 py-0.5"
+                  badge="inline-block rounded-full bg-success/10 border-success/30 text-success px-2 py-0.5"
 
                 />
               </div>
@@ -963,10 +963,10 @@ const DetallesFacturacion: React.FC = () => {
             {/* Seguros, accesorios y total */}
             <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-              <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+              <div className="rounded-xl border border-base-300 bg-base-100 overflow-hidden shadow-sm">
                 <div className="bg-sky-600 text-white font-semibold px-5 py-2.5 text-sm">
                   Adicionales y accesorios                </div>
-                <div className="divide-y divide-slate-200">
+                <div className="divide-y divide-base-300">
 
                   {gpsBruto > 0 && (
                     <RowRight
@@ -987,7 +987,7 @@ const DetallesFacturacion: React.FC = () => {
                   />
 
                   <RowRight
-                    badge="inline-block rounded-full bg-red-50 border-red-200 text-red-700 px-2 py-0.5"
+                    badge="inline-block rounded-full bg-error/10 border-error/30 text-error px-2 py-0.5"
                     label="Extras total sin IVA:"
                     value={fmtCOP(extrasBrutosTotal)}
 
@@ -1003,18 +1003,18 @@ const DetallesFacturacion: React.FC = () => {
                     label="Extras total con IVA:"
                     value={fmtCOP(extras_total_con_iva)}
                     bold
-                    badge="inline-block rounded-full bg-emerald-50 border-emerald-200 text-emerald-700 px-2 py-0.5"
+                    badge="inline-block rounded-full bg-success/10 border-success/30 text-success px-2 py-0.5"
 
                   />
                 </div>
 
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+              <div className="rounded-xl border border-base-300 bg-base-100 overflow-hidden shadow-sm">
                 <div className="bg-sky-600 text-white font-semibold px-5 py-2.5 text-sm">
                   TOTAL
                 </div>
-                <div className="divide-y divide-slate-200">
+                <div className="divide-y divide-base-300">
                   <RowRight
                     label="Total vehículo:"
                     value={fmtCOP(cn_total)}
@@ -1034,7 +1034,7 @@ const DetallesFacturacion: React.FC = () => {
                       label="Total a descontar (autorización):"
                       value={aplicaDescuentosAutorizados ? fmtCOP(-descuentoAutorizadoTotal) : "—"}
                       bold
-                      badge="inline-block rounded-full bg-red-50 border-red-200 text-red-700 px-2 py-0.5"
+                      badge="inline-block rounded-full bg-error/10 border-error/30 text-error px-2 py-0.5"
 
                     />
                   )}
@@ -1048,15 +1048,15 @@ const DetallesFacturacion: React.FC = () => {
                     label="TOTAL GENERAL:"
                     value={fmtCOP(totalGeneral)}
                     bold
-                    badge="inline-block rounded-full bg-emerald-50 border-emerald-200 text-emerald-700 px-2 py-0.5"
+                    badge="inline-block rounded-full bg-success/10 border-success/30 text-success px-2 py-0.5"
                   />
                 </div>
               </div>
             </section>
             {!tieneFactura && (
               <>
-                <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-                  <div className="bg-slate-800 text-white  p-3 font-semibold px-5.py-2.5 text-sm flex items-center justify-between">
+                <section className="rounded-xl border border-base-300 bg-base-100 overflow-hidden shadow-sm">
+                  <div className="bg-slate-800 text-white p-3 font-semibold px-5 py-2.5 text-sm flex items-center justify-between">
                     <span>Soportes de pago y documentos adjuntos</span>
                     {isUltimaSolLoading && (
                       <span className="text-xs text-slate-200">
@@ -1069,10 +1069,10 @@ const DetallesFacturacion: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  <div className="p-5 space-y-4 text-sm text-slate-800">
+                  <div className="p-5 space-y-4 text-sm text-base-content">
 
-                    <div className="pt-2 border-t border-dashed border-slate-200 mt-2">
-                      <div className="text-xs font-semibold text-slate-500 mb-2">
+                    <div className="pt-2 border-t border-dashed border-base-300 mt-2">
+                      <div className="text-xs font-semibold text-base-content/60 mb-2">
                         Archivos descargables:
                       </div>
                       <div className="flex flex-wrap gap-2">
@@ -1081,8 +1081,8 @@ const DetallesFacturacion: React.FC = () => {
                           target="_blank"
                           rel="noopener noreferrer"
                           className={`btn btn-xs border ${cedulaUrlFinal
-                            ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
-                            : "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed"
+                            ? "bg-base-200 hover:bg-base-300 text-base-content border-base-300"
+                            : "bg-base-200 text-base-content/50 border-base-300 cursor-not-allowed"
                             }`}
                         >
                           Cédula {cedulaUrlFinal ? "" : "(no disponible)"}
@@ -1092,8 +1092,8 @@ const DetallesFacturacion: React.FC = () => {
                           target="_blank"
                           rel="noopener noreferrer"
                           className={`btn btn-xs border ${manifiestoUrlFinal
-                            ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
-                            : "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed"
+                            ? "bg-base-200 hover:bg-base-300 text-base-content border-base-300"
+                            : "bg-base-200 text-base-content/50 border-base-300 cursor-not-allowed"
                             }`}
                         >
                           Manifiesto{" "}
@@ -1108,13 +1108,13 @@ const DetallesFacturacion: React.FC = () => {
                               href={url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="btn btn-xs border bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+                              className="btn btn-xs border bg-base-200 hover:bg-base-300 text-base-content border-base-300"
                             >
                               Otro documento #{idx + 1}
                             </a>
                           ))
                         ) : (
-                          <span className="text-xs text-slate-400">
+                          <span className="text-xs text-base-content/50">
                             Otros documentos (no disponibles)
                           </span>
                         )}
@@ -1126,7 +1126,7 @@ const DetallesFacturacion: React.FC = () => {
                             href={facturaUrlFinal}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="btn btn-xs border bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+                            className="btn btn-xs border bg-base-200 hover:bg-base-300 text-base-content border-base-300"
                           >
                             Factura
                           </a>
@@ -1138,7 +1138,7 @@ const DetallesFacturacion: React.FC = () => {
                             href={cartaUrlFinal}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="btn btn-xs border bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+                            className="btn btn-xs border bg-base-200 hover:bg-base-300 text-base-content border-base-300"
                           >
                             Carta
                           </a>
@@ -1171,13 +1171,13 @@ const DetallesFacturacion: React.FC = () => {
 
                     {/* Carga de factura: SOLO si aún NO hay factura */}
                     {!tieneFactura && (
-                      <div className="mt-4 pt-3 bg-success p-3 rounded-2xl border-t border-dashed border-slate-200 space-y-2">
-                        <div className="text-xs font-semibold text-slate-600">
+                      <div className="mt-4 pt-3 bg-success p-3 rounded-2xl border-t border-dashed border-base-300 space-y-2">
+                        <div className="text-xs font-semibold text-base-content/70">
                           Cargar factura (obligatoria para poder aceptar, solo se
                           puede adjuntar una vez):
                         </div>
                         {!idSolicitud && (
-                          <div className="text-xs text-rose-600">
+                          <div className="text-xs text-error">
                             No se encontró una solicitud de facturación asociada a
                             esta cotización. Primero crea la solicitud para poder
                             adjuntar la factura.
@@ -1189,18 +1189,18 @@ const DetallesFacturacion: React.FC = () => {
                               type="file"
                               accept=".pdf,image/*"
                               onChange={handleFacturaChange}
-                              className="block w-full text-xs text-slate-600
+                              className="block w-full text-xs text-base-content/70
                             file:mr-3 file:py-1.5 file:px-3
                             file:rounded-md file:border-0
                             file:text-xs file:font-semibold
-                            file:bg-slate-100 file:text-slate-700
-                            hover:file:bg-slate-200"
+                            file:bg-base-200 file:text-base-content
+                            hover:file:bg-base-300"
                             />
                             <button
                               type="button"
                               onClick={handleSubirFactura}
                               disabled={isSubiendoFactura || !facturaFile}
-                              className="btn btn-sm border bg-white text-success"
+                              className="btn btn-sm border bg-base-100 text-success"
                             >
                               {isSubiendoFactura
                                 ? "Subiendo factura…"
@@ -1209,7 +1209,7 @@ const DetallesFacturacion: React.FC = () => {
                           </div>
                         )}
                         {facturaFile && (
-                          <div className="text-xs text-slate-500">
+                          <div className="text-xs text-base-content/60">
                             Archivo seleccionado:{" "}
                             <span className="font-medium">
                               {facturaFile.name}
@@ -1226,12 +1226,12 @@ const DetallesFacturacion: React.FC = () => {
 
             {/* Observaciones crédito: SOLO si NO es contado (incluye crédito normal y de terceros) */}
             {!esContado && (
-              <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
+              <section className="rounded-xl border border-base-300 bg-base-100 shadow-sm">
                 <div className="p-6">
-                  <h3 className="text-base font-semibold text-slate-900.mb-2">
+                  <h3 className="text-base font-semibold text-base-content mb-2">
                     Observaciones del crédito:
                   </h3>
-                  <ul className="list-disc pl-5 text-sm text-slate-800 space-y-1.5">
+                  <ul className="list-disc pl-5 text-sm text-base-content space-y-1.5">
                     <li>
                       Crédito aprobado por{" "}
                       <span className="font-semibold">{financiador}</span>
@@ -1295,8 +1295,8 @@ const DetallesFacturacion: React.FC = () => {
             )}
 
             {/* Botones: ir al acta, recargar, PDF */}
-            <section className="border-t border-slate-200 pt-4 flex flex-wrap items-center justify-between gap-3">
-              <div className="text-sm text-slate-500">
+            <section className="border-t border-base-300 pt-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="text-sm text-base-content/60">
                 Revisa la información, descarga el soporte en PDF o consulta el
                 acta de entrega.
               </div>

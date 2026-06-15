@@ -71,7 +71,7 @@ export const DocumentosFacturacionCards: React.FC<Props> = ({
               key={`${d.file || d.url || d.name}-${idx}`}
               type="button"
               onClick={() => handleDownload(d)}
-              className="group w-full text-left rounded-xl border border-base-300/60 bg-white cursor-pointer hover:bg-[#3498DB]/20 transition p-4"
+              className="group w-full text-left rounded-xl border border-base-300/60 bg-base-100 cursor-pointer hover:bg-[#3498DB]/20 transition p-4"
               title="Descargar documento"
             >
               <div className="flex items-start gap-3">
@@ -80,7 +80,7 @@ export const DocumentosFacturacionCards: React.FC<Props> = ({
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-slate-800 truncate">
+                  <div className="font-semibold text-base-content truncate">
                     {d.name}
                   </div>
 

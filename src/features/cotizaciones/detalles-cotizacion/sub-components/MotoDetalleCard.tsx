@@ -53,7 +53,7 @@ const MotoDetalleCard: React.FC<Props> = ({
                 role="tab"
                 className={`tab rounded-lg px-4 py-2 ${tab === 'A'
                   ? 'tab-active bg-green-500 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  : 'bg-base-300 text-base-content hover:bg-base-300'
                 }`}
                 onClick={() => setTab('A')}
               >
@@ -63,7 +63,7 @@ const MotoDetalleCard: React.FC<Props> = ({
                 role="tab"
                 className={`tab rounded-lg px-4 py-2 ml-2 ${tab === 'B'
                   ? 'tab-active bg-green-500 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  : 'bg-base-300 text-base-content hover:bg-base-300'
                 }`}
                 onClick={() => setTab('B')}
               >
@@ -82,7 +82,7 @@ const MotoDetalleCard: React.FC<Props> = ({
         {moto ? (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             <div className="space-y-3 rounded-xl border border-base-300/60 p-3 bg-base-100">
-              <h3 className="text-sm font-semibold text-slate-700 mb-1">Vehículo</h3>
+              <h3 className="text-sm font-semibold text-base-content mb-1">Vehículo</h3>
 
               <DataRow label="Precio base" value={fmtCOP(moto.precioBase)} />
               <DataRow
@@ -149,7 +149,7 @@ const MotoDetalleCard: React.FC<Props> = ({
 
             <div className="space-y-3">
               <div className="rounded-xl border border-base-300/60 p-3 bg-base-100 space-y-2">
-                <h3 className="text-sm font-semibold text-slate-700 mb-1">Resumen</h3>
+                <h3 className="text-sm font-semibold text-base-content mb-1">Resumen</h3>
 
                 <div className="space-y-1.5 mt-1">
                   <DataRowText label="Garantía" value={moto.garantia ? 'Sí' : 'No'} />

@@ -284,12 +284,12 @@ const SolictudFacturarCredito: React.FC = () => {
   const BaseUrl = BASE_URL;
 
   return (
-    <main className="min-h-screen w-full bg-slate-50">
+    <main className="min-h-screen w-full bg-base-200">
 
 
       {/* Header / Migas */}
       <div className='p-4 md:p-8 pb-0 md:pb-0'>
-        <div className="border border-emerald-100 bg-linear-to-r from-[#EAF7F0]/90 to-emerald-50/50 backdrop-blur rounded-2xl shadow-sm">
+        <div className="border border-success/30 bg-linear-to-r from-success/10 to-success/10/50 backdrop-blur rounded-2xl shadow-sm">
           <div className="w-full px-4 md:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
 
             {/* IZQUIERDA: botón volver */}
@@ -303,10 +303,10 @@ const SolictudFacturarCredito: React.FC = () => {
 
             {/* DERECHA: título */}
             <div className="flex items-center gap-3 justify-center sm:justify-end">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600/10 text-emerald-700">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600/10 text-success">
                 <Receipt className="h-5 w-5" />
               </div>
-              <h1 className="text-base md:text-xl font-bold text-slate-900 tracking-tight flex flex-wrap items-center gap-2">
+              <h1 className="text-base md:text-xl font-bold text-base-content tracking-tight flex flex-wrap items-center gap-2">
                 Solicitud de facturación del crédito
                 <span className="badge badge-success text-white font-semibold">{codigo_credito}</span>
               </h1>
@@ -322,51 +322,51 @@ const SolictudFacturarCredito: React.FC = () => {
           loadingDistribuidoras ||
           loadingFull ||
           ivaLoading) && (
-            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="rounded-xl border border-base-300 bg-base-100 p-4 shadow-sm">
               Cargando información…
             </div>
           )}
 
         {(error || errorDistribuidoras || errorFull || ivaError) && (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800 shadow-sm">
+          <div className="rounded-xl border border-error/30 bg-error/10 p-4 text-error shadow-sm">
             Ocurrió un error al cargar la información del crédito o la cotización.
           </div>
         )}
 
-        <section className="rounded-2xl border border-blue-100 bg-[#EBF5FB] shadow-sm p-4 md:p-6">
+        <section className="rounded-2xl border border-info/30 bg-info/10 shadow-sm p-4 md:p-6">
 
           <div className="flex flex-col lg:flex-row gap-6 lg:items-center lg:justify-between">
 
             {/* IZQUIERDA: Info cliente */}
             <div className="flex-1 space-y-2 text-center lg:text-left">
 
-              <h2 className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700 uppercase tracking-wide">
+              <h2 className="inline-flex items-center gap-1.5 text-sm font-semibold text-info uppercase tracking-wide">
                 <User2 className="h-4 w-4" />
                 Información del cliente
               </h2>
 
-              <div className="text-base md:text-lg font-semibold text-slate-900">
+              <div className="text-base md:text-lg font-semibold text-base-content">
                 {clienteNombre}
               </div>
 
-              <div className="text-sm text-slate-600">
+              <div className="text-sm text-base-content/70">
                 {clienteDoc}
               </div>
 
-              <div className="flex items-center gap-1.5 text-sm text-slate-600 justify-center lg:justify-start">
-                <MapPin className="h-4 w-4 text-blue-500 shrink-0" />
+              <div className="flex items-center gap-1.5 text-sm text-base-content/70 justify-center lg:justify-start">
+                <MapPin className="h-4 w-4 text-info shrink-0" />
                 {clienteDireccion || "—"}
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-slate-600 justify-center lg:justify-start">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-base-content/70 justify-center lg:justify-start">
                 <div className="flex items-center gap-1.5">
-                  <Phone className="h-4 w-4 text-blue-500 shrink-0" />
-                  <span className="font-semibold text-slate-700">Tel:</span>{" "}
+                  <Phone className="h-4 w-4 text-info shrink-0" />
+                  <span className="font-semibold text-base-content">Tel:</span>{" "}
                   {clienteTelefono || "—"}
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <Mail className="h-4 w-4 text-blue-500 shrink-0" />
-                  <span className="font-semibold text-slate-700">Correo:</span>{" "}
+                  <Mail className="h-4 w-4 text-info shrink-0" />
+                  <span className="font-semibold text-base-content">Correo:</span>{" "}
                   {clienteCorreo || "—"}
                 </div>
               </div>
@@ -375,19 +375,19 @@ const SolictudFacturarCredito: React.FC = () => {
 
             {/* DERECHA: info solicitud */}
             <div className="w-full lg:w-auto">
-              <div className="h-full rounded-xl bg-white border border-blue-200 p-4 flex flex-col items-center lg:items-end text-center lg:text-right shadow-sm">
+              <div className="h-full rounded-xl bg-base-100 border border-info/30 p-4 flex flex-col items-center lg:items-end text-center lg:text-right shadow-sm">
 
-                <div className="text-base md:text-lg font-semibold text-slate-900">
+                <div className="text-base md:text-lg font-semibold text-base-content">
                   Solicitud #{numeroSolicitud ?? "—"}
                 </div>
 
-                <div className="text-xs md:text-sm text-slate-600 flex items-center gap-1 mt-1">
-                  <CalendarDays className="w-4 h-4 text-blue-500" />
+                <div className="text-xs md:text-sm text-base-content/70 flex items-center gap-1 mt-1">
+                  <CalendarDays className="w-4 h-4 text-info" />
                   <span>{fechaCreacion}</span>
                 </div>
 
-                <div className="text-xs md:text-sm text-slate-600 flex items-center gap-1 mt-1">
-                  <User2 className="w-4 h-4 text-blue-500" />
+                <div className="text-xs md:text-sm text-base-content/70 flex items-center gap-1 mt-1">
+                  <User2 className="w-4 h-4 text-info" />
                   <span>Asesor {asesor}</span>
                 </div>
 
@@ -398,7 +398,7 @@ const SolictudFacturarCredito: React.FC = () => {
         </section>
 
         {/* Tabla: Motocicleta */}
-        <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+        <section className="rounded-xl border border-base-300 bg-base-100 overflow-hidden shadow-sm">
           <div className="bg-linear-to-r from-sky-600 to-emerald-600 text-white font-semibold px-5 py-2.5 text-sm flex items-center gap-2">
             <Bike className="h-4 w-4" />
             Motocicleta
@@ -406,13 +406,13 @@ const SolictudFacturarCredito: React.FC = () => {
 
           {/* Desktop */}
           <div className="hidden md:block">
-            <div className="grid grid-cols-12 items-center px-5 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 bg-slate-50 border-b border-slate-100">
+            <div className="grid grid-cols-12 items-center px-5 py-2 text-xs font-semibold uppercase tracking-wide text-base-content/60 bg-base-200 border-b border-base-200">
               <div className="col-span-5">Motocicleta</div>
               <div className="col-span-2"># Motor</div>
               <div className="col-span-3"># Chasis</div>
               <div className="col-span-2 text-right pr-2">Color</div>
             </div>
-            <div className="px-5 py-3 text-sm text-slate-800">
+            <div className="px-5 py-3 text-sm text-base-content">
               <div className="grid grid-cols-12 items-center">
                 <div className="col-span-5 truncate font-medium">{motoNombre}</div>
                 <div className="col-span-2 truncate">{numMotor || "—"}</div>
@@ -423,7 +423,7 @@ const SolictudFacturarCredito: React.FC = () => {
           </div>
 
           {/* Mobile */}
-          <div className="md:hidden divide-y divide-slate-100">
+          <div className="md:hidden divide-y divide-base-200">
             {[
               ["Motocicleta", motoNombre],
               ["# Motor", numMotor || "—"],
@@ -431,20 +431,20 @@ const SolictudFacturarCredito: React.FC = () => {
               ["Color", color || "—"],
             ].map(([label, value], i) => (
               <div key={i} className="flex items-start justify-between gap-3 px-4 py-2.5 text-sm">
-                <span className="text-xs font-semibold text-slate-500">{label}</span>
-                <span className="text-slate-800 text-right">{value}</span>
+                <span className="text-xs font-semibold text-base-content/60">{label}</span>
+                <span className="text-base-content text-right">{value}</span>
               </div>
             ))}
           </div>
         </section>
 
         {/* Condiciones del negocio */}
-        <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+        <section className="rounded-xl border border-base-300 bg-base-100 overflow-hidden shadow-sm">
           <div className="bg-emerald-600 text-white font-semibold px-5 py-2.5 text-sm flex items-center justify-between">
             <span className="inline-flex items-center gap-2"><Wallet className="h-4 w-4" />Condiciones del negocio</span>
             <span>Costos</span>
           </div>
-          <div className="divide-y divide-slate-200">
+          <div className="divide-y divide-base-300">
             <RowRight label="Valor Moto:" value={fmtCOP(valorMoto)} />
             <RowRight label="Valor bruto:" value={fmtCOP(valorBruto)} />
             <RowRight label="IVA:" value={fmtCOP(ivaCalc)} />
@@ -452,18 +452,18 @@ const SolictudFacturarCredito: React.FC = () => {
               label="Total:"
               value={fmtCOP(valorMoto)}
               bold
-              badge="inline-block rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5"
+              badge="inline-block rounded-full bg-success/10 border border-success/30 text-success px-2 py-0.5"
             />
           </div>
         </section>
 
         {/* Precio de documentos */}
-        <section className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+        <section className="rounded-xl border border-base-300 bg-base-100 overflow-hidden shadow-sm">
           <div className="bg-sky-700 text-white font-semibold px-5 py-2.5 text-sm flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Precio de documentos
           </div>
-          <div className="divide-y divide-slate-200">
+          <div className="divide-y divide-base-300">
             <RowRight label="SOAT:" value={fmtCOP(soat)} />
             <RowRight label="Matrícula:" value={fmtCOP(matricula)} />
             <RowRight label="Impuestos:" value={fmtCOP(impuestos)} />
@@ -478,12 +478,12 @@ const SolictudFacturarCredito: React.FC = () => {
         {/* Dos columnas: Seguros y accesorios / TOTAL */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Seguros y accesorios */}
-          <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+          <div className="rounded-xl border border-base-300 bg-base-100 overflow-hidden shadow-sm">
             <div className="bg-sky-600 text-white font-semibold px-5 py-2.5 text-sm flex items-center gap-2">
               <ShieldCheck className="h-4 w-4" />
               Seguros y accesorios
             </div>
-            <div className="divide-y divide-slate-200">
+            <div className="divide-y divide-base-300">
               <RowRight label="Accesorios:" value={fmtCOP(accesoriosTotal)} />
               <RowRight label="Seguros:" value={fmtCOP(precioSeguros)} />
               <RowRight
@@ -510,12 +510,12 @@ const SolictudFacturarCredito: React.FC = () => {
           </div>
 
           {/* TOTAL */}
-          <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+          <div className="rounded-xl border border-base-300 bg-base-100 overflow-hidden shadow-sm">
             <div className="bg-sky-600 text-white font-semibold px-5 py-2.5 text-sm flex items-center gap-2">
               <Receipt className="h-4 w-4" />
               TOTAL
             </div>
-            <div className="divide-y divide-slate-200">
+            <div className="divide-y divide-base-300">
               <RowRight label="Valor Moto:" value={fmtCOP(valorMoto)} />
               <RowRight label="SOAT:" value={fmtCOP(soat)} />
               <RowRight label="Matrícula:" value={fmtCOP(matricula)} />
@@ -528,40 +528,40 @@ const SolictudFacturarCredito: React.FC = () => {
                 label="TOTAL:"
                 value={fmtCOP(totalGeneral)}
                 bold
-                badge="inline-block rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5"
+                badge="inline-block rounded-full bg-success/10 border border-success/30 text-success px-2 py-0.5"
               />
             </div>
           </div>
         </section>
 
         {/* Observaciones */}
-        <section className="rounded-xl border border-success bg-[#F1FCF6] p-6 shadow-sm">
-          <h3 className="inline-flex items-center gap-2 font-semibold text-slate-900 mb-4">
-            <ClipboardList className="h-4 w-4 text-emerald-600" />
+        <section className="rounded-xl border border-success bg-success/10 p-6 shadow-sm">
+          <h3 className="inline-flex items-center gap-2 font-semibold text-base-content mb-4">
+            <ClipboardList className="h-4 w-4 text-success" />
             Observaciones
           </h3>
-          <ul className="list-disc pl-6 text-sm leading-7 text-slate-700 space-y-1">
+          <ul className="list-disc pl-6 text-sm leading-7 text-base-content space-y-1">
             <li>
               Crédito aprobado por{' '}
-              <span className="font-semibold text-slate-900">
+              <span className="font-semibold text-base-content">
                 Crédito directo
               </span>
             </li>
             <li>
               El crédito tiene una cuota inicial de{' '}
-              <span className="font-semibold text-slate-900">
+              <span className="font-semibold text-base-content">
                 {fmtCOP(cuotaInicial)}
               </span>
             </li>
             <li>
               El saldo a financiar del producto es{' '}
-              <span className="font-semibold text-slate-900">
+              <span className="font-semibold text-base-content">
                 {fmtCOP(saldoFinanciar)}
               </span>
             </li>
             <li>
               La garantía y seguros tiene un valor de{' '}
-              <span className="font-semibold text-slate-900">
+              <span className="font-semibold text-base-content">
                 {fmtCOP(garantiaExtendida)}
               </span>
             </li>
@@ -581,20 +581,20 @@ const SolictudFacturarCredito: React.FC = () => {
         ) : (
           <>
           {/* Aviso: ya existe solicitud para este crédito */}
-          <div className="rounded-2xl border border-emerald-200 bg-white shadow-sm p-4 md:p-6">
-            <h3 className="font-semibold text-emerald-700">
+          <div className="rounded-2xl border border-success/30 bg-base-100 shadow-sm p-4 md:p-6">
+            <h3 className="font-semibold text-success">
               Ya existe una solicitud de facturación para este crédito
             </h3>
-            <p className="text-sm text-slate-600 mt-1">
+            <p className="text-sm text-base-content/70 mt-1">
               Para evitar duplicados, el formulario no se mostrará.
             </p>
           </div>
 
           {/* Si hay solicitud registrada, mostramos el detalle */}
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
             {/* Encabezado */}
             <div className="flex items-center justify-between gap-3 mb-6">
-              <h3 className="text-lg font-semibold text-slate-900">
+              <h3 className="text-lg font-semibold text-base-content">
                 Solicitud registrada
               </h3>
 
@@ -614,49 +614,49 @@ const SolictudFacturarCredito: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Datos de la solicitud */}
-              <div className="rounded-xl border border-slate-200 p-4">
-                <h4 className="font-semibold text-slate-900 mb-3">
+              <div className="rounded-xl border border-base-300 p-4">
+                <h4 className="font-semibold text-base-content mb-3">
                   Datos de la solicitud
                 </h4>
 
-                <dl className="text-sm text-slate-700 grid grid-cols-1 gap-2">
+                <dl className="text-sm text-base-content grid grid-cols-1 gap-2">
                   <div className="flex justify-between gap-4">
-                    <dt className="text-slate-500">Agencia</dt>
+                    <dt className="text-base-content/60">Agencia</dt>
                     <dd className="font-medium text-right">
                       {solicitud?.agencia ?? '—'}
                     </dd>
                   </div>
 
                   <div className="flex justify-between gap-4">
-                    <dt className="text-slate-500">Distribuidora</dt>
+                    <dt className="text-base-content/60">Distribuidora</dt>
                     <dd className="font-medium text-right">
                       {solicitud?.distribuidora ?? '—'}
                     </dd>
                   </div>
 
                   <div className="flex justify-between gap-4">
-                    <dt className="text-slate-500">Código</dt>
+                    <dt className="text-base-content/60">Código</dt>
                     <dd className="font-medium text-right">
                       {solicitud?.codigo ?? '—'}
                     </dd>
                   </div>
 
                   <div className="flex justify-between gap-4">
-                    <dt className="text-slate-500">Código crédito</dt>
+                    <dt className="text-base-content/60">Código crédito</dt>
                     <dd className="font-medium text-right">
                       {solicitud?.codigoCredito ?? '—'}
                     </dd>
                   </div>
 
                   <div className="flex justify-between gap-4">
-                    <dt className="text-slate-500">Cliente</dt>
+                    <dt className="text-base-content/60">Cliente</dt>
                     <dd className="font-medium text-right">
                       {solicitud?.cliente ?? '—'}
                     </dd>
                   </div>
 
                   <div className="flex justify-between gap-4">
-                    <dt className="text-slate-500">Tipo</dt>
+                    <dt className="text-base-content/60">Tipo</dt>
                     <dd className="text-right">
                       <span className="badge badge-info badge-sm font-medium">
                         {solicitud?.tipo ?? '—'}
@@ -665,7 +665,7 @@ const SolictudFacturarCredito: React.FC = () => {
                   </div>
 
                   <div className="flex justify-between gap-4">
-                    <dt className="text-slate-500">Recibo pago</dt>
+                    <dt className="text-base-content/60">Recibo pago</dt>
                     <dd className="font-medium text-right">
                       {solicitud?.numeroRecibo ?? '—'}
                     </dd>
@@ -673,7 +673,7 @@ const SolictudFacturarCredito: React.FC = () => {
 
                   {/* Badges en detalle también */}
                   <div className="flex justify-between gap-4">
-                    <dt className="text-slate-500">Autorizado</dt>
+                    <dt className="text-base-content/60">Autorizado</dt>
                     <dd className="text-right">
                       <span className={estadoBadge(solicitud?.autorizado).clase}>
                         {estadoBadge(solicitud?.autorizado).texto}
@@ -682,7 +682,7 @@ const SolictudFacturarCredito: React.FC = () => {
                   </div>
 
                   <div className="flex justify-between gap-4">
-                    <dt className="text-slate-500">Facturado</dt>
+                    <dt className="text-base-content/60">Facturado</dt>
                     <dd className="text-right">
                       <span className={estadoBadge(solicitud?.facturado).clase}>
                         {estadoBadge(solicitud?.facturado).texto}
@@ -691,7 +691,7 @@ const SolictudFacturarCredito: React.FC = () => {
                   </div>
 
                   <div className="flex justify-between gap-4">
-                    <dt className="text-slate-500">Entrega autorizada</dt>
+                    <dt className="text-base-content/60">Entrega autorizada</dt>
                     <dd className="text-right">
                       <span
                         className={estadoBadge(
@@ -704,14 +704,14 @@ const SolictudFacturarCredito: React.FC = () => {
                   </div>
 
                   <div className="flex justify-between gap-4">
-                    <dt className="text-slate-500">Creado</dt>
+                    <dt className="text-base-content/60">Creado</dt>
                     <dd className="font-medium text-right">
                       {fmtFecha(solicitud?.fechaCreacion) || (solicitud?.fechaCreacion ?? '—')}
                     </dd>
                   </div>
 
                   <div className="flex justify-between gap-4">
-                    <dt className="text-slate-500">Actualizado</dt>
+                    <dt className="text-base-content/60">Actualizado</dt>
                     <dd className="font-medium text-right">
                       {fmtFecha(solicitud?.actualizado) || (solicitud?.actualizado ?? '—')}
                     </dd>
@@ -720,15 +720,15 @@ const SolictudFacturarCredito: React.FC = () => {
               </div>
 
               {/* Documentos */}
-              <div className="rounded-xl border border-slate-200 p-4">
-                <h4 className="font-semibold text-slate-900 mb-3">Documentos</h4>
+              <div className="rounded-xl border border-base-300 p-4">
+                <h4 className="font-semibold text-base-content mb-3">Documentos</h4>
 
-                <ul className="text-sm text-slate-700 space-y-3">
+                <ul className="text-sm text-base-content space-y-3">
                   {/* Cédula */}
                   <li className="flex items-center justify-between gap-4">
                     <div className="min-w-0">
                       <span className="font-medium block">Cédula</span>
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-base-content/60">
                         Documento de identidad
                       </span>
                     </div>
@@ -754,7 +754,7 @@ const SolictudFacturarCredito: React.FC = () => {
                   <li className="flex items-center justify-between gap-4">
                     <div className="min-w-0">
                       <span className="font-medium block">Manifiesto</span>
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-base-content/60">
                         Soporte de manifiesto
                       </span>
                     </div>
@@ -779,7 +779,7 @@ const SolictudFacturarCredito: React.FC = () => {
                   <li className=" items-center justify-between gap-4 hidden">
                     <div className="min-w-0">
                       <span className="font-medium block">Factura</span>
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-base-content/60">
                         Factura electrónica (demo)
                       </span>
                     </div>
@@ -794,7 +794,7 @@ const SolictudFacturarCredito: React.FC = () => {
               <Link to={`/creditos/detalle/${codigo_credito}`}>
                 <button
                   type="button"
-                  className="btn border-slate-300 bg-white hover:bg-slate-50 text-slate-700"
+                  className="btn border-base-300 bg-base-100 hover:bg-base-200 text-base-content"
                   aria-label="Volver al detalle del crédito"
                   title="Volver al detalle del crédito"
                 >
@@ -817,9 +817,9 @@ const RowRight: React.FC<{
   badge?: string;
 }> = ({ label, value = '', bold, badge = '' }) => (
   <div className="px-5 py-3 grid grid-cols-12 items-center text-sm">
-    <div className="col-span-8 sm:col-span-10 text-slate-700">{label}</div>
+    <div className="col-span-8 sm:col-span-10 text-base-content">{label}</div>
     <div
-      className={`col-span-4 sm:col-span-2 text-right ${bold ? 'font-semibold text-slate-900' : 'font-medium text-slate-800'
+      className={`col-span-4 sm:col-span-2 text-right ${bold ? 'font-semibold text-base-content' : 'font-medium text-base-content'
         }`}
     >
       {badge ? <span className={badge}>{value}</span> : value}

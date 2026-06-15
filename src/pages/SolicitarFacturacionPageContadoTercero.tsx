@@ -49,13 +49,13 @@ const estadoLabel = (estado?: string) => {
 const estadoBadgeColor = (estado?: string) => {
   switch (estado) {
     case "Solicitar facturación":
-      return "bg-emerald-100 text-emerald-700 border-emerald-200";
+      return "bg-success/10 text-success border-success/30";
     case "Solicitar prefacturación":
-      return "bg-blue-100 text-blue-700 border-blue-200";
+      return "bg-info/10 text-info border-info/30";
     case "Facturado":
-      return "bg-purple-100 text-purple-700 border-purple-200";
+      return "bg-secondary/10 text-secondary border-secondary/30";
     default:
-      return "bg-slate-100 text-slate-700 border-slate-200";
+      return "bg-base-200 text-base-content border-base-300";
   }
 };
 
@@ -91,19 +91,19 @@ const Row = ({
   cols: React.ReactNode[];
   emphasis?: "none" | "success" | "danger";
 }) => (
-  <div className="grid grid-cols-12 border-b last:border-b-0 border-slate-100 bg-white">
+  <div className="grid grid-cols-12 border-b last:border-b-0 border-base-200 bg-base-100">
     {cols.map((c, i) => (
       <div
         key={i}
         className={`px-3 py-2 text-xs md:text-sm ${i === 0
-          ? "col-span-6 md:col-span-6 font-medium text-slate-600"
+          ? "col-span-6 md:col-span-6 font-medium text-base-content/70"
           : `col-span-6 md:col-span-6 text-right ${emphasis === "success"
-            ? "text-emerald-700 font-semibold"
+            ? "text-success font-semibold"
             : emphasis === "danger"
-              ? "text-rose-600 font-semibold"
-              : "text-slate-800"
+              ? "text-error font-semibold"
+              : "text-base-content"
           }`
-          } border-r border-slate-100 last:border-r-0`}
+          } border-r border-base-200 last:border-r-0`}
       >
         {c}
       </div>
@@ -520,13 +520,13 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-linear-to-b from-slate-50 to-slate-100 flex items-center justify-center px-4">
-        <div className="max-w-md w-full rounded-2xl bg-white border border-slate-200 shadow-lg p-8 text-center space-y-3">
+      <main className="min-h-screen bg-linear-to-b from-base-200 to-base-100 flex items-center justify-center px-4">
+        <div className="max-w-md w-full rounded-2xl bg-base-100 border border-base-300 shadow-lg p-8 text-center space-y-3">
           <div className="loader mx-auto mb-2" />
-          <h2 className="font-semibold text-slate-800 text-lg">
+          <h2 className="font-semibold text-base-content text-lg">
             Cargando solicitud…
           </h2>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-base-content/60">
             Estamos obteniendo la información de la cotización.
           </p>
         </div>
@@ -536,15 +536,15 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
 
   if (error || !data) {
     return (
-      <main className="min-h-screen bg-linear-to-b from-slate-50 to-slate-100 flex items-center justify-center px-4">
-        <div className="max-w-md w-full rounded-2xl bg-white border border-rose-200 shadow-lg p-8 text-center space-y-3">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-100">
-            <AlertCircle className="h-6 w-6 text-rose-600" />
+      <main className="min-h-screen bg-linear-to-b from-base-200 to-base-100 flex items-center justify-center px-4">
+        <div className="max-w-md w-full rounded-2xl bg-base-100 border border-error/30 shadow-lg p-8 text-center space-y-3">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-error/10">
+            <AlertCircle className="h-6 w-6 text-error" />
           </div>
-          <h2 className="font-semibold text-rose-700 text-lg">
+          <h2 className="font-semibold text-error text-lg">
             No se encontró la solicitud
           </h2>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-base-content/70">
             {error?.message || "Verifica el código e intenta nuevamente."}
           </p>
           <button className="btn btn-outline w-full" onClick={() => navigate(-1)}>
@@ -557,13 +557,13 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
 
   if (showValidatingUltima) {
     return (
-      <main className="min-h-screen bg-linear-to-b from-slate-50 to-slate-100 flex items-center justify-center px-4">
-        <div className="max-w-md w-full rounded-2xl bg-white border border-slate-200 shadow-lg p-8 text-center space-y-3">
+      <main className="min-h-screen bg-linear-to-b from-base-200 to-base-100 flex items-center justify-center px-4">
+        <div className="max-w-md w-full rounded-2xl bg-base-100 border border-base-300 shadow-lg p-8 text-center space-y-3">
           <div className="loader mx-auto mb-2" />
-          <h2 className="font-semibold text-slate-800 text-lg">
+          <h2 className="font-semibold text-base-content text-lg">
             Validando solicitud existente…
           </h2>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-base-content/60">
             Revisando si ya hay una solicitud para esta cotización.
           </p>
         </div>
@@ -572,26 +572,26 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
   }
 
   const encabezadoCliente = (
-    <div className="w-full bg-[#EBF5FB] border border-blue-100 rounded-2xl p-4 md:p-5 shadow-sm">
+    <div className="w-full bg-info/10 border border-info/30 rounded-2xl p-4 md:p-5 shadow-sm">
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 
         {/* IZQUIERDA: Info cliente */}
         <div className="flex items-center gap-3 text-center md:text-left">
-          <div className="hidden md:flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-600/10 text-blue-700">
+          <div className="hidden md:flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-600/10 text-info">
             <User2 className="h-5 w-5" />
           </div>
           <div className="space-y-0.5">
-            <h3 className="text-base md:text-lg font-semibold text-slate-900">
+            <h3 className="text-base md:text-lg font-semibold text-base-content">
               {safe(data.nombre_cliente)}
             </h3>
 
-            <div className="text-sm text-slate-600">
+            <div className="text-sm text-base-content/70">
               C.C. <span className="font-medium">{safe(data.numero_documento)}</span>
             </div>
 
             {data.email && (
-              <div className="text-xs text-slate-500">
+              <div className="text-xs text-base-content/60">
                 {data.email}
               </div>
             )}
@@ -605,11 +605,11 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
             {estadoLabel((cotF as any)?.estado ?? (data as any)?.estado)}
           </span>
 
-          <span className="px-2 py-1 rounded-full bg-white text-slate-600 border border-slate-200 shadow-sm">
+          <span className="px-2 py-1 rounded-full bg-base-100 text-base-content/70 border border-base-300 shadow-sm">
             IVA: <span className="font-semibold">{IVA_PCT.toFixed(2)}%</span>
           </span>
 
-          <span className="px-2 py-1 rounded-full bg-white text-slate-600 border border-slate-200 shadow-sm">
+          <span className="px-2 py-1 rounded-full bg-base-100 text-base-content/70 border border-base-300 shadow-sm">
             Pago:{" "}
             <span className="font-semibold">
               {esCreditoTercerosCot
@@ -626,10 +626,10 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
   );
 
   return (
-    <main className="min-h-screen bg-linear-to-b w-full from-slate-50 to-slate-100 py-6 md:py-8">
+    <main className="min-h-screen bg-linear-to-b w-full from-base-200 to-base-100 py-6 md:py-8">
       <div className="w-full space-y-6 md:space-y-8 px-4 md:px-6 lg:px-8">
 
-        <div className="border border-emerald-100 bg-linear-to-r from-[#EAF7F0]/90 to-emerald-50/60 backdrop-blur rounded-2xl px-4 md:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm">
+        <div className="border border-success/30 bg-linear-to-r from-success/10 to-success/10/60 backdrop-blur rounded-2xl px-4 md:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm">
 
           {/* Botón volver */}
           <div>
@@ -642,15 +642,15 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
 
           {/* Título */}
           <div className="flex items-center gap-3 justify-center sm:justify-end">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600/10 text-emerald-700">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600/10 text-success">
               <Receipt className="h-5 w-5" />
             </div>
             <div className="text-center sm:text-right">
-              <h1 className="text-lg md:text-xl font-bold tracking-tight text-slate-900 leading-tight">
+              <h1 className="text-lg md:text-xl font-bold tracking-tight text-base-content leading-tight">
                 Solicitud de facturación
               </h1>
               {(esCreditoTercerosCot || esContado) && (
-                <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-success">
                   {esCreditoTercerosCot ? "Crédito de terceros" : "Contado"}
                 </span>
               )}
@@ -658,36 +658,36 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
           </div>
         </div>
         {/* Header */}
-        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4 md:p-6">
+        <section className="rounded-2xl border border-base-300 bg-base-100 shadow-sm p-4 md:p-6">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 md:gap-6">
             <div className="flex-1">{encabezadoCliente}</div>
 
             <div className="flex flex-col items-start md:items-end gap-1 w-full md:w-auto">
-              <div className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-400">
+              <div className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-base-content/50">
                 <FileText className="h-3.5 w-3.5" />
                 Resumen de cotización
               </div>
 
-              <div className="text-lg font-bold text-slate-900">
+              <div className="text-lg font-bold text-base-content">
                 Cotización #{data.cotizacion_id ?? "—"}
               </div>
 
               <div className="flex flex-wrap md:justify-end items-center gap-2 text-xs mt-1">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-50 text-slate-700 border border-slate-200">
-                  <Hash className="h-3 w-3 text-slate-400" />
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-base-200 text-base-content border border-base-300">
+                  <Hash className="h-3 w-3 text-base-content/50" />
                   Código: <span className="font-medium">{data.codigo}</span>
                 </span>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-50 text-slate-700 border border-slate-200">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-base-200 text-base-content border border-base-300">
                   ID: <span className="font-medium">{data.idPrimaria}</span>
                 </span>
               </div>
 
               <div className="mt-3 w-full md:w-auto md:min-w-50">
-                <div className="rounded-xl border border-emerald-200 bg-linear-to-br from-emerald-50 to-emerald-100/50 px-4 py-3 text-right shadow-sm">
-                  <div className="text-[11px] text-emerald-700 font-semibold tracking-wide uppercase">
+                <div className="rounded-xl border border-success/30 bg-linear-to-br from-success/10 to-success/10/50 px-4 py-3 text-right shadow-sm">
+                  <div className="text-[11px] text-success font-semibold tracking-wide uppercase">
                     Total general
                   </div>
-                  <div className="text-xl font-bold text-emerald-800">
+                  <div className="text-xl font-bold text-success">
                     {fmtCOP(totalGeneralNum)}
                   </div>
                 </div>
@@ -699,7 +699,7 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
         {/* Datos del cliente / solicitud */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           <Box title="Datos del cliente" tone="emerald">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-slate-700">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-base-content">
               <div>
                 <span className="font-semibold">Fecha de nacimiento:</span>{" "}
                 {fmtFecha((data as any).fecha_nacimiento)}
@@ -728,28 +728,28 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
           </Box>
 
           <Box title="Información de la solicitud" tone="emerald">
-            <div className="space-y-1.5 text-sm text-slate-700">
+            <div className="space-y-1.5 text-sm text-base-content">
               {(cotF as any)?.asesor && (
                 <div className="flex items-center gap-2">
-                  <User2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                  <User2 className="h-4 w-4 text-success shrink-0" />
                   <span className="font-semibold">Asesor:</span>{" "}
                   {safe((cotF as any).asesor)}
                 </div>
               )}
               <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-emerald-500 shrink-0" />
+                <CalendarDays className="h-4 w-4 text-success shrink-0" />
                 <span className="font-semibold">Creada:</span>{" "}
                 {fmtFecha((data as any).creado_en)}
               </div>
               <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-emerald-500 shrink-0" />
+                <CalendarDays className="h-4 w-4 text-success shrink-0" />
                 <span className="font-semibold">Actualizada:</span>{" "}
                 {fmtFecha((data as any).actualizado_en)}
               </div>
 
               {(data as any).observaciones && (
-                <div className="mt-3 text-xs text-slate-600 bg-slate-50 rounded-lg p-3 border border-slate-100">
-                  <span className="font-semibold text-slate-800">
+                <div className="mt-3 text-xs text-base-content/70 bg-base-200 rounded-lg p-3 border border-base-200">
+                  <span className="font-semibold text-base-content">
                     Observaciones de la solicitud:{" "}
                   </span>
                   {(data as any).observaciones}
@@ -760,34 +760,34 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
         </section>
 
         {/* Detalle de la moto */}
-        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <section className="rounded-2xl border border-base-300 bg-base-100 shadow-sm overflow-hidden">
           <div className="px-4 md:px-5 pt-4 pb-3 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-            <h3 className="inline-flex items-center gap-2 text-sm md:text-base font-semibold text-slate-800">
-              <Bike className="h-4 w-4 text-sky-600" />
+            <h3 className="inline-flex items-center gap-2 text-sm md:text-base font-semibold text-base-content">
+              <Bike className="h-4 w-4 text-info" />
               Detalle de la motocicleta
             </h3>
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-base-content/60">
               Verifique que los datos coincidan con la cotización y la moto a facturar
             </span>
           </div>
 
           {/* Desktop: tabla */}
-          <div className="hidden md:block border-t border-slate-100 overflow-x-auto">
+          <div className="hidden md:block border-t border-base-200 overflow-x-auto">
             <div className="min-w-180">
               <HeadRow cols={["Motocicleta", "Modelo", "# Motor", "# Chasis", "Color", "Placa"]} />
               <div className="grid grid-cols-12 text-sm">
-                <div className="col-span-2 px-3 py-2.5 border-r border-slate-100 font-medium text-slate-800">{motoNombre}</div>
-                <div className="col-span-2 px-3 py-2.5 border-r border-slate-100 text-slate-700">{motoModelo}</div>
-                <div className="col-span-2 px-3 py-2.5 border-r border-slate-100 text-slate-700">{safe((data as any).numero_motor)}</div>
-                <div className="col-span-2 px-3 py-2.5 border-r border-slate-100 text-slate-700">{safe((data as any).numero_chasis)}</div>
-                <div className="col-span-2 px-3 py-2.5 border-r border-slate-100 text-slate-700">{safe((data as any).color)}</div>
-                <div className="col-span-2 px-3 py-2.5 text-slate-700">{safe((data as any).placa)}</div>
+                <div className="col-span-2 px-3 py-2.5 border-r border-base-200 font-medium text-base-content">{motoNombre}</div>
+                <div className="col-span-2 px-3 py-2.5 border-r border-base-200 text-base-content">{motoModelo}</div>
+                <div className="col-span-2 px-3 py-2.5 border-r border-base-200 text-base-content">{safe((data as any).numero_motor)}</div>
+                <div className="col-span-2 px-3 py-2.5 border-r border-base-200 text-base-content">{safe((data as any).numero_chasis)}</div>
+                <div className="col-span-2 px-3 py-2.5 border-r border-base-200 text-base-content">{safe((data as any).color)}</div>
+                <div className="col-span-2 px-3 py-2.5 text-base-content">{safe((data as any).placa)}</div>
               </div>
             </div>
           </div>
 
           {/* Mobile: tarjetas label/valor */}
-          <div className="md:hidden border-t border-slate-100 divide-y divide-slate-100">
+          <div className="md:hidden border-t border-base-200 divide-y divide-base-200">
             {[
               ["Motocicleta", motoNombre],
               ["Modelo", motoModelo],
@@ -797,8 +797,8 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
               ["Placa", safe((data as any).placa)],
             ].map(([label, value], i) => (
               <div key={i} className="flex items-start justify-between gap-3 px-4 py-2.5">
-                <span className="text-xs font-semibold text-slate-500">{label}</span>
-                <span className="text-sm text-slate-800 text-right">{value}</span>
+                <span className="text-xs font-semibold text-base-content/60">{label}</span>
+                <span className="text-sm text-base-content text-right">{value}</span>
               </div>
             ))}
           </div>
@@ -812,19 +812,19 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
         >
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-0">
             <div className="md:col-span-8 flex items-center justify-center">
-              <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-5 md:px-6 md:py-6 text-center">
-                <p className="text-xs md:text-sm text-slate-600">
+              <div className="rounded-xl border border-base-200 bg-base-200 px-4 py-5 md:px-6 md:py-6 text-center">
+                <p className="text-xs md:text-sm text-base-content/70">
                   Esta sección resume los valores de la negociación base del vehículo.
                   Revise que el valor bruto, IVA y total coincidan con el acuerdo con
                   el cliente.
                 </p>
-                <div className="mt-3 text-[11px] text-slate-500">
+                <div className="mt-3 text-[11px] text-base-content/60">
                   * Incluye descuento (ya incluido) + autorizaciones (si aplica).
                 </div>
               </div>
             </div>
 
-            <div className="md:col-span-4 border border-slate-200 md:border-0 md:border-l rounded-xl md:rounded-none md:rounded-r-2xl overflow-hidden">
+            <div className="md:col-span-4 border border-base-300 md:border-0 md:border-l rounded-xl md:rounded-none md:rounded-r-2xl overflow-hidden">
               <Row
                 cols={[
                   "Total vehículo:",
@@ -846,7 +846,7 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
               <Row
                 cols={[
                   "Total vehículo:",
-                  <span className="font-semibold text-emerald-700">
+                  <span className="font-semibold text-success">
                     {fmtCOP(cn_total)}
                   </span>,
                 ]}
@@ -864,7 +864,7 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
             right={<span className="font-semibold text-sm">Detalle</span>}
           >
             <div className="space-y-3">
-              <div className="rounded-lg border border-slate-200 overflow-hidden">
+              <div className="rounded-lg border border-base-300 overflow-hidden">
                 <Row
                   cols={[
                     "Accesorios (bruto):",
@@ -880,7 +880,7 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
                 <Row
                   cols={[
                     "Extras total sin IVA:",
-                    <span className="font-semibold text-rose-600">
+                    <span className="font-semibold text-error">
                       {fmtCOP(extrasBrutosTotal)}
                     </span>,
                   ]}
@@ -895,7 +895,7 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
                 <Row
                   cols={[
                     "Extras total con IVA:",
-                    <span className="font-bold text-emerald-700">
+                    <span className="font-bold text-success">
                       {fmtCOP(accesorios_total)}
                     </span>,
                   ]}
@@ -903,7 +903,7 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
                 />
               </div>
 
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-base-content/60">
                 Se calcula IVA sobre extras (accesorios + adicionales), igual que la otra vista.
               </p>
             </div>
@@ -911,7 +911,7 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
 
           <Box title="Total de la operación" tone="sky">
             <div className="space-y-3">
-              <div className="rounded-lg border border-slate-200 overflow-hidden">
+              <div className="rounded-lg border border-base-300 overflow-hidden">
                 <Row
                   cols={[
                     "Total vehículo:",
@@ -951,7 +951,7 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
                 <Row
                   cols={[
                     "TOTAL GENERAL:",
-                    <span className="font-bold text-emerald-700 text-base">
+                    <span className="font-bold text-success text-base">
                       {fmtCOP(totalGeneralNum)}
                     </span>,
                   ]}
@@ -959,7 +959,7 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
                 />
               </div>
 
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-base-content/60">
                 Este total corresponde al valor general a facturar. Asegúrese de que
                 las cifras coincidan con el negocio acordado con el cliente.
               </p>
@@ -968,21 +968,21 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
         </div>
 
         {yaExisteSolicitud ? (
-          <div className="rounded-2xl border border-emerald-200 bg-linear-to-r from-emerald-50/60 to-white shadow-sm p-4 md:p-6 flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100">
-              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+          <div className="rounded-2xl border border-success/30 bg-linear-to-r from-success/10/60 to-base-100 shadow-sm p-4 md:p-6 flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-success/10">
+              <CheckCircle2 className="h-5 w-5 text-success" />
             </div>
             <div>
-              <h3 className="font-semibold text-emerald-700">
+              <h3 className="font-semibold text-success">
                 Ya existe una solicitud de facturación para esta cotización
               </h3>
-              <p className="text-sm text-slate-600 mt-1">
+              <p className="text-sm text-base-content/70 mt-1">
                 Para evitar duplicados, el formulario no se mostrará.
               </p>
             </div>
           </div>
         ) : (
-          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4 md:p-6 lg:p-7">
+          <section className="rounded-2xl border border-base-300 bg-base-100 shadow-sm p-4 md:p-6 lg:p-7">
             <SolicitarFacturacionForm
               control={control}
               register={register}

@@ -278,20 +278,20 @@ const TablaCreditos: React.FC = () => {
                                         useAuthStore.getState().user?.rol === "Lider_punto"
                                     ) && c.estado !== "Aprobado" && c.estado !== "Facturado" && (
                                             <Link to={`/creditos/detalle/${c.codigo_credito}`} onClick={() => show()}>
-                                                <button className="btn btn-sm text-warning bg-white btn-circle" title="Editar Estado">
+                                                <button className="btn btn-sm text-warning bg-base-100 btn-circle" title="Editar Estado">
                                                     <Pencil size="18px" />
                                                 </button>
                                             </Link>
                                         )}
 
                                     <Link to={`/creditos/detalle/${c.codigo_credito}`} onClick={() => show()}>
-                                        <button className="btn btn-sm text-success bg-white btn-circle" title="Ver">
+                                        <button className="btn btn-sm text-success bg-base-100 btn-circle" title="Ver">
                                             <Eye size="18px" />
                                         </button>
                                     </Link>
                                     {useAuthStore.getState().user?.rol === "Asesor" && c.estado !== "Facturado" && (
                                         <Link to={`/creditos/registrar/${c.codigo_credito}`}>
-                                            <button className="btn btn-sm text-warning bg-white btn-circle" title="Editar">
+                                            <button className="btn btn-sm text-warning bg-base-100 btn-circle" title="Editar">
                                                 <Pen size="18px" />
                                             </button>
                                         </Link>

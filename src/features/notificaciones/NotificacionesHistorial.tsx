@@ -42,25 +42,25 @@ const getIcon = (tipo: string) => {
   switch (tipo) {
     case "success":
       return (
-        <div className="p-2 bg-emerald-50 text-emerald-500 rounded-xl border border-emerald-100">
+        <div className="p-2 bg-success/10 text-success rounded-xl border border-success/30">
           <CheckCircle2 className="w-4 h-4" />
         </div>
       );
     case "error":
       return (
-        <div className="p-2 bg-rose-50 text-rose-500 rounded-xl border border-rose-100">
+        <div className="p-2 bg-error/10 text-error rounded-xl border border-error/30">
           <AlertCircle className="w-4 h-4" />
         </div>
       );
     case "warning":
       return (
-        <div className="p-2 bg-amber-50 text-amber-500 rounded-xl border border-amber-100">
+        <div className="p-2 bg-warning/10 text-warning rounded-xl border border-warning/30">
           <AlertTriangle className="w-4 h-4" />
         </div>
       );
     default:
       return (
-        <div className="p-2 bg-blue-50 text-blue-500 rounded-xl border border-blue-100">
+        <div className="p-2 bg-info/10 text-info rounded-xl border border-info/30">
           <Info className="w-4 h-4" />
         </div>
       );
@@ -126,19 +126,19 @@ const NotificacionesHistorial: React.FC = () => {
     <div className="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
       {/* HEADER */}
       <div className="flex items-center gap-2.5 px-5 py-4 border-b border-base-200">
-        <div className="p-1.5 bg-slate-50 text-slate-700 rounded-lg border border-slate-100">
+        <div className="p-1.5 bg-base-200 text-base-content rounded-lg border border-base-200">
           <Inbox className="w-4 h-4" />
         </div>
         <div>
-          <h2 className="text-base font-bold text-slate-800">Historial de notificaciones</h2>
-          <p className="text-xs text-slate-400">{total} en total</p>
+          <h2 className="text-base font-bold text-base-content">Historial de notificaciones</h2>
+          <p className="text-xs text-base-content/50">{total} en total</p>
         </div>
       </div>
 
       {/* FILTROS */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 px-5 py-3.5 border-b border-base-200">
         <label className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-base-content/50" />
           <input
             type="text"
             value={qInput}
@@ -181,7 +181,7 @@ const NotificacionesHistorial: React.FC = () => {
         </select>
 
         {hayFiltros && (
-          <button onClick={limpiarFiltros} className="btn btn-sm btn-ghost rounded-xl gap-1 text-slate-500">
+          <button onClick={limpiarFiltros} className="btn btn-sm btn-ghost rounded-xl gap-1 text-base-content/60">
             <X className="w-4 h-4" />
             Limpiar
           </button>
@@ -193,7 +193,7 @@ const NotificacionesHistorial: React.FC = () => {
         {isLoading && rows.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-2">
             <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-xs font-medium text-slate-400">Cargando…</p>
+            <p className="text-xs font-medium text-base-content/50">Cargando…</p>
           </div>
         ) : isError ? (
           <div className="flex flex-col items-center justify-center py-20 text-error">
@@ -202,11 +202,11 @@ const NotificacionesHistorial: React.FC = () => {
           </div>
         ) : rows.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="p-3 bg-slate-50 rounded-xl text-slate-400 mb-2.5">
+            <div className="p-3 bg-base-200 rounded-xl text-base-content/50 mb-2.5">
               <Bell className="w-6 h-6" />
             </div>
-            <p className="text-sm font-bold text-slate-700">Sin resultados</p>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-sm font-bold text-base-content">Sin resultados</p>
+            <p className="text-xs text-base-content/50 mt-0.5">
               {hayFiltros ? "Prueba ajustando los filtros." : "Aún no hay notificaciones."}
             </p>
           </div>
@@ -214,8 +214,8 @@ const NotificacionesHistorial: React.FC = () => {
           rows.map((n, i) => (
             <div
               key={n.id}
-              className={`group flex items-start gap-3.5 px-5 py-4 transition-colors hover:bg-blue-50/40 ${
-                i % 2 === 0 ? "bg-white" : "bg-slate-50/70"
+              className={`group flex items-start gap-3.5 px-5 py-4 transition-colors hover:bg-info/10/40 ${
+                i % 2 === 0 ? "bg-base-100" : "bg-base-200/70"
               } ${n.url ? "cursor-pointer" : ""}`}
               onClick={() => n.url && navigate(n.url)}
             >
@@ -223,7 +223,7 @@ const NotificacionesHistorial: React.FC = () => {
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
+                  <p className="text-sm font-bold text-base-content group-hover:text-info transition-colors">
                     {n.titulo}
                   </p>
                   <span className={`shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded ${moduloBadgeClass(n.modulo)}`}>
@@ -231,10 +231,10 @@ const NotificacionesHistorial: React.FC = () => {
                   </span>
                 </div>
 
-                <p className="text-xs text-slate-500 mt-0.5 leading-relaxed wrap-break-word">{n.mensaje}</p>
+                <p className="text-xs text-base-content/60 mt-0.5 leading-relaxed wrap-break-word">{n.mensaje}</p>
 
                 <div className="flex items-center gap-3 mt-2">
-                  <span className="text-[11px] text-slate-400" title={formatFechaLarga(n.created_at)}>
+                  <span className="text-[11px] text-base-content/50" title={formatFechaLarga(n.created_at)}>
                     {humanizeDesde(n.created_at)} · {formatFechaLarga(n.created_at)}
                   </span>
 
@@ -244,7 +244,7 @@ const NotificacionesHistorial: React.FC = () => {
                         e.stopPropagation();
                         navigate(n.url as string);
                       }}
-                      className="flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-700"
+                      className="flex items-center gap-1 text-[11px] font-bold text-info hover:text-info"
                     >
                       <FileText className="w-3 h-3" />
                       Abrir

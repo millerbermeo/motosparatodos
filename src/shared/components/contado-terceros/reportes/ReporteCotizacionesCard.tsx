@@ -1,6 +1,6 @@
 import React from "react";
 import { Download, FileSpreadsheet, CalendarDays, Filter } from "lucide-react";
-import * as XLSX from "xlsx";
+// xlsx se carga bajo demanda (import dinámico) dentro del handler de exportación
 import Swal from "sweetalert2";
 import { usePrecargarReporteCotizacionesFull } from "../../../../services/cotizacionesReporteService";
 
@@ -87,6 +87,7 @@ const ReporteCotizacionesCard: React.FC = () => {
 
   const downloadReporteCotizaciones = async () => {
     try {
+      const XLSX = await import("xlsx");
       Swal.fire({
         title: "Generando reporte...",
         text: "Consultando cotizaciones",

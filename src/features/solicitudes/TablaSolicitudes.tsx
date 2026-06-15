@@ -451,7 +451,7 @@ const TablaSolicitudes: React.FC = () => {
                     return to ? (
                       <Link to={to}>
                         <button
-                          className="btn btn-sm text-warning bg-white btn-circle"
+                          className="btn btn-sm text-warning bg-base-100 btn-circle"
                           title="Ver detalles"
                         >
                           <Eye size="18px" />

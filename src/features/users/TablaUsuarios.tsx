@@ -245,7 +245,7 @@ const TablaUsuarios: React.FC = () => {
                 <td className="text-right">
                   <div className="flex justify-end gap-2">
                     <button
-                      className="btn btn-sm bg-white btn-circle"
+                      className="btn btn-sm bg-base-100 btn-circle"
                       onClick={() => openEditar(u)}
                     >
                       <Pen color="green" size="20px" />

@@ -328,7 +328,7 @@ const TablaCotizaciones: React.FC = () => {
                                 <td className="text-sm text-base-content/70">{r?.id || '—'}</td>
                                 <td className="text-sm text-base-content/70">
                                     <div className="flex justify-start gap-2">
-                                        <Link to={`/cotizaciones/${r.id}`} onClick={() => show()} className="btn btn-sm bg-white btn-circle" title="Ver cotización">
+                                        <Link to={`/cotizaciones/${r.id}`} onClick={() => show()} className="btn btn-sm bg-base-100 btn-circle" title="Ver cotización">
                                             <div className='text-info'>
                                                 <Eye size="18px" />
                                             </div>
@@ -346,7 +346,7 @@ const TablaCotizaciones: React.FC = () => {
 
                                                     <Link
                                                         to={`/cotizaciones/estado/${r.id}`}
-                                                        className="btn btn-sm bg-white btn-circle"
+                                                        className="btn btn-sm bg-base-100 btn-circle"
                                                         title="Cambiar estado"
                                                     >
                                                         <div className='text-warning'>
@@ -366,7 +366,7 @@ const TablaCotizaciones: React.FC = () => {
                                             })() && (
                                                 <Link
                                                     to={`/solicitudes/${r.id}`}
-                                                    className="btn btn-sm bg-white btn-circle"
+                                                    className="btn btn-sm bg-base-100 btn-circle"
                                                     title="Cambiar estado"
                                                 >
                                                     <div className='text-success'>
@@ -385,7 +385,7 @@ const TablaCotizaciones: React.FC = () => {
                                             })() && (
                                                 <Link
                                                     to={`/creditos/detalle/facturar-credito/${r.codigo_credito}/${r.id}`}
-                                                    className="btn btn-sm bg-white btn-circle"
+                                                    className="btn btn-sm bg-base-100 btn-circle"
                                                     title="Solicitud de facturación"
                                                 >
                                                     <div className='text-success'>

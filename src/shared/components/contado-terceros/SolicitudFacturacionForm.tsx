@@ -183,13 +183,13 @@ const UploadBlock: React.FC<UploadBlockProps> = ({
   below,
 }) => {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3 md:p-4">
+    <div className="rounded-xl border border-base-300 bg-base-100 p-3 md:p-4">
       <div>
-        <p className="font-medium text-slate-800">
+        <p className="font-medium text-base-content">
           {label} {required ? <span className="text-error">*</span> : null}
         </p>
         {helper ? (
-          <p className="mt-1 text-[11px] text-slate-500">{helper}</p>
+          <p className="mt-1 text-[11px] text-base-content/60">{helper}</p>
         ) : null}
       </div>
 
@@ -207,7 +207,7 @@ const NormalPreviewList: React.FC<{ items: FilePreview[] }> = ({ items }) => {
 
   return (
     <div className="space-y-3">
-      <p className="text-xs font-medium text-slate-700">
+      <p className="text-xs font-medium text-base-content">
         Archivos seleccionados ({items.length})
       </p>
 
@@ -215,17 +215,17 @@ const NormalPreviewList: React.FC<{ items: FilePreview[] }> = ({ items }) => {
         {items.map(({ file, url }) => (
           <div
             key={fileKey(file)}
-            className="rounded-lg border border-slate-200 bg-slate-50 overflow-hidden"
+            className="rounded-lg border border-base-300 bg-base-200 overflow-hidden"
           >
             <div className="px-3 py-2 flex items-center justify-between gap-2">
-              <p className="text-xs text-slate-700 truncate">{file.name}</p>
-              <span className="text-[11px] text-slate-500 whitespace-nowrap">
+              <p className="text-xs text-base-content truncate">{file.name}</p>
+              <span className="text-[11px] text-base-content/60 whitespace-nowrap">
                 {(file.size / 1024).toFixed(0)} KB
               </span>
             </div>
 
             {isImage(file) ? (
-              <div className="bg-white border-t border-slate-200">
+              <div className="bg-base-100 border-t border-base-300">
                 <img
                   src={url}
                   alt={file.name}
@@ -233,11 +233,11 @@ const NormalPreviewList: React.FC<{ items: FilePreview[] }> = ({ items }) => {
                 />
               </div>
             ) : isPdf(file) ? (
-              <div className="px-3 py-3 text-[11px] text-slate-500 border-t border-slate-200">
+              <div className="px-3 py-3 text-[11px] text-base-content/60 border-t border-base-300">
                 PDF cargado (vista previa pequeña en “Otros”, aquí solo nombre).
               </div>
             ) : (
-              <div className="px-3 py-3 text-[11px] text-slate-500 border-t border-slate-200">
+              <div className="px-3 py-3 text-[11px] text-base-content/60 border-t border-base-300">
                 Sin vista previa para este archivo.
               </div>
             )}
@@ -258,12 +258,12 @@ const SmallOthersGrid: React.FC<{
   return (
     <div>
       <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-slate-700">
+        <p className="text-xs font-medium text-base-content">
           Otros documentos ({items.length})
         </p>
         <button
           type="button"
-          className="text-xs text-slate-600 underline"
+          className="text-xs text-base-content/70 underline"
           onClick={onClear}
         >
           Limpiar
@@ -275,14 +275,14 @@ const SmallOthersGrid: React.FC<{
         {items.map(({ file, url }) => (
           <div
             key={fileKey(file)}
-            className="rounded-lg border border-slate-200 bg-slate-50 overflow-hidden"
+            className="rounded-lg border border-base-300 bg-base-200 overflow-hidden"
             title={file.name}
           >
             <div className="px-2 py-2 flex items-center justify-between gap-2">
-              <p className="text-[11px] text-slate-700 truncate">{file.name}</p>
+              <p className="text-[11px] text-base-content truncate">{file.name}</p>
               <button
                 type="button"
-                className="text-[11px] text-red-600"
+                className="text-[11px] text-error"
                 onClick={() => onRemove(file)}
               >
                 ✕
@@ -290,7 +290,7 @@ const SmallOthersGrid: React.FC<{
             </div>
 
             {isImage(file) ? (
-              <div className="bg-white border-t border-slate-200">
+              <div className="bg-base-100 border-t border-base-300">
                 <img
                   src={url}
                   alt={file.name}
@@ -298,14 +298,14 @@ const SmallOthersGrid: React.FC<{
                 />
               </div>
             ) : isPdf(file) ? (
-              <div className="bg-white border-t border-slate-200 h-24 flex items-center justify-center">
-                <span className="text-[11px] text-slate-600 px-2 text-center">
+              <div className="bg-base-100 border-t border-base-300 h-24 flex items-center justify-center">
+                <span className="text-[11px] text-base-content/70 px-2 text-center">
                   PDF
                 </span>
               </div>
             ) : (
-              <div className="bg-white border-t border-slate-200 h-24 flex items-center justify-center">
-                <span className="text-[11px] text-slate-600 px-2 text-center">
+              <div className="bg-base-100 border-t border-base-300 h-24 flex items-center justify-center">
+                <span className="text-[11px] text-base-content/70 px-2 text-center">
                   Archivo
                 </span>
               </div>
@@ -544,7 +544,7 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
   };
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-md p-4 md:p-6 lg:p-7">
+    <section className="rounded-2xl border border-base-300 bg-base-100 shadow-md p-4 md:p-6 lg:p-7">
 
       <HeaderSolicitud tipo="contado" />
 
@@ -561,7 +561,7 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
                 options={DOC_OPTS}
                 rules={{ required: "Requerido" }}
               />
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-base-content/60">
                 Indica si se entregan todos los documentos requeridos para la
                 facturación.
               </p>
@@ -596,7 +596,7 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
                   },
                 }}
               />
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-base-content/60">
                 Si aplica, indica el valor pendiente que el cliente cancelará al
                 momento de la entrega.
               </p>
@@ -614,7 +614,7 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
                     type="file"
                     multiple
                     accept=".pdf,.jpg,.jpeg,.png"
-                    className={`file-input file-input-bordered w-full bg-slate-50 ${errors.cartaFile ? "file-input-error" : ""
+                    className={`file-input file-input-bordered w-full bg-base-200 ${errors.cartaFile ? "file-input-error" : ""
                       }`}
                     {...withFileValidation(register("cartaFile", {
                       validate: (files) =>
@@ -638,7 +638,7 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
                   type="file"
                   multiple
                   accept=".pdf,.jpg,.jpeg,.png"
-                  className={`file-input file-input-bordered w-full bg-slate-50 ${errors.manifiestoFile ? "file-input-error" : ""
+                  className={`file-input file-input-bordered w-full bg-base-200 ${errors.manifiestoFile ? "file-input-error" : ""
                     }`}
                   {...withFileValidation(register("manifiestoFile"))} // ✅ opcional
                 />
@@ -647,14 +647,14 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
             />
 
             {/* Observaciones */}
-            <div className="rounded-xl border border-slate-200 bg-white p-3 md:p-4">
+            <div className="rounded-xl border border-base-300 bg-base-100 p-3 md:p-4">
               <label className="label px-0">
-                <span className="label-text font-medium text-slate-700">
+                <span className="label-text font-medium text-base-content">
                   Observaciones <span className="text-error">*</span>
                 </span>
               </label>
               <textarea
-                className={`textarea w-full textarea-bordered bg-slate-50 min-h-28 ${errors.observaciones ? "textarea-error" : ""
+                className={`textarea w-full textarea-bordered bg-base-200 min-h-28 ${errors.observaciones ? "textarea-error" : ""
                   }`}
                 placeholder="Incluye observaciones relevantes para el área de facturación"
                 {...register("observaciones", {
@@ -683,11 +683,11 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
                 loading={loadingDists}
               />
               {loadingDists && (
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-base-content/60">
                   Cargando distribuidoras…
                 </p>
               )}
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-base-content/60">
                 Selecciona la distribuidora asociada a esta venta, si aplica.
               </p>
             </div>
@@ -708,7 +708,7 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
                   },
                 }}
               />
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-base-content/60">
                 Si existe un descuento especial, especifícalo aquí para registro
                 de facturación.
               </p>
@@ -725,7 +725,7 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
                   type="file"
                   multiple
                   accept=".pdf,.jpg,.jpeg,.png"
-                  className={`file-input file-input-bordered w-full bg-slate-50 ${errors.cedulaFile ? "file-input-error" : ""
+                  className={`file-input file-input-bordered w-full bg-base-200 ${errors.cedulaFile ? "file-input-error" : ""
                     }`}
                   {...withFileValidation(register("cedulaFile", {
                     validate: (files) =>
@@ -748,7 +748,7 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
                   type="file"
                   multiple
                   accept=".pdf,.jpg,.jpeg,.png"
-                  className={`file-input file-input-bordered w-full bg-slate-50 ${errors.otrosDocumentosFile ? "file-input-error" : ""
+                  className={`file-input file-input-bordered w-full bg-base-200 ${errors.otrosDocumentosFile ? "file-input-error" : ""
                     }`}
                   name={otrosReg.name}
                   ref={otrosReg.ref}
@@ -778,7 +778,7 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
 
             {/* (Opcional) info del último FileList de RHF */}
             {watchedOtros?.length ? (
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-base-content/60">
                 Última selección: {watchedOtros.length} archivo(s).
               </p>
             ) : null}
@@ -786,7 +786,7 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
         </div>
 
         {/* Acciones */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 border-t border-slate-100 mt-2 pt-4">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 border-t border-base-200 mt-2 pt-4">
           <button
             type="button"
             className="btn btn-ghost md:btn-outline order-2 md:order-1"

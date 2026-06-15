@@ -114,7 +114,7 @@ if (noExiste) return null; // o muestra "No hay registro, puedes crearlo"
 
 
   return (
-    <div className="flex mt-5 flex-col md:flex-row items-center justify-between gap-6  bg-linear-to-r from-slate-50 to-slate-100 border border-info p-3 shadow-sm rounded-2xl">
+    <div className="flex mt-5 flex-col md:flex-row items-center justify-between gap-6  bg-linear-to-r from-base-200 to-base-100 border border-info p-3 shadow-sm rounded-2xl">
       <div className="card-body">
         <div className="flex items-center gap-2 mb-2">
           <div className="text-lg font-semibold">{label}</div>
@@ -128,7 +128,7 @@ if (noExiste) return null; // o muestra "No hay registro, puedes crearlo"
               label="Número motor"
               control={control}
               disabled={isPending}
-              className="bg-white"
+              className="bg-base-100"
             />
 
             <FormInput<VehiculoCamposForm>
@@ -136,7 +136,7 @@ if (noExiste) return null; // o muestra "No hay registro, puedes crearlo"
               label="Número chasis"
               control={control}
               disabled={isPending}
-              className="bg-white"
+              className="bg-base-100"
             />
 
             <FormInput<VehiculoCamposForm>
@@ -144,7 +144,7 @@ if (noExiste) return null; // o muestra "No hay registro, puedes crearlo"
               label="Color"
               control={control}
               disabled={isPending}
-              className="bg-white"
+              className="bg-base-100"
             />
 
             <FormInput<VehiculoCamposForm>
@@ -152,7 +152,7 @@ if (noExiste) return null; // o muestra "No hay registro, puedes crearlo"
               label="Placa"
               control={control}
               disabled={isPending}
-              className="bg-white"
+              className="bg-base-100"
             />
 
             <div className="md:col-span-2">
@@ -161,7 +161,7 @@ if (noExiste) return null; // o muestra "No hay registro, puedes crearlo"
                 label="Observación final"
                 control={control}
                 disabled={isPending}
-                className="bg-white"
+                className="bg-base-100"
               />
             </div>
           </div>
@@ -181,7 +181,7 @@ if (noExiste) return null; // o muestra "No hay registro, puedes crearlo"
                     label="Nombre del beneficiario"
                     control={control}
                     disabled={isPending}
-                    className="bg-white"
+                    className="bg-base-100"
                   />
                 </div>
 
@@ -190,7 +190,7 @@ if (noExiste) return null; // o muestra "No hay registro, puedes crearlo"
                   label="Cédula del beneficiario"
                   control={control}
                   disabled={isPending}
-                  className="bg-white"
+                  className="bg-base-100"
                 />
 
                 <FormInput<VehiculoCamposForm>
@@ -199,7 +199,7 @@ if (noExiste) return null; // o muestra "No hay registro, puedes crearlo"
                   control={control}
                   disabled={isPending}
                   placeholder="Ej: Hijo, Esposa, Madre..."
-                  className="bg-white"
+                  className="bg-base-100"
                 />
               </div>
             </div>

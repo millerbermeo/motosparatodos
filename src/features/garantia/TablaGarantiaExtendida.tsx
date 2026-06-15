@@ -260,7 +260,7 @@ const TablaGarantiaExtendida: React.FC = () => {
                   <div className="flex gap-2">
                     {/* Si tienes ruta de cotización, enlázala */}
                     {r.cotizacion_id && (
-                      <Link to={`/cotizaciones/${r.cotizacion_id}`} className="btn btn-sm bg-white btn-circle" title="Ver cotización">
+                      <Link to={`/cotizaciones/${r.cotizacion_id}`} className="btn btn-sm bg-base-100 btn-circle" title="Ver cotización">
                         <div className="text-info">
                           <Eye size="18px" />
                         </div>

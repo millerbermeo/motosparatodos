@@ -61,21 +61,21 @@ const UploadBlock: React.FC<{
   below?: React.ReactNode;
 }> = ({ label, required, helper, error, children, below }) => {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="font-semibold text-slate-900">
-            {label} {required ? <span className="text-rose-600">*</span> : null}
+          <p className="font-semibold text-base-content">
+            {label} {required ? <span className="text-error">*</span> : null}
           </p>
           {helper ? (
-            <p className="mt-1 text-[11px] text-slate-500 leading-4">{helper}</p>
+            <p className="mt-1 text-[11px] text-base-content/60 leading-4">{helper}</p>
           ) : null}
         </div>
       </div>
 
       <div className="mt-3">{children}</div>
 
-      {error ? <p className="text-xs text-rose-600 mt-2">{error}</p> : null}
+      {error ? <p className="text-xs text-error mt-2">{error}</p> : null}
 
       {below ? <div className="mt-3">{below}</div> : null}
     </div>
@@ -90,19 +90,19 @@ const PreviewCard: React.FC<{ item: FilePreview; onRemove?: () => void }> = ({
 
   return (
     <div
-      className="rounded-xl border border-slate-200 bg-slate-50 overflow-hidden"
+      className="rounded-xl border border-base-300 bg-base-200 overflow-hidden"
       title={file.name}
     >
       <div className="px-3 py-2 flex items-center justify-between gap-2">
-        <p className="text-xs text-slate-700 truncate">{file.name}</p>
+        <p className="text-xs text-base-content truncate">{file.name}</p>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-slate-500 whitespace-nowrap">
+          <span className="text-[11px] text-base-content/60 whitespace-nowrap">
             {(file.size / 1024).toFixed(0)} KB
           </span>
           {onRemove ? (
             <button
               type="button"
-              className="text-[11px] text-rose-600"
+              className="text-[11px] text-error"
               onClick={onRemove}
               aria-label="Quitar archivo"
               title="Quitar"
@@ -114,15 +114,15 @@ const PreviewCard: React.FC<{ item: FilePreview; onRemove?: () => void }> = ({
       </div>
 
       {isImage(file) ? (
-        <div className="bg-white border-t border-slate-200">
+        <div className="bg-base-100 border-t border-base-300">
           <img src={url} alt={file.name} className="w-full object-contain max-h-56" />
         </div>
       ) : isPdf(file) ? (
-        <div className="bg-white border-t border-slate-200 px-3 py-4 text-[11px] text-slate-600">
+        <div className="bg-base-100 border-t border-base-300 px-3 py-4 text-[11px] text-base-content/70">
           PDF cargado (sin vista previa aquí). Se enviará al guardar.
         </div>
       ) : (
-        <div className="bg-white border-t border-slate-200 px-3 py-4 text-[11px] text-slate-600">
+        <div className="bg-base-100 border-t border-base-300 px-3 py-4 text-[11px] text-base-content/70">
           Archivo cargado (sin vista previa). Se enviará al guardar.
         </div>
       )}
@@ -140,12 +140,12 @@ const SmallOthersGrid: React.FC<{
   return (
     <div>
       <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold text-slate-700">
+        <p className="text-xs font-semibold text-base-content">
           Otros documentos ({items.length})
         </p>
         <button
           type="button"
-          className="text-xs text-slate-600 underline"
+          className="text-xs text-base-content/70 underline"
           onClick={onClear}
         >
           Limpiar
@@ -156,14 +156,14 @@ const SmallOthersGrid: React.FC<{
         {items.map(({ file, url }) => (
           <div
             key={fileKey(file)}
-            className="rounded-xl border border-slate-200 bg-slate-50 overflow-hidden"
+            className="rounded-xl border border-base-300 bg-base-200 overflow-hidden"
             title={file.name}
           >
             <div className="px-2 py-2 flex items-center justify-between gap-2">
-              <p className="text-[11px] text-slate-700 truncate">{file.name}</p>
+              <p className="text-[11px] text-base-content truncate">{file.name}</p>
               <button
                 type="button"
-                className="text-[11px] text-rose-600"
+                className="text-[11px] text-error"
                 onClick={() => onRemove(file)}
                 aria-label="Quitar documento"
                 title="Quitar"
@@ -173,18 +173,18 @@ const SmallOthersGrid: React.FC<{
             </div>
 
             {isImage(file) ? (
-              <div className="bg-white border-t border-slate-200">
+              <div className="bg-base-100 border-t border-base-300">
                 <img src={url} alt={file.name} className="w-full object-cover h-24" />
               </div>
             ) : isPdf(file) ? (
-              <div className="bg-white border-t border-slate-200 h-24 flex items-center justify-center">
-                <span className="text-[11px] text-slate-600 px-2 text-center">
+              <div className="bg-base-100 border-t border-base-300 h-24 flex items-center justify-center">
+                <span className="text-[11px] text-base-content/70 px-2 text-center">
                   PDF
                 </span>
               </div>
             ) : (
-              <div className="bg-white border-t border-slate-200 h-24 flex items-center justify-center">
-                <span className="text-[11px] text-slate-600 px-2 text-center">
+              <div className="bg-base-100 border-t border-base-300 h-24 flex items-center justify-center">
+                <span className="text-[11px] text-base-content/70 px-2 text-center">
                   Archivo
                 </span>
               </div>
@@ -321,7 +321,7 @@ const FacturarCreditoForm: React.FC<Props> = ({
   );
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-md p-4 md:p-6 lg:p-7">
+    <section className="rounded-2xl border border-base-300 bg-base-100 shadow-md p-4 md:p-6 lg:p-7">
 
       <HeaderSolicitud tipo="credito" />
 
@@ -330,12 +330,12 @@ const FacturarCreditoForm: React.FC<Props> = ({
           {/* Columna izquierda */}
           <div className="space-y-4">
             {/* Distribuidora (OPCIONAL) */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <label className="block text-sm font-semibold text-slate-700">
+            <div className="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm">
+              <label className="block text-sm font-semibold text-base-content">
                 Distribuidora (opcional)
               </label>
               <select
-                className="mt-2 select select-bordered w-full bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500"
+                className="mt-2 select select-bordered w-full bg-base-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500"
                 value={distribuidoraId}
                 onChange={(e) => setDistribuidoraId(e.target.value)}
                 disabled={loadingDistribuidoras || !!errorDistribuidoras}
@@ -349,29 +349,29 @@ const FacturarCreditoForm: React.FC<Props> = ({
               </select>
 
               {loadingDistribuidoras ? (
-                <p className="mt-2 text-xs text-slate-500">
+                <p className="mt-2 text-xs text-base-content/60">
                   Cargando distribuidoras…
                 </p>
               ) : null}
               {!!errorDistribuidoras ? (
-                <p className="mt-2 text-xs text-rose-600">
+                <p className="mt-2 text-xs text-error">
                   No se pudieron cargar distribuidoras.
                 </p>
               ) : null}
 
-              <p className="mt-2 text-[11px] text-slate-500">
+              <p className="mt-2 text-[11px] text-base-content/60">
                 Si no aplica, puedes dejar este campo vacío.
               </p>
             </div>
 
             {/* Recibo */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <label className="block text-sm font-semibold text-slate-700">
-                Recibo de pago N° <span className="text-rose-600">*</span>
+            <div className="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm">
+              <label className="block text-sm font-semibold text-base-content">
+                Recibo de pago N° <span className="text-error">*</span>
               </label>
               <input
                 type="text"
-                className="mt-2 input input-bordered w-full bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500"
+                className="mt-2 input input-bordered w-full bg-base-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500"
                 placeholder="Digite el número de recibo de pago"
                 value={numeroRecibo}
                 onChange={(e) => setNumeroRecibo(e.target.value)}
@@ -380,12 +380,12 @@ const FacturarCreditoForm: React.FC<Props> = ({
             </div>
 
             {/* Observaciones */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <label className="block text-sm font-semibold text-slate-700">
-                Observaciones <span className="text-rose-600">*</span>
+            <div className="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm">
+              <label className="block text-sm font-semibold text-base-content">
+                Observaciones <span className="text-error">*</span>
               </label>
               <textarea
-                className="mt-2 textarea textarea-bordered w-full bg-slate-50 min-h-28 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500"
+                className="mt-2 textarea textarea-bordered w-full bg-base-200 min-h-28 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500"
                 placeholder="Observaciones para facturación"
                 value={observaciones}
                 onChange={(e) => setObservaciones(e.target.value)}
@@ -405,7 +405,7 @@ const FacturarCreditoForm: React.FC<Props> = ({
               <input
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                className="file-input file-input-bordered w-full bg-slate-50"
+                className="file-input file-input-bordered w-full bg-base-200"
                 onChange={(e) => {
                   if (!validateFileInput(e)) return setCedulaFiles([]);
                   const file = e.target.files?.[0] ?? null;
@@ -435,7 +435,7 @@ const FacturarCreditoForm: React.FC<Props> = ({
               <input
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                className="file-input file-input-bordered w-full bg-slate-50"
+                className="file-input file-input-bordered w-full bg-base-200"
                 onChange={(e) => {
                   if (!validateFileInput(e)) return setManifiestoFiles([]);
                   const file = e.target.files?.[0] ?? null;
@@ -465,7 +465,7 @@ const FacturarCreditoForm: React.FC<Props> = ({
                 type="file"
                 multiple
                 accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                className="file-input file-input-bordered w-full bg-slate-50"
+                className="file-input file-input-bordered w-full bg-base-200"
                 onChange={(e) => {
                   if (!validateFileInput(e)) return; // valida tipo + tamaño
                   addOtrosDocs(e.target.files);
@@ -485,11 +485,11 @@ const FacturarCreditoForm: React.FC<Props> = ({
         </div>
 
         {/* Acciones */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 border-t border-slate-100 pt-4">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 border-t border-base-200 pt-4">
           <Link to={`/creditos/detalle/${codigoCredito}`}>
             <button
               type="button"
-              className="btn btn-ghost md:btn-outline text-slate-700"
+              className="btn btn-ghost md:btn-outline text-base-content"
             >
               ← Volver
             </button>

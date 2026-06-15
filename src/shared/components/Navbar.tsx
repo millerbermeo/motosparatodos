@@ -48,21 +48,21 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
   };
 
   return (
-    <div className="w-full bg-white/90 backdrop-blur-md border-b border-gray-200/80 shadow-sm px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+    <div className="w-full bg-base-100/90 backdrop-blur-md border-b border-gray-200/80 shadow-sm px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         {/* Hamburguesa solo en móvil */}
         <button
-          className="btn btn-ghost btn-circle btn-sm lg:hidden hover:bg-gray-100"
+          className="btn btn-ghost btn-circle btn-sm lg:hidden hover:bg-base-200"
           onClick={onMenuClick}
           aria-label="Abrir menú"
         >
-          <Menu className="w-5 h-5 text-gray-700" />
+          <Menu className="w-5 h-5 text-base-content" />
         </button>
         <div className="min-w-0">
-          <h1 className="text-[15px] md:text-base font-semibold text-gray-800 truncate leading-tight">
+          <h1 className="text-[15px] md:text-base font-semibold text-base-content truncate leading-tight">
             Panel de Administración
           </h1>
-          <p className="hidden sm:block text-[11px] text-gray-400 leading-tight truncate">
+          <p className="hidden sm:block text-[11px] text-base-content/50 leading-tight truncate">
             MotosParaTodos
           </p>
         </div>
@@ -72,20 +72,20 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
 
         <NotificacionesPanel />
 
-        <div className="hidden md:block h-8 w-px bg-gray-200 mx-1" />
+        <div className="hidden md:block h-8 w-px bg-base-300 mx-1" />
 
         <div className="dropdown dropdown-end">
-          <div tabIndex={0} role="button" className="flex items-center gap-2 rounded-full p-1 pr-1 md:pr-3 hover:bg-gray-100 transition-colors cursor-pointer" aria-label="Menú de usuario" title="Cuenta">
+          <div tabIndex={0} role="button" className="flex items-center gap-2 rounded-full p-1 pr-1 md:pr-3 hover:bg-base-200 transition-colors cursor-pointer" aria-label="Menú de usuario" title="Cuenta">
             <div className="avatar">
               <div className="w-9 rounded-full ring-2 ring-gray-100 ring-offset-1">
                 <img alt="avatar" src="https://cdn-icons-png.flaticon.com/512/204/204191.png" />
               </div>
             </div>
             <div className="hidden md:flex flex-col items-start min-w-0 max-w-35">
-              <span className="text-[13px] font-semibold text-gray-800 leading-tight truncate w-full">
+              <span className="text-[13px] font-semibold text-base-content leading-tight truncate w-full">
                 {user?.name ?? "Usuario"}
               </span>
-              <span className="text-[11px] text-gray-400 leading-tight truncate w-full">
+              <span className="text-[11px] text-base-content/50 leading-tight truncate w-full">
                 {user?.rol ?? "Sin rol"}
               </span>
             </div>
@@ -103,7 +103,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
                   <p className="text-sm font-semibold leading-tight truncate">
                     {user?.name ?? "Usuario"}
                   </p>
-                  <div className="flex items-center gap-1 text-[11px] text-gray-500">
+                  <div className="flex items-center gap-1 text-[11px] text-base-content/60">
                     <Shield className="w-3 h-3" />
                     <span className="truncate">{user?.rol ?? "Sin rol"}</span>
                   </div>
@@ -141,7 +141,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
             <li><hr className="my-1" /></li>
 
             <li>
-              <a className="text-red-600" onClick={handleLogout}>
+              <a className="text-error" onClick={handleLogout}>
                 <LogOut className="w-4 h-4" />
                 Cerrar sesión
               </a>

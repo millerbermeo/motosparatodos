@@ -184,7 +184,7 @@ const TablaLineas: React.FC = () => {
 
       {/* ✅ FILTROS */}
       <div className="px-4 pb-3">
-        <div className="bg-white rounded-xl border border-base-200 p-3">
+        <div className="bg-base-100 rounded-xl border border-base-200 p-3">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="form-control w-full">
               <label className="label">
@@ -280,14 +280,14 @@ const TablaLineas: React.FC = () => {
                 <td className="text-right">
                   <div className="flex justify-end gap-2">
                     <button
-                      className="btn btn-sm bg-white btn-circle"
+                      className="btn btn-sm bg-base-100 btn-circle"
                       onClick={() => openEditar(l)}
                       title="Editar"
                     >
                       <Pen size="18px" color="green" />
                     </button>
                     <button
-                      className="btn btn-sm bg-white btn-circle"
+                      className="btn btn-sm bg-base-100 btn-circle"
                       onClick={() => confirmarEliminar(Number(l.id), `${l.marca} ${l.linea}`)}
                       title="Eliminar"
                     >

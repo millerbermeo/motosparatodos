@@ -171,7 +171,7 @@ const TablaMarcas: React.FC = () => {
 
       {/* ✅ NUEVO: SEARCH EN VIVO */}
       <div className="px-4 pb-3">
-        <div className="bg-white rounded-xl border border-base-200 p-3">
+        <div className="bg-base-100 rounded-xl border border-base-200 p-3">
           <div className="flex flex-col sm:flex-row gap-3 sm:items-end sm:justify-between">
             <div className="form-control w-full sm:max-w-md">
               <label className="label">
@@ -242,14 +242,14 @@ const TablaMarcas: React.FC = () => {
                 <td className="text-right">
                   <div className="flex justify-end gap-2">
                     <button
-                      className="btn btn-sm bg-white btn-circle"
+                      className="btn btn-sm bg-base-100 btn-circle"
                       onClick={() => openEditar(m)}
                       title="Editar"
                     >
                       <Pen size="18px" color="green" />
                     </button>
                     <button
-                      className="btn btn-sm bg-white btn-circle"
+                      className="btn btn-sm bg-base-100 btn-circle"
                       onClick={() => confirmarEliminar(Number(m.id), m.marca)}
                       title="Eliminar"
                     >

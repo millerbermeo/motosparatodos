@@ -184,22 +184,22 @@ const SoporteFormulario: React.FC<Props> = () => {
 
   return (
     <div className="space-y-6">
-      <h3 className="text-center text-xl font-bold text-gray-800">
+      <h3 className="text-center text-xl font-bold text-base-content">
         Adjuntar Soportes del Crédito
       </h3>
 
       <div
         onDragOver={(e) => e.preventDefault()}
         onDrop={onDrop}
-        className="border-2 border-dashed border-blue-400 bg-blue-50 hover:bg-blue-100 
+        className="border-2 border-dashed border-blue-400 bg-info/10 hover:bg-info/10 
                    rounded-2xl p-8 text-center cursor-pointer transition-all"
         onClick={openPicker}
       >
-        <UploadCloud className="w-12 h-12 mx-auto text-blue-500 mb-2" />
+        <UploadCloud className="w-12 h-12 mx-auto text-info mb-2" />
 
-        <p className="text-gray-600">
+        <p className="text-base-content/70">
           Arrastra y suelta tus archivos aquí o{" "}
-          <span className="text-blue-600 font-semibold">
+          <span className="text-info font-semibold">
             haz clic para seleccionar
           </span>
         </p>
@@ -216,7 +216,7 @@ const SoporteFormulario: React.FC<Props> = () => {
       </div>
 
       {errors.length > 0 && (
-        <div className="bg-red-100 text-red-700 p-3 rounded-lg shadow-sm">
+        <div className="bg-error/10 text-error p-3 rounded-lg shadow-sm">
           {errors.map((e, i) => (
             <div key={i}> {e}</div>
           ))}
@@ -243,7 +243,7 @@ const SoporteFormulario: React.FC<Props> = () => {
         <h4 className="font-semibold mb-3">📑 Soportes registrados</h4>
 
         {isLoading ? (
-          <div className="text-gray-400 flex items-center gap-2">
+          <div className="text-base-content/50 flex items-center gap-2">
             <Loader2 className="w-5 h-5 animate-spin" />
             Cargando soportes...
           </div>
@@ -255,16 +255,16 @@ const SoporteFormulario: React.FC<Props> = () => {
               return (
                 <div
                   key={i}
-                  className="p-4 bg-white rounded-xl border border-success shadow-sm flex flex-col justify-between"
+                  className="p-4 bg-base-100 rounded-xl border border-success shadow-sm flex flex-col justify-between"
                 >
                   <div className="flex items-center gap-2 mb-3">
-                    <FileText className="text-blue-500" />
+                    <FileText className="text-info" />
 
                     <a
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="truncate text-blue-600 hover:underline text-sm"
+                      className="truncate text-info hover:underline text-sm"
                     >
                       {url}
                     </a>
@@ -274,7 +274,7 @@ const SoporteFormulario: React.FC<Props> = () => {
             })}
           </div>
         ) : (
-          <p className="text-gray-500 italic">
+          <p className="text-base-content/60 italic">
             No hay soportes registrados.
           </p>
         )}

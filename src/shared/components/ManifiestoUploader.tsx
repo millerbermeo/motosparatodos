@@ -112,18 +112,18 @@ const ManifiestoUploader: React.FC<Props> = ({
 
   return (
     <div
-      className={`mt-4 pt-3 bg-amber-50 p-3 rounded-2xl border border-amber-200 space-y-2 ${className}`}
+      className={`mt-4 pt-3 bg-warning/10 p-3 rounded-2xl border border-warning/30 space-y-2 ${className}`}
     >
-      <div className="text-xs font-semibold text-amber-800">{titulo}</div>
+      <div className="text-xs font-semibold text-warning">{titulo}</div>
 
       {manifiestoUrlFinal && (
-        <div className="text-xs text-slate-700">
+        <div className="text-xs text-base-content">
           Manifiesto actual:{" "}
           <a
             href={manifiestoUrlFinal}
             target="_blank"
             rel="noreferrer"
-            className="underline text-amber-700 font-medium"
+            className="underline text-warning font-medium"
           >
             Ver archivo
           </a>
@@ -136,12 +136,12 @@ const ManifiestoUploader: React.FC<Props> = ({
           type="file"
           accept={ACCEPT_ATTR}
           onChange={onChangeFile}
-          className="block w-full text-xs text-slate-600
+          className="block w-full text-xs text-base-content/70
             file:mr-3 file:py-1.5 file:px-3
             file:rounded-md file:border-0
             file:text-xs file:font-semibold
-            file:bg-slate-100 file:text-slate-700
-            hover:file:bg-slate-200"
+            file:bg-base-200 file:text-base-content
+            hover:file:bg-base-300"
           disabled={isPending}
         />
 
@@ -157,7 +157,7 @@ const ManifiestoUploader: React.FC<Props> = ({
       </div>
 
       {file && (
-        <div className="text-xs text-slate-600">
+        <div className="text-xs text-base-content/70">
           Archivo seleccionado: <span className="font-medium">{file.name}</span>
         </div>
       )}

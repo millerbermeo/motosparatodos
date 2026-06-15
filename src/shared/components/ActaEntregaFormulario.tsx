@@ -176,16 +176,16 @@ registrarActa(fd, {
   return (
     <form className="space-y-5" onSubmit={onSubmit}>
       {/* Header */}
-      <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 flex items-center justify-between">
+      <div className="rounded-2xl border border-success/30 bg-success/10/70 p-4 flex items-center justify-between">
         <div>
           <h3 className="text-base font-semibold text-emerald-900">
             Acta de entrega
           </h3>
-          <p className="text-xs text-emerald-800/80">
+          <p className="text-xs text-success/80">
             Adjunta la firma del cliente y las fotos de soporte.
           </p>
         </div>
-        <span className="inline-flex items-center rounded-full bg-emerald-600/10 text-emerald-700 border border-emerald-200 px-3 py-1 text-xs font-medium">
+        <span className="inline-flex items-center rounded-full bg-emerald-600/10 text-success border border-success/30 px-3 py-1 text-xs font-medium">
           Factura #{id_factura}
         </span>
       </div>
@@ -198,11 +198,11 @@ registrarActa(fd, {
 
       {/* Observaciones */}
       <label className="block">
-        <span className="text-sm font-medium text-slate-700">
+        <span className="text-sm font-medium text-base-content">
           Observaciones
         </span>
         <textarea
-          className="mt-1 w-full rounded-xl bg-gray-100 border border-slate-500 focus:border-emerald-400 p-3 focus:ring-emerald-300"
+          className="mt-1 w-full rounded-xl bg-base-200 border border-base-300 focus:border-emerald-400 p-3 focus:ring-emerald-300"
           rows={3}
           value={observaciones}
           onChange={(e) => setObservaciones(e.target.value)}
@@ -213,13 +213,13 @@ registrarActa(fd, {
       {/* Firma */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
         <label className="block">
-          <span className="text-sm font-medium text-slate-700">
+          <span className="text-sm font-medium text-base-content">
             Firma del cliente (imagen)
           </span>
           <input
             type="file"
             accept="image/*,.png,.jpg,.jpeg,.webp"
-            className="mt-1 w-full rounded-xl border-slate-300 focus:border-emerald-400 focus:ring-emerald-300"
+            className="mt-1 w-full rounded-xl border-base-300 focus:border-emerald-400 focus:ring-emerald-300"
             onChange={onFirmaChange}
           />
           {firmaFile && (
@@ -228,15 +228,15 @@ registrarActa(fd, {
                 <img
                   src={firmaPreview}
                   alt="Firma"
-                  className="h-16 w-28 object-contain rounded-lg border border-slate-200 bg-white"
+                  className="h-16 w-28 object-contain rounded-lg border border-base-300 bg-base-100"
                 />
               )}
-              <div className="text-xs text-slate-600">
+              <div className="text-xs text-base-content/70">
                 <div><b>{firmaFile.name}</b></div>
                 <div>{formatBytes(firmaFile.size)}</div>
                 <button
                   type="button"
-                  className="mt-1 text-rose-600 hover:underline"
+                  className="mt-1 text-error hover:underline"
                   onClick={() => { setFirmaFile(null); setFirmaPreview(null); }}
                 >
                   Quitar firma
@@ -245,13 +245,13 @@ registrarActa(fd, {
             </div>
           )}
           {!firmaFile && (
-            <p className="text-xs text-rose-600 mt-1">
+            <p className="text-xs text-error mt-1">
               * Requerida para registrar el acta.
             </p>
           )}
         </label>
 
-        <div className="md:mt-7 text-xs text-slate-500">
+        <div className="md:mt-7 text-xs text-base-content/60">
           El acta se cerrará automáticamente al guardar.
         </div>
       </div>
@@ -262,13 +262,13 @@ registrarActa(fd, {
         onDrop={onDrop}
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
-        className="rounded-2xl border-2 border-dashed border-slate-300 p-5 bg-slate-50 hover:bg-slate-100 transition ring-0"
+        className="rounded-2xl border-2 border-dashed border-base-300 p-5 bg-base-200 hover:bg-base-200 transition ring-0"
       >
         <div className="flex flex-col items-center justify-center text-center">
-          <p className="text-sm font-medium text-slate-700">
+          <p className="text-sm font-medium text-base-content">
             Arrastra y suelta fotos aquí
           </p>
-          <p className="text-xs text-slate-500">o</p>
+          <p className="text-xs text-base-content/60">o</p>
           <label className="mt-2 inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer">
             <input
               type="file"
@@ -279,7 +279,7 @@ registrarActa(fd, {
             />
             Seleccionar archivos
           </label>
-          <p className="mt-2 text-[11px] text-slate-500">
+          <p className="mt-2 text-[11px] text-base-content/60">
             Formatos: JPG, PNG, WEBP.{" "}
             {files.length > 0
               ? `${files.length} seleccionadas.`
@@ -292,7 +292,7 @@ registrarActa(fd, {
             {files.map((f, i) => (
               <div
                 key={`${f.name}-${i}`}
-                className="relative group rounded-xl border border-slate-200 bg-white p-2"
+                className="relative group rounded-xl border border-base-300 bg-base-100 p-2"
               >
                 {previews[i] ? (
                   <img
@@ -301,12 +301,12 @@ registrarActa(fd, {
                     className="h-28 w-full object-cover rounded-lg"
                   />
                 ) : (
-                  <div className="h-28 w-full rounded-lg bg-slate-100" />
+                  <div className="h-28 w-full rounded-lg bg-base-200" />
                 )}
-                <div className="mt-2 text-[11px] text-slate-600 truncate">
+                <div className="mt-2 text-[11px] text-base-content/70 truncate">
                   {f.name}
                 </div>
-                <div className="text-[10px] text-slate-400">
+                <div className="text-[10px] text-base-content/50">
                   {formatBytes(f.size)}
                 </div>
                 <button
@@ -322,7 +322,7 @@ registrarActa(fd, {
         )}
 
         {files.length < 1 && (
-          <p className="mt-2 text-xs text-rose-600">
+          <p className="mt-2 text-xs text-error">
             * Se requiere al menos una foto para registrar el acta.
           </p>
         )}
@@ -332,7 +332,7 @@ registrarActa(fd, {
       <div className="flex items-center justify-end gap-2 pt-1">
         <button
           type="button"
-          className="btn btn-sm bg-slate-100 border-slate-200"
+          className="btn btn-sm bg-base-200 border-base-300"
           onClick={close}
           disabled={isPending}
         >

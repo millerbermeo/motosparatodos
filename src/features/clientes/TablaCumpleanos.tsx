@@ -173,7 +173,7 @@ const TablaCumpleanos: React.FC = () => {
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td colSpan={6} className="p-4 text-center text-gray-500">
+                <td colSpan={6} className="p-4 text-center text-base-content/60">
                   No hay resultados.
                 </td>
               </tr>

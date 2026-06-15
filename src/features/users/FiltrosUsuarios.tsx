@@ -23,7 +23,7 @@ const FiltrosUsuarios: React.FC<Props> = ({
   const hasFilters = Boolean((q ?? "").trim() || rol || state);
 
   return (
-    <div className="bg-linear-to-r from-slate-50 to-slate-100 border border-info rounded-2xl shadow-sm">
+    <div className="bg-linear-to-r from-base-200 to-base-100 border border-info rounded-2xl shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-base-200">
         <div className="flex items-center gap-2 text-sm font-semibold text-base-content/80">

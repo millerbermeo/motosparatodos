@@ -25,20 +25,20 @@ const roleStyles = {
   Asesor: {
     align: "chat-start" as const,
     bubble: "bg-base-200 text-base-content",
-    name: "text-emerald-600",
-    footer: "text-sky-500",
+    name: "text-success",
+    footer: "text-info",
     ring: "ring-2 ring-emerald-400/70",
-    iconColor: "text-emerald-600 dark:text-emerald-300",
+    iconColor: "text-success dark:text-emerald-300",
     Icon: UserRound,
     label: "Asesor",
   },
   Administrador: {
     align: "chat-end" as const,
     bubble: "bg-sky-600 text-white",
-    name: "text-sky-600 dark:text-sky-400",
-    footer: "text-emerald-500",
+    name: "text-info dark:text-sky-400",
+    footer: "text-success",
     ring: "ring-2 ring-sky-400/70",
-    iconColor: "text-sky-600 dark:text-sky-300",
+    iconColor: "text-info dark:text-sky-300",
     Icon: ShieldCheck,
     label: "Administrador",
   },
@@ -133,7 +133,7 @@ const ChatThread: React.FC<ChatThreadProps> = ({ className = "" }) => {
           <React.Fragment key={m.id}>
             {/* Fecha centrada al estilo WhatsApp */}
             <div className="flex justify-center my-4">
-              <span className="px-3 py-0 rounded-full bg-white text-success text-xs font-medium">
+              <span className="px-3 py-0 rounded-full bg-base-100 text-success text-xs font-medium">
                 {dateLabel}
               </span>
             </div>

@@ -1,7 +1,7 @@
 // src/components/reportes/cards/ReporteCreditosCard.tsx
 import React from "react";
 import { Download, FileSpreadsheet, CalendarDays, Filter } from "lucide-react";
-import * as XLSX from "xlsx";
+// xlsx se carga bajo demanda (import dinámico) dentro del handler de exportación
 import Swal from "sweetalert2";
 import { usePrecargarReporteCreditosFull } from "../../../../services/reporteCreditosService";
 
@@ -130,6 +130,7 @@ const ReporteCreditosCard: React.FC = () => {
 
   const downloadReporteCreditos = async () => {
     try {
+      const XLSX = await import("xlsx");
       Swal.fire({
         title: "Generando reporte...",
         text: "Consultando créditos",

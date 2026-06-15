@@ -885,7 +885,7 @@ const DetalleCambiarEstado: React.FC = () => {
       </section>
 
       {/* Tarjeta: Información de la cotización */}
-      <section className="card bg-white border border-base-300/60 shadow-sm rounded-2xl mb-6">
+      <section className="card bg-base-100 border border-base-300/60 shadow-sm rounded-2xl mb-6">
         <div className="card-body">
           <div className="flex items-center gap-2 mb-2 bg-[#3498DB]/70 text-white p-2 rounded-xl">
             <BadgeInfo className="w-5 h-5" />

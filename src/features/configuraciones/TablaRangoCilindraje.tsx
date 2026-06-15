@@ -89,7 +89,7 @@ const TablaRangoCilindraje: React.FC = () => {
                 <td>{r.id}</td>
                   <td className="text-right pr-4">
                   <button
-                    className="btn btn-sm bg-white btn-circle"
+                    className="btn btn-sm bg-base-100 btn-circle"
                     onClick={() => openEditar(r)}
                     title="Editar"
                   >

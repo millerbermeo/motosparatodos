@@ -5,7 +5,7 @@ const InfoPill: React.FC<{ icon: React.ReactNode; label: string; value: React.Re
     label,
     value,
 }) => (
-    <div className="flex items-center gap-2 bg-[#F5F5F5] rounded-lg px-3 py-2">
+    <div className="flex items-center gap-2 bg-base-200 rounded-lg px-3 py-2">
         <span className="opacity-80">{icon}</span>
         <div>
             <div className="text-xs opacity-60">{label}</div>

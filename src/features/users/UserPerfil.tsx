@@ -119,7 +119,7 @@ const UserPerfil: React.FC<Props> = ({ id }) => {
   }
 
   return (
-    <div className="rounded-2xl border border-base-300 bg-white">
+    <div className="rounded-2xl border border-base-300 bg-base-100">
       <div className="p-6 border-b border-base-300">
         <h3 className="text-lg font-semibold">Editar usuario #{u.id}</h3>
         <p className="text-sm opacity-70">

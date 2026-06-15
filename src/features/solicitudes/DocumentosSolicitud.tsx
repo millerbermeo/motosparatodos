@@ -182,9 +182,9 @@ const DocumentosSolicitud: React.FC<Props> = ({
 
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <div className="px-6 py-4 border-b border-slate-200">
-        <h3 className="text-center text-lg md:text-xl font-bold text-slate-800">
+    <div className="rounded-xl border border-base-300 bg-base-100 shadow-sm overflow-hidden">
+      <div className="px-6 py-4 border-b border-base-300">
+        <h3 className="text-center text-lg md:text-xl font-bold text-base-content">
           Documentos de la solicitud
         </h3>
       </div>
@@ -274,23 +274,23 @@ const DocumentosSolicitud: React.FC<Props> = ({
             <button
               type="button"
               className="w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2
-                         bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
+                         bg-base-200 text-base-content/50 border border-base-300 cursor-not-allowed"
               disabled
             >
               <FileDown className="w-4 h-4" />
               Otros documentos
             </button>
-            <span className="text-xs text-slate-500 text-center">No disponibles</span>
+            <span className="text-xs text-base-content/60 text-center">No disponibles</span>
           </div>
         )}
       </div>
 
-      <div className="px-6 py-4 flex items-center justify-between border-t border-slate-200 bg-slate-50">
+      <div className="px-6 py-4 flex items-center justify-between border-t border-base-300 bg-base-200">
         <button
           type="button"
           onClick={onVolver}
           className="inline-flex cursor-pointer items-center justify-center rounded-lg px-4 py-2
-                     bg-rose-100 text-rose-700 hover:bg-rose-200"
+                     bg-error/10 text-error hover:bg-rose-200"
           disabled={loading}
         >
           ← Volver
@@ -332,7 +332,7 @@ const DownloadButton: React.FC<{
         {label}
       </button>
       {disabled && hint ? (
-        <span className="text-xs text-slate-500 text-center">{hint}</span>
+        <span className="text-xs text-base-content/60 text-center">{hint}</span>
       ) : null}
     </div>
   );
@@ -348,8 +348,8 @@ const UploadCard: React.FC<{
   onFileChange: (f: File | null) => void;
   onUpload: () => void;
 }> = ({ label, file, inputRef, isPending, onFileChange, onUpload }) => (
-  <div className="flex flex-col gap-2 rounded-lg border border-dashed border-blue-300 bg-blue-50 p-3">
-    <span className="text-xs font-semibold text-blue-800">{label} — no disponible</span>
+  <div className="flex flex-col gap-2 rounded-lg border border-dashed border-blue-300 bg-info/10 p-3">
+    <span className="text-xs font-semibold text-info">{label} — no disponible</span>
     <input
       ref={inputRef}
       type="file"
@@ -359,13 +359,13 @@ const UploadCard: React.FC<{
         if (!validateFileInput(e)) return onFileChange(null);
         onFileChange(e.target.files?.[0] ?? null);
       }}
-      className="block w-full text-xs text-slate-600
+      className="block w-full text-xs text-base-content/70
         file:mr-2 file:py-1 file:px-2 file:rounded file:border-0
-        file:text-xs file:font-semibold file:bg-white file:text-slate-700
-        hover:file:bg-slate-100"
+        file:text-xs file:font-semibold file:bg-base-100 file:text-base-content
+        hover:file:bg-base-200"
     />
     {file && (
-      <span className="text-[11px] text-slate-500 truncate">
+      <span className="text-[11px] text-base-content/60 truncate">
         {file.name}
       </span>
     )}

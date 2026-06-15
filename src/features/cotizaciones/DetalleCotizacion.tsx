@@ -23,12 +23,11 @@ import {
   Phone,
 } from 'lucide-react';
 import ButtonLink from '../../shared/components/ButtonLink';
-import { PDFDownloadLink, pdf } from '@react-pdf/renderer';
-import { PaqueteCreditoPDFDoc } from '../creditos/pdf/PaqueteCreditoPDF';
+// react-pdf y los documentos se cargan bajo demanda (import dinámico / React.lazy)
+const CotizacionDetalladaPDFLink = React.lazy(() => import('./CotizacionDetalladaPDFLink'));
 import { useAuthStore } from '../../store/auth.store';
 import { useLoaderStore } from '../../store/loader.store';
 import { useGarantiaExtByCotizacionId } from '../../services/garantiaExtServices';
-import { CotizacionDetalladaPDFDoc } from './CotizacionDetalladaPDFDoc';
 import { useEmpresaById } from '../../services/empresasServices';
 import {
   useSolicitudFacturacionPorIdCotizacion,
@@ -416,6 +415,8 @@ const DetalleCotizacion: React.FC = () => {
         codeudorTelefono: codeudor1Telefono,
       };
 
+      const { pdf } = await import('@react-pdf/renderer');
+      const { PaqueteCreditoPDFDoc } = await import('../creditos/pdf/PaqueteCreditoPDF');
       const blob = await pdf(<PaqueteCreditoPDFDoc data={dataBase} />).toBlob();
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
@@ -493,13 +494,13 @@ const DetalleCotizacion: React.FC = () => {
       </div>
 
       <section className="w-full mb-6">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 rounded-2xl bg-linear-to-r from-slate-50 to-slate-100 border border-info p-6">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 rounded-2xl bg-linear-to-r from-base-200 to-base-100 border border-info p-6">
           <div className="flex flex-col md:flex-row md:items-center md:gap-6 w-full">
             <div>
-              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-800">
+              <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-base-content">
                 Información de la cotización
               </h1>
-              <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-600">
+              <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-base-content/70">
                 <span className={`badge ${estadoBadgeClass(q.estado)}`}>{q.estado}</span>
                 <div className="flex items-center gap-1">
                   <span className="opacity-70">Creada:</span>
@@ -516,7 +517,7 @@ const DetalleCotizacion: React.FC = () => {
       </section>
 
       <div className="flex flex-col gap-6">
-        <section className="card bg-white border border-base-300/60 shadow-sm rounded-2xl">
+        <section className="card bg-base-100 border border-base-300/60 shadow-sm rounded-2xl">
           <div className="card-body">
             <div className="flex items-center gap-2 mb-2 bg-[#3498DB]/70 text-white p-2 rounded-xl">
               <UserRound className="w-5 h-5" />
@@ -604,7 +605,7 @@ const DetalleCotizacion: React.FC = () => {
                     role="tab"
                     className={`tab rounded-lg px-4 py-2 ${tab === 'A'
                       ? 'tab-active bg-green-500 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      : 'bg-base-300 text-base-content hover:bg-base-300'
                       }`}
                     onClick={() => setTab('A')}
                   >
@@ -614,7 +615,7 @@ const DetalleCotizacion: React.FC = () => {
                     role="tab"
                     className={`tab rounded-lg px-4 py-2 ml-2 ${tab === 'B'
                       ? 'tab-active bg-green-500 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      : 'bg-base-300 text-base-content hover:bg-base-300'
                       }`}
                     onClick={() => setTab('B')}
                   >
@@ -633,7 +634,7 @@ const DetalleCotizacion: React.FC = () => {
             {moto ? (
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                 <div className="space-y-3 rounded-xl border border-base-300/60 p-3 bg-base-100">
-                  <h3 className="text-sm font-semibold text-slate-700 mb-1">Vehículo</h3>
+                  <h3 className="text-sm font-semibold text-base-content mb-1">Vehículo</h3>
 
                   <DataRow label="Precio base" value={fmtCOP(moto.precioBase)} />
 
@@ -714,7 +715,7 @@ const DetalleCotizacion: React.FC = () => {
 
                 <div className="space-y-3">
                   <div className="rounded-xl border border-base-300/60 p-3 bg-base-100 space-y-2">
-                    <h3 className="text-sm font-semibold text-slate-700 mb-1">Resumen</h3>
+                    <h3 className="text-sm font-semibold text-base-content mb-1">Resumen</h3>
 
                     <div className="space-y-1.5 mt-1">
                       {/* <DataRowText label="Garantía" value={moto.garantia ? 'Sí' : 'No'} /> */}
@@ -835,7 +836,7 @@ const DetalleCotizacion: React.FC = () => {
                       role="tab"
                       className={`tab rounded-lg px-4 py-2 ${tab === 'A'
                         ? 'tab-active bg-green-500 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        : 'bg-base-300 text-base-content hover:bg-base-300'
                         }`}
                       onClick={() => setTab('A')}
                     >
@@ -845,7 +846,7 @@ const DetalleCotizacion: React.FC = () => {
                       role="tab"
                       className={`tab rounded-lg px-4 py-2 ml-2 ${tab === 'B'
                         ? 'tab-active bg-green-500 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        : 'bg-base-300 text-base-content hover:bg-base-300'
                         }`}
                       onClick={() => setTab('B')}
                     >
@@ -979,7 +980,7 @@ const DetalleCotizacion: React.FC = () => {
           />
 
           {isCreditoPropio && (
-            <div className="mt-4 bg-white p-3 rounded-2xl">
+            <div className="mt-4 bg-base-100 p-3 rounded-2xl">
               <button
                 type="button"
                 className="btn btn-teal-500 bg-teal-500 hover:bg-teal-600 text-white btn-sm"
@@ -1015,32 +1016,17 @@ const DetalleCotizacion: React.FC = () => {
           )}
 
           {payload && (
-            <PDFDownloadLink
-              document={
-                <CotizacionDetalladaPDFDoc
-                  cotizacion={{ success: true, data: payloadParaPDF }}
-                  garantiaExt={ge ? { success: true, data: ge } : undefined}
-                  logoUrl={logoUrl}
-                  empresa={empresaPDF}
-                  creditoDirecto={creditoMotoActual}
-
-
-                />
-              }
-              fileName={`Cotizacion_detallada_${q?.id || id}.pdf`}
-            >
-              {({ loading }) => (
-                <button
-                  className="btn btn-success btn-sm"
-                  type="button"
-                  disabled={loading || loadingEmpresa}
-                  title="Descargar PDF cotización"
-                >
-                  <FileDown className="w-4 h-4" />
-                  {loading ? 'Generando PDF…' : 'PDF Cotización'}
-                </button>
-              )}
-            </PDFDownloadLink>
+            <React.Suspense fallback={<button className="btn btn-success btn-sm" type="button" disabled><FileDown className="w-4 h-4" />PDF Cotización</button>}>
+              <CotizacionDetalladaPDFLink
+                payloadParaPDF={payloadParaPDF}
+                ge={ge}
+                logoUrl={logoUrl}
+                empresa={empresaPDF}
+                creditoDirecto={creditoMotoActual}
+                fileName={`Cotizacion_detallada_${q?.id || id}.pdf`}
+                disabled={loadingEmpresa}
+              />
+            </React.Suspense>
           )}
         </div>
       </section>

@@ -69,25 +69,25 @@ const NotificacionesPanel: React.FC = () => {
     switch (tipo) {
       case "success":
         return (
-          <div className="p-1.5 bg-emerald-50 text-emerald-500 rounded-lg border border-emerald-100">
+          <div className="p-1.5 bg-success/10 text-success rounded-lg border border-success/30">
             <CheckCircle2 className="w-3.5 h-3.5" />
           </div>
         );
       case "error":
         return (
-          <div className="p-1.5 bg-rose-50 text-rose-500 rounded-lg border border-rose-100">
+          <div className="p-1.5 bg-error/10 text-error rounded-lg border border-error/30">
             <AlertCircle className="w-3.5 h-3.5" />
           </div>
         );
       case "warning":
         return (
-          <div className="p-1.5 bg-amber-50 text-amber-500 rounded-lg border border-amber-100">
+          <div className="p-1.5 bg-warning/10 text-warning rounded-lg border border-warning/30">
             <AlertTriangle className="w-3.5 h-3.5" />
           </div>
         );
       default:
         return (
-          <div className="p-1.5 bg-blue-50 text-blue-500 rounded-lg border border-blue-100">
+          <div className="p-1.5 bg-info/10 text-info rounded-lg border border-info/30">
             <Info className="w-3.5 h-3.5" />
           </div>
         );
@@ -101,8 +101,8 @@ const NotificacionesPanel: React.FC = () => {
         onClick={() => setOpen((v) => !v)}
         className={`relative p-2 rounded-xl transition-all duration-200 focus:outline-none
           ${open 
-            ? "bg-slate-100 text-blue-600" 
-            : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            ? "bg-base-200 text-info" 
+            : "text-base-content/70 hover:bg-base-200 hover:text-base-content"
           }`}
         aria-label="Notificaciones"
       >
@@ -118,7 +118,7 @@ const NotificacionesPanel: React.FC = () => {
 
       {/* 📦 PANEL DESPLEGABLE (Esquinas redondeadas coherentes con tus Cards) */}
       <div
-        className={`z-50 rounded-xl bg-white border border-slate-200/80 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] origin-top-right
+        className={`z-50 rounded-xl bg-base-100 border border-base-300/80 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] origin-top-right
         max-sm:fixed max-sm:left-3 max-sm:right-3 max-sm:top-[64px] max-sm:w-auto
         sm:absolute sm:right-0 sm:mt-2 sm:w-[380px]
         ${
@@ -128,37 +128,37 @@ const NotificacionesPanel: React.FC = () => {
         }`}
       >
         {/* HEADER */}
-        <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-slate-100 bg-white">
+        <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-base-200 bg-base-100">
           <div className="flex items-center gap-2">
-            <div className="p-1 bg-slate-50 text-slate-700 rounded-md border border-slate-100">
+            <div className="p-1 bg-base-200 text-base-content rounded-md border border-base-200">
               <Inbox className="w-3.5 h-3.5" />
             </div>
-            <h3 className="text-[13px] font-bold text-slate-800">
+            <h3 className="text-[13px] font-bold text-base-content">
               Notificaciones
             </h3>
           </div>
 
           {unreadCount > 0 && (
-            <span className="text-[10px] font-semibold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100/50">
+            <span className="text-[10px] font-semibold bg-info/10 text-info px-2 py-0.5 rounded-full border border-info/30/50">
               {unreadCount} {unreadCount === 1 ? "nueva" : "nuevas"}
             </span>
           )}
         </div>
 
         {/* LISTA DE NOTIFICACIONES */}
-        <div className="max-h-[320px] overflow-y-auto divide-y divide-slate-100 scrollbar-thin">
+        <div className="max-h-[320px] overflow-y-auto divide-y divide-base-200 scrollbar-thin">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-10 gap-2">
               <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-              <p className="text-xs font-medium text-slate-400">Cargando...</p>
+              <p className="text-xs font-medium text-base-content/50">Cargando...</p>
             </div>
           ) : notificaciones.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 px-6 text-center">
-              <div className="p-2.5 bg-slate-50 rounded-xl text-slate-400 mb-2">
+              <div className="p-2.5 bg-base-200 rounded-xl text-base-content/50 mb-2">
                 <Bell className="w-5 h-5" />
               </div>
-              <p className="text-xs font-bold text-slate-700">No tienes notificaciones</p>
-              <p className="text-[11px] text-slate-400 mt-0.5 max-w-[220px]">
+              <p className="text-xs font-bold text-base-content">No tienes notificaciones</p>
+              <p className="text-[11px] text-base-content/50 mt-0.5 max-w-[220px]">
                 Te avisaremos de las actualizaciones del sistema aquí.
               </p>
             </div>
@@ -166,7 +166,7 @@ const NotificacionesPanel: React.FC = () => {
             notificaciones.map((n: any) => (
               <div
                 key={n.id}
-                className="group flex items-start gap-2.5 px-3.5 py-2.5 hover:bg-slate-50/60 transition-colors duration-150"
+                className="group flex items-start gap-2.5 px-3.5 py-2.5 hover:bg-base-200/60 transition-colors duration-150"
               >
                 {/* ICONO */}
                 <div className="flex-shrink-0 mt-0.5">{getIcon(n.tipo)}</div>
@@ -174,7 +174,7 @@ const NotificacionesPanel: React.FC = () => {
                 {/* CONTENIDO */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="flex-1 text-[13px] font-bold text-slate-800 leading-tight truncate transition-colors duration-150 group-hover:text-blue-600">
+                    <p className="flex-1 text-[13px] font-bold text-base-content leading-tight truncate transition-colors duration-150 group-hover:text-info">
                       {n.titulo}
                     </p>
                     <span className={`flex-shrink-0 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${moduloBadgeClass(n.modulo)}`}>
@@ -182,7 +182,7 @@ const NotificacionesPanel: React.FC = () => {
                     </span>
                   </div>
 
-                  <p className="text-[11px] text-slate-500 mt-0.5 leading-snug break-words line-clamp-2 font-normal">
+                  <p className="text-[11px] text-base-content/60 mt-0.5 leading-snug break-words line-clamp-2 font-normal">
                     {n.mensaje}
                   </p>
 
@@ -211,18 +211,18 @@ const NotificacionesPanel: React.FC = () => {
         </div>
 
         {/* FOOTER */}
-        <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-50/60 border-t border-slate-100">
+        <div className="flex items-center justify-between px-3.5 py-2.5 bg-base-200/60 border-t border-base-200">
           <button
             onClick={() => {
               setOpen(false);
               navigate("/notificaciones");
             }}
-            className="text-[11px] font-bold text-blue-600 hover:text-blue-700 transition-colors"
+            className="text-[11px] font-bold text-info hover:text-info transition-colors"
           >
             Ver historial completo
           </button>
 
-          <div className="flex items-center gap-1.5 text-[10px] font-medium text-slate-400">
+          <div className="flex items-center gap-1.5 text-[10px] font-medium text-base-content/50">
             <span className="relative flex h-1.5 w-1.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
