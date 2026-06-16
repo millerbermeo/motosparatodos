@@ -1379,7 +1379,8 @@ const CreditoDetalle: React.FC = () => {
                 </section>
 
 
-                {/* Información laboral */}
+                {/* Información laboral — solo si hay al menos empresa */}
+                {isNonEmpty(informacion_laboral?.empresa) && (
                 <section className="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
                     <div className="p-4 sm:p-6">
                         <h2 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2 text-base-content">
@@ -1400,6 +1401,7 @@ const CreditoDetalle: React.FC = () => {
                         </div>
                     </div>
                 </section>
+                )}
 
 
                 {/* Referencias */}

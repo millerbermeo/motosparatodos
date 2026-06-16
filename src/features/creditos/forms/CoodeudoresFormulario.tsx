@@ -199,7 +199,7 @@ const groupFieldRule =
 
 const emptyCoodeudor: Coodeudor = {
   numDocumento: "",
-  tipoDocumento: "Cédula de ciudadanía",
+  tipoDocumento: "",
   fechaExpedicion: "",
   lugarExpedicion: "",
   primerNombre: "",
@@ -216,9 +216,9 @@ const emptyCoodeudor: Coodeudor = {
   email: "",
   estadoCivil: undefined,
   personasACargo: "",
-  tipoVivienda: "Propia",
+  tipoVivienda: "",
   costoArriendo: "0",    // ← empieza en "0" (no arriendo)
-  fincaRaiz: "No",
+  fincaRaiz: undefined,
   empresaLabora: "",
   direccionEmpleador: "",
   telEmpleador: "",
@@ -349,7 +349,7 @@ const normalizeEstadoCivil = (v: any): string => {
   return String(v);
 };
 const normalizeTipoVivienda = (v: any): string => {
-  if (v === "0" || v == null || v === "") return "Propia";
+  if (v === "0" || v == null || v === "") return "";
   return String(v);
 };
 
@@ -363,7 +363,7 @@ const fromBackendToForm = (data: any): Coodeudor => {
 
   return {
     numDocumento: p.numero_documento ?? "",
-    tipoDocumento: p.tipo_documento ?? "Cédula de ciudadanía",
+    tipoDocumento: p.tipo_documento ?? "",
     fechaExpedicion: p.fecha_expedicion ?? "",
     lugarExpedicion: p.lugar_expedicion ?? "",
     primerNombre: p.primer_nombre ?? "",
@@ -379,10 +379,13 @@ const fromBackendToForm = (data: any): Coodeudor => {
     telFijo: p.telefono_fijo ?? "",
     email: p.email ?? "",
     estadoCivil: normalizeEstadoCivil(p.estado_civil),
-    personasACargo: p.personas_a_cargo ?? "",
+    personasACargo:
+      p.personas_a_cargo == null || Number(p.personas_a_cargo) === 0
+        ? ""
+        : p.personas_a_cargo,
     tipoVivienda: normalizeTipoVivienda(p.tipo_vivienda),
     costoArriendo: pesosToStr(p.costo_arriendo ?? 0),
-    fincaRaiz: (p.finca_raiz as Coodeudor["fincaRaiz"]) ?? "No",
+    fincaRaiz: (p.finca_raiz as Coodeudor["fincaRaiz"]) ?? undefined,
 
     empresaLabora: l.empresa ?? "",
     direccionEmpleador: l.direccion_empleador ?? "",

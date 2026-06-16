@@ -114,6 +114,27 @@ const InfoProductoFormulario: React.FC = () => {
   const descuentoCampo = `descuentos_${sufCot}`;
   const descuentoMotoSel = Math.abs(Number((cotObj as any)?.[descuentoCampo] ?? 0)) || 0;
 
+  // Precio BRUTO (sin descuento) calculado desde los componentes de la cotización.
+  // Es estable: no depende de valor_producto guardado (que sí se sobreescribe),
+  // por lo que NO se desfasa entre guardados y se auto-corrige.
+  const numCot = (k: string) => Number((cotObj as any)?.[k] ?? 0) || 0;
+  const adSuf = motoSeleccionada === 2 ? "2" : "1";
+  const brutoMoto = cotObj
+    ? numCot(`precio_base_${sufCot}`) +
+      numCot(`precio_documentos_${sufCot}`) +
+      numCot(`accesorios_${sufCot}`) +
+      numCot(`marcacion_${sufCot}`) +
+      numCot(`total_adicionales_${adSuf}`) +
+      numCot(`valor_poliza_${sufCot}`) +
+      numCot(`valor_garantia_extendida_${sufCot}`) +
+      numCot(`valor_gps_${sufCot}`) +
+      numCot(`otro_seguro_${sufCot}`)
+    // Fallback si aún no llegó la cotización: usa el guardado + descuento guardado.
+    : (Number(creditoBackend?.valor_producto ?? 0) || 0) + descuentoMotoSel;
+
+  // Seguros (para total_sin_seguros) = otros seguros de la moto.
+  const segurosMoto = numCot(`otro_seguro_${sufCot}`);
+
   // Default del input descuento apenas llega la cotización
   React.useEffect(() => {
     if (!cotObj) return;
@@ -160,21 +181,20 @@ const InfoProductoFormulario: React.FC = () => {
     const cuotaInicialNum = toNumberPesos(v.cuotaInicial) || 0;
     const descuentoNum = toNumberPesos(v.descuento) || 0;
 
-    // ===== Recalcular cuotas y saldo (misma fórmula que la tabla) =====
-    // valor_producto YA viene neto del descuento (no restarlo de nuevo).
-    const valorProducto = Number(creditoBackend?.valor_producto ?? 0) || 0;
+    // ===== Recalcular precio con el descuento NUEVO =====
+    // brutoMoto = suma de componentes (estable). precio_total = bruto − descuento.
     const garantia = Number(creditoBackend?.garantia_extendida_valor ?? 0) || 0;
     const tasaFin = Number(cotObj?.tasa_financiacion ?? 0) || 0;
     const tasaGar = Number(cotObj?.tasa_garantia ?? 0) || 0;
     const tasaSegVida = resolverTasaSeguroVidaDecimal((cotObj as any)?.porcentaje_seguro_vida);
 
-    // Saldo a financiar del negocio (moto): valor_producto − garantía − cuota inicial
-    const saldoNegocio = Math.max(
-      valorProducto - garantia - cuotaInicialNum,
-      0
-    );
+    const precioTotal = Math.max(brutoMoto - descuentoNum, 0); // = valor_producto nuevo (neto)
+    const totalSinSeguros = Math.max(precioTotal - segurosMoto, 0);
+
+    // Saldo a financiar del negocio (moto): precio_total − garantía − cuota inicial
+    const saldoNegocio = Math.max(precioTotal - garantia - cuotaInicialNum, 0);
     // saldo_financiar_a: total a financiar (incluye garantía), sin cuota inicial
-    const saldoFinanciar = Math.max(valorProducto - cuotaInicialNum, 0);
+    const saldoFinanciar = Math.max(precioTotal - cuotaInicialNum, 0);
 
     const cuotaPlazo = (meses: number) =>
       calcularCreditoDirectoMoto({
@@ -198,7 +218,12 @@ const InfoProductoFormulario: React.FC = () => {
       descuento_campo: descuentoCampo,
       cotizacion_id: Number(creditoBackend?.cotizacion_id ?? 0) || null,
       // ===== Valores recalculados para que el backend los persista =====
-      // El backend asigna a cuota_*_{a|b} y saldo_financiar_{a|b} según moto_seleccionada.
+      // creditos: valor_producto / total ; cotizaciones: precio_total_{suf},
+      // total_sin_seguros_{suf}, saldo_financiar_{suf}, cuota_*_{suf} (según moto_seleccionada).
+      valor_producto: precioTotal,
+      total: precioTotal,
+      precio_total: precioTotal,
+      total_sin_seguros: totalSinSeguros,
       saldo_financiar: saldoFinanciar,
       cuota_6: cuotaPlazo(6),
       cuota_12: cuotaPlazo(12),
@@ -232,7 +257,20 @@ const InfoProductoFormulario: React.FC = () => {
   // 👇 Leemos lo que hay en el form
   const plazoCuotasWatch = watch("plazoCuotas");
   const cuotaInicialWatch = watch("cuotaInicial");
+  const descuentoWatch = watch("descuento");
   const fechaInicioWatch = watch("fechaInicio");
+
+  // Descuento actual del form (en vivo) y precio total recalculado en vivo
+  // sobre el BRUTO estable (componentes de la cotización).
+  const descuentoLive = toNumberPesos(descuentoWatch ?? descuentoMotoSel);
+  const precioTotalLive = Math.max(brutoMoto - descuentoLive, 0);
+
+  // "Valor de la moto" en vivo = precio total neto − garantía (se actualiza al cambiar el descuento).
+  const garantiaMoto = Number(creditoBackend?.garantia_extendida_valor ?? 0) || 0;
+  const valorMotoLive = Math.max(precioTotalLive - garantiaMoto, 0);
+  React.useEffect(() => {
+    setValue("valorMoto", String(valorMotoLive), { shouldDirty: false });
+  }, [valorMotoLive, setValue]);
 
   // ✅ Tabla: form → backend → 12 (pero ya todo es número)
   const plazoParaTabla = normalizePlazo(
@@ -246,10 +284,10 @@ const InfoProductoFormulario: React.FC = () => {
 
   const creditoParaTabla = creditoBackend
     ? {
-      // valor_producto ya viene NETO del descuento; solo se descuenta la garantía
-      // (que se financia aparte). NO restar el descuento de nuevo.
+      // precioTotalLive = precio neto con el descuento ACTUAL del form (en vivo).
+      // Se descuenta la garantía (se financia aparte). El descuento ya está en precioTotalLive.
       valor_producto: Math.max(
-        (Number(creditoBackend.valor_producto) || 0) -
+        precioTotalLive -
         (Number(creditoBackend.garantia_extendida_valor) || 0),
         0
       ),

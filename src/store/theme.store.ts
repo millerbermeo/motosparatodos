@@ -42,3 +42,21 @@ export const useThemeStore = create<ThemeState>()(
 
 // Aplica el tema lo antes posible (antes del primer render) para evitar parpadeo.
 applyTheme(useThemeStore.getState().theme);
+
+// Sincroniza el tema entre pestañas/ventanas abiertas.
+// El evento `storage` se dispara en las OTRAS pestañas cuando cambia localStorage.
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e) => {
+    if (e.key !== "theme-mode" || !e.newValue) return;
+    try {
+      const parsed = JSON.parse(e.newValue);
+      const next: ThemeMode = parsed?.state?.theme === "dark" ? "dark" : "light";
+      if (next !== useThemeStore.getState().theme) {
+        applyTheme(next);
+        useThemeStore.setState({ theme: next });
+      }
+    } catch {
+      /* valor no parseable: ignorar */
+    }
+  });
+}
