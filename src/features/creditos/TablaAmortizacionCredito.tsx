@@ -4,6 +4,7 @@ import { useTasasCotizacion } from "../../services/tasaCotiService";
 import {
   calcularCuotaPMT,
   calcularSeguroDeudorMensual,
+  resolverTasaSeguroVidaDecimal,
 } from "../../shared/components/credito/creditoDirecto.utils";
 
 interface CreditoApi {
@@ -27,6 +28,8 @@ interface TablaAmortizacionCreditoProps {
   tasaFinanciacion?: number;
   /** Tasa de garantía % directa de la cotización (ej: 1.5). Hook como fallback. */
   tasaGarantia?: number;
+  /** % seguro de vida de la cotización (ej: 0.043). Si no viene, usa el fallback. */
+  porcentajeSeguroVida?: number | string | null;
 }
 
 const fmtCOP = (v: number) =>
@@ -130,6 +133,7 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
   producto,
   tasaFinanciacion,
   tasaGarantia,
+  porcentajeSeguroVida,
 }) => {
   const plazo = toNumber(credito.plazo_meses);
 
@@ -184,10 +188,12 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
           )
         : 0;
 
-    // Seguro fijo sobre saldo inicial (igual al comportamiento del Excel)
+    // Seguro fijo sobre saldo inicial (igual al comportamiento del Excel).
+    // Tasa de seguro vida: de la cotización; si no viene, fallback.
+    const tasaSeguroVida = resolverTasaSeguroVidaDecimal(porcentajeSeguroVida);
     const seguroDeudorFijo =
       saldoFinanciadoNegocio > 0
-        ? Math.floor(calcularSeguroDeudorMensual(saldoFinanciadoNegocio))
+        ? Math.floor(calcularSeguroDeudorMensual(saldoFinanciadoNegocio, tasaSeguroVida))
         : 0;
 
     const garantiaYSeguros = cuotaGarantia + seguroDeudorFijo;
@@ -218,7 +224,7 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
       fechaInicio,
       schedule,
     };
-  }, [credito, plazo, tasasCotizacion, garantiaConfig, fechaCreacion, tasaFinanciacion, tasaGarantia]);
+  }, [credito, plazo, tasasCotizacion, garantiaConfig, fechaCreacion, tasaFinanciacion, tasaGarantia, porcentajeSeguroVida]);
 
   if (!plazo) {
     return (

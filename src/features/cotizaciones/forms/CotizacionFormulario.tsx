@@ -28,6 +28,7 @@ import { useBuscarClientePorCedula } from "../../../services/clientesServices";
 import { Search } from "lucide-react";
 import Swal from "sweetalert2";
 import { useLoaderStore } from "../../../store/loader.store";
+import { useThemeStore } from "../../../store/theme.store";
 
 
 const getMotoByIndex = <T,>(
@@ -162,6 +163,10 @@ const CotizacionFormulario: React.FC = () => {
 
     const navigate = useNavigate();
     const { show: showLoader, hide: hideLoader } = useLoaderStore();
+    const theme = useThemeStore((s) => s.theme);
+    // Caja "Seguro todo riesgo": azul de marca en claro, neutro en oscuro
+    const seguroBoxClass = theme === "dark" ? "bg-base-200 border border-base-300" : "bg-[#3498DB]";
+    const seguroTitleClass = theme === "dark" ? "text-base-content" : "text-white";
 
     // HOOKS
     const { mutate: cotizacion, isPending } = useCreateCotizaciones();
@@ -1857,8 +1862,8 @@ const CotizacionFormulario: React.FC = () => {
                                         </>
                                     )}
 
-                                    <div className="p-3 rounded-md bg-[#3498DB]">
-                                        <p className="font-semibold mb-2 text-white">Seguro todo riesgo</p>
+                                    <div className={`p-3 rounded-md ${seguroBoxClass}`}>
+                                        <p className={`font-semibold mb-2 ${seguroTitleClass}`}>Seguro todo riesgo</p>
 
                                         <FormInput<FormValuesCotizacion>
                                             name="otroSeguro1"
@@ -2409,8 +2414,8 @@ const CotizacionFormulario: React.FC = () => {
                                         </>
                                     )}
 
-                                    <div className="p-3 rounded-md bg-[#3498DB]">
-                                        <p className="font-semibold mb-2 text-white">Seguro todo riesgo</p>
+                                    <div className={`p-3 rounded-md ${seguroBoxClass}`}>
+                                        <p className={`font-semibold mb-2 ${seguroTitleClass}`}>Seguro todo riesgo</p>
 
                                         <FormInput<FormValuesCotizacion>
                                             name="otroSeguro2"

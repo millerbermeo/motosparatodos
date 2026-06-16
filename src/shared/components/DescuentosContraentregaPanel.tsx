@@ -5,6 +5,7 @@ import {
     useDescuentosContraentrega,
     useActualizarDescuentosContraentrega,
 } from "../../services/solicitudServices";
+import { alert } from "../../utils/alerts";
 
 type Props = {
     /** id de la fila en solicitudes_facturacion (PRIMARY KEY) */
@@ -68,7 +69,7 @@ const DescuentosContraentregaPanel: React.FC<Props> = ({ idSolicitud }) => {
         setObservacion2(data.observacion2 ?? "");
     }, [data]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setTouched(true);
 
@@ -93,7 +94,6 @@ const DescuentosContraentregaPanel: React.FC<Props> = ({ idSolicitud }) => {
         const descuento = parseMoney(descuentoStr);
         const saldo = parseMoney(saldoStr);
         const obs = observacion2.trim();
-
         if (descuento === null || saldo === null || !obs) {
             Swal.fire(
                 "Campos requeridos",
@@ -102,6 +102,13 @@ const DescuentosContraentregaPanel: React.FC<Props> = ({ idSolicitud }) => {
             );
             return;
         }
+
+        const ok = await alert.confirm({
+            title: "¿Guardar autorización?",
+            html: `Se guardará el descuento y saldo contraentrega autorizados. ¿Deseas continuar?`,
+            confirmText: "Sí, guardar",
+        });
+        if (!ok) return;
 
         actualizarDescuentos(
             {
@@ -114,9 +121,9 @@ const DescuentosContraentregaPanel: React.FC<Props> = ({ idSolicitud }) => {
             {
                 onSuccess: () => {
                     refetchDescuentos();
-                    window.location.reload();
+                    // Recarga después de que el alert de éxito del hook (timer 1600ms) se vea.
+                    setTimeout(() => window.location.reload(), 1700);
                 },
-
             }
         );
     };

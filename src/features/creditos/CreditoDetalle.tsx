@@ -1541,6 +1541,7 @@ const CreditoDetalle: React.FC = () => {
                                     credito={creditoAjustado as any}
                                     fechaCreacion={creditoAjustado?.fecha_inicial ?? creditoAjustado?.fecha_creacion}
                                     cotizacionId={idCot ?? 0}
+                                    porcentajeSeguroVida={(cotData as any)?.porcentaje_seguro_vida}
                                     nombreCliente={[
                                         informacion_personal?.primer_nombre,
                                         informacion_personal?.segundo_nombre,

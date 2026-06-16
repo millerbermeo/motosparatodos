@@ -12,6 +12,7 @@ import { FormSelect } from "../../../shared/components/FormSelect";
 import { useRegistrarSolicitudFacturacion2 } from "../../../services/solicitudServices";
 import { HeaderSolicitud } from "../solicitar-facturacion/HeaderSolicitud";
 import { withFileValidation, validateFileInput } from "../../../utils/fileValidation";
+import { alert } from "../../../utils/alerts";
 
 export type FormValues = {
   documentos: "Si" | "No";
@@ -409,6 +410,13 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
     const tipoSolicitud = esCreditoTercerosCot
       ? "Credito de Terceros"
       : "Contado";
+
+    const ok = await alert.confirm({
+      title: "¿Solicitar facturación?",
+      html: `Se creará la solicitud de facturación (<b>${tipoSolicitud}</b>) para esta cotización. ¿Deseas continuar?`,
+      confirmText: "Sí, solicitar",
+    });
+    if (!ok) return;
 
     // Resolver nombre e ID reales desde el slug seleccionado
     const dist = values.distribuidora

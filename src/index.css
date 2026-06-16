@@ -14,6 +14,12 @@ select optgroup {
     color: var(--color-base-content);
 }
 
+/* Azul de marca (#3498DB) usado en headers de tabla y paginación activa:
+   en modo oscuro se atenúa a base-300; en claro queda igual. */
+[data-theme="dark"] .bg-\[\#3498DB\] {
+    background-color: var(--color-base-300) !important;
+}
+
 .loader {
     --cell-size: 52px;
     --cell-spacing: 1px;

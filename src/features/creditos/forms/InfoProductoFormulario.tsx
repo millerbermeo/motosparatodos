@@ -14,6 +14,10 @@ import { useWizardStore } from "../../../store/wizardStore";
 
 import { TablaAmortizacionCredito } from "../../../features/creditos/TablaAmortizacionCredito";
 import { unformatNumber } from "../../../utils/money";
+import {
+  calcularCreditoDirectoMoto,
+  resolverTasaSeguroVidaDecimal,
+} from "../../../shared/components/credito/creditoDirecto.utils";
 
 /** String con puntos/comas/etc. → número en PESOS (entero) */
 const toNumberPesos = (v: unknown): number => {
@@ -153,16 +157,53 @@ const InfoProductoFormulario: React.FC = () => {
   }, [creditoBackend, setValue]);
 
   const onSubmit = (v: ProductoValues) => {
+    const cuotaInicialNum = toNumberPesos(v.cuotaInicial) || 0;
+    const descuentoNum = toNumberPesos(v.descuento) || 0;
+
+    // ===== Recalcular cuotas y saldo (misma fórmula que la tabla) =====
+    // valor_producto YA viene neto del descuento (no restarlo de nuevo).
+    const valorProducto = Number(creditoBackend?.valor_producto ?? 0) || 0;
+    const garantia = Number(creditoBackend?.garantia_extendida_valor ?? 0) || 0;
+    const tasaFin = Number(cotObj?.tasa_financiacion ?? 0) || 0;
+    const tasaGar = Number(cotObj?.tasa_garantia ?? 0) || 0;
+    const tasaSegVida = resolverTasaSeguroVidaDecimal((cotObj as any)?.porcentaje_seguro_vida);
+
+    // Saldo a financiar del negocio (moto): valor_producto − garantía − cuota inicial
+    const saldoNegocio = Math.max(
+      valorProducto - garantia - cuotaInicialNum,
+      0
+    );
+    // saldo_financiar_a: total a financiar (incluye garantía), sin cuota inicial
+    const saldoFinanciar = Math.max(valorProducto - cuotaInicialNum, 0);
+
+    const cuotaPlazo = (meses: number) =>
+      calcularCreditoDirectoMoto({
+        incluir: true,
+        mesesGarantia: meses,
+        valorGarantia: garantia,
+        saldoFinanciar: saldoNegocio,
+        tasaFinanciacionPct: tasaFin,
+        tasaGarantiaPct: tasaGar,
+        tasaSeguroVidaDecimal: tasaSegVida,
+      }).cuotaTotal;
+
     const payload = {
       plazo_meses: v.plazoCuotas || undefined,
-      cuota_inicial: toNumberPesos(v.cuotaInicial) || 0,
+      cuota_inicial: cuotaInicialNum,
       comentario: (v.comentario?.trim() ?? "") || null,
       fecha_inicial: v.fechaInicio || null,
       // Descuento de la moto seleccionada
-      descuento: toNumberPesos(v.descuento) || 0,
+      descuento: descuentoNum,
       moto_seleccionada: motoSeleccionada,
       descuento_campo: descuentoCampo,
       cotizacion_id: Number(creditoBackend?.cotizacion_id ?? 0) || null,
+      // ===== Valores recalculados para que el backend los persista =====
+      // El backend asigna a cuota_*_{a|b} y saldo_financiar_{a|b} según moto_seleccionada.
+      saldo_financiar: saldoFinanciar,
+      cuota_6: cuotaPlazo(6),
+      cuota_12: cuotaPlazo(12),
+      cuota_24: cuotaPlazo(24),
+      cuota_36: cuotaPlazo(36),
     };
 
     actualizarCredito.mutate(
@@ -191,10 +232,7 @@ const InfoProductoFormulario: React.FC = () => {
   // 👇 Leemos lo que hay en el form
   const plazoCuotasWatch = watch("plazoCuotas");
   const cuotaInicialWatch = watch("cuotaInicial");
-  const descuentoWatch = watch("descuento");
   const fechaInicioWatch = watch("fechaInicio");
-
-  const descuentoParaTabla = toNumberPesos(descuentoWatch ?? descuentoMotoSel);
 
   // ✅ Tabla: form → backend → 12 (pero ya todo es número)
   const plazoParaTabla = normalizePlazo(
@@ -208,10 +246,11 @@ const InfoProductoFormulario: React.FC = () => {
 
   const creditoParaTabla = creditoBackend
     ? {
+      // valor_producto ya viene NETO del descuento; solo se descuenta la garantía
+      // (que se financia aparte). NO restar el descuento de nuevo.
       valor_producto: Math.max(
         (Number(creditoBackend.valor_producto) || 0) -
-        (Number(creditoBackend.garantia_extendida_valor) || 0) -
-        descuentoParaTabla,
+        (Number(creditoBackend.garantia_extendida_valor) || 0),
         0
       ),
       cuota_inicial: cuotaInicialParaTabla,
@@ -361,6 +400,7 @@ const InfoProductoFormulario: React.FC = () => {
             cotizacionId={Number(creditoBackend?.cotizacion_id ?? 0)}
             tasaFinanciacion={Number(cotObj?.tasa_financiacion) > 0 ? Number(cotObj.tasa_financiacion) : undefined}
             tasaGarantia={Number(cotObj?.tasa_garantia) > 0 ? Number(cotObj.tasa_garantia) : undefined}
+            porcentajeSeguroVida={(cotObj as any)?.porcentaje_seguro_vida}
             nombreCliente={nombreCliente}
             cedula={cedulaCot}
             direccion={infoPers?.direccion_residencia}

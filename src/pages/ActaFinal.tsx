@@ -267,7 +267,7 @@ const ActaFinal: React.FC = () => {
   /* ===== Vista principal ===== */
 
   return (
-    <main className="w-full min-h-screen bg-linear-to-b from-base-200 via-slate-50 to-base-100">
+    <main className="w-full min-h-screen bg-linear-to-b from-base-200 via-base-200 to-base-100">
       {/* Header / volver */}
       <header className="sticky top-0 z-10 bg-base-100/80 backdrop-blur border-b border-base-300">
         <div className="max-w-9xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between gap-3">

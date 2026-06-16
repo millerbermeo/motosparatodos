@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useCotizacionById, useUpdateEstadoCotizacion } from '../../services/cotizacionesServices';
 import { api } from '../../services/axiosInstance';
 import Swal from 'sweetalert2';
+import { alert } from '../../utils/alerts';
 import { UserRound, CalendarDays, Mail, Phone, BadgeInfo, Bike } from 'lucide-react';
 import ButtonLink from '../../shared/components/ButtonLink';
 import { useLoaderStore } from '../../store/loader.store';
@@ -681,6 +682,13 @@ const DetalleCambiarEstado: React.FC = () => {
           : null;
 
     if (esSolicitarFacturacion(estadoNombre)) {
+      const ok = await alert.confirm({
+        title: '¿Cambiar estado de la cotización?',
+        html: `La cotización pasará al estado <b>${/prefactura/i.test(estadoNombre) ? 'Solicitar facturación' : estadoNombre}</b> y te llevaremos al registro de facturación.`,
+        confirmText: 'Sí, cambiar',
+      });
+      if (!ok) return;
+
       try {
         setLoading(true);
 
@@ -726,6 +734,13 @@ const DetalleCambiarEstado: React.FC = () => {
       Swal.fire({ icon: 'warning', title: 'Escribe un comentario' });
       return;
     }
+
+    const ok = await alert.confirm({
+      title: '¿Cambiar estado de la cotización?',
+      html: `La cotización cambiará al estado <b>${/prefactura/i.test(estadoNombre) ? 'Solicitar facturación' : estadoNombre}</b>. ¿Deseas continuar?`,
+      confirmText: 'Sí, cambiar',
+    });
+    if (!ok) return;
 
     try {
       setLoading(true);

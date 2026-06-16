@@ -277,6 +277,8 @@ const DetalleCotizacion: React.FC = () => {
   const puedeCambiarEstado =
     user?.rol === 'Asesor' &&
     q?.estado !== 'Sin interés' &&
+        q?.estado !== 'Solicitar prefacturación' &&
+
     q?.estado !== 'Solicitar facturación' &&
     q?.estado !== 'Facturado' &&
     q?.estado !== 'Solicitar crédito' &&

@@ -3,8 +3,10 @@ import React, { useMemo, useState, useCallback, useRef } from "react";
 import { useModalStore } from "../../store/modalStore";
 import { useAuthStore } from "../../store/auth.store";
 import Swal from "sweetalert2";
+import { PenLine, UploadCloud, CheckCircle2, X } from "lucide-react";
 import { useRegistrarActaEntrega } from "../../services/solicitudServices"; // ajusta el path exacto
 import { validateFileInput, validateFile } from "../../utils/fileValidation";
+import { alert } from "../../utils/alerts";
 
 type EstadoActa = "borrador" | "cerrada";
 
@@ -138,6 +140,13 @@ const ActaEntregaFormulario: React.FC<Props> = ({
       return;
     }
 
+    const ok = await alert.confirm({
+      title: "¿Registrar acta de entrega?",
+      html: `Se registrará el acta de la <b>factura #${id_factura}</b> con la firma del cliente y ${files.length} foto(s). El acta quedará <b>cerrada</b>.`,
+      confirmText: "Sí, registrar",
+    });
+    if (!ok) return;
+
     const fd = new FormData();
     fd.append("id_factura", String(id_factura));
     fd.append("fecha_entrega", fechaEntrega);
@@ -176,7 +185,7 @@ registrarActa(fd, {
   return (
     <form className="space-y-5" onSubmit={onSubmit}>
       {/* Header */}
-      <div className="rounded-2xl border border-success/30 bg-success/10/70 p-4 flex items-center justify-between">
+      <div className="rounded-2xl border border-success/30 bg-success/10 p-4 flex items-center justify-between">
         <div>
           <h3 className="text-base font-semibold text-emerald-900">
             Acta de entrega
@@ -211,49 +220,74 @@ registrarActa(fd, {
       </label>
 
       {/* Firma */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-        <label className="block">
-          <span className="text-sm font-medium text-base-content">
-            Firma del cliente (imagen)
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-sm font-medium text-base-content inline-flex items-center gap-1.5">
+            <PenLine className="w-4 h-4 text-emerald-600" />
+            Firma del cliente <span className="text-error">*</span>
           </span>
-          <input
-            type="file"
-            accept="image/*,.png,.jpg,.jpeg,.webp"
-            className="mt-1 w-full rounded-xl border-base-300 focus:border-emerald-400 focus:ring-emerald-300"
-            onChange={onFirmaChange}
-          />
           {firmaFile && (
-            <div className="mt-3 flex items-center gap-3">
-              {firmaPreview && (
-                <img
-                  src={firmaPreview}
-                  alt="Firma"
-                  className="h-16 w-28 object-contain rounded-lg border border-base-300 bg-base-100"
-                />
-              )}
-              <div className="text-xs text-base-content/70">
-                <div><b>{firmaFile.name}</b></div>
-                <div>{formatBytes(firmaFile.size)}</div>
-                <button
-                  type="button"
-                  className="mt-1 text-error hover:underline"
-                  onClick={() => { setFirmaFile(null); setFirmaPreview(null); }}
-                >
-                  Quitar firma
-                </button>
-              </div>
-            </div>
+            <span className="inline-flex items-center gap-1 text-xs text-success font-medium">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Firma cargada
+            </span>
           )}
-          {!firmaFile && (
-            <p className="text-xs text-error mt-1">
-              * Requerida para registrar el acta.
-            </p>
-          )}
-        </label>
-
-        <div className="md:mt-7 text-xs text-base-content/60">
-          El acta se cerrará automáticamente al guardar.
         </div>
+
+        {!firmaFile ? (
+          /* Estado vacío: contenedor claro e informativo */
+          <label
+            className={`flex flex-col items-center justify-center text-center gap-2 rounded-2xl border-2 border-dashed p-6 cursor-pointer transition
+              border-emerald-300 bg-success/5 hover:bg-success/10 hover:border-emerald-400`}
+          >
+            <input
+              type="file"
+              accept="image/*,.png,.jpg,.jpeg,.webp"
+              className="hidden"
+              onChange={onFirmaChange}
+            />
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-600/10 text-emerald-600">
+              <UploadCloud className="w-5 h-5" />
+            </div>
+            <p className="text-sm font-medium text-base-content">
+              Subir imagen de la firma del cliente
+            </p>
+            <p className="text-xs text-base-content/60">
+              Haz clic para seleccionar una imagen (JPG, PNG, WEBP · máx. 1.5 MB)
+            </p>
+            <span className="mt-1 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium">
+              Seleccionar firma
+            </span>
+          </label>
+        ) : (
+          /* Estado cargado: preview + datos + quitar */
+          <div className="flex items-center gap-4 rounded-2xl border border-success/30 bg-success/5 p-4">
+            {firmaPreview && (
+              <img
+                src={firmaPreview}
+                alt="Firma del cliente"
+                className="h-20 w-36 object-contain rounded-lg border border-base-300 bg-base-100"
+              />
+            )}
+            <div className="min-w-0 flex-1 text-xs text-base-content/70">
+              <div className="font-medium text-base-content truncate">{firmaFile.name}</div>
+              <div>{formatBytes(firmaFile.size)}</div>
+            </div>
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-error hover:bg-error/10 text-xs font-medium"
+              onClick={() => { setFirmaFile(null); setFirmaPreview(null); }}
+            >
+              <X className="w-3.5 h-3.5" /> Quitar
+            </button>
+          </div>
+        )}
+
+        {!firmaFile && (
+          <p className="text-xs text-error mt-1">* Requerida para registrar el acta.</p>
+        )}
+        <p className="text-xs text-base-content/60 mt-1">
+          El acta se cerrará automáticamente al guardar.
+        </p>
       </div>
 
       {/* Fotos */}

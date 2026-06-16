@@ -6,6 +6,7 @@ import { useGetFacturacionPorCotizacionId } from "../services/procesoContadoServ
 import { useAuthStore } from "../store/auth.store";
 import { useDistribuidoras } from "../services/distribuidoraServices";
 import { useCotizacionSoloMotoById } from "../services/fullServices";
+import { useIvaDecimal } from "../services/ivaServices";
 import { SolicitarFacturacionForm } from "../shared/components/contado-terceros/SolicitudFacturacionForm";
 import { useUltimaSolicitudPorIdCotizacion } from "../services/solicitudServices";
 import { fmtFecha } from "../utils/date";
@@ -290,7 +291,19 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
   const { data: cotFull } = useCotizacionSoloMotoById(data?.cotizacion_id);
   const cotF = cotFull?.data?.cotizacion;
 
-  const IVA_PCT = cotF ? Number((cotF as any).iva ?? 19) : 19;
+  // IVA dinámico (endpoint) como respaldo
+  const { porcentaje, isLoading: ivaLoading, error: ivaError } = useIvaDecimal();
+
+  // IVA: prioridad al de la cotización registrada; si no trae valor válido,
+  // usa el del endpoint; si tampoco hay, 19% por defecto.
+  const ivaCotizacionPct = cotF ? Number((cotF as any).iva) : NaN;
+  const ivaDesdeCotizacion = Number.isFinite(ivaCotizacionPct) && ivaCotizacionPct > 0;
+
+  const IVA_PCT = ivaDesdeCotizacion
+    ? ivaCotizacionPct
+    : ivaLoading || ivaError
+      ? 19
+      : Number(porcentaje ?? 19);
   const IVA_DEC = IVA_PCT / 100;
 
   const { data: distsResp, isLoading: loadingDists } = useDistribuidoras({

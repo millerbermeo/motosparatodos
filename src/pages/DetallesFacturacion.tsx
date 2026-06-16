@@ -660,7 +660,7 @@ const DetallesFacturacion: React.FC = () => {
 
   const navigate = useNavigate();
 
-  const handleSubirFactura = () => {
+  const handleSubirFactura = async () => {
     if (!idSolicitud) {
       alert.warn(
         "Sin solicitud",
@@ -676,6 +676,13 @@ const DetallesFacturacion: React.FC = () => {
       );
       return;
     }
+
+    const ok = await alert.confirm({
+      title: "¿Subir factura y facturar?",
+      html: `Se adjuntará el archivo <b>"${facturaFile.name}"</b> y la solicitud quedará marcada como <b>facturada</b>. ¿Deseas continuar?`,
+      confirmText: "Sí, facturar",
+    });
+    if (!ok) return;
 
     const fd = new FormData();
     fd.append("id", String(idSolicitud));

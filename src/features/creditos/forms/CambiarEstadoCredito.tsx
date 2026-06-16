@@ -395,6 +395,7 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
                     credito={creditoTabla}
                     fechaCreacion={fechaCreacionTabla}
                     cotizacionId={data.credito.cotizacion_id}
+                    porcentajeSeguroVida={(data?.cotizacion as any)?.porcentaje_seguro_vida}
                     nombreCliente={clienteInfo.nombre}
                     cedula={cedulaCot}
                     direccion={clienteInfo.direccion}
