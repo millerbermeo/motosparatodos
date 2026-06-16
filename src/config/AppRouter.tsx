@@ -1,6 +1,6 @@
 // routes/AppRouter.tsx
 import React, { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import PrivateRoute from "./PrivateRoute";
 import RequireModule from "./RequireModule"; // 👈
@@ -39,15 +39,17 @@ const CreditoDetalle = lazy(() => import("../features/creditos/CreditoDetalle"))
 const CreditoDetalleAdmin = lazy(() => import("../features/creditos/CreditoDetalleAdmin")); // 👈 crea esta página simple
 const CreditoDetalleAsesor = lazy(() => import("../features/creditos/CreditoDetalleAsesor")); // 👈 crea esta página simple
 
-const FacturarCredito = lazy(() => import("../features/creditos/forms/FacturarCredito")); // 👈 crea esta página simple
+const FacturarCredito = lazy(() => import("../features/creditos/forms/SolictudFacturarCredito")); // 👈 crea esta página simple
 const FacturarCreditoSolicitud = lazy(() => import("../features/creditos/forms/FacturarCreditoSolicitud")); // 👈 crea esta página simple
 
 const RegistrarFacturacion = lazy(() => import("../pages/RegistrarFacturacion")); // 👈 crea esta página simple
 
 const Garantia = lazy(() => import("../pages/Garantia")); // 👈 crea esta página simple
-const SolicitarFacturacionPage = lazy(() => import("../pages/SolicitarFacturacionPage"));
+const SolicitarFacturacionPage = lazy(() => import("../pages/SolicitarFacturacionPageContadoTercero"));
 
 const Dis = lazy(() => import("../pages/Dis"));
+
+const Notificaciones = lazy(() => import("../pages/Notificaciones"));
 
 const DetallesFacturacion = lazy(() => import("../pages/DetallesFacturacion"));
 const ActaFinal = lazy(() => import("../pages/ActaFinal"));
@@ -62,10 +64,25 @@ const Fallback: React.FC = () => {
   return <Loader />; // 👈 se renderiza el overlay
 };
 
+// Oculta el loader de navegación cuando la nueva ruta ya quedó montada.
+// Va dentro de <Suspense> y antes de <Routes>: solo se monta cuando el
+// contenido (chunk) terminó de cargar, así no apaga el loader durante la carga.
+const RouteChangeHide: React.FC = () => {
+  const location = useLocation();
+  const hide = useLoaderStore((s) => s.hide);
+
+  React.useEffect(() => {
+    hide();
+  }, [location.pathname, hide]);
+
+  return null;
+};
+
 const AppRouter: React.FC = () => {
   return (
     <BrowserRouter>
       <Suspense fallback={<Fallback />}>
+        <RouteChangeHide />
         <Routes>
           {/* Pública */}
           <Route path="/login" element={<Login />} />
@@ -75,6 +92,9 @@ const AppRouter: React.FC = () => {
             <Route element={<MainLayout />}>
               {/* Home: solo autenticación */}
               <Route path="/" element={<Home />} />
+
+              {/* Notificaciones: disponible para todos los autenticados */}
+              <Route path="/notificaciones" element={<Notificaciones />} />
 
               <Route element={<RequireModule name="Clientes" />}>
                 <Route path="/clientes" element={<Clientes />} />
@@ -96,7 +116,7 @@ const AppRouter: React.FC = () => {
                 <Route path="/cotizaciones/:id" element={<Detalles />} /> {/* 👈 aquí */}
                 <Route path="/cotizaciones/estado/:id" element={<DetalleEstado />} /> {/* 👈 aquí */}
                 <Route path="/garantia" element={<Garantia />} /> {/* 👈 aquí */}
-                <Route path="/cotizaciones/facturacion/:codigo" element={<SolicitarFacturacionPage />} />
+                <Route path="/cotizaciones/facturacion/:cotizacionId" element={<SolicitarFacturacionPage />} />
 
               </Route>
 

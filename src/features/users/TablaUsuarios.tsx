@@ -6,6 +6,7 @@ import UsuarioEstadoAlert from "./UsuarioEstadoAlert";
 import { Pen } from "lucide-react";
 import { useLoaderStore } from "../../store/loader.store";
 import FiltrosUsuarios from "./FiltrosUsuarios";
+import { fmtFechaSolo } from "../../utils/date";
 import {
   PAGE_SIZE,
   SIBLING_COUNT,
@@ -121,7 +122,7 @@ const TablaUsuarios: React.FC = () => {
     );
   };
 
-  const formatFecha = (f: string) => (!f || f === "0000-00-00" ? "—" : f);
+  const formatFecha = (f: string) => (!f || f === "0000-00-00" ? "—" : fmtFechaSolo(f) || f);
 
   const openCrear = () =>
     open(<FormularioUsuarios key="create" />, "Crear usuario", {
@@ -244,7 +245,7 @@ const TablaUsuarios: React.FC = () => {
                 <td className="text-right">
                   <div className="flex justify-end gap-2">
                     <button
-                      className="btn btn-sm bg-white btn-circle"
+                      className="btn btn-sm bg-base-100 btn-circle"
                       onClick={() => openEditar(u)}
                     >
                       <Pen color="green" size="20px" />

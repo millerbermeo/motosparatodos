@@ -7,6 +7,7 @@ import {
 } from "../../services/empresasServices";
 import type { Empresa } from "../../shared/types/empresas";
 import { FormInput } from "../../shared/components/FormInput";
+import { validateFileInput } from "../../utils/fileValidation";
 
 type Base = {
   id?: number;
@@ -206,7 +207,13 @@ const FormularioEmpresas: React.FC<Props> = ({ initialValues, mode = "create" })
             type="file"
             accept="image/*"
             className="file-input file-input-bordered w-full"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            onChange={(e) => {
+              if (!validateFileInput(e)) {
+                setFile(null);
+                return;
+              }
+              setFile(e.target.files?.[0] ?? null);
+            }}
           />
           {preview && (
             <div className="mt-2">

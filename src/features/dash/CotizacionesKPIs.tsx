@@ -35,44 +35,44 @@ const monthBounds = (offsetMonths = 0) => {
 
 // Paleta sin morado/rosado
 const palette = [
-  { dot: "bg-info", progress: "progress-info" },
-  { dot: "bg-warning", progress: "progress-warning" },
-  { dot: "bg-accent", progress: "progress-accent" },
-  { dot: "bg-success", progress: "progress-success" },
-  { dot: "bg-primary", progress: "progress-primary" },
-  { dot: "bg-error", progress: "progress-error" },
+  { dot: "bg-info", bar: "bg-info" },
+  { dot: "bg-warning", bar: "bg-warning" },
+  { dot: "bg-accent", bar: "bg-accent" },
+  { dot: "bg-success", bar: "bg-success" },
+  { dot: "bg-primary", bar: "bg-primary" },
+  { dot: "bg-error", bar: "bg-error" },
 ];
 
 const kpiTone = {
   info: {
-    chip: "bg-info text-info-content",
+    chip: "bg-info/15 text-info",
     value: "text-info",
-    ring: "ring-info/10",
+    bar: "from-info to-info/40",
   },
   accent: {
-    chip: "bg-accent text-accent-content",
+    chip: "bg-accent/15 text-accent",
     value: "text-accent",
-    ring: "ring-accent/10",
+    bar: "from-accent to-accent/40",
   },
   success: {
-    chip: "bg-success text-success-content",
+    chip: "bg-success/15 text-success",
     value: "text-success",
-    ring: "ring-success/10",
+    bar: "from-success to-success/40",
   },
   warning: {
-    chip: "bg-warning text-warning-content",
+    chip: "bg-warning/15 text-warning",
     value: "text-warning",
-    ring: "ring-warning/10",
+    bar: "from-warning to-warning/40",
   },
   primary: {
-    chip: "bg-primary text-primary-content",
+    chip: "bg-primary/15 text-primary",
     value: "text-primary",
-    ring: "ring-primary/10",
+    bar: "from-primary to-primary/40",
   },
   error: {
-    chip: "bg-error text-error-content",
+    chip: "bg-error/15 text-error",
     value: "text-error",
-    ring: "ring-error/10",
+    bar: "from-error to-error/40",
   },
 } as const;
 
@@ -109,7 +109,7 @@ const IconChip: React.FC<{ className?: string; children: React.ReactNode }> = ({
 }) => (
   <span
     className={cx(
-      "inline-flex h-10 w-10 items-center justify-center rounded-xl shadow-sm",
+      "inline-flex h-11 w-11 items-center justify-center rounded-2xl",
       className
     )}
   >
@@ -126,21 +126,19 @@ const KpiStat: React.FC<{
   const tone = kpiTone[color];
 
   return (
-    <div
-      className={cx(
-        "card h-full rounded-2xl border border-base-200 bg-base-100 shadow-sm transition-all duration-200",
-        "hover:-translate-y-0.5 hover:shadow-md"
-      )}
-    >
-      <div className="card-body gap-4">
-        <div className="flex items-center gap-3 min-w-0">
-          <IconChip className={tone.chip}>{icon}</IconChip>
-          <p className="text-sm font-medium text-base-content/70 truncate">{title}</p>
+    <div className="group relative h-full overflow-hidden rounded-2xl border border-base-200 bg-base-100 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-base-300">
+      <div className={cx("absolute inset-x-0 top-0 h-1 bg-gradient-to-r", tone.bar)} />
+      <div className="p-5 sm:p-6">
+        <div className="flex items-start justify-between gap-3">
+          <p className="min-w-0 truncate pt-1 text-sm font-medium text-base-content/60">{title}</p>
+          <IconChip className={cx(tone.chip, "shrink-0 transition-transform duration-300 group-hover:scale-110")}>
+            {icon}
+          </IconChip>
         </div>
 
         <div
           className={cx(
-            "text-3xl md:text-[2rem] font-bold leading-none tracking-tight wrap-break-word",
+            "mt-4 text-3xl sm:text-4xl font-extrabold leading-none tracking-tight tabular-nums wrap-break-word",
             tone.value
           )}
         >
@@ -216,6 +214,17 @@ const CotizacionesKPIs: React.FC<Props> = ({ desde, hasta, refetchInterval, clas
 
   return (
     <section className={cx("w-full space-y-5", className)}>
+      {/* Encabezado de sección */}
+      <div className="flex items-center gap-3">
+        <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-accent/15 text-accent">
+          <BarChart3 className="h-5 w-5" />
+        </span>
+        <div>
+          <h2 className="text-lg font-bold tracking-tight text-base-content">Cotizaciones</h2>
+          <p className="text-xs text-base-content/50">Métricas y distribución del período</p>
+        </div>
+      </div>
+
       {/* Filtros */}
       <SectionCard className="border-success/30 bg-success/5">
         <div className="card-body gap-5">
@@ -429,22 +438,24 @@ const CotizacionesKPIs: React.FC<Props> = ({ desde, hasta, refetchInterval, clas
                   <div key={`${e.estado}-${idx}`} className="w-full space-y-2">
                     <div className="flex items-start justify-between gap-4 text-sm">
                       <div className="flex min-w-0 items-center gap-2">
-                        <span className={cx("mt-0.5 inline-block h-3 w-3 shrink-0 rounded-full", theme.dot)} />
+                        <span className={cx("inline-block h-2.5 w-2.5 shrink-0 rounded-full", theme.dot)} />
                         <span className="font-medium text-base-content truncate">
                           {e.estado || "Sin estado"}
                         </span>
                       </div>
 
-                      <div className="shrink-0 tabular-nums text-right font-medium">
-                        {e.total} <span className="text-base-content/60">({pct}%)</span>
+                      <div className="shrink-0 tabular-nums text-right">
+                        <span className="font-semibold text-base-content">{e.total}</span>{" "}
+                        <span className="text-base-content/50">({pct}%)</span>
                       </div>
                     </div>
 
-                    <progress
-                      className={cx("progress w-full h-2", theme.progress)}
-                      value={pct}
-                      max={100}
-                    />
+                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-base-200">
+                      <div
+                        className={cx("h-full rounded-full transition-all duration-700 ease-out", theme.bar)}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
                   </div>
                 );
               })}

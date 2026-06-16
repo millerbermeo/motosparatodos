@@ -6,6 +6,7 @@ import { useParams } from "react-router-dom";
 import { useWizardStore } from "../../../store/wizardStore";
 import Swal from "sweetalert2";
 import { CotizacionSingleMotoPDFButton } from "../../cotizaciones/CotizacionSingleMotoPDFButton";
+import { validateFileInput } from "../../../utils/fileValidation";
 
 // 🔧 BASE URL PARA ARCHIVOS DEL BACK — derivada de VITE_API_URL (mismo back que axios)
 const BASE_URL_BACK = `${String(import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "")}/`;
@@ -113,7 +114,10 @@ const SolicitudFormulario: React.FC = () => {
           type="file"
           accept="application/pdf,image/*"
           className="file-input file-input-bordered w-full max-w-full"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          onChange={(e) => {
+            if (!validateFileInput(e)) return setFile(null);
+            setFile(e.target.files?.[0] ?? null);
+          }}
           disabled={isUploading}
         />
         {file && (

@@ -4,6 +4,7 @@ import type { SingleValue } from "react-select";
 
 import { useBuscarCreditos } from "../../services/creditosServices";
 import type { Credito } from "../../services/creditosServices";
+import { daisyReactSelectStyles } from "../../utils/reactSelectTheme";
 
 interface Option {
   value: number;
@@ -38,7 +39,7 @@ const SelectCreditos: React.FC<Props> = ({ onSelect }) => {
     <Select<Option, false>
       className="min-w-72 max-w-96 w-full z-20"
       menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
-      styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+      styles={daisyReactSelectStyles<Option, false>()}
       options={options}
       onChange={handleChange}
       onInputChange={(val) => {

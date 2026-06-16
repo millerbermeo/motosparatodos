@@ -1,13 +1,29 @@
 // src/components/Sidebar/Sidebar.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import * as Icons from "lucide-react";
-import { ChevronLeft, ChevronRight, LogOut } from "lucide-react";
+import {
+  ChevronLeft, ChevronRight, LogOut, Moon, Sun,
+  // Iconos del menú (importados por nombre para permitir tree-shaking)
+  Menu,
+  Bike, Building2, FileEdit, FileSpreadsheet, FileText, FileType,
+  Gift, HelpCircle, LayoutDashboard, Settings, Shield, ShieldCheck,
+  Store, User, Users, Wrench,
+} from "lucide-react";
+import type { LucideIcon as LucideIconType } from "lucide-react";
+import { useThemeStore } from "../../store/theme.store";
 import { MENU_ESTATICO } from "../../utils/arrayMenu";
 import type { MenuItem } from "../../shared/types/menu";
 import { useAuthStore } from "../../store/auth.store";
+import { useLoaderStore } from "../../store/loader.store";
 import { hasModuleNormalized, hasRoleNormalized } from "../../utils/permissions";
 import Swal from "sweetalert2";
+
+// Mapa de solo los iconos usados por el menú (evita el barrel `import *`)
+const MENU_ICONS: Record<string, LucideIconType> = {
+  Bike, Building2, FileEdit, FileSpreadsheet, FileText, FileType,
+  Gift, HelpCircle, LayoutDashboard, Settings, Shield, ShieldCheck,
+  Store, User, Users, Wrench,
+};
 
 function LucideIcon({
   name,
@@ -18,8 +34,7 @@ function LucideIcon({
   className?: string;
   color?: string;
 }) {
-  const Fallback = Icons.Menu;
-  const IconComp = (name && (Icons as any)[name]) || Fallback;
+  const IconComp = (name && MENU_ICONS[name]) || Menu;
   return <IconComp className={className} color={color} />;
 }
 
@@ -39,6 +54,8 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const theme = useThemeStore((s) => s.theme);
+  const toggleTheme = useThemeStore((s) => s.toggle);
 
   const user = useAuthStore((s) => s.user);
   const token = useAuthStore((s) => s.token);
@@ -124,7 +141,10 @@ const Sidebar: React.FC<SidebarProps> = ({
     setOpenGroup((prev) => (prev === groupName ? null : groupName));
   };
 
+  const { show } = useLoaderStore();
+
   const goTo = (ruta: string, nombre: string) => {
+    if (ruta && ruta !== location.pathname) show(); // loader mientras carga la nueva ruta/chunk
     navigate(ruta);
     setActiveKey(nombre);
     setOpenGroup(null);
@@ -133,7 +153,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div
-      className={`h-screen bg-[#3498DB] flex flex-col justify-between overflow-y-auto overflow-x-hidden transition-all duration-300 ${
+      className={`h-screen ${theme === "dark" ? "bg-base-300" : "bg-[#3498DB]"} flex flex-col justify-between overflow-y-auto overflow-x-hidden transition-all duration-300 ${
         collapsed ? "w-16" : "w-64"
       }`}
     >
@@ -171,7 +191,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                       ${collapsed ? "justify-center px-0" : "pr-3"}
                       ${
                         active
-                          ? "text-[#0277bd] bg-gray-50 border-l-4 border-blue-300"
+                          ? "text-[#0277bd] bg-base-200 border-l-4 border-blue-300"
                           : "hover:bg-[#0277bd]/40 text-white"
                       }`}
                     style={collapsed ? {} : { paddingLeft: "16px" }}
@@ -251,7 +271,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                               className={`flex items-center gap-2 py-2 pr-3 cursor-pointer select-none rounded-l-md my-0.5
                                 ${
                                   childActive
-                                    ? "text-[#0277bd] bg-gray-50 border-l-4 border-blue-300"
+                                    ? "text-[#0277bd] bg-base-200 border-l-4 border-blue-300"
                                     : "hover:bg-[#0277bd]/30 text-white/95"
                                 }`}
                               style={{ paddingLeft: "16px" }}
@@ -281,8 +301,32 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      {/* Footer: colapsar (solo desktop) + logout */}
+      {/* Footer: tema + colapsar (solo desktop) + logout */}
       <div className="p-3 space-y-2 border-t border-white/20">
+        {/* Toggle switch modo claro/oscuro */}
+        <label
+          title={theme === "dark" ? "Modo claro" : "Modo oscuro"}
+          className={`flex items-center ${collapsed ? "justify-center" : "justify-between"} gap-2 bg-white/15 hover:bg-white/25 text-white rounded-md py-2 px-3 transition cursor-pointer`}
+        >
+          {!collapsed && (
+            <span className="flex items-center gap-2 font-medium text-sm">
+              {theme === "dark" ? (
+                <Moon className="w-4 h-4 shrink-0" />
+              ) : (
+                <Sun className="w-4 h-4 shrink-0" />
+              )}
+              {theme === "dark" ? "Modo oscuro" : "Modo claro"}
+            </span>
+          )}
+          <input
+            type="checkbox"
+            className="toggle toggle-sm"
+            checked={theme === "dark"}
+            onChange={toggleTheme}
+            aria-label={theme === "dark" ? "Activar modo claro" : "Activar modo oscuro"}
+          />
+        </label>
+
         {/* Botón colapsar — solo desktop */}
         <button
           onClick={onToggleCollapse}

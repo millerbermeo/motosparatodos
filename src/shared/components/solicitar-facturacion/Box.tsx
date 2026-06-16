@@ -19,7 +19,7 @@ const Box = ({
         : "bg-linear-to-r from-emerald-600 to-emerald-700";
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <section className="rounded-2xl border border-base-300 bg-base-100 shadow-sm overflow-hidden">
       <header
         className={`${headerCls} text-white px-4 md:px-5 py-3 flex items-center justify-between`}
       >

@@ -22,13 +22,13 @@ const formatCOP = (v: number) =>
   }).format(v || 0);
 
 const palette = [
-  { dot: "bg-primary", progress: "progress-primary" },
-  { dot: "bg-secondary", progress: "progress-secondary" },
-  { dot: "bg-accent", progress: "progress-accent" },
-  { dot: "bg-info", progress: "progress-info" },
-  { dot: "bg-success", progress: "progress-success" },
-  { dot: "bg-warning", progress: "progress-warning" },
-  { dot: "bg-error", progress: "progress-error" },
+  { dot: "bg-primary", bar: "bg-primary" },
+  { dot: "bg-secondary", bar: "bg-secondary" },
+  { dot: "bg-accent", bar: "bg-accent" },
+  { dot: "bg-info", bar: "bg-info" },
+  { dot: "bg-success", bar: "bg-success" },
+  { dot: "bg-warning", bar: "bg-warning" },
+  { dot: "bg-error", bar: "bg-error" },
 ];
 
 const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
@@ -48,32 +48,39 @@ const monthBounds = (offsetMonths = 0) => {
 // --- Variantes seguras -----------------------------------------------------
 const COLOR_VARIANTS = {
   primary: {
-    chip: "bg-primary text-primary-content",
+    chip: "bg-primary/15 text-primary",
     value: "text-primary",
+    bar: "from-primary to-primary/40",
   },
   secondary: {
-    chip: "bg-secondary text-secondary-content",
+    chip: "bg-secondary/15 text-secondary",
     value: "text-secondary",
+    bar: "from-secondary to-secondary/40",
   },
   accent: {
-    chip: "bg-accent text-accent-content",
+    chip: "bg-accent/15 text-accent",
     value: "text-accent",
+    bar: "from-accent to-accent/40",
   },
   info: {
-    chip: "bg-info text-info-content",
+    chip: "bg-info/15 text-info",
     value: "text-info",
+    bar: "from-info to-info/40",
   },
   success: {
-    chip: "bg-success text-success-content",
+    chip: "bg-success/15 text-success",
     value: "text-success",
+    bar: "from-success to-success/40",
   },
   warning: {
-    chip: "bg-warning text-warning-content",
+    chip: "bg-warning/15 text-warning",
     value: "text-warning",
+    bar: "from-warning to-warning/40",
   },
   error: {
-    chip: "bg-error text-error-content",
+    chip: "bg-error/15 text-error",
     value: "text-error",
+    bar: "from-error to-error/40",
   },
 } as const;
 
@@ -110,7 +117,7 @@ const IconChip: React.FC<{ className?: string; children: React.ReactNode }> = ({
 }) => (
   <span
     className={cx(
-      "inline-flex h-10 w-10 items-center justify-center rounded-xl shadow-sm",
+      "inline-flex h-11 w-11 items-center justify-center rounded-2xl",
       className
     )}
   >
@@ -127,14 +134,17 @@ const KpiStat: React.FC<{
   const variant = COLOR_VARIANTS[color];
 
   return (
-    <div className="card h-full rounded-2xl border border-base-200 bg-base-100 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-      <div className="card-body gap-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <IconChip className={variant.chip}>{icon}</IconChip>
-          <p className="truncate text-sm font-medium text-base-content/70">{title}</p>
+    <div className="group relative h-full overflow-hidden rounded-2xl border border-base-200 bg-base-100 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-base-300">
+      <div className={cx("absolute inset-x-0 top-0 h-1 bg-gradient-to-r", variant.bar)} />
+      <div className="p-5 sm:p-6">
+        <div className="flex items-start justify-between gap-3">
+          <p className="min-w-0 truncate pt-1 text-sm font-medium text-base-content/60">{title}</p>
+          <IconChip className={cx(variant.chip, "shrink-0 transition-transform duration-300 group-hover:scale-110")}>
+            {icon}
+          </IconChip>
         </div>
 
-        <div className={cx("text-3xl md:text-[2rem] font-bold leading-none tracking-tight wrap-break-word", variant.value)}>
+        <div className={cx("mt-4 text-3xl sm:text-4xl font-extrabold leading-none tracking-tight tabular-nums wrap-break-word", variant.value)}>
           {value}
         </div>
       </div>
@@ -224,6 +234,17 @@ const CreditosKPIs: React.FC<Props> = ({ desde, hasta, refetchInterval, classNam
 
   return (
     <section className={cx("w-full space-y-5", className)}>
+      {/* Encabezado de sección */}
+      <div className="flex items-center gap-3">
+        <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 text-primary">
+          <CreditCard className="h-5 w-5" />
+        </span>
+        <div>
+          <h2 className="text-lg font-bold tracking-tight text-base-content">Créditos</h2>
+          <p className="text-xs text-base-content/50">Métricas y distribución del período</p>
+        </div>
+      </div>
+
       {/* Filtros */}
       <SectionCard className="border-primary/20 bg-base-100">
         <div className="card-body gap-5">
@@ -382,7 +403,7 @@ const CreditosKPIs: React.FC<Props> = ({ desde, hasta, refetchInterval, classNam
       )}
 
       {/* KPIs */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {isLoading ? (
           <>
             <SkeletonStat />
@@ -493,7 +514,7 @@ const CreditosKPIs: React.FC<Props> = ({ desde, hasta, refetchInterval, classNam
                       <div className="flex min-w-0 items-center gap-2">
                         <span
                           className={cx(
-                            "mt-0.5 inline-block h-3 w-3 shrink-0 rounded-full",
+                            "inline-block h-2.5 w-2.5 shrink-0 rounded-full",
                             theme.dot
                           )}
                         />
@@ -502,16 +523,18 @@ const CreditosKPIs: React.FC<Props> = ({ desde, hasta, refetchInterval, classNam
                         </span>
                       </div>
 
-                      <div className="shrink-0 tabular-nums text-right font-medium">
-                        {e.total} <span className="text-base-content/60">({pct}%)</span>
+                      <div className="shrink-0 tabular-nums text-right">
+                        <span className="font-semibold text-base-content">{e.total}</span>{" "}
+                        <span className="text-base-content/50">({pct}%)</span>
                       </div>
                     </div>
 
-                    <progress
-                      className={cx("progress w-full h-2", theme.progress)}
-                      value={pct}
-                      max={100}
-                    />
+                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-base-200">
+                      <div
+                        className={cx("h-full rounded-full transition-all duration-700 ease-out", theme.bar)}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
                   </div>
                 );
               })}

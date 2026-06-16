@@ -1,7 +1,8 @@
 import React from 'react';
 import {
-    BadgeCheck, Building2, CalendarDays, Check, CheckCircle2, CheckSquare, Download,
-    FileDown, FileMinusIcon, FileSignature, History, Info, LibraryBig,
+    BadgeCheck, Building2, CalendarDays, Check, CheckCircle2, CheckSquare, ChevronDown, Download,
+    FileDown, FileMinusIcon, FileSignature, History, Info, LibraryBig, Car,
+    ClipboardList,
     Mail,
     MessageCircle,
     MessageSquarePlus,
@@ -10,6 +11,8 @@ import {
 } from 'lucide-react';
 import { useActualizarEstadoCredito, useActualizarFechaInicial, useCredito, useCodeudoresByDeudor, useDeudor } from '../../services/creditosServices';
 import { useVehiculoCampos } from '../../services/vehiculoCamposService';
+import { VehiculoCamposCollapse } from '../../shared/components/VehiculoCamposCollapse';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import ChipButton from '../../shared/components/ChipButton';
 import ChatThread from './ChatThread';
@@ -21,31 +24,30 @@ import { useLoaderStore } from '../../store/loader.store';
 import { Image, FileText } from 'lucide-react';
 import ButtonLink from '../../shared/components/ButtonLink';
 
-// 🔹 IMPORTS PARA EL PDF
-import { pdf } from '@react-pdf/renderer';
+// 🔹 react-pdf y los documentos PDF se cargan bajo demanda (import dinámico)
+//    dentro de cada handler de descarga, para no inflar la carga inicial del detalle.
 import TablaAmortizacionCredito from './TablaAmortizacionCredito';
-
-// 🔹 NUEVO: PDF de tabla de amortización
-import TablaAmortizacionPDFDoc from './pdf/TablaAmortizacionPDFDoc';
 
 // 🔹 NUEVO: hook para la tasa de financiación
 import { useConfigPlazoByCodigo } from '../../services/configuracionPlazoService';
 
-// 🔹 NUEVO: Paquete de crédito (25 páginas)
-import { PaqueteCreditoPDFDoc } from './pdf/PaqueteCreditoPDF';
-import { GarantiaExtendidaPDFDoc } from './pdf/GarantiaExtendidaPDF';
-import { CartaAprobacionPDFDoc } from './pdf/CartaAprobacionPDF';
-import { SolicitudCreditoPDFDoc } from './pdf/SolicitudCreditoPDF';
-import { CotizacionSingleMotoPDFButton } from '../cotizaciones/CotizacionSingleMotoPDFButton';
+// 🔹 Botón de cotización (usa react-pdf) — lazy para diferir la carga de react-pdf
+const CotizacionSingleMotoPDFButton = React.lazy(() =>
+  import('../cotizaciones/CotizacionSingleMotoPDFButton').then((m) => ({
+    default: m.CotizacionSingleMotoPDFButton,
+  }))
+);
 import { useCotizacionById } from '../../services/cotizacionesServices';
-import { useEmpresaById } from '../../services/empresasServices';
+import { useEmpresaById, useEmpresas } from '../../services/empresasServices';
 import CambiarEstadoCredito from './forms/CambiarEstadoCredito';
 import CodeudoresDetalle from './CodeudoresDetalle';
-import { resolverTasaSeguroVidaDecimal } from '../../shared/components/credito/creditoDirecto.utils';
+import { resolverTasaSeguroVidaDecimal, calcularCreditoDirectoMoto } from '../../shared/components/credito/creditoDirecto.utils';
+import { fmtFecha } from '../../utils/date';
+import { BASE_URL } from '../../utils/url';
 
 const fmtCOP = (v: number) =>
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
-const BaseUrl = import.meta.env.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
+const BaseUrl = BASE_URL;
 
 
 const buildImageUrl = (path?: string): string | undefined => {
@@ -56,13 +58,51 @@ const buildImageUrl = (path?: string): string | undefined => {
     return `${root}/${rel}`;
 };
 
+// Descarga el logo del endpoint y lo convierte a data URL.
+// react-pdf no carga imágenes remotas con CORS restringido; el data URL sí funciona.
+// Si la empresa no tiene logo (o falla), devuelve undefined → el header se muestra sin logo
+// (no se pinta un logo de otra marca).
+const resolveLogoDataUrl = async (url?: string): Promise<string | undefined> => {
+    if (!url) return undefined;
+    try {
+        const res = await fetch(url, { mode: "cors" });
+        if (!res.ok) return url;
+        const blob = await res.blob();
+        return await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(String(reader.result));
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    } catch {
+        // Si falla CORS/fetch, intenta con la URL directa
+        return url;
+    }
+};
+
+// Descarga el logo como ArrayBuffer (+ tipo) para incrustarlo en el Word.
+const resolveLogoArrayBuffer = async (
+    url?: string
+): Promise<{ data: ArrayBuffer; type: "png" | "jpg" } | undefined> => {
+    if (!url) return undefined;
+    try {
+        const res = await fetch(url, { mode: "cors" });
+        if (!res.ok) return undefined;
+        const buf = await res.arrayBuffer();
+        const type: "png" | "jpg" = /\.jpe?g($|\?)/i.test(url) ? "jpg" : "png";
+        return { data: buf, type };
+    } catch {
+        return undefined;
+    }
+};
+
 const BadgeEstado: React.FC<{ value?: string }> = ({ value }) => {
     const safe = value ?? '—';
     const color =
         safe.toLowerCase().includes('apro')
-            ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200'
+            ? 'bg-success/10 text-success ring-1 ring-success/30'
             : safe.toLowerCase().includes('rech')
-                ? 'bg-rose-100 text-rose-700 ring-1 ring-rose-200'
+                ? 'bg-error/10 text-error ring-1 ring-error/30'
                 : 'bg-warning text-black';
     return (
         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${color}`}>
@@ -72,7 +112,7 @@ const BadgeEstado: React.FC<{ value?: string }> = ({ value }) => {
     );
 };
 
-const Row: React.FC<{ label: string; value?: React.ReactNode, color?: string, val?: string }> = ({ label, value, color = 'text-slate-600', val = 'text-slate-900' }) => (
+const Row: React.FC<{ label: string; value?: React.ReactNode, color?: string, val?: string }> = ({ label, value, color = 'text-base-content/70', val = 'text-base-content' }) => (
     <div className="flex items-start justify-between gap-4 py-2">
         <span className={`text-sm ${color}`}>{label}</span>
         <span className={`text-sm font-medium  text-right ${val}`}>{value ?? 'Crédito no facturado actualmente'}</span>
@@ -187,6 +227,13 @@ const CreditoDetalle: React.FC = () => {
     const creada = credito?.fecha_creacion;
     const registradaPor = credito?.asesor;
 
+    // Datos vehículo (Crédito): solo visible si el crédito ya fue facturado
+    const esFacturado = String(estado ?? '').toLowerCase().includes('facturado');
+    // Aprobado o posterior (En Facturación / Facturado): mismo trato que post-aprobación
+    const esAprobadoOMas = estado === 'Aprobado' || estado === 'En Facturación' || estado === 'Facturado';
+    const qc = useQueryClient();
+    const [vehAbierto, setVehAbierto] = React.useState(false);
+
     // Sección "motocicleta": solo mapear lo que venga en el crédito
     const moto = {
         modelo: creditoAjustado?.producto,
@@ -257,6 +304,14 @@ const CreditoDetalle: React.FC = () => {
 
     // 👉 muy importante: no llamar el hook si no hay id
     const { data: empresaSeleccionada } = useEmpresaById(empresaId);
+
+    // Empresas disponibles para el select del paquete (solo MOTO PARA TODOS y VERIFICARTE)
+    const { data: empresasAll = [] } = useEmpresas();
+    const EMPRESAS_PAQUETE = [3, 4];
+    const empresasPaquete = React.useMemo(
+        () => (empresasAll ?? []).filter((e: any) => EMPRESAS_PAQUETE.includes(Number(e.id))),
+        [empresasAll]
+    );
 
     // Normalizar la empresa (por si viene anidada en .data)
     const empresaApi = (empresaSeleccionada as any)?.data ?? empresaSeleccionada ?? null;
@@ -400,6 +455,8 @@ const CreditoDetalle: React.FC = () => {
                 informacion_personal?.segundo_apellido,
             ].filter(Boolean).join(' ') || undefined;
 
+            const { pdf } = await import('@react-pdf/renderer');
+            const { default: TablaAmortizacionPDFDoc } = await import('./pdf/TablaAmortizacionPDFDoc');
             const blob = await pdf(
                 <TablaAmortizacionPDFDoc
                     credito={creditoAjustado as any}
@@ -556,7 +613,7 @@ const CreditoDetalle: React.FC = () => {
         ...soportesFromJson,
     ];
 
-    const BaseUrl = import.meta.env.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
+    const BaseUrl = BASE_URL;
 
     // URLs completas para abrir en nueva pestaña
     const firmasHref: string | undefined =
@@ -598,6 +655,86 @@ const CreditoDetalle: React.FC = () => {
                 return;
             }
 
+            // 🏢 Seleccionar empresa antes de generar el paquete
+            const opciones = (empresasPaquete.length ? empresasPaquete : [
+                { id: 3, nombre_empresa: 'MOTO PARA TODOS S.A.S', nit_empresa: '901608735-4' },
+                { id: 4, nombre_empresa: 'Verificarte AAA SAS', nit_empresa: '901155848-8' },
+            ]) as any[];
+
+            const optionsHtml = opciones
+                .map((e) => `<option value="${e.id}">${e.nombre_empresa}</option>`)
+                .join('');
+
+            const { value: empresaIdSel, isConfirmed } = await Swal.fire({
+                title: 'Paquete de crédito',
+                html: `
+                    <div style="text-align:left;box-sizing:border-box;width:100%">
+                        <p style="margin:0 0 14px;font-size:14px;color:#475569;line-height:1.5">
+                            ¿Con cuál empresa deseas imprimir el paquete de crédito?
+                            Selecciona la empresa que aparecerá en todos los documentos.
+                        </p>
+                        <label for="swal-empresa" style="display:block;margin:0 0 6px;font-size:12px;font-weight:600;color:#334155">
+                            Empresa
+                        </label>
+                        <select id="swal-empresa" style="
+                            width:100%;
+                            box-sizing:border-box;
+                            padding:11px 14px;
+                            font-size:14px;
+                            color:#0f172a;
+                            background:#f8fafc;
+                            border:1px solid #cbd5e1;
+                            border-radius:10px;
+                            outline:none;
+                            cursor:pointer;
+                            appearance:none;
+                            background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 fill=%22none%22 stroke=%22%23475569%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22/></svg>');
+                            background-repeat:no-repeat;
+                            background-position:right 12px center;
+                        ">${optionsHtml}</select>
+
+                        <p style="margin:16px 0 8px;font-size:12px;font-weight:600;color:#334155">Formato de descarga</p>
+                        <div style="display:flex;gap:18px">
+                            <label style="display:inline-flex;align-items:center;gap:6px;font-size:14px;color:#0f172a;cursor:pointer">
+                                <input type="radio" name="swal-formato" value="pdf" checked /> PDF
+                            </label>
+                            <label style="display:inline-flex;align-items:center;gap:6px;font-size:14px;color:#0f172a;cursor:pointer">
+                                <input type="radio" name="swal-formato" value="word" /> Word
+                            </label>
+                        </div>
+                    </div>
+                `,
+                width: 440,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'Generar paquete',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#6366f1',
+                cancelButtonColor: '#64748b',
+                preConfirm: () => {
+                    const sel = document.getElementById('swal-empresa') as HTMLSelectElement | null;
+                    const fmt = (document.querySelector('input[name="swal-formato"]:checked') as HTMLInputElement | null)?.value || 'pdf';
+                    return { empresaId: sel?.value, formato: fmt };
+                },
+            });
+
+            if (!isConfirmed || !empresaIdSel?.empresaId) return;
+
+            const formato = empresaIdSel.formato; // 'pdf' | 'word'
+            const empresaElegida = opciones.find((e) => String(e.id) === String(empresaIdSel.empresaId)) ?? opciones[0];
+
+            const logoUrl = empresaElegida.foto ? buildImageUrl(empresaElegida.foto) : undefined;
+
+            // Logo e info vienen del endpoint de empresas
+            const logoEmpresa = await resolveLogoDataUrl(logoUrl);
+
+            const empresaPaquete = {
+                nombre: empresaElegida.nombre_empresa,
+                nit: empresaElegida.nit_empresa,
+                logoSrc: logoEmpresa,
+                ciudad: informacion_personal?.ciudad_residencia ?? 'Cali',
+            };
+
             // Nombre completo del cliente
             const nombreCliente =
                 [
@@ -631,9 +768,9 @@ const CreditoDetalle: React.FC = () => {
             const dataBase: any = {
                 // ---- Datos generales del crédito ----
                 codigo: String(codigo_credito),
-                fecha: credito.fecha_creacion,
+                fecha: String(credito.fecha_creacion ?? '').split('T')[0].split(' ')[0],
                 ciudad: informacion_personal?.ciudad_residencia ?? 'Cali',
-                logoSrc: '/verificarte.jpg',
+                logoSrc: empresaPaquete.logoSrc,
                 estadoCredito: credito.estado,
                 agencia: 'Agencia',
                 asesor: credito.asesor,
@@ -734,10 +871,34 @@ const CreditoDetalle: React.FC = () => {
                 codeudorTelefono: codeudor1Telefono,
             };
 
-            const blob = await pdf(<PaqueteCreditoPDFDoc data={dataBase} />).toBlob();
+            const nombreBase = `${(empresaPaquete.nombre || 'Empresa').trim()} - Paquete de Credito`;
+            let blob: Blob;
+            let nombreArchivo: string;
+
+            if (formato === 'word') {
+                const logoWord = await resolveLogoArrayBuffer(logoUrl);
+                const { generarPaqueteCreditoWord } = await import('./word/PaqueteCreditoWord');
+                blob = await generarPaqueteCreditoWord(
+                    dataBase,
+                    { nombre: empresaPaquete.nombre, nit: empresaPaquete.nit, ciudad: empresaPaquete.ciudad },
+                    logoWord
+                );
+                nombreArchivo = `${nombreBase}.docx`;
+            } else {
+                const { pdf } = await import('@react-pdf/renderer');
+                const { PaqueteCreditoPDFDoc } = await import('./pdf/PaqueteCreditoPDF');
+                blob = await pdf(<PaqueteCreditoPDFDoc data={dataBase} empresa={empresaPaquete} />).toBlob();
+                nombreArchivo = `${nombreBase}.pdf`;
+            }
 
             const url = URL.createObjectURL(blob);
-            window.open(url, '_blank'); // abrir en nueva pestaña
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = nombreArchivo;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         } catch (err) {
             console.error(err);
             alert('No fue posible generar el paquete de crédito.');
@@ -761,6 +922,26 @@ const CreditoDetalle: React.FC = () => {
             const valorMotoNum = moto.valorMotocicleta ?? 0;
             const anios = moto.numeroCuotas ? Math.ceil(Number(moto.numeroCuotas) / 12) : 3;
 
+            // Cuota mensual garantía y seguros (misma función que tabla, carta y cotización)
+            const plazoGar = Number(moto.numeroCuotas ?? 36);
+            const cuotaInicialGar = moto.cuotaInicial ?? 0;
+            const tasaFinGar = Number(cotData?.tasa_financiacion ?? 0) > 0
+                ? Number(cotData?.tasa_financiacion)
+                : (tasaFinConfig
+                    ? (tasaFinConfig.tipo_valor === '%' ? tasaFinConfig.valor : tasaFinConfig.valor * 100)
+                    : 1.9122);
+            const garantiaYSegurosGar = calcularCreditoDirectoMoto({
+                incluir: true,
+                mesesGarantia: plazoGar,
+                valorGarantia: Math.max(Number(creditoAjustado?.garantia_extendida_valor ?? 0), 0),
+                saldoFinanciar: Math.max(Number(valorMotoNum) - cuotaInicialGar, 0),
+                tasaFinanciacionPct: tasaFinGar,
+                tasaGarantiaPct: Number(cotData?.tasa_garantia ?? 1.5),
+                tasaSeguroVidaDecimal: resolverTasaSeguroVidaDecimal(cotData?.porcentaje_seguro_vida),
+            }).garantiaMasSeguro;
+
+            const { pdf } = await import('@react-pdf/renderer');
+            const { GarantiaExtendidaPDFDoc } = await import('./pdf/GarantiaExtendidaPDF');
             const blob = await pdf(
                 <GarantiaExtendidaPDFDoc
                     codigo={String(codigo_credito)}
@@ -783,6 +964,8 @@ const CreditoDetalle: React.FC = () => {
                     ciudadMatricula={informacion_personal?.ciudad_residencia ?? 'Cali'}
                     valorMotoNum={Number(valorMotoNum)}
                     garantiaAnios={anios}
+                    valorGarantiaCuota={garantiaYSegurosGar}
+                    plazoMeses={plazoGar}
                     fechaExpedicion={String(credito.fecha_creacion ?? '').split('T')[0]}
                     ciudadExpedicion={informacion_personal?.ciudad_residencia ?? 'Cali'}
                     formaPago="Crédito"
@@ -853,6 +1036,8 @@ const CreditoDetalle: React.FC = () => {
                 return d.toISOString().split('T')[0];
             })();
 
+            const { pdf } = await import('@react-pdf/renderer');
+            const { CartaAprobacionPDFDoc } = await import('./pdf/CartaAprobacionPDF');
             const blob = await pdf(
                 <CartaAprobacionPDFDoc
                     codigo={String(codigo_credito)}
@@ -882,8 +1067,20 @@ const CreditoDetalle: React.FC = () => {
         }
     };
 
+    const handleDownloadRunt = () => {
+        // Descarga el formulario RUNT estático ubicado en /public/runt.pdf
+        const a = document.createElement('a');
+        a.href = '/runt.pdf';
+        a.download = 'runt.pdf';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    };
+
     const handleDownloadSolicitud = async () => {
         try {
+            const { pdf } = await import('@react-pdf/renderer');
+            const { SolicitudCreditoPDFDoc } = await import('./pdf/SolicitudCreditoPDF');
             const blob = await pdf(
                 <SolicitudCreditoPDFDoc
                     codigo_credito={String(codigo_credito)}
@@ -912,9 +1109,9 @@ const CreditoDetalle: React.FC = () => {
 
 
     return (
-        <main className="min-h-screen w-full bg-linear-to-b from-white to-slate-50">
+        <main className="min-h-screen w-full bg-linear-to-b from-base-100 to-base-100">
             {/* Header */}
-            <header className="sticky top-0 z-10 backdrop-blur px-3 bg-slate-100 border border-white">
+            <header className="z-10 backdrop-blur px-3 bg-sky-600 rounded-2xl">
 
                 <div className='pt-4 mb-3'>
                     <ButtonLink to="/creditos" label="Volver a creditos" direction="back" />
@@ -923,7 +1120,7 @@ const CreditoDetalle: React.FC = () => {
                 <div className="mx-auto max-w-6xl px-4 py-2.5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <LibraryBig className="w-6 h-6 text-success" />
-                        <h1 className="text-lg sm:text-xl font-bold tracking-tight text-success">
+                        <h1 className="text-lg sm:text-xl font-bold tracking-tight text-white">
                             Visualizar crédito
                         </h1>
                     </div>
@@ -937,16 +1134,16 @@ const CreditoDetalle: React.FC = () => {
                 {/* Mensajes de estado */}
 
                 {error && (
-                    <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
+                    <div className="rounded-xl border border-error/30 bg-error/10 p-4 text-error">
                         Ocurrió un error al cargar el crédito.
                     </div>
                 )}
 
                 {/* Información de la solicitud */}
-                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <section className="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
                     <div className="p-4 sm:p-6">
                         <div className="flex flex-wrap items-center gap-3 mb-4">
-                            <div className="inline-flex items-center gap-2 text-slate-800">
+                            <div className="inline-flex items-center gap-2 text-base-content">
                                 <Info className="w-5 h-5" />
                                 <h2 className="text-base sm:text-lg font-semibold">
                                     Información de la solicitud de crédito
@@ -962,24 +1159,54 @@ const CreditoDetalle: React.FC = () => {
                             </div>
 
                             <div className="rounded-xl bg-[#3498DB] p-4 ring-1 ring-slate-200">
-                                <Row color='text-white' label="Creada" value={<span className="inline-flex items-center gap-2 text-white"><CalendarDays className="w-4 h-4" />{creada}</span>} />
+                                <Row color='text-white' label="Creada" value={<span className="inline-flex items-center gap-2 text-white"><CalendarDays className="w-4 h-4" />{fmtFecha(creada)}</span>} />
                                 <Row color='text-white' label="Registrada por" value={<span className="inline-flex items-center gap-2 text-white"><User2 className="w-4 h-4" />{registradaPor}</span>} />
                             </div>
                         </div>
                     </div>
                 </section>
 
+                {/* Datos vehículo (Crédito) — solo si está facturado */}
+                {esFacturado && idCot && (
+                    <section className="rounded-2xl border border-base-300 bg-base-100 shadow-sm overflow-hidden">
+                        <button
+                            type="button"
+                            onClick={() => setVehAbierto((v) => !v)}
+                            className="w-full flex items-center justify-between gap-2 p-4 sm:p-6 text-base-content hover:bg-base-200 transition-colors"
+                        >
+                            <span className="inline-flex items-center gap-2">
+                                <Car className="w-5 h-5" />
+                                <span className="text-base sm:text-lg font-semibold">Datos del vehículo (Crédito)</span>
+                            </span>
+                            <ChevronDown
+                                className={`w-5 h-5 transition-transform duration-200 ${vehAbierto ? 'rotate-180' : ''}`}
+                            />
+                        </button>
+
+                        {vehAbierto && (
+                            <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                                <VehiculoCamposCollapse
+                                    idCotizacion={idCot}
+                                    tipo={1}
+                                    titulo="Datos vehículo (Crédito)"
+                                    onSaved={() => qc.invalidateQueries({ queryKey: ['credito'] })}
+                                />
+                            </div>
+                        )}
+                    </section>
+                )}
+
                 {/* Información de la motocicleta */}
-                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <section className="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
                     <div className="p-4 sm:p-6">
-                        <div className="flex items-center gap-2 mb-4 text-slate-800">
+                        <div className="flex items-center gap-2 mb-4 text-base-content">
                             <Wrench className="w-5 h-5" />
                             <h2 className="text-base sm:text-lg font-semibold">Información de la motocicleta</h2>
                         </div>
 
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="rounded-xl p-4 ring-1 ring-slate-200 bg-slate-50">
+                            <div className="rounded-xl p-4 ring-1 ring-slate-200 bg-base-200">
                                 <Row label="Motocicleta" value={moto?.modelo} />
                                 <Row label="Número de cuotas" value={moto?.numeroCuotas} />
                                 <Row label="Fecha de pago" value={moto?.fechaPago} /> {/* estático si no hay */}
@@ -987,29 +1214,33 @@ const CreditoDetalle: React.FC = () => {
                                 <Row label="Placa" value={moto?.placa} />
 
 
-                                {(estado !== 'Aprobado' && estado !== 'Facturado') && idCot && (
+                                {!esAprobadoOMas && idCot && (
                                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                        <CotizacionSingleMotoPDFButton
-                                            id={idCot}
-                                            label="Descargar cotización"
-                                            className="btn w-full bg-blue-500 hover:bg-blue-600 text-white border-0 normal-case text-sm"
-                                        />
+                                        <React.Suspense fallback={<button className="btn w-full bg-blue-500 text-white border-0 normal-case text-sm" disabled>Descargar cotización</button>}>
+                                            <CotizacionSingleMotoPDFButton
+                                                id={idCot}
+                                                label="Descargar cotización"
+                                                className="btn w-full bg-blue-500 hover:bg-blue-600 text-white border-0 normal-case text-sm"
+                                            />
+                                        </React.Suspense>
                                     </div>
                                 )}
 
-                                {(estado !== 'Aprobado' && estado !== 'Facturado') && !idCot && (
-                                    <div className="mt-4 text-xs text-amber-600">
+                                {!esAprobadoOMas && !idCot && (
+                                    <div className="mt-4 text-xs text-warning">
                                         No hay cotización asociada a este crédito (idCot vacío).
                                     </div>
                                 )}
 
-                                {(estado === 'Aprobado' || estado === 'Facturado') && (
+                                {esAprobadoOMas && (
                                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                        <CotizacionSingleMotoPDFButton
-                                            id={Number(idCot)}
-                                            label="Descargar cotización"
-                                            className="btn w-full bg-blue-500 hover:bg-blue-600 text-white border-0 normal-case text-sm"
-                                        />
+                                        <React.Suspense fallback={<button className="btn w-full bg-blue-500 text-white border-0 normal-case text-sm" disabled>Descargar cotización</button>}>
+                                            <CotizacionSingleMotoPDFButton
+                                                id={Number(idCot)}
+                                                label="Descargar cotización"
+                                                className="btn w-full bg-blue-500 hover:bg-blue-600 text-white border-0 normal-case text-sm"
+                                            />
+                                        </React.Suspense>
                                         <ChipButton
                                             label="Descargar formato"
                                             icon={<FileSignature className="w-4 h-4" />}
@@ -1022,12 +1253,18 @@ const CreditoDetalle: React.FC = () => {
                                             onClick={handleDownloadCarta}
                                             color="bg-purple-500 hover:bg-purple-600"
                                         />
+                                        <ChipButton
+                                            label="Descargar RUNT"
+                                            icon={<ClipboardList className="w-4 h-4" />}
+                                            onClick={handleDownloadRunt}
+                                            color="bg-amber-500 hover:bg-amber-600"
+                                        />
                                     </div>
                                 )}
                             </div>
 
 
-                            <div className="rounded-xl p-4 ring-1 ring-slate-200 bg-slate-50">
+                            <div className="rounded-xl p-4 ring-1 ring-slate-200 bg-base-200">
                                 <Row label="Valor de motocicleta" value={moto?.valorMotocicleta != null ? fmtCOP(moto.valorMotocicleta) : '—'} />
                                 <Row label="Cuota inicial" value={moto?.cuotaInicial != null ? fmtCOP(moto.cuotaInicial) : 'Crédito no facturado actualmente'} />
                                 <Row label="Valor cuota" value={cuotaMensualCalculada > 0 ? fmtCOP(cuotaMensualCalculada) : 'Crédito no facturado actualmente'} />
@@ -1052,7 +1289,7 @@ const CreditoDetalle: React.FC = () => {
  */}
 
                                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    {(estado === 'Aprobado' || estado === 'Facturado') && firmasHref && (
+                                    {esAprobadoOMas && firmasHref && (
                                         <ChipButton
                                             label="Descargar firmas de solicitud"
                                             icon={<FileDown className="w-4 h-4" />}
@@ -1069,7 +1306,7 @@ const CreditoDetalle: React.FC = () => {
                                         onClick={handleDownloadTabla}
                                         color="bg-indigo-500 hover:bg-indigo-600"
                                     />
-                                    {(estado === 'Aprobado' || estado === 'Facturado') && (
+                                    {esAprobadoOMas && (
                                         <>
                                             <ChipButton
                                                 label="Descargar paquete"
@@ -1094,13 +1331,13 @@ const CreditoDetalle: React.FC = () => {
                 </section>
 
                 {/* Información personal */}
-                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <section className="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
                     <div className="p-4 sm:p-6">
-                        <h2 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2 text-slate-800">
+                        <h2 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2 text-base-content">
                             <User2 className="w-5 h-5" /> Información personal del deudor
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="bg-[#F1FCF6] p-4 rounded-xl ring-1 ring-success">
+                            <div className="bg-success/10 p-4 rounded-xl ring-1 ring-success">
                                 <Row label="Tipo de documento" value={informacion_personal?.tipo_documento} />
                                 <Row label="Número de documento" value={informacion_personal?.numero_documento} />
                                 <Row label="Fecha de expedición" value={informacion_personal?.fecha_expedicion} />
@@ -1110,7 +1347,7 @@ const CreditoDetalle: React.FC = () => {
                                 <Row label="Fecha de nacimiento" value={informacion_personal?.fecha_nacimiento} />
                                 <Row label="Nivel de estudios" value={informacion_personal?.nivel_estudios} />
                             </div>
-                            <div className="bg-[#F1FCF6] p-4 rounded-xl ring-1 ring-success">
+                            <div className="bg-success/10 p-4 rounded-xl ring-1 ring-success">
                                 <Row label="Ciudad de residencia" value={informacion_personal?.ciudad_residencia} />
                                 <Row label="Barrio de residencia" value={informacion_personal?.barrio_residencia || '—'} />
                                 <Row label="Dirección de residencia" value={informacion_personal?.direccion_residencia} />
@@ -1120,7 +1357,9 @@ const CreditoDetalle: React.FC = () => {
                                 <Row label="Estado civil" value={informacion_personal?.estado_civil} />
                                 <Row label="Personas a cargo" value={informacion_personal?.personas_a_cargo} />
                                 <Row label="Tipo de vivienda" value={informacion_personal?.tipo_vivienda} />
-                                <Row label="Costo del arriendo" value={fmtCOP(Number(informacion_personal?.costo_arriendo))} />
+                                {String(informacion_personal?.tipo_vivienda ?? '').toLowerCase().includes('arriend') && (
+                                    <Row label="Costo del arriendo" value={fmtCOP(Number(informacion_personal?.costo_arriendo))} />
+                                )}
                                 <Row label="Finca raíz" value={informacion_personal?.finca_raiz} />
                                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     <ChipButton
@@ -1140,20 +1379,21 @@ const CreditoDetalle: React.FC = () => {
                 </section>
 
 
-                {/* Información laboral */}
-                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                {/* Información laboral — solo si hay al menos empresa */}
+                {isNonEmpty(informacion_laboral?.empresa) && (
+                <section className="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
                     <div className="p-4 sm:p-6">
-                        <h2 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2 text-slate-800">
+                        <h2 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2 text-base-content">
                             <Building2 className="w-5 h-5" /> Información laboral
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="bg-slate-50 p-4 rounded-xl ring-1 ring-slate-200">
+                            <div className="bg-base-200 p-4 rounded-xl ring-1 ring-slate-200">
                                 <Row label="Empresa donde labora" value={informacion_laboral?.empresa} />
                                 <Row label="Dirección empleador" value={informacion_laboral?.direccion_empleador} />
                                 <Row label="Teléfono del empleador" value={informacion_laboral?.telefono_empleador} />
                                 <Row label="Cargo" value={informacion_laboral?.cargo} />
                             </div>
-                            <div className="bg-slate-50 p-4 rounded-xl ring-1 ring-slate-200">
+                            <div className="bg-base-200 p-4 rounded-xl ring-1 ring-slate-200">
                                 <Row label="Tipo de contrato" value={informacion_laboral?.tipo_contrato} />
                                 <Row label="Tiempo de servicio" value={informacion_laboral?.tiempo_servicio} />
                                 <Row label="Salario" value={fmtCOP(Number(informacion_laboral?.salario))} />
@@ -1161,20 +1401,21 @@ const CreditoDetalle: React.FC = () => {
                         </div>
                     </div>
                 </section>
+                )}
 
 
                 {/* Referencias */}
-                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <section className="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
                     <div className="p-4 sm:p-6">
-                        <h2 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2 text-slate-800">
+                        <h2 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2 text-base-content">
                             <User2 className="w-5 h-5" /> Referencias del deudor
                         </h2>
                         {(!referencias || referencias.length === 0) ? (
-                            <p className="text-slate-500">No hay referencias registradas.</p>
+                            <p className="text-base-content/60">No hay referencias registradas.</p>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 {referencias.map((ref: any, idx: number) => (
-                                    <div key={idx} className="bg-[#F0FAFF] p-4 rounded-xl ring-1 ring-info">
+                                    <div key={idx} className="bg-info/10 p-4 rounded-xl ring-1 ring-info">
                                         <Row label="Nombres y apellidos" value={ref.nombre_completo} />
                                         <Row label="Dirección" value={ref.direccion} />
                                         <Row label="Tipo de referencia" value={ref.tipo_referencia} />
@@ -1193,14 +1434,14 @@ const CreditoDetalle: React.FC = () => {
                 <section>
                     <details className="collapse bg-base-100 border-base-300 border">
                         <summary className="collapse-title font-semibold">
-                            <h2 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2 text-slate-800">
+                            <h2 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2 text-base-content">
                                 <FileSignature className="w-5 h-5" /> Soportes
                             </h2>
                         </summary>
 
                         <div className="collapse-content text-sm">
                             {soportes.length === 0 ? (
-                                <p className="text-slate-500">No hay soportes disponibles.</p>
+                                <p className="text-base-content/60">No hay soportes disponibles.</p>
                             ) : (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {soportes.map((s, idx) => {
@@ -1213,9 +1454,9 @@ const CreditoDetalle: React.FC = () => {
                                         return (
                                             <article
                                                 key={idx}
-                                                className="group rounded-xl ring-1 ring-slate-200 bg-white shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                                                className="group rounded-xl ring-1 ring-slate-200 bg-base-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
                                             >
-                                                <div className="aspect-video bg-slate-50 flex items-center justify-center">
+                                                <div className="aspect-video bg-base-200 flex items-center justify-center">
                                                     {isImg ? (
                                                         <img
                                                             src={href}
@@ -1230,7 +1471,7 @@ const CreditoDetalle: React.FC = () => {
                                                             className="h-full w-full"
                                                         />
                                                     ) : (
-                                                        <div className="flex flex-col items-center justify-center text-slate-400">
+                                                        <div className="flex flex-col items-center justify-center text-base-content/50">
                                                             <FileDown className="w-10 h-10" />
                                                             <span className="text-xs mt-1">Vista no disponible</span>
                                                         </div>
@@ -1240,22 +1481,22 @@ const CreditoDetalle: React.FC = () => {
                                                 <div className="p-4 space-y-2">
                                                     <div className="flex items-start gap-2">
                                                         {isImg ? (
-                                                            <Image className="w-4 h-4 text-slate-500 shrink-0" />
+                                                            <Image className="w-4 h-4 text-base-content/60 shrink-0" />
                                                         ) : isPdf ? (
-                                                            <FileText className="w-4 h-4 text-slate-500 shrink-0" />
+                                                            <FileText className="w-4 h-4 text-base-content/60 shrink-0" />
                                                         ) : isDoc ? (
-                                                            <FileSignature className="w-4 h-4 text-slate-500 shrink-0" />
+                                                            <FileSignature className="w-4 h-4 text-base-content/60 shrink-0" />
                                                         ) : (
-                                                            <FileDown className="w-4 h-4 text-slate-500 shrink-0" />
+                                                            <FileDown className="w-4 h-4 text-base-content/60 shrink-0" />
                                                         )}
                                                         <div className="min-w-0">
                                                             <p
-                                                                className="text-sm font-medium text-slate-800 truncate"
+                                                                className="text-sm font-medium text-base-content truncate"
                                                                 title={fileName}
                                                             >
                                                                 {fileName}
                                                             </p>
-                                                            <p className="text-xs text-slate-500 wrap-break-word">{s}</p>
+                                                            <p className="text-xs text-base-content/60 wrap-break-word">{s}</p>
                                                         </div>
                                                     </div>
 
@@ -1264,7 +1505,7 @@ const CreditoDetalle: React.FC = () => {
                                                             href={href}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="text-xs text-blue-600 hover:underline"
+                                                            className="text-xs text-info hover:underline"
                                                         >
                                                             Abrir
                                                         </a>
@@ -1272,7 +1513,7 @@ const CreditoDetalle: React.FC = () => {
                                                             target='_blank'
                                                             href={href}
                                                             download
-                                                            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700"
+                                                            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-base-200 hover:bg-base-300 text-base-content"
                                                         >
                                                             <Download className="w-3.5 h-3.5" />
                                                             Descargar
@@ -1293,7 +1534,7 @@ const CreditoDetalle: React.FC = () => {
                     <section>
                         <details className="collapse bg-base-100 border-base-300 border">
                             <summary className="collapse-title font-semibold">
-                                <h2 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2 text-slate-800">
+                                <h2 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2 text-base-content">
                                     <History className="w-5 h-5" /> Tabla de amortización del crédito
                                 </h2>
                             </summary>
@@ -1302,6 +1543,7 @@ const CreditoDetalle: React.FC = () => {
                                     credito={creditoAjustado as any}
                                     fechaCreacion={creditoAjustado?.fecha_inicial ?? creditoAjustado?.fecha_creacion}
                                     cotizacionId={idCot ?? 0}
+                                    porcentajeSeguroVida={(cotData as any)?.porcentaje_seguro_vida}
                                     nombreCliente={[
                                         informacion_personal?.primer_nombre,
                                         informacion_personal?.segundo_nombre,
@@ -1322,13 +1564,13 @@ const CreditoDetalle: React.FC = () => {
                 <section >
                     <details className="collapse bg-base-100 border-base-300 border">
                         <summary className="collapse-title font-semibold">
-                            <h2 className="text-base sm:text-lg font-semibold  flex items-center gap-2 text-slate-800">
+                            <h2 className="text-base sm:text-lg font-semibold  flex items-center gap-2 text-base-content">
                                 <MessageCircle className="w-5 h-5" /> Comentarios Realizados
                             </h2>
                         </summary>
                         <div className="collapse-content text-sm">
 
-                            <div className="sticky mb-5 top-0 z-10 bg-white/80 backdrop-blur supports-backdrop-filter:bg-white/60">
+                            <div className="sticky mb-5 top-0 z-10 bg-base-100/80 backdrop-blur supports-backdrop-filter:bg-white/60">
                                 <div className="px-6 mt-2">
                                     <div className="grid grid-cols-2 text-center text-xs sm:text-sm font-medium text-neutral-600">
                                         <div className="py-1 rounded-lg bg-neutral-100">Usuario</div>
@@ -1343,7 +1585,7 @@ const CreditoDetalle: React.FC = () => {
                 </section>
 
                 {/* Acciones */}
-                <section className="rounded-2xl flex gap-5 p-6 border flex-wrap border-slate-200 bg-white shadow-sm">
+                <section className="rounded-2xl flex gap-5 p-6 border flex-wrap border-base-300 bg-base-100 shadow-sm">
                     <button
                         className="btn bg-success hover:bg-green-500 text-white flex items-center gap-2"
                         onClick={abrirFormularioComentario}
@@ -1361,7 +1603,7 @@ const CreditoDetalle: React.FC = () => {
                             <Link to={`/creditos/detalle/cerrar-credito/${encodeURIComponent(codigo_credito)}/${encodeURIComponent(idCot ?? '')}`}>
                                 <button className="btn flex btn-warning items-center gap-2">
                                     <FileMinusIcon className="w-4 h-4" />
-                                    Cerrar Crédito
+                                    {Number((credito as any)?.credito_cerrado) === 1 ? 'Ver cierre de crédito' : 'Cerrar Crédito'}
                                 </button>
                             </Link>
                         )}
@@ -1371,7 +1613,7 @@ const CreditoDetalle: React.FC = () => {
                         useAuthStore.getState().user?.rol === "Administrador" ||
                         useAuthStore.getState().user?.rol === "Lider_marca" ||
                         useAuthStore.getState().user?.rol === "Lider_punto"
-                    ) && estado !== "Facturado" && estado !== "Aprobado" && (
+                    ) && !esAprobadoOMas && (
 
                             <>
                                 <button
@@ -1416,6 +1658,17 @@ const CreditoDetalle: React.FC = () => {
                                 </Link>
                             </>
                         )}
+
+                    {useAuthStore.getState().user?.rol === "Asesor" && idCot && Number((credito as any)?.credito_cerrado) === 1 && (
+                        <Link to={`/creditos/detalle/facturar-credito/${codigo_credito}/${encodeURIComponent(idCot ?? '')}`}>
+                            <button
+                                className="btn bg-sky-400 hover:bg-sky-500 text-white flex items-center gap-2"
+                            >
+                                <Check className="w-4 h-4" />
+                                Ver Solicitud de facturación
+                            </button>
+                        </Link>
+                    )}
                 </section>
 
 
@@ -1424,8 +1677,8 @@ const CreditoDetalle: React.FC = () => {
                     useAuthStore.getState().user?.rol === "Administrador" ||
                     useAuthStore.getState().user?.rol === "Lider_marca" ||
                     useAuthStore.getState().user?.rol === "Lider_punto"
-                ) && estado !== "Aprobado" && estado !== "Facturado" && (
-                        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
+                ) && !esAprobadoOMas && (
+                        <section className="rounded-2xl border border-base-300 bg-base-100 shadow-sm p-6">
                             {camposCompletosMinimos ? (
                                 <CambiarEstadoCredito codigo_credito={codigo_credito} data={{
                                     informacion_personal,
@@ -1434,7 +1687,7 @@ const CreditoDetalle: React.FC = () => {
                                     cotizacion: cotData,
                                 }} />
                             ) : (
-                                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800 text-sm">
+                                <div className="rounded-xl border border-warning/30 bg-warning/10 p-4 text-warning text-sm">
                                     Para habilitar el cambio de estado, completa la información primero:
                                 </div>
                             )}

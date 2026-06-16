@@ -58,6 +58,7 @@ type IncomingCotizacionState = {
   raw?: any; // payload completo original de la cotización (si lo envías)
   motoSeleccion?: "A" | "B" | ""; // en caso de que se haya elegido en la pantalla anterior
   esCreditoTerceros?: boolean; // 👈 NUEVO
+  tipo_pago?: string | null; // fallback para inferir crédito de terceros
 
 };
 
@@ -288,7 +289,13 @@ const SolicitudForm: React.FC = () => {
     };
     // =================================================
 
-    const esCreditoTerceros = incoming?.esCreditoTerceros === true;
+    const tipoPagoIncoming = (incoming?.tipo_pago ?? "")
+      .toString()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .toLowerCase();
+    const esCreditoTerceros =
+      incoming?.esCreditoTerceros === true || tipoPagoIncoming.includes("terceros");
 
     const numeroMoto =
       incoming.motoSeleccion === "A" ? "1" :
@@ -414,10 +421,10 @@ const SolicitudForm: React.FC = () => {
     // ✅ Aquí capturamos la respuesta para tomar el "codigo" y navegar
     registrar(fd, {
       onSuccess: (resp: any) => {
-        const codigo = resp?.codigo;
-        if (codigo) {
+        const cotIdResp = resp?.cotizacion_id ?? cotizacionId;
+        if (cotIdResp) {
           reset();
-          navigate(`/cotizaciones/facturacion/${encodeURIComponent(codigo)}`);
+          navigate(`/cotizaciones/facturacion/${encodeURIComponent(String(cotIdResp))}`);
         } else {
           reset();
           navigate(`/cotizaciones`);
@@ -458,19 +465,19 @@ const SolicitudForm: React.FC = () => {
 
 
   return (
-    <main className="min-h-screen bg-linear-to-br from-slate-50 via-slate-100 to-slate-200 px-4 py-6 md:py-10">
+    <main className="min-h-screen bg-linear-to-br from-base-200 via-base-200 to-base-300 px-4 py-6 md:py-10">
       <div className="max-w-9xl mx-auto space-y-6">
         {/* Encabezado / contexto de la solicitud */}
         <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <div className="h-11 w-11 rounded-2xl bg-sky-500/10 flex items-center justify-center border border-sky-500/30">
-              <ClipboardList className="w-5 h-5 text-sky-600" />
+              <ClipboardList className="w-5 h-5 text-info" />
             </div>
             <div>
-              <h1 className="text-xl md:text-2xl font-semibold text-slate-900">
+              <h1 className="text-xl md:text-2xl font-semibold text-base-content">
                 Registro de solicitud
               </h1>
-              <p className="text-sm text-slate-500 mt-0.5">
+              <p className="text-sm text-base-content/60 mt-0.5">
                 Diligencia la información del cliente y del vehículo para continuar con la facturación.
               </p>
             </div>
@@ -482,8 +489,8 @@ const SolicitudForm: React.FC = () => {
                 COTIZACIÓN #{cotizacionId}
               </span>
               {motoResumen?.modelo && (
-                <span className="mt-1 inline-flex items-center gap-1 text-slate-600 text-xs md:text-sm">
-                  <Bike className="w-4 h-4 text-sky-600" />
+                <span className="mt-1 inline-flex items-center gap-1 text-base-content/70 text-xs md:text-sm">
+                  <Bike className="w-4 h-4 text-info" />
                   {motoResumen.modelo}
                 </span>
               )}
@@ -494,11 +501,11 @@ const SolicitudForm: React.FC = () => {
 
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="space-y-8 bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-slate-200/70 px-4 py-5 md:px-8 md:py-8"
+          className="space-y-8 bg-base-100/80 backdrop-blur-sm rounded-3xl shadow-xl border border-base-300/70 px-4 py-5 md:px-8 md:py-8"
         >
           {/* ================== Información del cliente ================== */}
-          <section className="rounded-2xl border border-slate-200 bg-linear-to-br from-white to-slate-50 shadow-sm overflow-hidden">
-            <div className="flex items-center gap-2 border-b border-slate-200 bg-sky-500 text-white px-4 py-3 md:px-6">
+          <section className="rounded-2xl border border-base-300 bg-linear-to-br from-base-100 to-base-100 shadow-sm overflow-hidden">
+            <div className="flex items-center gap-2 border-b border-base-300 bg-sky-500 text-white px-4 py-3 md:px-6">
               <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
                 <UserRound className="w-4 h-4" />
               </div>
@@ -602,8 +609,8 @@ const SolicitudForm: React.FC = () => {
           </section>
 
           {/* ================== Información del producto ================== */}
-          <section className="rounded-2xl border border-slate-200 bg-linear-to-br from-white to-slate-50 shadow-sm overflow-hidden">
-            <div className="flex items-center gap-2 border-b border-slate-200 bg-emerald-500 text-white px-4 py-3 md:px-6">
+          <section className="rounded-2xl border border-base-300 bg-linear-to-br from-base-100 to-base-100 shadow-sm overflow-hidden">
+            <div className="flex items-center gap-2 border-b border-base-300 bg-emerald-500 text-white px-4 py-3 md:px-6">
               <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
                 <Bike className="w-4 h-4" />
               </div>
@@ -669,10 +676,10 @@ const SolicitudForm: React.FC = () => {
           </section>
 
           {/* ================== Acciones ================== */}
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between pt-2 border-t border-slate-200 mt-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between pt-2 border-t border-base-300 mt-4">
             <button
               type="button"
-              className="btn btn-ghost gap-1 text-slate-600 hover:text-slate-900"
+              className="btn btn-ghost gap-1 text-base-content/70 hover:text-base-content"
               onClick={() => history.back()}
             >
               ← Volver
@@ -681,7 +688,7 @@ const SolicitudForm: React.FC = () => {
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
               <button
                 type="button"
-                className="btn btn-ghost border border-slate-200 hover:border-slate-300 text-slate-700"
+                className="btn btn-ghost border border-base-300 hover:border-base-300 text-base-content"
                 onClick={() => reset()}
                 disabled={isSubmitting || isPending}
               >

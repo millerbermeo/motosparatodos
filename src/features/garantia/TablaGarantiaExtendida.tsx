@@ -5,6 +5,7 @@ import { Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useGarantiasExt, useGarantiaExtById } from "../../services/garantiaExtServices";
 import { useLoaderStore } from "../../store/loader.store";
+import { fmtFecha } from "../../utils/date";
 
 /* ========= Paginación (mismo helper que cotizaciones) ========= */
 const SIBLING_COUNT = 1;
@@ -65,21 +66,7 @@ const humanizeDesde = (dateStr?: string | null) => {
   return "justo ahora";
 };
 
-const formatFechaLarga = (dateStr?: string | null) => {
-  if (!dateStr) return "—";
-  const d = new Date(String(dateStr).replace(" ", "T"));
-  if (isNaN(d.getTime())) return "—";
-  const fmt = new Intl.DateTimeFormat("es-CO", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
-  return fmt.format(d);
-};
+const formatFechaLarga = (dateStr?: string | null) => fmtFecha(dateStr) || "—";
 
 /* =================== Componente =================== */
 const TablaGarantiaExtendida: React.FC = () => {
@@ -156,12 +143,12 @@ const TablaGarantiaExtendida: React.FC = () => {
   return (
     <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
       {/* Filtros */}
-      <div className="px-4 pt-4 flex flex-wrap items-center justify-between gap-4 my-3">
-        <div className="flex flex-wrap gap-3 flex-1 min-w-65">
+      <div className="px-4 pt-4 my-3 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 w-full lg:flex-1 lg:min-w-0">
           {/* Buscar texto libre */}
           <input
             type="text"
-            className="input input-bordered w-full sm:w-65"
+            className="input input-bordered w-full sm:w-auto sm:flex-1 sm:min-w-52 sm:max-w-[18rem]"
             placeholder="Buscar por cliente, cédula, moto, email…"
             value={q}
             onChange={(e) => {
@@ -198,7 +185,7 @@ const TablaGarantiaExtendida: React.FC = () => {
           {/* Rango de fechas (columna `fecha`) */}
           <input
             type="date"
-            className="input input-bordered"
+            className="input input-bordered w-full sm:w-auto"
             value={desde}
             onChange={(e) => {
               setDesde(e.target.value);
@@ -207,7 +194,7 @@ const TablaGarantiaExtendida: React.FC = () => {
           />
           <input
             type="date"
-            className="input input-bordered"
+            className="input input-bordered w-full sm:w-auto"
             value={hasta}
             onChange={(e) => {
               setHasta(e.target.value);
@@ -215,13 +202,13 @@ const TablaGarantiaExtendida: React.FC = () => {
             }}
           />
 
-          <button onClick={cleanFilters} className="btn btn-accent min-w-37.5">
+          <button onClick={cleanFilters} className="btn btn-accent w-full sm:w-auto sm:min-w-36">
             Limpiar Filtros
           </button>
         </div>
 
         {/* Paginación / filas */}
-        <div className="flex flex-wrap items-center gap-3 min-w-55 justify-end">
+        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
           <label className="text-xs opacity-70">Filas:</label>
           <select
             className="select select-accent select-sm select-bordered w-20"
@@ -273,7 +260,7 @@ const TablaGarantiaExtendida: React.FC = () => {
                   <div className="flex gap-2">
                     {/* Si tienes ruta de cotización, enlázala */}
                     {r.cotizacion_id && (
-                      <Link to={`/cotizaciones/${r.cotizacion_id}`} className="btn btn-sm bg-white btn-circle" title="Ver cotización">
+                      <Link to={`/cotizaciones/${r.cotizacion_id}`} className="btn btn-sm bg-base-100 btn-circle" title="Ver cotización">
                         <div className="text-info">
                           <Eye size="18px" />
                         </div>

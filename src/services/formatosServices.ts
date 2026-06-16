@@ -12,9 +12,7 @@ export const useFormatos = () => {
   return useQuery<Formato[]>({
     queryKey: ["formatos"],
     queryFn: async ({ signal }) => {
-      // GET http://tuclick.vozipcolombia.net.co/motos/back/formatos.php
       const { data } = await api.get("/formatos.php", { signal });
-      // La API devuelve { success: true, formatos: [...] }
       const arr = Array.isArray(data?.formatos) ? data.formatos : [];
       return arr as Formato[];
     },

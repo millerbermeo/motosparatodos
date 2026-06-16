@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useClientes } from "../../services/clientesServices";
 import { useLoaderStore } from "../../store/loader.store";
+import { fmtFechaSolo } from "../../utils/date";
 
 /* =======================
    Paginación (mismo estilo que cotizaciones)
@@ -60,8 +61,7 @@ const fullName = (r: any) =>
 
 const formatDate = (date?: string) => {
   if (!date) return '—';
-  const d = new Date(date);
-  return isNaN(d.getTime()) ? date : d.toLocaleDateString('es-CO');
+  return fmtFechaSolo(date) || date;
 };
 
 /* =======================
@@ -142,14 +142,14 @@ const TablaClientes: React.FC = () => {
   return (
     <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
 
-      <div className="px-4 pt-4 flex flex-wrap items-center justify-between gap-4 my-3">
+      <div className="px-4 pt-4 my-3 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
 
         {/* Filtros */}
-        <div className="flex flex-wrap gap-3 flex-1 min-w-62.5">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 w-full lg:flex-1 lg:min-w-0">
           <input
             type="text"
             placeholder="Buscar por nombre..."
-            className="input input-bordered input-md min-w-45 max-w-50 flex-1"
+            className="input input-bordered input-md w-full sm:w-auto sm:flex-1 sm:min-w-44 sm:max-w-56"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -157,7 +157,7 @@ const TablaClientes: React.FC = () => {
           <input
             type="text"
             placeholder="Filtrar por cédula"
-            className="input input-bordered input-md min-w-45 max-w-50 flex-1"
+            className="input input-bordered input-md w-full sm:w-auto sm:flex-1 sm:min-w-44 sm:max-w-56"
             value={filters.cedula}
             onChange={(e) => {
               setFilters({ ...filters, cedula: e.target.value });
@@ -167,14 +167,14 @@ const TablaClientes: React.FC = () => {
 
           <button
             onClick={cleanFilters}
-            className="btn btn-accent min-w-37.5"
+            className="btn btn-accent w-full sm:w-auto sm:min-w-36"
           >
             Limpiar Filtros
           </button>
         </div>
 
         {/* Opciones de paginación */}
-        <div className="flex flex-wrap items-center gap-3 min-w-55 justify-end">
+        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
           <label className="text-xs opacity-70">Filas:</label>
           <select
             className="select select-accent select-sm select-bordered w-20"

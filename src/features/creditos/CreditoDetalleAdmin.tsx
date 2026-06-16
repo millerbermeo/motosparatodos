@@ -27,9 +27,9 @@ const BadgeEstado: React.FC<{ value?: string }> = ({ value }) => {
     const safe = value ?? '—';
     const color =
         safe.toLowerCase().includes('apro')
-            ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200'
+            ? 'bg-success/10 text-success ring-1 ring-success/30'
             : safe.toLowerCase().includes('rech')
-                ? 'bg-rose-100 text-rose-700 ring-1 ring-rose-200'
+                ? 'bg-error/10 text-error ring-1 ring-error/30'
                 : 'bg-warning text-black';
     return (
         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${color}`}>
@@ -39,7 +39,7 @@ const BadgeEstado: React.FC<{ value?: string }> = ({ value }) => {
     );
 };
 
-const Row: React.FC<{ label: string; value?: React.ReactNode, color?: string, val?: string }> = ({ label, value, color = 'text-slate-600', val = 'text-slate-900' }) => (
+const Row: React.FC<{ label: string; value?: React.ReactNode, color?: string, val?: string }> = ({ label, value, color = 'text-base-content/70', val = 'text-base-content' }) => (
     <div className="flex items-start justify-between gap-4 py-2">
         <span className={`text-sm ${color}`}>{label}</span>
         <span className={`text-sm font-medium  text-right ${val}`}>{value ?? '—'}</span>
@@ -115,9 +115,9 @@ const CreditoDetalleAdmin: React.FC = () => {
 
 
     return (
-        <main className="min-h-screen w-full bg-linear-to-b from-white to-slate-50">
+        <main className="min-h-screen w-full bg-linear-to-b from-base-100 to-base-100">
             {/* Header */}
-            <header className="sticky top-0 z-10 backdrop-blur bg-slate-100 border border-white">
+            <header className="sticky top-0 z-10 backdrop-blur bg-base-200 border border-white">
                 <div className='pt-4 mb-3'>
                     <ButtonLink to="/creditos" label="Volver a creditos" direction="back" />
                 </div>
@@ -140,16 +140,16 @@ const CreditoDetalleAdmin: React.FC = () => {
                 {/* Mensajes de estado */}
 
                 {error && (
-                    <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
+                    <div className="rounded-xl border border-error/30 bg-error/10 p-4 text-error">
                         Ocurrió un error al cargar el crédito.
                     </div>
                 )}
 
                 {/* Información de la solicitud */}
-                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <section className="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
                     <div className="p-4 sm:p-6">
                         <div className="flex flex-wrap items-center gap-3 mb-4">
-                            <div className="inline-flex items-center gap-2 text-slate-800">
+                            <div className="inline-flex items-center gap-2 text-base-content">
                                 <Info className="w-5 h-5" />
                                 <h2 className="text-base sm:text-lg font-semibold">
                                     Información de la solicitud de crédito
@@ -173,16 +173,16 @@ const CreditoDetalleAdmin: React.FC = () => {
                 </section>
 
                 {/* Información de la motocicleta */}
-                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <section className="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
                     <div className="p-4 sm:p-6">
-                        <div className="flex items-center gap-2 mb-4 text-slate-800">
+                        <div className="flex items-center gap-2 mb-4 text-base-content">
                             <Wrench className="w-5 h-5" />
                             <h2 className="text-base sm:text-lg font-semibold">Información de la motocicleta</h2>
                         </div>
 
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="rounded-xl p-4 ring-1 ring-slate-200 bg-slate-50">
+                            <div className="rounded-xl p-4 ring-1 ring-slate-200 bg-base-200">
                                 <Row label="Motocicleta" value={moto?.modelo ?? "Crédito no facturado actualmente"} />
                                 <Row label="Número de cuotas" value={moto?.numeroCuotas ?? "Crédito no facturado actualmente"} />
                                 <Row label="Fecha de pago" value={moto?.fechaPago ?? "Crédito no facturado actualmente"} />
@@ -192,7 +192,7 @@ const CreditoDetalleAdmin: React.FC = () => {
                             </div>
 
 
-                            <div className="rounded-xl p-4 ring-1 ring-slate-200 bg-slate-50">
+                            <div className="rounded-xl p-4 ring-1 ring-slate-200 bg-base-200">
                                 <Row label="Valor de motocicleta" value={moto?.valorMotocicleta != null ? fmtCOP(moto.valorMotocicleta) : 'Crédito no facturado actualmente'} />
                                 <Row label="Cuota inicial" value={moto?.cuotaInicial != null ? fmtCOP(moto.cuotaInicial) : 'Crédito no facturado actualmente'} />
                                 <Row label="Valor cuota" value={moto?.valorCuota != null ? fmtCOP(moto.valorCuota) : 'Crédito no facturado actualmente'} /> {/* estático si no hay */}
@@ -211,13 +211,13 @@ const CreditoDetalleAdmin: React.FC = () => {
 
 
                 {/* Información personal */}
-                <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <section className="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
                     <div className="p-4 sm:p-6">
-                        <h2 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2 text-slate-800">
+                        <h2 className="text-base sm:text-lg font-semibold mb-4 flex items-center gap-2 text-base-content">
                             <User2 className="w-5 h-5" /> Información personal del deudor
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="bg-slate-50 p-4 rounded-xl ring-1 ring-slate-200">
+                            <div className="bg-base-200 p-4 rounded-xl ring-1 ring-slate-200">
                                 <Row label="Tipo de documento" value={informacion_personal?.tipo_documento} />
                                 <Row label="Número de documento" value={informacion_personal?.numero_documento} />
                                 <Row label="Fecha de expedición" value={informacion_personal?.fecha_expedicion} />
@@ -234,7 +234,7 @@ const CreditoDetalleAdmin: React.FC = () => {
                                 <Row label="Fecha de nacimiento" value={informacion_personal?.fecha_nacimiento} />
                                 <Row label="Nivel de estudios" value={informacion_personal?.nivel_estudios} />
                             </div>
-                            <div className="bg-slate-50 p-4 rounded-xl ring-1 ring-slate-200">
+                            <div className="bg-base-200 p-4 rounded-xl ring-1 ring-slate-200">
                                 <Row label="Ciudad de residencia" value={informacion_personal?.ciudad_residencia} />
                                 <Row label="Barrio de residencia" value={informacion_personal?.barrio_residencia || '—'} />
                                 <Row label="Dirección de residencia" value={informacion_personal?.direccion_residencia} />
@@ -267,7 +267,7 @@ const CreditoDetalleAdmin: React.FC = () => {
                     useAuthStore.getState().user?.rol === "Lider_marca" ||
                     useAuthStore.getState().user?.rol === "Lider_punto"
                 ) && estado !== "Aprobado" && estado !== "Facturado" && (
-                        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
+                        <section className="rounded-2xl border border-base-300 bg-base-100 shadow-sm p-6">
                             {camposCompletosMinimos ? (
                                 <CambiarEstadoCredito codigo_credito={codigo_credito} data={{
                                     informacion_personal,
@@ -275,7 +275,7 @@ const CreditoDetalleAdmin: React.FC = () => {
                                     credito, // si prefieres, puedes enviar solo { estado: credito?.estado, ... }
                                 }} />
                             ) : (
-                                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800 text-sm">
+                                <div className="rounded-xl border border-warning/30 bg-warning/10 p-4 text-warning text-sm">
                                     Para habilitar el cambio de estado, completa la información primero:
                                 </div>
                             )}

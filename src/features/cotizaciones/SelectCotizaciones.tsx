@@ -6,6 +6,7 @@ import Select, {
 
 import { useBuscarPersonas } from "../../services/cotizacionesServices";
 import type { Persona } from "../../services/cotizacionesServices";
+import { daisyReactSelectStyles } from "../../utils/reactSelectTheme";
 
 interface Option {
   value: number;
@@ -15,11 +16,12 @@ interface Option {
 
 interface Props {
   onSelect: (id: number | null) => void;
+  className?: string;
 }
 
 const MIN_CHARS = 2;
 
-const SelectCotizaciones: React.FC<Props> = ({ onSelect }) => {
+const SelectCotizaciones: React.FC<Props> = ({ onSelect, className = "min-w-72 max-w-96 w-full" }) => {
   const [inputValue, setInputValue] = useState("");
   const [selectedOption, setSelectedOption] = useState<Option | null>(null);
 
@@ -69,7 +71,7 @@ const SelectCotizaciones: React.FC<Props> = ({ onSelect }) => {
 
   return (
     <Select<Option, false>
-      className="min-w-72 max-w-96 w-full"
+      className={className}
       classNamePrefix="react-select"
       value={selectedOption}
       inputValue={inputValue}
@@ -81,10 +83,7 @@ const SelectCotizaciones: React.FC<Props> = ({ onSelect }) => {
       placeholder="Buscar persona..."
       filterOption={() => true}
       menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
-      styles={{
-        menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-        menu: (base) => ({ ...base, zIndex: 9999 }),
-      }}
+      styles={daisyReactSelectStyles<Option, false>()}
       noOptionsMessage={() =>
         inputValue.trim().length < MIN_CHARS
           ? `Escribe al menos ${MIN_CHARS} caracteres`

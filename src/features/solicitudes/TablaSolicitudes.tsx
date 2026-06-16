@@ -8,6 +8,7 @@ import {
 } from "../../services/solicitudServices";
 import { useLoaderStore } from "../../store/loader.store";
 import SelectCotizaciones from "../cotizaciones/SelectCotizaciones";
+import { fmtFecha } from "../../utils/date";
 
 const SIBLING_COUNT = 1;
 const BOUNDARY_COUNT = 1;
@@ -137,21 +138,7 @@ const humanizeDesde = (dateStr?: string | null) => {
   return "justo ahora";
 };
 
-const formatFechaLarga = (dateStr?: string | null) => {
-  if (!dateStr) return "—";
-  const d = new Date(dateStr.replace(" ", "T"));
-  if (isNaN(d.getTime())) return "—";
-
-  return new Intl.DateTimeFormat("es-CO", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  }).format(d);
-};
+const formatFechaLarga = (dateStr?: string | null) => fmtFecha(dateStr) || "—";
 
 const TablaSolicitudes: React.FC = () => {
   const [page, setPage] = React.useState(1);
@@ -268,7 +255,7 @@ const TablaSolicitudes: React.FC = () => {
 
           {/* Filtros */}
           <form onSubmit={onSubmitBuscar}>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-7">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-end">
               {/* <div className="2xl:col-span-3">
           <label className="label pb-1">
             <span className="label-text text-sm text-base-content/70">
@@ -284,7 +271,7 @@ const TablaSolicitudes: React.FC = () => {
           />
         </div> */}
 
-              <div className="2xl:col-span-2">
+              <div className="sm:col-span-2 lg:col-span-1">
                 <label className="label pb-1">
                   <span className="label-text text-sm text-base-content/70">
                     Buscar Cliente
@@ -292,6 +279,7 @@ const TablaSolicitudes: React.FC = () => {
                 </label>
                 <div className="w-full">
                   <SelectCotizaciones
+                    className="w-full min-w-0"
                     onSelect={(id) => {
                       setIdCotizacion(id ? String(id) : "");
                       setPage(1);
@@ -385,33 +373,6 @@ const TablaSolicitudes: React.FC = () => {
               </div>
 
 
-              <div>
-                <label className="label pb-1">
-                  <span className="label-text text-sm text-base-content/70">
-                    Filas
-                  </span>
-                </label>
-
-                <div className="flex items-center gap-2">
-                  <select
-                    className="select select-bordered w-full"
-                    value={serverPerPage}
-                    onChange={(e) => {
-                      setPerPage(Number(e.target.value) || 10);
-                      setPage(1);
-                    }}
-                  >
-                    {[10, 20, 50].map((n) => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
-                  </select>
-
-                  {isFetching && <span className="loading loading-spinner loading-sm" />}
-                </div>
-              </div>
-
               <div className="flex flex-col justify-end">
                 <div className="flex gap-2">
                   <button
@@ -435,12 +396,32 @@ const TablaSolicitudes: React.FC = () => {
         </div>
       </div>
 
+      <div className="flex items-center justify-end gap-2 px-4 py-3">
+        {isFetching && <span className="loading loading-spinner loading-sm" />}
+        <label className="text-xs opacity-70 whitespace-nowrap">Filas:</label>
+        <select
+          className="select select-accent select-sm select-bordered w-20"
+          value={serverPerPage}
+          onChange={(e) => {
+            setPerPage(Number(e.target.value) || 10);
+            setPage(1);
+          }}
+        >
+          {[10, 20, 50].map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="relative overflow-x-auto max-w-full px-4 pb-2">
         <table className="table table-zebra table-pin-rows min-w-375">
           <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-backdrop-filter:backdrop-blur-md">
             <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
               <th>#</th>
-              <th>Acciones</th>
+              <th>Facturación</th>
+              <th className="text-center">Cotización</th>
               <th>Código solicitud</th>
               {/* <th>ID cotización</th> */}
               <th>Cliente solicitud</th>
@@ -471,8 +452,27 @@ const TablaSolicitudes: React.FC = () => {
                     return to ? (
                       <Link to={to}>
                         <button
-                          className="btn btn-sm text-warning bg-white btn-circle"
+                          className="btn btn-sm text-warning bg-base-100 btn-circle"
                           title="Ver detalles"
+                        >
+                          <Eye size="18px" />
+                        </button>
+                      </Link>
+                    ) : (
+                      <span className="text-base-content/30 select-none">—</span>
+                    );
+                  })()}
+                </td>
+
+                <td className="text-center">
+                  {(() => {
+                    const idCoti = s.id_cotizacion ?? s.cotizacionId;
+                    const has = idCoti !== null && idCoti !== undefined && String(idCoti).trim() !== "";
+                    return has ? (
+                      <Link to={`/cotizaciones/${encodeURIComponent(String(idCoti))}`} onClick={() => show()}>
+                        <button
+                          className="btn btn-sm text-info bg-base-100 btn-circle"
+                          title="Ver cotización"
                         >
                           <Eye size="18px" />
                         </button>

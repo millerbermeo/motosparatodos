@@ -221,6 +221,22 @@ const refFieldRule =
     return true;
   };
 
+/** ✅ Vehículo: misma regla "si tocas un campo, todos obligatorios" */
+const VEHICULO_FIELDS = ["placa", "marca", "modelo", "tipo", "numero_motor"] as const;
+
+const hasAnyVehiculoValue = (v: any) =>
+  VEHICULO_FIELDS.some((f) => String(v?.[f] ?? "").trim());
+
+const vehiculoFieldRule =
+  (getValues: any) =>
+  (value: unknown): true | string => {
+    const v = (getValues("vehiculo") ?? {}) as any;
+    if (!hasAnyVehiculoValue(v)) return true; // vehículo vacío: ok
+    const val = typeof value === "string" ? value.trim() : String(value ?? "").trim();
+    if (!val) return "Este campo es obligatorio";
+    return true;
+  };
+
 // ============================ Componente ============================
 
 const InfoPersonalFormulario: React.FC = () => {
@@ -240,7 +256,7 @@ const InfoPersonalFormulario: React.FC = () => {
   const registrarDeudor = useRegistrarDeudor();
   const actualizarDeudor = useActualizarDeudor();
 
-  const { control, handleSubmit, watch, setValue, reset, getValues } = useForm<InfoPersonalFormValues>({
+  const { control, handleSubmit, watch, setValue, reset, getValues, trigger } = useForm<InfoPersonalFormValues>({
     mode: "onBlur",
     shouldUnregister: false,
     defaultValues: {
@@ -351,6 +367,37 @@ const InfoPersonalFormulario: React.FC = () => {
       referencias: referenciasNorm,
     });
   }, [data, reset, id]);
+
+  // ✅ Regla "si tocas un campo de la referencia, los 4 pasan a obligatorios":
+  // al cambiar cualquier campo de una referencia, re-valida los otros 3 de esa misma referencia.
+  React.useEffect(() => {
+    const sub = watch((_value, { name }) => {
+      if (!name) return;
+
+      if (name.startsWith("referencias.")) {
+        const idx = Number(name.split(".")[1]);
+        if (Number.isNaN(idx)) return;
+        trigger([
+          `referencias.${idx}.nombre_completo`,
+          `referencias.${idx}.tipo_referencia`,
+          `referencias.${idx}.direccion`,
+          `referencias.${idx}.telefono`,
+        ] as any);
+        return;
+      }
+
+      if (name.startsWith("vehiculo.")) {
+        trigger([
+          "vehiculo.placa",
+          "vehiculo.marca",
+          "vehiculo.modelo",
+          "vehiculo.tipo",
+          "vehiculo.numero_motor",
+        ] as any);
+      }
+    });
+    return () => sub.unsubscribe();
+  }, [watch, trigger]);
 
   const tipoVivienda = watch("tipo_vivienda");
 
@@ -726,11 +773,11 @@ const InfoPersonalFormulario: React.FC = () => {
         </div>
 
         <div className={grid}>
-          <FormInput name="vehiculo.placa" label="Placa" control={control} />
-          <FormInput name="vehiculo.marca" label="Marca" control={control} />
-          <FormInput name="vehiculo.modelo" label="Modelo" control={control} />
-          <FormSelect name="vehiculo.tipo" label="Tipo" control={control} options={vehiculoTipoOptions} />
-          <FormInput name="vehiculo.numero_motor" className="mt-6" label="Número de motor" control={control} />
+          <FormInput name="vehiculo.placa" label="Placa" control={control} rules={{ validate: vehiculoFieldRule(getValues) }} />
+          <FormInput name="vehiculo.marca" label="Marca" control={control} rules={{ validate: vehiculoFieldRule(getValues) }} />
+          <FormInput name="vehiculo.modelo" label="Modelo" control={control} rules={{ validate: vehiculoFieldRule(getValues) }} />
+          <FormSelect name="vehiculo.tipo" label="Tipo" control={control} options={vehiculoTipoOptions} rules={{ validate: vehiculoFieldRule(getValues) }} />
+          <FormInput name="vehiculo.numero_motor" className="mt-6" label="Número de motor" control={control} rules={{ validate: vehiculoFieldRule(getValues) }} />
         </div>
       </section>
 

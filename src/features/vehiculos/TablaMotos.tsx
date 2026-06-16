@@ -236,7 +236,7 @@ const TablaMotos: React.FC = () => {
 
       {/* FILTROS */}
       <div className="px-4 pb-3">
-        <div className="bg-white rounded-xl border border-base-200 p-3">
+        <div className="bg-base-100 rounded-xl border border-base-200 p-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-base-content">Marca</label>
@@ -319,6 +319,26 @@ const TablaMotos: React.FC = () => {
         </div>
       </div>
 
+      {/* Filas: a la derecha, encima de la tabla */}
+      <div className="flex items-center justify-end gap-2 px-4 py-3">
+        {isFetching && <span className="loading loading-spinner loading-xs" />}
+        <label className="text-xs opacity-70 whitespace-nowrap">Filas:</label>
+        <select
+          className="select select-accent select-sm select-bordered w-20"
+          value={serverPerPage}
+          onChange={(e) => {
+            setPerPage(Number(e.target.value) || PAGE_SIZE);
+            setPage(1);
+          }}
+        >
+          {[10, 20, 50].map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* TABLA */}
       <div className="relative overflow-x-auto max-w-full px-4">
         <table className="table table-zebra table-pin-rows min-w-225">
@@ -381,28 +401,28 @@ const TablaMotos: React.FC = () => {
                 <td className="text-right">
                   <div className="flex justify-end gap-2">
                     <button
-                      className="btn btn-sm bg-white btn-circle"
+                      className="btn btn-sm bg-base-100 btn-circle"
                       onClick={() => openDescuentos(m)}
                       title="Editar descuentos"
                     >
                       <Percent size="18px" />
                     </button>
                     <button
-                      className="btn btn-sm bg-white btn-circle"
+                      className="btn btn-sm bg-base-100 btn-circle"
                       onClick={() => openImpuestos(m)}
                       title="Editar impuestos"
                     >
                       <Banknote size="18px" />
                     </button>
                     <button
-                      className="btn btn-sm bg-white btn-circle"
+                      className="btn btn-sm bg-base-100 btn-circle"
                       onClick={() => openEditar(m)}
                       title="Editar"
                     >
                       <Pen size="18px" color="green" />
                     </button>
                     <button
-                      className="btn btn-sm bg-white btn-circle"
+                      className="btn btn-sm bg-base-100 btn-circle"
                       onClick={() => confirmarEliminar(Number(m.id), `${m.marca} ${m.linea}`)}
                       title="Eliminar"
                     >

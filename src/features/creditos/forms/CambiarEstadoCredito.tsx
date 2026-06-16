@@ -8,8 +8,10 @@ import { useCambiarEstadoCredito } from "../../../services/creditosServices";
 import { useAuthStore } from "../../../store/auth.store";
 import { useNavigate } from "react-router-dom";
 import { FileText, X as XIcon } from "lucide-react";
+import { BASE_URL } from "../../../utils/url";
+import { validateFileInput, ACCEPT_ATTR } from "../../../utils/fileValidation";
 
-const BaseUrl = import.meta.env.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
+const BaseUrl = BASE_URL;
 
 const buildDocUrl = (filename?: string): string | undefined => {
   if (!filename) return undefined;
@@ -261,8 +263,12 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
                 </label>
                 <input
                   type="file"
+                  accept={ACCEPT_ATTR}
                   className="file-input file-input-bordered w-full"
-                  onChange={(e) => field.onChange(e.target.files?.[0] ?? null)}
+                  onChange={(e) => {
+                    if (!validateFileInput(e)) return field.onChange(null);
+                    field.onChange(e.target.files?.[0] ?? null);
+                  }}
                 />
                 {fieldState.error && (
                   <span className="text-error text-xs mt-1">
@@ -270,20 +276,20 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
                   </span>
                 )}
                 {showExistingRef && (
-                  <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 border border-green-200 text-sm">
-                    <FileText className="w-4 h-4 text-green-600 shrink-0" />
+                  <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-success/10 border border-success/30 text-sm">
+                    <FileText className="w-4 h-4 text-success shrink-0" />
                     <a
                       href={buildDocUrl(existingRef)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 truncate text-green-700 hover:underline text-xs"
+                      className="flex-1 truncate text-success hover:underline text-xs"
                     >
                       {existingRef}
                     </a>
                     <button
                       type="button"
                       onClick={() => setClearedRef(true)}
-                      className="text-red-400 hover:text-red-600 shrink-0"
+                      className="text-red-400 hover:text-error shrink-0"
                       title="Quitar documento existente"
                     >
                       <XIcon className="w-4 h-4" />
@@ -305,8 +311,12 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
                 </label>
                 <input
                   type="file"
+                  accept={ACCEPT_ATTR}
                   className="file-input file-input-bordered w-full"
-                  onChange={(e) => field.onChange(e.target.files?.[0] ?? null)}
+                  onChange={(e) => {
+                    if (!validateFileInput(e)) return field.onChange(null);
+                    field.onChange(e.target.files?.[0] ?? null);
+                  }}
                 />
                 {fieldState.error && (
                   <span className="text-error text-xs mt-1">
@@ -314,20 +324,20 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
                   </span>
                 )}
                 {showExistingDc && (
-                  <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 border border-green-200 text-sm">
-                    <FileText className="w-4 h-4 text-green-600 shrink-0" />
+                  <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-success/10 border border-success/30 text-sm">
+                    <FileText className="w-4 h-4 text-success shrink-0" />
                     <a
                       href={buildDocUrl(existingDc)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 truncate text-green-700 hover:underline text-xs"
+                      className="flex-1 truncate text-success hover:underline text-xs"
                     >
                       {existingDc}
                     </a>
                     <button
                       type="button"
                       onClick={() => setClearedDc(true)}
-                      className="text-red-400 hover:text-red-600 shrink-0"
+                      className="text-red-400 hover:text-error shrink-0"
                       title="Quitar documento existente"
                     >
                       <XIcon className="w-4 h-4" />
@@ -385,6 +395,7 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
                     credito={creditoTabla}
                     fechaCreacion={fechaCreacionTabla}
                     cotizacionId={data.credito.cotizacion_id}
+                    porcentajeSeguroVida={(data?.cotizacion as any)?.porcentaje_seguro_vida}
                     nombreCliente={clienteInfo.nombre}
                     cedula={cedulaCot}
                     direccion={clienteInfo.direccion}

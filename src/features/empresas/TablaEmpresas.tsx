@@ -5,13 +5,11 @@ import { useModalStore } from "../../store/modalStore";
 import { useEmpresas, useDeleteEmpresa } from "../../services/empresasServices";
 import FormularioEmpresas from "./FormularioEmpresas";
 import { useLoaderStore } from "../../store/loader.store";
+import { BASE_URL } from "../../utils/url";
 
 const PAGE_SIZE = 10;
 const SIBLING_COUNT = 1;
 const BOUNDARY_COUNT = 1;
-
-// Ideal: mueve a un config global o .env
-const BASE_URL = import.meta.env.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
 
 /* ========= helpers de paginación (mismos que motos) ========= */
 const range = (start: number, end: number) =>
@@ -115,14 +113,14 @@ const TablaEmpresas: React.FC = () => {
 
     return (
         <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
-            <div className="px-4 pt-4 flex items-center justify-between gap-3 flex-wrap my-3">
+            <div className="px-4 pt-4 my-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <h3 className="text-sm font-semibold tracking-wide text-base-content/70">Módulo de empresas</h3>
-                <button className="btn bg-[#2BB352] text-white" onClick={openCrear}>Crear Empresa</button>
+                <button className="btn bg-[#2BB352] text-white w-full sm:w-auto" onClick={openCrear}>Crear Empresa</button>
             </div>
 
             <div className="relative overflow-x-auto max-w-full px-4">
-                <table className="table table-zebra table-pin-rows  min-w-[900px]">
-                    <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
+                <table className="table table-zebra table-pin-rows  min-w-225">
+                    <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-backdrop-filter:backdrop-blur-md">
                         <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
                             <th className="w-12">#</th>
                             <th>Logo</th>
@@ -150,7 +148,7 @@ const TablaEmpresas: React.FC = () => {
                                         <div className="h-10 w-10 bg-base-200 rounded-md grid place-content-center text-xs opacity-60">N/A</div>
                                     )}
                                 </td>
-                                <td className="font-medium max-w-[240px] truncate" title={e.nombre_empresa}>{e.nombre_empresa ?? "—"}</td>
+                                <td className="font-medium max-w-60 truncate" title={e.nombre_empresa}>{e.nombre_empresa ?? "—"}</td>
                                 <td>{e.nit_empresa ?? "—"}</td>
                                 <td>
                                     <div className="text-sm leading-tight">
@@ -164,10 +162,10 @@ const TablaEmpresas: React.FC = () => {
                                         <div className="opacity-70">{e.telefono_siniestros ?? "—"}</div>
                                     </div>
                                 </td>
-                                <td className="max-w-[260px] truncate" title={e.direccion_siniestros ?? ""}>
+                                <td className="max-w-65 truncate" title={e.direccion_siniestros ?? ""}>
                                     {e.direccion_siniestros ?? "—"}
                                 </td>
-                                <td className="max-w-[200px] truncate" title={e.sitio_web ?? ""}>
+                                <td className="max-w-50 truncate" title={e.sitio_web ?? ""}>
                                     {e.sitio_web ? (
                                         <a
                                             className="link"
@@ -181,11 +179,11 @@ const TablaEmpresas: React.FC = () => {
                                 </td>
                                 <td className="text-right">
                                     <div className="flex justify-end gap-2">
-                                        <button className="btn btn-sm bg-white btn-circle" onClick={() => openEditar(e)} title="Editar" aria-label="Editar empresa">
+                                        <button className="btn btn-sm bg-base-100 btn-circle" onClick={() => openEditar(e)} title="Editar" aria-label="Editar empresa">
                                             <Pen size="18px" color="green" />
                                         </button>
                                         <button
-                                            className="btn btn-sm bg-white btn-circle"
+                                            className="btn btn-sm bg-base-100 btn-circle hidden"
                                             onClick={() => confirmarEliminar(Number(e.id), e.nombre_empresa)}
                                             title="Eliminar"
                                             aria-label="Eliminar empresa"

@@ -9,6 +9,7 @@ import { useLineas } from "../../../services/lineasMarcasServices";
 import { useEmpresasSelect } from "../../../services/empresasServices";
 import { useSubDistribucion } from "../../../services/distribucionesServices";
 import Swal from "sweetalert2";
+import { validateFileInput } from "../../../utils/fileValidation";
 
 // 🔹 hooks de rango
 import {
@@ -532,6 +533,10 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
             accept="image/*"
             className="file-input file-input-bordered w-full"
             onChange={async (e) => {
+              if (!validateFileInput(e)) {
+                setFile(null);
+                return;
+              }
               const picked = e.target.files?.[0] ?? null;
               if (!picked) {
                 setFile(null);

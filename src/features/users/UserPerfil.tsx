@@ -13,6 +13,7 @@ type FormValues = {
   cedula: string;
   username: string;
   pass?: string; // ← ahora es `pass`
+  pass2?: string; // confirmación de contraseña
 };
 
 const UserPerfil: React.FC<Props> = ({ id }) => {
@@ -35,7 +36,8 @@ const UserPerfil: React.FC<Props> = ({ id }) => {
       lastname: "",
       cedula: "",
       username: "",
-      pass: "" // nunca se prellena desde el backend
+      pass: "", // nunca se prellena desde el backend
+      pass2: ""
     },
     mode: "onBlur",
     reValidateMode: "onChange",
@@ -51,13 +53,15 @@ const UserPerfil: React.FC<Props> = ({ id }) => {
         // @ts-ignore — si tu tipo no tiene estos campos
         cedula: (u as any).cedula ?? "",
         username: (u as any).username ?? "",
-        pass: ""
+        pass: "",
+        pass2: ""
       });
       setFocus("name");
     }
   }, [u, reset, setFocus]);
 
   const [showPass, setShowPass] = React.useState(false);
+  const [showPass2, setShowPass2] = React.useState(false);
   const busy = isSubmitting || update.isPending;
   const passValue = watch("pass") ?? "";
 
@@ -84,8 +88,9 @@ const UserPerfil: React.FC<Props> = ({ id }) => {
 
     update.mutate(payload, {
       onSuccess: () => {
-        // Limpia el campo después de actualizar
+        // Limpia los campos después de actualizar
         setValue("pass", "");
+        setValue("pass2", "");
       }
     });
   };
@@ -114,7 +119,7 @@ const UserPerfil: React.FC<Props> = ({ id }) => {
   }
 
   return (
-    <div className="rounded-2xl border border-base-300 bg-white">
+    <div className="rounded-2xl border border-base-300 bg-base-100">
       <div className="p-6 border-b border-base-300">
         <h3 className="text-lg font-semibold">Editar usuario #{u.id}</h3>
         <p className="text-sm opacity-70">
@@ -201,6 +206,36 @@ const UserPerfil: React.FC<Props> = ({ id }) => {
             </p>
           )}
         </div>
+
+        {/* Confirmar contraseña: solo si escribió una contraseña */}
+        {!!passValue && (
+          <div className="md:col-span-2 relative">
+            <FormInput<FormValues>
+              name="pass2"
+              label="Confirmar contraseña"
+              control={control}
+              placeholder="Repite la contraseña"
+              type={showPass2 ? "text" : "password"}
+              disabled={busy}
+              className="pr-10"
+              rules={{
+                validate: (v) =>
+                  v === passValue || "Las contraseñas no coinciden"
+              }}
+            />
+
+            <button
+              type="button"
+              aria-label={showPass2 ? "Ocultar contraseña" : "Mostrar contraseña"}
+              className="btn btn-ghost btn-xs absolute right-2 top-9.5 md:top-10.5"
+              onClick={() => setShowPass2((s) => !s)}
+              disabled={busy}
+              tabIndex={-1}
+            >
+              {showPass2 ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+        )}
 
         <div className="md:col-span-2 flex justify-end gap-2 mt-2">
           <button

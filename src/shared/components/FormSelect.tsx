@@ -67,7 +67,7 @@ export function FormSelect<T extends FieldValues>({
                 id={id}
                 disabled={disabled || loading}
                 className={[
-                  "w-full bg-transparent outline-none border-none",
+                  "w-full bg-transparent text-base-content outline-none border-none",
                   "px-3 py-2 text-base rounded-lg appearance-none",
                   "pr-10", // espacio para el ícono del caret
                 ].join(" ")}
@@ -80,7 +80,7 @@ export function FormSelect<T extends FieldValues>({
                   onValueChange?.(e.target.value);
                 }}
               >
-                <option value="" disabled>
+                <option value="">
                   {loading ? "Cargando…" : placeholder}
                 </option>
                 {options.map((opt) => (

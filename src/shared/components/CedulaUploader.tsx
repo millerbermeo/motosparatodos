@@ -2,6 +2,7 @@ import React from "react";
 import Swal from "sweetalert2";
 import { UploadCloud } from "lucide-react";
 import { useSubirCedulaSolicitud } from "../../services/solicitudServices";
+import { validateFileInput, ACCEPT_ATTR } from "../../utils/fileValidation";
 
 type Props = {
   idSolicitud?: number;
@@ -21,6 +22,10 @@ const CedulaUploader: React.FC<Props> = ({
   const inputRef = React.useRef<HTMLInputElement | null>(null);
 
   const onChangeFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!validateFileInput(e)) {
+      setFile(null);
+      return;
+    }
     setFile(e.target.files?.[0] ?? null);
   };
 
@@ -76,23 +81,23 @@ const CedulaUploader: React.FC<Props> = ({
 
   return (
     <div
-      className={`mt-4 pt-3 bg-blue-50 p-3 rounded-2xl border border-blue-200 space-y-2 ${className}`}
+      className={`mt-4 pt-3 bg-info/10 p-3 rounded-2xl border border-info/30 space-y-2 ${className}`}
     >
-      <div className="text-xs font-semibold text-blue-800">Cargar copia de cédula:</div>
+      <div className="text-xs font-semibold text-info">Cargar copia de cédula:</div>
 
       <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
         <input
           ref={inputRef}
           type="file"
-          accept=".pdf,image/*"
+          accept={ACCEPT_ATTR}
           onChange={onChangeFile}
           disabled={isPending}
-          className="block w-full text-xs text-slate-600
+          className="block w-full text-xs text-base-content/70
             file:mr-3 file:py-1.5 file:px-3
             file:rounded-md file:border-0
             file:text-xs file:font-semibold
-            file:bg-slate-100 file:text-slate-700
-            hover:file:bg-slate-200"
+            file:bg-base-200 file:text-base-content
+            hover:file:bg-base-300"
         />
 
         <button
@@ -107,7 +112,7 @@ const CedulaUploader: React.FC<Props> = ({
       </div>
 
       {file && (
-        <div className="text-xs text-slate-600">
+        <div className="text-xs text-base-content/70">
           Archivo seleccionado: <span className="font-medium">{file.name}</span>
         </div>
       )}

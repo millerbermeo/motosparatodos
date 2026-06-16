@@ -180,9 +180,26 @@ const tipoReferenciaOptions: SelectOption[] = [
 /* ========================= Utils ========================= */
 const grid = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3";
 
+/* ✅ Regla condicional por grupo: "si tocas un campo del grupo, todos obligatorios" */
+const VEH_FIELDS = ["vehPlaca", "vehMarca", "vehModelo", "vehTipo", "vehNumMotor"] as const;
+const refFields = (n: 1 | 2 | 3) =>
+  [`ref${n}Nombre`, `ref${n}Tipo`, `ref${n}Direccion`, `ref${n}Telefono`] as const;
+
+const groupFieldRule =
+  (idx: number, fields: readonly string[], getValues: any, opts?: { phone?: boolean }) =>
+  (value: unknown): true | string => {
+    const c = (getValues(`codeudores.${idx}`) ?? {}) as any;
+    const anyTouched = fields.some((f) => String(c?.[f] ?? "").trim());
+    if (!anyTouched) return true; // grupo vacío: ok
+    const val = typeof value === "string" ? value.trim() : String(value ?? "").trim();
+    if (!val) return "Este campo es obligatorio";
+    if (opts?.phone && !/^[0-9]{10}$/.test(val)) return "Debe tener exactamente 10 dígitos";
+    return true;
+  };
+
 const emptyCoodeudor: Coodeudor = {
   numDocumento: "",
-  tipoDocumento: "Cédula de ciudadanía",
+  tipoDocumento: "",
   fechaExpedicion: "",
   lugarExpedicion: "",
   primerNombre: "",
@@ -199,9 +216,9 @@ const emptyCoodeudor: Coodeudor = {
   email: "",
   estadoCivil: undefined,
   personasACargo: "",
-  tipoVivienda: "Propia",
+  tipoVivienda: "",
   costoArriendo: "0",    // ← empieza en "0" (no arriendo)
-  fincaRaiz: "No",
+  fincaRaiz: undefined,
   empresaLabora: "",
   direccionEmpleador: "",
   telEmpleador: "",
@@ -332,7 +349,7 @@ const normalizeEstadoCivil = (v: any): string => {
   return String(v);
 };
 const normalizeTipoVivienda = (v: any): string => {
-  if (v === "0" || v == null || v === "") return "Propia";
+  if (v === "0" || v == null || v === "") return "";
   return String(v);
 };
 
@@ -346,7 +363,7 @@ const fromBackendToForm = (data: any): Coodeudor => {
 
   return {
     numDocumento: p.numero_documento ?? "",
-    tipoDocumento: p.tipo_documento ?? "Cédula de ciudadanía",
+    tipoDocumento: p.tipo_documento ?? "",
     fechaExpedicion: p.fecha_expedicion ?? "",
     lugarExpedicion: p.lugar_expedicion ?? "",
     primerNombre: p.primer_nombre ?? "",
@@ -362,10 +379,13 @@ const fromBackendToForm = (data: any): Coodeudor => {
     telFijo: p.telefono_fijo ?? "",
     email: p.email ?? "",
     estadoCivil: normalizeEstadoCivil(p.estado_civil),
-    personasACargo: p.personas_a_cargo ?? "",
+    personasACargo:
+      p.personas_a_cargo == null || Number(p.personas_a_cargo) === 0
+        ? ""
+        : p.personas_a_cargo,
     tipoVivienda: normalizeTipoVivienda(p.tipo_vivienda),
     costoArriendo: pesosToStr(p.costo_arriendo ?? 0),
-    fincaRaiz: (p.finca_raiz as Coodeudor["fincaRaiz"]) ?? "No",
+    fincaRaiz: (p.finca_raiz as Coodeudor["fincaRaiz"]) ?? undefined,
 
     empresaLabora: l.empresa ?? "",
     direccionEmpleador: l.direccion_empleador ?? "",
@@ -382,15 +402,15 @@ const fromBackendToForm = (data: any): Coodeudor => {
     vehNumMotor: v?.numero_motor ?? "",
 
     ref1Nombre: r[0]?.nombre_completo ?? "",
-    ref1Tipo: r[0]?.tipo_referencia ?? "Familiar",
+    ref1Tipo: r[0]?.tipo_referencia ?? "",
     ref1Direccion: r[0]?.direccion ?? "",
     ref1Telefono: r[0]?.telefono ?? "",
     ref2Nombre: r[1]?.nombre_completo ?? "",
-    ref2Tipo: r[1]?.tipo_referencia ?? "Familiar",
+    ref2Tipo: r[1]?.tipo_referencia ?? "",
     ref2Direccion: r[1]?.direccion ?? "",
     ref2Telefono: r[1]?.telefono ?? "",
     ref3Nombre: r[2]?.nombre_completo ?? "",
-    ref3Tipo: r[2]?.tipo_referencia ?? "Familiar",
+    ref3Tipo: r[2]?.tipo_referencia ?? "",
     ref3Direccion: r[2]?.direccion ?? "",
     ref3Telefono: r[2]?.telefono ?? "",
   };
@@ -413,7 +433,7 @@ const CoodeudoresFormulario: React.FC = () => {
 
 
 
-  const { control, handleSubmit, watch, setValue, reset, getValues } = useForm<FormValues>({
+  const { control, handleSubmit, watch, setValue, reset, getValues, trigger } = useForm<FormValues>({
     mode: "onBlur",
     shouldUnregister: false,
     defaultValues: { codeudores: [emptyCoodeudor] },
@@ -490,6 +510,28 @@ const CoodeudoresFormulario: React.FC = () => {
     }
   }, [tv1, setValue, getValues]);
 
+
+  // ✅ Re-valida en vivo el grupo (vehículo / referencia) cuando se toca un campo
+  React.useEffect(() => {
+    const sub = watch((_v, { name }) => {
+      if (!name) return;
+      const m = name.match(/^codeudores\.(\d+)\.(.+)$/);
+      if (!m) return;
+      const idx = Number(m[1]);
+      const f = m[2];
+
+      if (f.startsWith("veh")) {
+        trigger(VEH_FIELDS.map((x) => `codeudores.${idx}.${x}`) as any);
+      } else if (f.startsWith("ref1")) {
+        trigger(refFields(1).map((x) => `codeudores.${idx}.${x}`) as any);
+      } else if (f.startsWith("ref2")) {
+        trigger(refFields(2).map((x) => `codeudores.${idx}.${x}`) as any);
+      } else if (f.startsWith("ref3")) {
+        trigger(refFields(3).map((x) => `codeudores.${idx}.${x}`) as any);
+      }
+    });
+    return () => sub.unsubscribe();
+  }, [watch, trigger]);
 
   // agregar/quitar segundo codeudor
   const addSecond = () => {
@@ -712,11 +754,11 @@ const CoodeudoresFormulario: React.FC = () => {
             </div>
 
             <div className={grid}>
-              <FormInput control={control} name={`codeudores.${idx}.vehPlaca`} label="Placa" />
-              <FormInput control={control} name={`codeudores.${idx}.vehMarca`} label="Marca" />
-              <FormInput control={control} name={`codeudores.${idx}.vehModelo`} label="Modelo" />
-              <FormSelect control={control} name={`codeudores.${idx}.vehTipo`} label="Tipo" options={vehiculoTipoOptions} />
-              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.vehNumMotor`} label="Número de motor" />
+              <FormInput control={control} name={`codeudores.${idx}.vehPlaca`} label="Placa" rules={{ validate: groupFieldRule(idx, VEH_FIELDS, getValues) }} />
+              <FormInput control={control} name={`codeudores.${idx}.vehMarca`} label="Marca" rules={{ validate: groupFieldRule(idx, VEH_FIELDS, getValues) }} />
+              <FormInput control={control} name={`codeudores.${idx}.vehModelo`} label="Modelo" rules={{ validate: groupFieldRule(idx, VEH_FIELDS, getValues) }} />
+              <FormSelect control={control} name={`codeudores.${idx}.vehTipo`} label="Tipo" options={vehiculoTipoOptions} rules={{ validate: groupFieldRule(idx, VEH_FIELDS, getValues) }} />
+              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.vehNumMotor`} label="Número de motor" rules={{ validate: groupFieldRule(idx, VEH_FIELDS, getValues) }} />
             </div>
 
             {/* ======== REFERENCIAS ======== */}
@@ -729,10 +771,10 @@ const CoodeudoresFormulario: React.FC = () => {
             </div>
 
             <div className={grid}>
-              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.ref1Nombre`} label="Nombre completo" />
-              <FormSelect control={control} name={`codeudores.${idx}.ref1Tipo`} label="Tipo de referencia" options={tipoReferenciaOptions} />
-              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.ref1Direccion`} label="Dirección" />
-              <FormInput control={control} name={`codeudores.${idx}.ref1Telefono`} label="Número telefónico" rules={{ pattern: { value: /^[0-9]*$/, message: "Solo dígitos" } }} />
+              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.ref1Nombre`} label="Nombre completo" rules={{ validate: groupFieldRule(idx, refFields(1), getValues) }} />
+              <FormSelect control={control} name={`codeudores.${idx}.ref1Tipo`} label="Tipo de referencia" options={tipoReferenciaOptions} rules={{ validate: groupFieldRule(idx, refFields(1), getValues) }} />
+              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.ref1Direccion`} label="Dirección" rules={{ validate: groupFieldRule(idx, refFields(1), getValues) }} />
+              <FormInput control={control} name={`codeudores.${idx}.ref1Telefono`} label="Número telefónico" rules={{ validate: groupFieldRule(idx, refFields(1), getValues, { phone: true }) }} />
             </div>
 
 
@@ -745,10 +787,10 @@ const CoodeudoresFormulario: React.FC = () => {
 
 
             <div className={grid}>
-              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.ref2Nombre`} label="Nombre completo" />
-              <FormSelect control={control} name={`codeudores.${idx}.ref2Tipo`} label="Tipo de referencia" options={tipoReferenciaOptions} />
-              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.ref2Direccion`} label="Dirección" />
-              <FormInput control={control} name={`codeudores.${idx}.ref2Telefono`} label="Número telefónico" rules={{ pattern: { value: /^[0-9]*$/, message: "Solo dígitos" } }} />
+              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.ref2Nombre`} label="Nombre completo" rules={{ validate: groupFieldRule(idx, refFields(2), getValues) }} />
+              <FormSelect control={control} name={`codeudores.${idx}.ref2Tipo`} label="Tipo de referencia" options={tipoReferenciaOptions} rules={{ validate: groupFieldRule(idx, refFields(2), getValues) }} />
+              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.ref2Direccion`} label="Dirección" rules={{ validate: groupFieldRule(idx, refFields(2), getValues) }} />
+              <FormInput control={control} name={`codeudores.${idx}.ref2Telefono`} label="Número telefónico" rules={{ validate: groupFieldRule(idx, refFields(2), getValues, { phone: true }) }} />
             </div>
 
 
@@ -760,10 +802,10 @@ const CoodeudoresFormulario: React.FC = () => {
 
 
             <div className={grid}>
-              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.ref3Nombre`} label="Nombre completo" />
-              <FormSelect control={control} name={`codeudores.${idx}.ref3Tipo`} label="Tipo de referencia" options={tipoReferenciaOptions} />
-              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.ref3Direccion`} label="Dirección" />
-              <FormInput control={control} name={`codeudores.${idx}.ref3Telefono`} label="Número telefónico" rules={{ pattern: { value: /^[0-9]*$/, message: "Solo dígitos" } }} />
+              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.ref3Nombre`} label="Nombre completo" rules={{ validate: groupFieldRule(idx, refFields(3), getValues) }} />
+              <FormSelect control={control} name={`codeudores.${idx}.ref3Tipo`} label="Tipo de referencia" options={tipoReferenciaOptions} rules={{ validate: groupFieldRule(idx, refFields(3), getValues) }} />
+              <FormInput className="mt-6" control={control} name={`codeudores.${idx}.ref3Direccion`} label="Dirección" rules={{ validate: groupFieldRule(idx, refFields(3), getValues) }} />
+              <FormInput control={control} name={`codeudores.${idx}.ref3Telefono`} label="Número telefónico" rules={{ validate: groupFieldRule(idx, refFields(3), getValues, { phone: true }) }} />
             </div>
 
 

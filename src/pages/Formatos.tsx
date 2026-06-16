@@ -2,6 +2,7 @@
 import React, { useMemo, useState } from "react";
 import Swal from "sweetalert2";
 import { useFormatos, useCreateFormato, useDeleteFormato } from "../services/formatosServices";
+import { validateFileInput } from "../utils/fileValidation";
 
 type UiFormato = {
   id: number | string;
@@ -130,7 +131,7 @@ const Formatos: React.FC = () => {
   return (
     <main className="w-full min-h-screen bg-base-100" aria-labelledby="formatos-title">
       {/* HERO */}
-      <section className="w-full bg-gradient-to-b from-base-200 via-base-200 to-base-100">
+      <section className="w-full bg-linear-to-b from-base-200 via-base-200 to-base-100">
         <div className="px-4 md:px-8 py-10 md:py-14">
           <div className="hero-content w-full flex-col items-stretch gap-6">
             <div className="w-full">
@@ -163,7 +164,10 @@ const Formatos: React.FC = () => {
                   id="file-input"
                   type="file"
                   className="file-input file-input-bordered w-full"
-                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                  onChange={(e) => {
+                    if (!validateFileInput(e)) return setFile(null);
+                    setFile(e.target.files?.[0] ?? null);
+                  }}
                   accept=".doc,.docx,.pdf,.xlsx,.pptx"
                 />
               </div>
@@ -219,7 +223,7 @@ const Formatos: React.FC = () => {
                         {isDoc ? <WordIcon className="w-6 h-6 text-primary" /> : <FileIcon className="w-6 h-6 text-primary" />}
                       </span>
                       <div className="flex-1">
-                        <h2 className="card-title text-base leading-snug break-words">{f.title}</h2>
+                        <h2 className="card-title text-base leading-snug wrap-break-words">{f.title}</h2>
                         <div className="mt-1 flex flex-wrap items-center gap-2 text-sm opacity-70">
                           {f.size && <span className="badge badge-ghost">{f.size}</span>}
                           {f.date && <span className="badge badge-ghost">{f.date}</span>}

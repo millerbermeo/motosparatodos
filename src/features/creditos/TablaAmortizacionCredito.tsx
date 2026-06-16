@@ -4,6 +4,7 @@ import { useTasasCotizacion } from "../../services/tasaCotiService";
 import {
   calcularCuotaPMT,
   calcularSeguroDeudorMensual,
+  resolverTasaSeguroVidaDecimal,
 } from "../../shared/components/credito/creditoDirecto.utils";
 
 interface CreditoApi {
@@ -27,6 +28,8 @@ interface TablaAmortizacionCreditoProps {
   tasaFinanciacion?: number;
   /** Tasa de garantía % directa de la cotización (ej: 1.5). Hook como fallback. */
   tasaGarantia?: number;
+  /** % seguro de vida de la cotización (ej: 0.043). Si no viene, usa el fallback. */
+  porcentajeSeguroVida?: number | string | null;
 }
 
 const fmtCOP = (v: number) =>
@@ -130,6 +133,7 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
   producto,
   tasaFinanciacion,
   tasaGarantia,
+  porcentajeSeguroVida,
 }) => {
   const plazo = toNumber(credito.plazo_meses);
 
@@ -184,10 +188,12 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
           )
         : 0;
 
-    // Seguro fijo sobre saldo inicial (igual al comportamiento del Excel)
+    // Seguro fijo sobre saldo inicial (igual al comportamiento del Excel).
+    // Tasa de seguro vida: de la cotización; si no viene, fallback.
+    const tasaSeguroVida = resolverTasaSeguroVidaDecimal(porcentajeSeguroVida);
     const seguroDeudorFijo =
       saldoFinanciadoNegocio > 0
-        ? Math.floor(calcularSeguroDeudorMensual(saldoFinanciadoNegocio))
+        ? Math.floor(calcularSeguroDeudorMensual(saldoFinanciadoNegocio, tasaSeguroVida))
         : 0;
 
     const garantiaYSeguros = cuotaGarantia + seguroDeudorFijo;
@@ -218,12 +224,12 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
       fechaInicio,
       schedule,
     };
-  }, [credito, plazo, tasasCotizacion, garantiaConfig, fechaCreacion, tasaFinanciacion, tasaGarantia]);
+  }, [credito, plazo, tasasCotizacion, garantiaConfig, fechaCreacion, tasaFinanciacion, tasaGarantia, porcentajeSeguroVida]);
 
   if (!plazo) {
     return (
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4 sm:p-6">
-        <p className="text-sm text-slate-600">
+      <section className="rounded-2xl border border-base-300 bg-base-100 shadow-sm p-4 sm:p-6">
+        <p className="text-sm text-base-content/70">
           No hay información de plazo para generar la tabla de amortización.
         </p>
       </section>
@@ -233,16 +239,16 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
   const hasTasasDeProps = (tasaFinanciacion && tasaFinanciacion > 0);
   if (loadingTasas && !hasTasasDeProps) {
     return (
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4 sm:p-6">
-        <p className="text-sm text-slate-600">Cargando tasas de la cotización...</p>
+      <section className="rounded-2xl border border-base-300 bg-base-100 shadow-sm p-4 sm:p-6">
+        <p className="text-sm text-base-content/70">Cargando tasas de la cotización...</p>
       </section>
     );
   }
 
   if (errorTasas || !resultado) {
     return (
-      <section className="rounded-2xl border border-rose-200 bg-rose-50 shadow-sm p-4 sm:p-6">
-        <p className="text-sm text-rose-700">
+      <section className="rounded-2xl border border-error/30 bg-error/10 shadow-sm p-4 sm:p-6">
+        <p className="text-sm text-error">
           No fue posible generar la tabla de amortización.
         </p>
       </section>
@@ -263,7 +269,7 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
   } = resultado;
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <section className="rounded-2xl border border-base-300 bg-base-100 shadow-sm overflow-hidden">
       {/* Barra título */}
       <div className="bg-slate-700 px-5 py-3">
         <h2 className="text-white font-bold text-sm sm:text-base tracking-wide">
@@ -272,36 +278,36 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
       </div>
 
       {/* Resumen 3 columnas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200 border-b border-slate-200 bg-slate-50 text-sm">
+      <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-base-300 border-b border-base-300 bg-base-200 text-sm">
         {/* Col 1 — Cliente */}
         <div className="px-5 py-4 space-y-1.5">
           {cedula && (
             <div className="flex gap-2">
-              <span className="text-slate-500 w-36 shrink-0">Cédula:</span>
-              <span className="font-semibold text-slate-800">{cedula}</span>
+              <span className="text-base-content/60 w-36 shrink-0">Cédula:</span>
+              <span className="font-semibold text-base-content">{cedula}</span>
             </div>
           )}
           {nombreCliente && (
             <div className="flex gap-2">
-              <span className="text-slate-500 w-36 shrink-0">Nombre:</span>
-              <span className="font-semibold text-slate-800 uppercase">{nombreCliente}</span>
+              <span className="text-base-content/60 w-36 shrink-0">Nombre:</span>
+              <span className="font-semibold text-base-content uppercase">{nombreCliente}</span>
             </div>
           )}
           {direccion && (
             <div className="flex gap-2">
-              <span className="text-slate-500 w-36 shrink-0">Dirección:</span>
-              <span className="font-semibold text-slate-800">{direccion}</span>
+              <span className="text-base-content/60 w-36 shrink-0">Dirección:</span>
+              <span className="font-semibold text-base-content">{direccion}</span>
             </div>
           )}
           {telefono && (
             <div className="flex gap-2">
-              <span className="text-slate-500 w-36 shrink-0">Teléfono:</span>
-              <span className="font-semibold text-slate-800">{telefono}</span>
+              <span className="text-base-content/60 w-36 shrink-0">Teléfono:</span>
+              <span className="font-semibold text-base-content">{telefono}</span>
             </div>
           )}
           <div className="flex gap-2">
-            <span className="text-slate-500 w-36 shrink-0">Fecha de desembolso:</span>
-            <span className="font-semibold text-slate-800">{fmtFechaCorta(fechaInicio)}</span>
+            <span className="text-base-content/60 w-36 shrink-0">Fecha de desembolso:</span>
+            <span className="font-semibold text-base-content">{fmtFechaCorta(fechaInicio)}</span>
           </div>
         </div>
 
@@ -309,49 +315,49 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
         <div className="px-5 py-4 space-y-1.5">
           {producto && (
             <div className="flex items-center justify-between gap-3">
-              <span className="text-slate-500">Producto:</span>
-              <span className="font-semibold text-slate-800 uppercase text-right">{producto}</span>
+              <span className="text-base-content/60">Producto:</span>
+              <span className="font-semibold text-base-content uppercase text-right">{producto}</span>
             </div>
           )}
           <div className="flex items-center justify-between gap-3">
-            <span className="text-slate-500">Valor:</span>
-            <span className="font-semibold text-slate-800">{fmtCOP(valorTotal)}</span>
+            <span className="text-base-content/60">Valor:</span>
+            <span className="font-semibold text-base-content">{fmtCOP(valorTotal)}</span>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <span className="text-slate-500">Cuota Inicial:</span>
-            <span className="font-semibold text-slate-800">{fmtCOP(cuotaInicial)}</span>
+            <span className="text-base-content/60">Cuota Inicial:</span>
+            <span className="font-semibold text-base-content">{fmtCOP(cuotaInicial)}</span>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <span className="text-slate-500">Valor a financiar:</span>
-            <span className="font-semibold text-sky-700">{fmtCOP(saldoFinanciadoNegocio)}</span>
+            <span className="text-base-content/60">Valor a financiar:</span>
+            <span className="font-semibold text-info">{fmtCOP(saldoFinanciadoNegocio)}</span>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <span className="text-slate-500">Garantía y Seguros:</span>
-            <span className="font-semibold text-rose-600">{fmtCOP(garantiaYSeguros)}</span>
+            <span className="text-base-content/60">Garantía y Seguros:</span>
+            <span className="font-semibold text-error">{fmtCOP(garantiaYSeguros)}</span>
           </div>
         </div>
 
         {/* Col 3 — Tasas */}
         <div className="px-5 py-4 space-y-1.5">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-slate-500">Tasa efectiva mensual:</span>
-            <span className="font-semibold text-slate-800">{`${(tasaFinanciacionMensual * 100).toFixed(4)}%`}</span>
+            <span className="text-base-content/60">Tasa efectiva mensual:</span>
+            <span className="font-semibold text-base-content">{`${(tasaFinanciacionMensual * 100).toFixed(4)}%`}</span>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <span className="text-slate-500">Tasa efectiva anual:</span>
-            <span className="font-semibold text-slate-800">{fmtPct(teaFin)}</span>
+            <span className="text-base-content/60">Tasa efectiva anual:</span>
+            <span className="font-semibold text-base-content">{fmtPct(teaFin)}</span>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <span className="text-slate-500">Plazo (Meses):</span>
-            <span className="font-semibold text-slate-800">{plazo}</span>
+            <span className="text-base-content/60">Plazo (Meses):</span>
+            <span className="font-semibold text-base-content">{plazo}</span>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <span className="text-slate-500">Cuota:</span>
-            <span className="font-semibold text-sky-700">{fmtCOP(cuotaNegocio)}</span>
+            <span className="text-base-content/60">Cuota:</span>
+            <span className="font-semibold text-info">{fmtCOP(cuotaNegocio)}</span>
           </div>
-          <div className="flex items-center justify-between gap-3 pt-1 border-t border-slate-200">
-            <span className="text-slate-600 font-medium">CuotaTotal Mes:</span>
-            <span className="font-bold text-emerald-700 text-base">{fmtCOP(cuotaTotalMes)}</span>
+          <div className="flex items-center justify-between gap-3 pt-1 border-t border-base-300">
+            <span className="text-base-content/70 font-medium">CuotaTotal Mes:</span>
+            <span className="font-bold text-success text-base">{fmtCOP(cuotaTotalMes)}</span>
           </div>
         </div>
       </div>
@@ -370,35 +376,35 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
               <th className="px-4 py-3 text-right font-semibold whitespace-nowrap">Saldo Final</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-base-200">
             {schedule.map((row, idx) => (
               <tr
                 key={row.periodo}
                 className={
                   idx % 2 === 0
-                    ? "bg-white hover:bg-blue-50 transition-colors"
-                    : "bg-slate-50 hover:bg-blue-50 transition-colors"
+                    ? "bg-base-100 hover:bg-info/10 transition-colors"
+                    : "bg-base-200 hover:bg-info/10 transition-colors"
                 }
               >
-                <td className="px-4 py-2 text-center font-medium text-slate-500">
+                <td className="px-4 py-2 text-center font-medium text-base-content/60">
                   {row.periodo}
                 </td>
-                <td className="px-4 py-2 text-slate-600 whitespace-nowrap">
+                <td className="px-4 py-2 text-base-content/70 whitespace-nowrap">
                   {fmtFechaMes(row.fecha)}
                 </td>
-                <td className="px-4 py-2 text-right text-slate-700">
+                <td className="px-4 py-2 text-right text-base-content">
                   {fmtCOP(row.interes)}
                 </td>
-                <td className="px-4 py-2 text-right text-slate-700">
+                <td className="px-4 py-2 text-right text-base-content">
                   {fmtCOP(row.abonoCapital)}
                 </td>
-                <td className="px-4 py-2 text-right text-rose-600 font-medium">
+                <td className="px-4 py-2 text-right text-error font-medium">
                   {fmtCOP(row.garantiaYSeguros)}
                 </td>
-                <td className="px-4 py-2 text-right font-bold text-emerald-700">
+                <td className="px-4 py-2 text-right font-bold text-success">
                   {fmtCOP(row.cuotaTotalMes)}
                 </td>
-                <td className="px-4 py-2 text-right font-medium text-slate-800">
+                <td className="px-4 py-2 text-right font-medium text-base-content">
                   {fmtCOP(row.saldoFinal)}
                 </td>
               </tr>
@@ -408,8 +414,8 @@ export const TablaAmortizacionCredito: React.FC<TablaAmortizacionCreditoProps> =
       </div>
 
       {/* Pie de página */}
-      <div className="px-5 py-3 bg-slate-50 border-t border-slate-200">
-        <p className="text-xs text-slate-500 italic">
+      <div className="px-5 py-3 bg-base-200 border-t border-base-300">
+        <p className="text-xs text-base-content/60 italic">
           Simulación inicial del crédito bajo los parámetros básicos, no contiene ajustes o acuerdos de pago.
         </p>
       </div>

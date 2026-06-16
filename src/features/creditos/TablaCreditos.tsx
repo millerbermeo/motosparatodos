@@ -6,6 +6,7 @@ import { useCreditos } from "../../services/creditosServices"; // <— nuevo hoo
 import { useAuthStore } from "../../store/auth.store";
 import SelectCreditos from "./SelectCreditos";
 import { useLoaderStore } from "../../store/loader.store";
+import { fmtFecha } from "../../utils/date";
 
 const DEFAULT_PAGE_SIZE = 10;
 const SIBLING_COUNT = 1;
@@ -63,10 +64,10 @@ const badgeEstado = (estado?: string) => {
   else if (e.includes("revision") || e.includes("revisión")) cls = "badge-accent";
   else if (e.includes("incompleto")) cls = "badge-warning";
   else if (e.includes("viable") && e.includes("no")) cls = "badge-error";
-  else if (e.includes("factur")) cls = "badge-info";
   else if (e.includes("en factura")) cls = "badge-primary";
+  else if (e.includes("factur")) cls = "badge-info";
 
-  return <span className={`badge ${cls}`}>{estado ?? "-"}</span>;
+  return <span className={`badge ${cls} whitespace-nowrap`}>{estado ?? "-"}</span>;
 };
 
 const timeAgo = (iso?: string) => {
@@ -128,6 +129,8 @@ const TablaCreditos: React.FC = () => {
     const estados = React.useMemo(() => {
         if (isDetail) return [];
         const set = new Set<string>();
+        // estados fijos garantizados aunque no estén en la página actual
+        set.add("En Facturación");
         (serverItems ?? []).forEach((c: any) => c?.estado && set.add(c.estado));
         return Array.from(set).sort();
     }, [serverItems, isDetail]);
@@ -177,8 +180,8 @@ const TablaCreditos: React.FC = () => {
     return (
         <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
             {/* Toolbar */}
-            <div className="px-4 pt-4 my-3 justify-between flex flex-wrap gap-3">
-                <div className="flex flex-wrap gap-3 flex-1 min-w-62.5">
+            <div className="px-4 pt-4 my-3 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 w-full lg:flex-1 lg:min-w-0">
                     {/* Selector que setea el ID → modo detalle */}
                     <SelectCreditos onSelect={(id) => { setCreditoId(id ?? null); }} />
 
@@ -196,7 +199,7 @@ const TablaCreditos: React.FC = () => {
               </label> */}
 
                             <select
-                                className="select select-md select-bordered"
+                                className="select select-md select-bordered w-full sm:w-auto sm:flex-1 sm:min-w-44 sm:max-w-56"
                                 value={estadoFilter}
                                 onChange={(e) => { setEstadoFilter(e.target.value); }}
                             >
@@ -206,12 +209,12 @@ const TablaCreditos: React.FC = () => {
                         </>
                     )}
 
-                    <button onClick={cleanFilters} className="btn btn-accent min-w-37.5">
+                    <button onClick={cleanFilters} className="btn btn-accent w-full sm:w-auto sm:min-w-36">
                         Limpiar Filtros
                     </button>
                 </div>
 
-                <div className="flex items-center gap-3 min-w-55 justify-end">
+                <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
                     {!isDetail && (
                         <>
                             <label className="text-xs opacity-70">Filas:</label>
@@ -226,7 +229,7 @@ const TablaCreditos: React.FC = () => {
                     )}
 
                     {useAuthStore.getState().user?.rol === "Asesor" && (
-                        <Link to="/creditos/crear-cotizaciones-credito">
+                        <Link to="/creditos/crear-cotizaciones-credito?tipo=credibike">
                             <button className="btn bg-[#2BB352] text-white">Crear Crédito</button>
                         </Link>
                     )}
@@ -240,6 +243,7 @@ const TablaCreditos: React.FC = () => {
                         <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
                             <th>Id</th>
                             <th className="text-center">Acciones</th>
+                            <th className="text-center">Cotización</th>
                             <th>Asesor</th>
                             <th>Código del crédito</th>
                             <th>Nombre cliente</th>
@@ -249,7 +253,6 @@ const TablaCreditos: React.FC = () => {
                             <th>Plazo(meses)</th>
                             <th>Estado</th>
                             <th>Credito Cerrado</th>
-                            <th>En Facturacion</th>
                             {/* <th>Preaprobado</th>
                             <th>Analista</th> */}
                             {/* <th>Revisado</th>
@@ -262,7 +265,7 @@ const TablaCreditos: React.FC = () => {
 
                     <tbody className="[&>tr:hover]:bg-base-200/40">
                         {visible.length === 0 && (
-                            <tr><td colSpan={16} className="text-center py-8 text-base-content/60">Sin resultados</td></tr>
+                            <tr><td colSpan={15} className="text-center py-8 text-base-content/60">Sin resultados</td></tr>
                         )}
 
                         {visible.map((c: any) => (
@@ -275,26 +278,37 @@ const TablaCreditos: React.FC = () => {
                                         useAuthStore.getState().user?.rol === "Lider_marca" ||
                                         useAuthStore.getState().user?.rol === "Lider_punto"
                                     ) && c.estado !== "Aprobado" && c.estado !== "Facturado" && (
-                                            <Link to={`/creditos/detalle/${c.codigo_credito}`}>
-                                                <button className="btn btn-sm text-warning bg-white btn-circle" title="Editar Estado">
+                                            <Link to={`/creditos/detalle/${c.codigo_credito}`} onClick={() => show()}>
+                                                <button className="btn btn-sm text-warning bg-base-100 btn-circle" title="Editar Estado">
                                                     <Pencil size="18px" />
                                                 </button>
                                             </Link>
                                         )}
 
-                                    <Link to={`/creditos/detalle/${c.codigo_credito}`}>
-                                        <button className="btn btn-sm text-success bg-white btn-circle" title="Ver">
+                                    <Link to={`/creditos/detalle/${c.codigo_credito}`} onClick={() => show()}>
+                                        <button className="btn btn-sm text-success bg-base-100 btn-circle" title="Ver">
                                             <Eye size="18px" />
                                         </button>
                                     </Link>
-                                    {useAuthStore.getState().user?.rol === "Asesor" && (
+                                    {useAuthStore.getState().user?.rol === "Asesor" && c.estado !== "Facturado" && (
                                         <Link to={`/creditos/registrar/${c.codigo_credito}`}>
-                                            <button className="btn btn-sm text-warning bg-white btn-circle" title="Editar">
+                                            <button className="btn btn-sm text-warning bg-base-100 btn-circle" title="Editar">
                                                 <Pen size="18px" />
                                             </button>
                                         </Link>
                                     )}
 
+                                </td>
+                                <td className="text-center">
+                                    {c.cotizacion_id ? (
+                                        <Link to={`/cotizaciones/${c.cotizacion_id}`} onClick={() => show()}>
+                                            <button className="btn btn-sm text-info bg-base-100 btn-circle" title="Ver cotización">
+                                                <Eye size="18px" />
+                                            </button>
+                                        </Link>
+                                    ) : (
+                                        <span className="text-base-content/40">—</span>
+                                    )}
                                 </td>
                                 <td className="font-medium">{c.asesor || "-"}</td>
                                 <td>{c.codigo_credito || "-"}</td>
@@ -311,8 +325,9 @@ const TablaCreditos: React.FC = () => {
                                 <td>{badgeSiNo((c as any).entregado ?? "No")}</td>
                                 <td>{badgeSiNo(c.cambio_ci)}</td> */}
                                 <td>{badgeNum(c.credito_cerrado)}</td>
-                                <td>{badgeNum(c.solicitar_facturacion)}</td>
-                                <td className="whitespace-nowrap">{timeAgo(c.actualizado)}</td>
+                                <td className="whitespace-nowrap text-sm text-base-content/70">
+                                    {timeAgo(c.actualizado)}{c.actualizado ? ` · ${fmtFecha(c.actualizado)}` : ""}
+                                </td>
                             </tr>
                         ))}
                     </tbody>

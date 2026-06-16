@@ -1,12 +1,13 @@
 // src/components/cotizaciones/TablaCotizaciones.tsx
 import React, { useState } from 'react';
-import { Eye, ScanEye } from 'lucide-react';
+import { Eye, ReceiptText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCotizaciones } from '../../services/cotizacionesServices';
 import { useAuthStore } from '../../store/auth.store';
 import SelectCotizaciones from './SelectCotizaciones';
 import { useCotizacionById } from '../../services/cotizacionesServices';
 import { useLoaderStore } from '../../store/loader.store';
+import { fmtFecha } from '../../utils/date';
 
 
 /* =======================
@@ -93,23 +94,8 @@ const humanizeDesde = (dateStr?: string) => {
     return 'justo ahora';
 };
 
-// Absoluto: con AM/PM en es-CO. Descomenta timeZone si quieres fijar Bogotá.
-const formatFechaLarga = (dateStr?: string) => {
-    if (!dateStr) return '—';
-    const d = new Date(dateStr.replace(' ', 'T'));
-    if (isNaN(d.getTime())) return '—';
-    const fmt = new Intl.DateTimeFormat('es-CO', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: 'numeric',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true,
-        // timeZone: 'America/Bogota',
-    });
-    return fmt.format(d); // ej: 18/08/2025, 9:33:49 p. m.
-};
+// Absoluto: formato global (año-mes-día, hora 12h a. m./p. m.)
+const formatFechaLarga = (dateStr?: string) => fmtFecha(dateStr) || '—';
 
 // 1 = contado, 2 = Credibike, 3 = terceros
 
@@ -237,11 +223,12 @@ const TablaCotizaciones: React.FC = () => {
         <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
 
 
-            <div className="px-4 pt-4 flex flex-wrap items-center justify-between gap-4 my-3">
+            <div className="px-4 pt-4 my-3 flex flex-col gap-3">
 
                 {/* Filtros */}
-                <div className="flex flex-wrap gap-3 flex-1 min-w-62.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 items-end">
                     <SelectCotizaciones
+                        className="w-full min-w-0"
                         onSelect={(id: string | number | null) => {
                             if (id === null || id === '') return setCotizacionId(null);
                             const n = typeof id === 'string' ? Number(id) : id;
@@ -250,7 +237,7 @@ const TablaCotizaciones: React.FC = () => {
                     />
 
                     <select
-                        className="select select-bordered select-md min-w-45 max-w-50 flex-1"
+                        className="select select-bordered select-md w-full"
                         value={estadoFilter}
                         onChange={(e) => { setEstadoFilter(e.target.value); setPage(1); }}
                     >
@@ -266,7 +253,7 @@ const TablaCotizaciones: React.FC = () => {
                     </select>
 
                     <select
-                        className="select select-bordered select-md min-w-45 max-w-50 flex-1"
+                        className="select select-bordered select-md w-full"
                         value={tipoFilter}
                         onChange={(e) => { setTipoFilter(e.target.value); setPage(1); }}
                     >
@@ -278,40 +265,46 @@ const TablaCotizaciones: React.FC = () => {
 
                     <button
                         onClick={cleanFilters}
-                        className="btn btn-accent min-w-37.5"
+                        className="btn btn-accent w-full"
                     >
                         Limpiar Filtros
                     </button>
                 </div>
 
-                {/* Opciones de paginación y crear */}
-                <div className="flex flex-wrap items-center gap-3 min-w-55 justify-end">
-                    <label className="text-xs opacity-70">Filas:</label>
-                    <select
-                        className="select select-accent select-sm select-bordered w-20"
-                        value={serverPerPage}
-                        onChange={(e) => {
-                            const v = Number(e.target.value) || 10;
-                            setPerPage(v);
-                            setPage(1);
-                        }}
-                    >
-                        {[10, 20, 50].map((n) => (
-                            <option key={n} value={n}>
-                                {n}
-                            </option>
-                        ))}
-                    </select>
-                    {isFetching && <span className="loading loading-spinner loading-xs" />}
 
-                    {user?.rol === "Asesor" && (
-                        <Link to="/cotizaciones/crear-cotizaciones">
-                            <button className="btn bg-[#2BB352] text-white min-w-40">
+            </div>
+
+            {/* Filas: a la derecha, encima de la tabla */}
+            <div className="flex items-center justify-end gap-2 px-4 py-3">
+                {isFetching && <span className="loading loading-spinner loading-xs" />}
+                <label className="text-xs opacity-70 whitespace-nowrap">Filas:</label>
+                <select
+                    className="select select-accent select-sm select-bordered w-20"
+                    value={serverPerPage}
+                    onChange={(e) => {
+                        const v = Number(e.target.value) || 10;
+                        setPerPage(v);
+                        setPage(1);
+                    }}
+                >
+                    {[10, 20, 50].map((n) => (
+                        <option key={n} value={n}>
+                            {n}
+                        </option>
+                    ))}
+                </select>
+
+                {/* Crear (izquierda) */}
+                {user?.rol === "Asesor" && (
+                    <div className="flex border-t border-base-200">
+                        <Link to="/cotizaciones/crear-cotizaciones" className="w-full sm:w-auto">
+                            <button className="btn bg-[#2BB352] text-white w-full sm:w-auto sm:min-w-40">
                                 Crear Cotización
                             </button>
                         </Link>
-                    )}
-                </div>
+                    </div>
+                )}
+                
             </div>
 
 
@@ -338,7 +331,7 @@ const TablaCotizaciones: React.FC = () => {
                                 <td className="text-sm text-base-content/70">{r?.id || '—'}</td>
                                 <td className="text-sm text-base-content/70">
                                     <div className="flex justify-start gap-2">
-                                        <Link to={`/cotizaciones/${r.id}`} className="btn btn-sm bg-white btn-circle" title="Ver cotización">
+                                        <Link to={`/cotizaciones/${r.id}`} onClick={() => show()} className="btn btn-sm bg-base-100 btn-circle" title="Ver cotización">
                                             <div className='text-info'>
                                                 <Eye size="18px" />
                                             </div>
@@ -356,7 +349,7 @@ const TablaCotizaciones: React.FC = () => {
 
                                                     <Link
                                                         to={`/cotizaciones/estado/${r.id}`}
-                                                        className="btn btn-sm bg-white btn-circle"
+                                                        className="btn btn-sm bg-base-100 btn-circle"
                                                         title="Cambiar estado"
                                                     >
                                                         <div className='text-warning'>
@@ -368,14 +361,38 @@ const TablaCotizaciones: React.FC = () => {
 
 
                                         {user?.rol === "Asesor" &&
-                                            (r?.estado === "Solicitar facturación" || r?.estado === "Solicitar prefacturación") && (
+                                            (r?.estado === "Solicitar facturación" || r?.estado === "Solicitar prefacturación") &&
+                                            !(() => {
+                                                const tp = String(r?.tipo_pago ?? '').toLowerCase();
+                                                return !tp.includes('tercero') &&
+                                                    (tp.includes('directo') || tp.includes('credito') || tp.includes('crédito') || tp.includes('propio'));
+                                            })() && (
                                                 <Link
                                                     to={`/solicitudes/${r.id}`}
-                                                    className="btn btn-sm bg-white btn-circle"
+                                                    className="btn btn-sm bg-base-100 btn-circle"
                                                     title="Cambiar estado"
                                                 >
-                                                    <div className='text-warning'>
-                                                        <ScanEye size="18px" />
+                                                    <div className='text-success'>
+                                                        <ReceiptText size="18px" />
+                                                    </div>
+                                                </Link>
+                                            )}
+
+                                        {user?.rol === "Asesor" &&
+                                            (r?.estado === "Solicitar facturación" || r?.estado === "Solicitar prefacturación") &&
+                                            r?.codigo_credito &&
+                                            (() => {
+                                                const tp = String(r?.tipo_pago ?? '').toLowerCase();
+                                                return !tp.includes('tercero') &&
+                                                    (tp.includes('directo') || tp.includes('credito') || tp.includes('crédito') || tp.includes('propio'));
+                                            })() && (
+                                                <Link
+                                                    to={`/creditos/detalle/facturar-credito/${r.codigo_credito}/${r.id}`}
+                                                    className="btn btn-sm bg-base-100 btn-circle"
+                                                    title="Solicitud de facturación"
+                                                >
+                                                    <div className='text-success'>
+                                                        <ReceiptText size="18px" />
                                                     </div>
                                                 </Link>
                                             )}

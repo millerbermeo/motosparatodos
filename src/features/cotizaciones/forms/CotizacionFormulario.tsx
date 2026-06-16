@@ -7,7 +7,7 @@ import { useMarcas, useMotosPorMarca } from "../../../services/marcasServices";
 import { useCreateCotizaciones } from "../../../services/cotizacionesServices";
 import { useAuthStore } from "../../../store/auth.store";
 import ButtonLink from "../../../shared/components/ButtonLink";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useConfigPlazoByCodigo } from "../../../services/configuracionPlazoService";
 import type { FormValuesCotizacion } from "../types";
 import { fmtCOP, toNumberOrNullMoney, toNumberSafe } from "../../../utils/money";
@@ -26,6 +26,9 @@ import { useIvaDecimal } from "../../../services/ivaServices";
 import { calcularCreditoDirectoMoto, logCreditoDirectoMoto, SEGURO_VIDA_FALLBACK_DECIMAL } from "../../../shared/components/credito/creditoDirecto.utils";
 import { useBuscarClientePorCedula } from "../../../services/clientesServices";
 import { Search } from "lucide-react";
+import Swal from "sweetalert2";
+import { useLoaderStore } from "../../../store/loader.store";
+import { useThemeStore } from "../../../store/theme.store";
 
 
 const getMotoByIndex = <T,>(
@@ -36,7 +39,16 @@ const getMotoByIndex = <T,>(
     return Number.isNaN(index) ? null : (motos ?? [])[index] ?? null;
 };
 
+const METODOS_PAGO_VALIDOS = ["contado", "credibike", "terceros"] as const;
+type MetodoPago = (typeof METODOS_PAGO_VALIDOS)[number];
+
 const CotizacionFormulario: React.FC = () => {
+    const [searchParams] = useSearchParams();
+    const tipoParam = searchParams.get("tipo");
+    const metodoPagoInicial: MetodoPago = METODOS_PAGO_VALIDOS.includes(tipoParam as MetodoPago)
+        ? (tipoParam as MetodoPago)
+        : "contado";
+
     const {
         register,
         handleSubmit,
@@ -47,7 +59,7 @@ const CotizacionFormulario: React.FC = () => {
         reset,
     } = useForm<FormValuesCotizacion>({
         defaultValues: {
-            metodoPago: "contado",
+            metodoPago: metodoPagoInicial,
             canal: "",
             pregunta: "",
             categoria: "motos",
@@ -150,6 +162,11 @@ const CotizacionFormulario: React.FC = () => {
     });
 
     const navigate = useNavigate();
+    const { show: showLoader, hide: hideLoader } = useLoaderStore();
+    const theme = useThemeStore((s) => s.theme);
+    // Caja "Seguro todo riesgo": azul de marca en claro, neutro en oscuro
+    const seguroBoxClass = theme === "dark" ? "bg-base-200 border border-base-300" : "bg-[#3498DB]";
+    const seguroTitleClass = theme === "dark" ? "text-base-content" : "text-white";
 
     // HOOKS
     const { mutate: cotizacion, isPending } = useCreateCotizaciones();
@@ -920,14 +937,35 @@ const CotizacionFormulario: React.FC = () => {
             delete payload.gps_meses_b;
         }
 
-        cotizacion(payload, {
-            onSuccess: () => {
-                reset();
-                navigate(`/cotizaciones`);
-            },
-            onError: (err) => {
-                console.error(err);
-            },
+        Swal.fire({
+            icon: "question",
+            title: "¿Registrar cotización?",
+            text: "¿Estás seguro de registrar esta cotización?",
+            showCancelButton: true,
+            confirmButtonText: "Sí, registrar",
+            cancelButtonText: "Cancelar",
+            confirmButtonColor: "#2BB352",
+        }).then((res) => {
+            if (!res.isConfirmed) return;
+
+            showLoader(); // overlay mientras se registra
+            cotizacion(payload, {
+                onSuccess: () => {
+                    hideLoader();
+                    reset();
+                    Swal.fire({
+                        icon: "success",
+                        title: "Cotización registrada",
+                        timer: 1500,
+                        showConfirmButton: false,
+                    });
+                    navigate(`/cotizaciones`);
+                },
+                onError: (err) => {
+                    hideLoader();
+                    console.error(err);
+                },
+            });
         });
     };
 
@@ -998,6 +1036,44 @@ const CotizacionFormulario: React.FC = () => {
 
     const polizaLabel = hideGarantiaExtendida ? "Garantía y seguros" : "Póliza todo riesgo";
     const polizaValorLabel = hideGarantiaExtendida ? "Valor garantía y seguros" : "Valor póliza";
+
+    // Fix A: garantía extendida solo aplica en crédito propio (credibike).
+    // Al cambiar a contado/terceros el select se oculta; limpiamos para que no
+    // quede pegada en total ni payload.
+    React.useEffect(() => {
+        if (hideGarantiaExtendida) {
+            setValue("garantiaExtendida1", "no");
+            setValue("garantiaExtendida2", "no");
+            setValue("valor_garantia_extendida_a", "0");
+            setValue("valor_garantia_extendida_b", "0");
+        }
+    }, [hideGarantiaExtendida, setValue]);
+
+    // Fix B: productos solo aplican con categoría "otros" (credibike). Si la
+    // categoría no es "otros", limpiamos los campos de producto.
+    React.useEffect(() => {
+        if (categoria !== "otros") {
+            setValue("producto1Nombre", "");
+            setValue("producto1Descripcion", "");
+            setValue("producto1Precio", "0");
+            setValue("producto1CuotaInicial", "0");
+            setValue("producto2Nombre", "");
+            setValue("producto2Descripcion", "");
+            setValue("producto2Precio", "0");
+            setValue("producto2CuotaInicial", "0");
+        }
+    }, [categoria, setValue]);
+
+    // Fix C: cuotas manuales solo se capturan en crédito de terceros. Fuera de
+    // terceros las limpiamos para no enviar valores fantasma.
+    React.useEffect(() => {
+        if (metodo !== "terceros") {
+            ([
+                "cuota_6_a", "cuota_12_a", "cuota_18_a", "cuota_24_a", "cuota_30_a", "cuota_36_a",
+                "cuota_6_b", "cuota_12_b", "cuota_18_b", "cuota_24_b", "cuota_30_b", "cuota_36_b",
+            ] as const).forEach((f) => setValue(f, ""));
+        }
+    }, [metodo, setValue]);
 
     React.useEffect(() => {
         const gpsComoContado = metodo === "contado" || metodo === "terceros";
@@ -1418,7 +1494,7 @@ const CotizacionFormulario: React.FC = () => {
                 <ButtonLink to="/cotizaciones" label="Volver a cotizaciones" direction="back" />
             </div>
 
-            <div className="flex gap-6 flex-col w-full bg-white p-3 rounded-xl">
+            <div className="flex gap-6 flex-col w-full bg-base-100 p-3 rounded-xl">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
                     <label className="label cursor-pointer gap-2">
                         <input
@@ -1512,7 +1588,7 @@ const CotizacionFormulario: React.FC = () => {
             </div>
 
             {metodo === "credibike" && (
-                <div className="hidden gap-10 bg-white p-3 rounded-xl justify-center">
+                <div className="hidden gap-10 bg-base-100 p-3 rounded-xl justify-center">
                     <label className="label cursor-pointer gap-2">
                         <input type="radio" value="motos" className="radio radio-primary" {...register("categoria", { required: true })} />
                         <span className="label-text">Motocicletas</span>
@@ -1525,7 +1601,7 @@ const CotizacionFormulario: React.FC = () => {
             )}
             {metodo === "credibike" && errors.categoria && <p className="text-sm text-error">Selecciona una categoría.</p>}
 
-            <div className="flex gap-6 flex-col w-full bg-white p-3 rounded-xl">
+            <div className="flex gap-6 flex-col w-full bg-base-100 p-3 rounded-xl">
                 <div className="divider divider-start divider-success">
                     <div className="badge text-xl badge-success text-white">Datos Personales</div>
                 </div>
@@ -1604,7 +1680,7 @@ const CotizacionFormulario: React.FC = () => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* MOTO 1 */}
-                            <div className="bg-white rounded-xl">
+                            <div className="bg-base-100 rounded-xl">
                                 <div className="flex items-center gap-2 mb-2">
                                     <input type="checkbox" className="checkbox checkbox-success text-white" {...register("incluirMoto1")} />
                                     <span className="label-text font-semibold">Incluir Motocicleta 1</span>
@@ -1786,8 +1862,8 @@ const CotizacionFormulario: React.FC = () => {
                                         </>
                                     )}
 
-                                    <div className="p-3 rounded-md bg-[#3498DB]">
-                                        <p className="font-semibold mb-2 text-white">Seguro todo riesgo</p>
+                                    <div className={`p-3 rounded-md ${seguroBoxClass}`}>
+                                        <p className={`font-semibold mb-2 ${seguroTitleClass}`}>Seguro todo riesgo</p>
 
                                         <FormInput<FormValuesCotizacion>
                                             name="otroSeguro1"
@@ -2006,31 +2082,31 @@ const CotizacionFormulario: React.FC = () => {
 
                                                 <div className="bg-base-200/70 p-4 rounded-xl mb-4 space-y-2">
                                                     <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
-                                                        <span className="font-medium text-gray-700">Matrícula:</span>
+                                                        <span className="font-medium text-base-content">Matrícula:</span>
                                                         <span>{fmtCOP(mat1)} COP</span>
                                                     </div>
                                                     <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
-                                                        <span className="font-medium text-gray-700">Impuestos:</span>
+                                                        <span className="font-medium text-base-content">Impuestos:</span>
                                                         <span>{fmtCOP(imp1)} COP</span>
                                                     </div>
                                                     <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
-                                                        <span className="font-medium text-gray-700">SOAT:</span>
+                                                        <span className="font-medium text-base-content">SOAT:</span>
                                                         <span>{fmtCOP(soat1)} COP</span>
                                                     </div>
                                                     <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
-                                                        <span className="font-semibold text-gray-800">Documentos (M+I+S):</span>
+                                                        <span className="font-semibold text-base-content">Documentos (M+I+S):</span>
                                                         <span className="font-semibold">{fmtCOP(documentos1)} COP</span>
                                                     </div>
 
-                                                    <div className="flex justify-between bg-purple-50/70 px-4 py-2 rounded-md shadow-sm">
-                                                        <span className="font-medium text-gray-700">
+                                                    <div className="flex justify-between bg-secondary/10/70 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-base-content">
                                                             Costos adicionales (RUNT, licencias, defensas, etc.):
                                                         </span>
                                                         <span>{fmtCOP(extrasMoto1)} COP</span>
                                                     </div>
 
                                                     <div className="flex justify-between bg-error/5 px-4 py-2 rounded-md shadow-sm">
-                                                        <span className="font-medium text-gray-700">Descuento / Plan de marca:</span>
+                                                        <span className="font-medium text-base-content">Descuento / Plan de marca:</span>
                                                         <span className="text-error font-semibold">
                                                             {descuento1Val > 0 ? `-${fmtCOP(descuento1Val)} COP` : "0 COP"}
                                                         </span>
@@ -2039,16 +2115,16 @@ const CotizacionFormulario: React.FC = () => {
                                                     {garantiaExt1Sel !== "no" && metodo === "credibike" && (
                                                         <>
                                                             {/* 🔒 Valor total (oculto por ahora, por si luego lo necesitan) */}
-                                                            <div className="hidden justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
-                                                                <span className="font-medium text-gray-700">
+                                                            <div className="hidden justify-between bg-success/10/70 px-4 py-2 rounded-md shadow-sm">
+                                                                <span className="font-medium text-base-content">
                                                                     Garantía y seguros ({garantiaExt1Sel} meses):
                                                                 </span>
                                                                 <span>{fmtCOP(garantiaExtVal1)} COP</span>
                                                             </div>
 
                                                             {/* ✅ Valor correcto mostrado (cuota mensual) */}
-                                                            <div className="hidden justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
-                                                                <span className="font-medium text-gray-700">
+                                                            <div className="hidden justify-between bg-success/10/70 px-4 py-2 rounded-md shadow-sm">
+                                                                <span className="font-medium text-base-content">
                                                                     Garantía y seguros ({garantiaExt1Sel} meses):
                                                                 </span>
                                                                 <span>
@@ -2059,40 +2135,40 @@ const CotizacionFormulario: React.FC = () => {
                                                     )}
 
                                                     {gpsAplica1 && (
-                                                        <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
-                                                            <span className="font-medium text-gray-700">
+                                                        <div className="flex justify-between bg-success/10/70 px-4 py-2 rounded-md shadow-sm">
+                                                            <span className="font-medium text-base-content">
                                                                 GPS {metodo === "contado" || metodo === "terceros" ? "" : `(${gps1Value} meses)`}:
                                                             </span>
                                                             <span>{fmtCOP(gpsVal1)} COP</span>
                                                         </div>
                                                     )}
                                                     {poliza1Value !== "" && (
-                                                        <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                        <div className="flex justify-between bg-success/10/70 px-4 py-2 rounded-md shadow-sm">
                                                             <span className="font-medium">{polizaLabel} {poliza1Value}:</span>
                                                             <span>{fmtCOP(polizaVal1)} COP</span>
                                                         </div>
                                                     )}
 
-                                                    <div className="flex justify-between bg-blue-50/70 px-4 py-2 rounded-md shadow-sm">
-                                                        <span className="font-medium text-gray-700">Cascos y Accesorios:</span>
+                                                    <div className="flex justify-between bg-info/10/70 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-base-content">Cascos y Accesorios:</span>
                                                         <span>{fmtCOP(accesorios1Val)} COP</span>
                                                     </div>
 
-                                                    <div className="flex justify-between bg-indigo-50/70 px-4 py-2 rounded-md shadow-sm">
-                                                        <span className="font-medium text-gray-700">Marcación y personalización:</span>
+                                                    <div className="flex justify-between bg-primary/10/70 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-base-content">Marcación y personalización:</span>
                                                         <span>{fmtCOP(marcacion1Val)} COP</span>
                                                     </div>
 
                                                     {esCreditoDirecto && (
-                                                        <div className="flex justify-between bg-yellow-50/70 px-4 py-2 rounded-md shadow-sm">
-                                                            <span className="font-medium text-gray-700">Inicial:</span>
+                                                        <div className="flex justify-between bg-warning/10/70 px-4 py-2 rounded-md shadow-sm">
+                                                            <span className="font-medium text-base-content">Inicial:</span>
                                                             <span>{fmtCOP(inicial1)} COP</span>
                                                         </div>
                                                     )}
 
                                                     {totalSeguros1 > 0 && (
                                                         <div className="flex justify-between bg-[#3498DB]/10 px-4 py-2 rounded-md shadow-sm">
-                                                            <span className="font-medium text-gray-700">Seguro todo riesgo:</span>
+                                                            <span className="font-medium text-base-content">Seguro todo riesgo:</span>
                                                             <span>{fmtCOP(totalSeguros1)} COP</span>
                                                         </div>
                                                     )}
@@ -2113,22 +2189,22 @@ const CotizacionFormulario: React.FC = () => {
                                                         </span>
                                                     </div>
                                                     {esCreditoDirecto && (
-                                                        <>
-                                                            <div className="flex justify-between items-center bg-info/10 px-4 py-2 rounded-md border border-info/30 shadow-sm">
-                                                                <span className="font-semibold text-info">SALDO A FINANCIAR:</span>
-                                                                <span className="font-bold">
-                                                                    {fmtCOP(
-                                                                        saldoFinanciar1 - (garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0)
-                                                                    )} COP
-                                                                </span>
-                                                            </div>
-                                                            <div className="flex justify-between items-center bg-red-50 px-4 py-2 rounded-md border border-red-200 shadow-sm">
-                                                                <span className="font-semibold text-red-700">Cuota Garantía {garantiaExt1Sel} Meses:</span>
-                                                                <span className="font-bold text-red-900">
-                                                                    {fmtCOP(cuotaGarantiaExtendidaMoto1)} COP
-                                                                </span>
-                                                            </div>
-                                                        </>
+                                                        <div className="flex justify-between items-center bg-info/10 px-4 py-2 rounded-md border border-info/30 shadow-sm">
+                                                            <span className="font-semibold text-info">SALDO A FINANCIAR:</span>
+                                                            <span className="font-bold">
+                                                                {fmtCOP(
+                                                                    saldoFinanciar1 - (garantiaExt1Sel !== "no" ? garantiaExtVal1 : 0)
+                                                                )} COP
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    {esCreditoDirecto2 && (
+                                                        <div className="flex justify-between items-center bg-error/10 px-4 py-2 rounded-md border border-error/30 shadow-sm">
+                                                            <span className="font-semibold text-error">Cuota Garantía {garantiaExt1Sel} Meses:</span>
+                                                            <span className="font-bold text-red-900">
+                                                                {fmtCOP(cuotaGarantiaExtendidaMoto1)} COP
+                                                            </span>
+                                                        </div>
                                                     )}
 
 
@@ -2164,7 +2240,7 @@ const CotizacionFormulario: React.FC = () => {
                             </div>
 
                             {/* MOTO 2 */}
-                            <div className="bg-white rounded-xl">
+                            <div className="bg-base-100 rounded-xl">
                                 <div className="flex items-center gap-2 mb-2">
                                     <input type="checkbox" className="checkbox checkbox-success text-white" {...register("incluirMoto2")} />
                                     <span className="label-text font-semibold">Incluir Motocicleta 2</span>
@@ -2338,8 +2414,8 @@ const CotizacionFormulario: React.FC = () => {
                                         </>
                                     )}
 
-                                    <div className="p-3 rounded-md bg-[#3498DB]">
-                                        <p className="font-semibold mb-2 text-white">Seguro todo riesgo</p>
+                                    <div className={`p-3 rounded-md ${seguroBoxClass}`}>
+                                        <p className={`font-semibold mb-2 ${seguroTitleClass}`}>Seguro todo riesgo</p>
 
                                         <FormInput<FormValuesCotizacion>
                                             name="otroSeguro2"
@@ -2560,31 +2636,31 @@ const CotizacionFormulario: React.FC = () => {
 
                                                 <div className="bg-base-200/70 p-4 rounded-xl mb-4 space-y-2">
                                                     <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
-                                                        <span className="font-medium text-gray-700">Matrícula:</span>
+                                                        <span className="font-medium text-base-content">Matrícula:</span>
                                                         <span>{fmtCOP(mat2)} COP</span>
                                                     </div>
                                                     <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
-                                                        <span className="font-medium text-gray-700">Impuestos:</span>
+                                                        <span className="font-medium text-base-content">Impuestos:</span>
                                                         <span>{fmtCOP(imp2)} COP</span>
                                                     </div>
                                                     <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
-                                                        <span className="font-medium text-gray-700">SOAT:</span>
+                                                        <span className="font-medium text-base-content">SOAT:</span>
                                                         <span>{fmtCOP(soat2)} COP</span>
                                                     </div>
                                                     <div className="flex justify-between bg-base-100/80 px-4 py-2 rounded-md shadow-sm">
-                                                        <span className="font-semibold text-gray-800">Documentos (M+I+S):</span>
+                                                        <span className="font-semibold text-base-content">Documentos (M+I+S):</span>
                                                         <span className="font-semibold">{fmtCOP(documentos2)} COP</span>
                                                     </div>
 
-                                                    <div className="flex justify-between bg-purple-50/70 px-4 py-2 rounded-md shadow-sm">
-                                                        <span className="font-medium text-gray-700">
+                                                    <div className="flex justify-between bg-secondary/10/70 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-base-content">
                                                             Costos adicionales (RUNT, licencias, defensas, etc.):
                                                         </span>
                                                         <span>{fmtCOP(extrasMoto2)} COP</span>
                                                     </div>
 
                                                     <div className="flex justify-between bg-error/5 px-4 py-2 rounded-md shadow-sm">
-                                                        <span className="font-medium text-gray-700">Descuento / Plan de marca:</span>
+                                                        <span className="font-medium text-base-content">Descuento / Plan de marca:</span>
                                                         <span className="text-error font-semibold">
                                                             {descuento2Val > 0 ? `-${fmtCOP(descuento2Val)} COP` : "0 COP"}
                                                         </span>
@@ -2593,16 +2669,16 @@ const CotizacionFormulario: React.FC = () => {
                                                     {garantiaExt2Sel !== "no" && metodo === "credibike" && (
                                                         <>
                                                             {/* 🔒 Valor total (oculto por ahora, por si luego lo necesitan) */}
-                                                            <div className="hidden justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
-                                                                <span className="font-medium text-gray-700">
+                                                            <div className="hidden justify-between bg-success/10/70 px-4 py-2 rounded-md shadow-sm">
+                                                                <span className="font-medium text-base-content">
                                                                     Garantía y seguros ({garantiaExt2Sel} meses):
                                                                 </span>
                                                                 <span>{fmtCOP(garantiaExtVal2)} COP</span>
                                                             </div>
 
                                                             {/* ✅ Valor correcto mostrado (cuota mensual) */}
-                                                            <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
-                                                                <span className="font-medium text-gray-700">
+                                                            <div className="flex justify-between bg-success/10/70 px-4 py-2 rounded-md shadow-sm">
+                                                                <span className="font-medium text-base-content">
                                                                     Garantía y seguros ({garantiaExt2Sel} meses):
                                                                 </span>
                                                                 <span>
@@ -2612,8 +2688,8 @@ const CotizacionFormulario: React.FC = () => {
                                                         </>
                                                     )}
                                                     {gpsAplica2 && (
-                                                        <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
-                                                            <span className="font-medium text-gray-700">
+                                                        <div className="flex justify-between bg-success/10/70 px-4 py-2 rounded-md shadow-sm">
+                                                            <span className="font-medium text-base-content">
                                                                 GPS {metodo === "contado" || metodo === "terceros" ? "" : `(${gps2Value} meses)`}:
                                                             </span>
                                                             <span>{fmtCOP(gpsVal2)} COP</span>
@@ -2622,32 +2698,32 @@ const CotizacionFormulario: React.FC = () => {
 
 
                                                     {poliza2Value !== "" && (
-                                                        <div className="flex justify-between bg-green-50/70 px-4 py-2 rounded-md shadow-sm">
+                                                        <div className="flex justify-between bg-success/10/70 px-4 py-2 rounded-md shadow-sm">
                                                             <span className="font-medium">{polizaLabel} {poliza2Value}:</span>
                                                             <span>{fmtCOP(polizaVal2)} COP</span>
                                                         </div>
                                                     )}
 
-                                                    <div className="flex justify-between bg-blue-50/70 px-4 py-2 rounded-md shadow-sm">
-                                                        <span className="font-medium text-gray-700">Cascos y Accesorios:</span>
+                                                    <div className="flex justify-between bg-info/10/70 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-base-content">Cascos y Accesorios:</span>
                                                         <span>{fmtCOP(accesorios2Val)} COP</span>
                                                     </div>
 
-                                                    <div className="flex justify-between bg-indigo-50/70 px-4 py-2 rounded-md shadow-sm">
-                                                        <span className="font-medium text-gray-700">Marcación y personalización:</span>
+                                                    <div className="flex justify-between bg-primary/10/70 px-4 py-2 rounded-md shadow-sm">
+                                                        <span className="font-medium text-base-content">Marcación y personalización:</span>
                                                         <span>{fmtCOP(marcacion2Val)} COP</span>
                                                     </div>
 
                                                     {esCreditoDirecto && (
-                                                        <div className="flex justify-between bg-yellow-50/70 px-4 py-2 rounded-md shadow-sm">
-                                                            <span className="font-medium text-gray-700">Inicial:</span>
+                                                        <div className="flex justify-between bg-warning/10/70 px-4 py-2 rounded-md shadow-sm">
+                                                            <span className="font-medium text-base-content">Inicial:</span>
                                                             <span>{fmtCOP(inicial2)} COP</span>
                                                         </div>
                                                     )}
 
                                                     {totalSeguros2 > 0 && (
                                                         <div className="flex justify-between bg-[#3498DB]/10 px-4 py-2 rounded-md shadow-sm">
-                                                            <span className="font-medium text-gray-700">Seguro todo riesgo:</span>
+                                                            <span className="font-medium text-base-content">Seguro todo riesgo:</span>
                                                             <span>{fmtCOP(totalSeguros2)} COP</span>
                                                         </div>
                                                     )}
@@ -2669,18 +2745,19 @@ const CotizacionFormulario: React.FC = () => {
                                                     </div>
 
                                                     {esCreditoDirecto && (
+                                                        <div className="flex justify-between items-center bg-info/10 px-4 py-2 rounded-md border border-info/30 shadow-sm">
+                                                            <span className="font-semibold text-info">SALDO A FINANCIAR:</span>
+                                                            <span className="font-bold">
+                                                                {fmtCOP(
+                                                                    saldoFinanciar2 - (garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0)
+                                                                )} COP
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    {esCreditoDirecto2 && (
                                                         <>
-                                                            <div className="flex justify-between items-center bg-info/10 px-4 py-2 rounded-md border border-info/30 shadow-sm">
-                                                                <span className="font-semibold text-info">SALDO A FINANCIAR:</span>
-                                                                <span className="font-bold">
-                                                                    {fmtCOP(
-                                                                        saldoFinanciar2 - (garantiaExt2Sel !== "no" ? garantiaExtVal2 : 0)
-                                                                    )} COP
-                                                                </span>
-                                                            </div>
-
-                                                            <div className="flex justify-between items-center bg-red-50 px-4 py-2 rounded-md border border-red-200 shadow-sm">
-                                                                <span className="font-semibold text-red-700">Cuota Garantía {garantiaExt2Sel} Meses:</span>
+                                                            <div className="flex justify-between items-center bg-error/10 px-4 py-2 rounded-md border border-error/30 shadow-sm">
+                                                                <span className="font-semibold text-error">Cuota Garantía {garantiaExt2Sel} Meses:</span>
                                                                 <span className="font-bold text-red-900">
                                                                     {fmtCOP(cuotaGarantiaExtendidaMoto2)} COP
                                                                 </span>
@@ -2723,7 +2800,7 @@ const CotizacionFormulario: React.FC = () => {
             </div>
 
             {metodo === "terceros" && moto1Seleccionada && (
-                <div className="hidden gap-6 flex-col w-full bg-white p-3 rounded-xl">
+                <div className="hidden gap-6 flex-col w-full bg-base-100 p-3 rounded-xl">
                     <div className="badge text-lg badge-success text-white">Cuotas Moto 1 (A)</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormInput<FormValuesCotizacion> formatThousands name="cuota_6_a" label="Cuota 6 meses A" type="number" control={control} placeholder="Opcional" />
@@ -2737,7 +2814,7 @@ const CotizacionFormulario: React.FC = () => {
             )}
 
             {metodo === "terceros" && moto2Seleccionada && (
-                <div className="hidden gap-6 flex-col w-full bg-white p-3 rounded-xl">
+                <div className="hidden gap-6 flex-col w-full bg-base-100 p-3 rounded-xl">
                     <div className="badge text-lg badge-success text-white">Cuotas Moto 2 (B)</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormInput<FormValuesCotizacion> formatThousands name="cuota_6_b" label="Cuota 6 meses B" type="number" control={control} placeholder="Opcional" />
@@ -2751,7 +2828,7 @@ const CotizacionFormulario: React.FC = () => {
             )}
 
             {showProductos && (
-                <div className=" gap-6 hidden flex-col w-full bg-white p-3 rounded-xl">
+                <div className=" gap-6 hidden flex-col w-full bg-base-100 p-3 rounded-xl">
                     <div className="badge text-xl badge-success text-white">Otros productos</div>
                     <div className="grid grid-cols-1 md-grid-cols-2 md:grid-cols-2 gap-6">
                         <div className="grid grid-cols-1 gap-4">

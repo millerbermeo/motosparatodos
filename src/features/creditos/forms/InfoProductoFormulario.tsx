@@ -14,6 +14,10 @@ import { useWizardStore } from "../../../store/wizardStore";
 
 import { TablaAmortizacionCredito } from "../../../features/creditos/TablaAmortizacionCredito";
 import { unformatNumber } from "../../../utils/money";
+import {
+  calcularCreditoDirectoMoto,
+  resolverTasaSeguroVidaDecimal,
+} from "../../../shared/components/credito/creditoDirecto.utils";
 
 /** String con puntos/comas/etc. → número en PESOS (entero) */
 const toNumberPesos = (v: unknown): number => {
@@ -29,6 +33,7 @@ type ProductoValues = {
   plazoCuotas: number;
   valorMoto: number | string;
   cuotaInicial: number | string;
+  descuento: number | string; // descuentos_a / descuentos_b de la moto seleccionada
   comentario?: string;
   fechaInicio: string; // fecha_inicial en backend — inicio real del crédito
 };
@@ -71,6 +76,7 @@ const InfoProductoFormulario: React.FC = () => {
       valorMoto: "0",
       plazoCuotas: 12,
       cuotaInicial: "0",
+      descuento: "0",
       comentario: "",
       fechaInicio: "",
     },
@@ -102,6 +108,38 @@ const InfoProductoFormulario: React.FC = () => {
   const productoCot = [cotObj?.[`marca_${sufCot}`], cotObj?.[`linea_${sufCot}`]]
     .filter(Boolean).join(" ") || undefined;
   const cedulaCot = cotObj?.cedula ?? infoPers?.numero_documento ?? undefined;
+
+  // Descuento de la moto seleccionada (descuentos_a / descuentos_b)
+  const motoSeleccionada = Number(cotObj?.moto_seleccionada ?? 1) || 1;
+  const descuentoCampo = `descuentos_${sufCot}`;
+  const descuentoMotoSel = Math.abs(Number((cotObj as any)?.[descuentoCampo] ?? 0)) || 0;
+
+  // Precio BRUTO (sin descuento) calculado desde los componentes de la cotización.
+  // Es estable: no depende de valor_producto guardado (que sí se sobreescribe),
+  // por lo que NO se desfasa entre guardados y se auto-corrige.
+  const numCot = (k: string) => Number((cotObj as any)?.[k] ?? 0) || 0;
+  const adSuf = motoSeleccionada === 2 ? "2" : "1";
+  const brutoMoto = cotObj
+    ? numCot(`precio_base_${sufCot}`) +
+      numCot(`precio_documentos_${sufCot}`) +
+      numCot(`accesorios_${sufCot}`) +
+      numCot(`marcacion_${sufCot}`) +
+      numCot(`total_adicionales_${adSuf}`) +
+      numCot(`valor_poliza_${sufCot}`) +
+      numCot(`valor_garantia_extendida_${sufCot}`) +
+      numCot(`valor_gps_${sufCot}`) +
+      numCot(`otro_seguro_${sufCot}`)
+    // Fallback si aún no llegó la cotización: usa el guardado + descuento guardado.
+    : (Number(creditoBackend?.valor_producto ?? 0) || 0) + descuentoMotoSel;
+
+  // Seguros (para total_sin_seguros) = otros seguros de la moto.
+  const segurosMoto = numCot(`otro_seguro_${sufCot}`);
+
+  // Default del input descuento apenas llega la cotización
+  React.useEffect(() => {
+    if (!cotObj) return;
+    setValue("descuento", String(descuentoMotoSel), { shouldDirty: false });
+  }, [cotObj, descuentoMotoSel, setValue]);
 
 
   // ✅ Sincroniza FORM apenas llega backend (plazoCuotas = número)
@@ -140,11 +178,57 @@ const InfoProductoFormulario: React.FC = () => {
   }, [creditoBackend, setValue]);
 
   const onSubmit = (v: ProductoValues) => {
+    const cuotaInicialNum = toNumberPesos(v.cuotaInicial) || 0;
+    const descuentoNum = toNumberPesos(v.descuento) || 0;
+
+    // ===== Recalcular precio con el descuento NUEVO =====
+    // brutoMoto = suma de componentes (estable). precio_total = bruto − descuento.
+    const garantia = Number(creditoBackend?.garantia_extendida_valor ?? 0) || 0;
+    const tasaFin = Number(cotObj?.tasa_financiacion ?? 0) || 0;
+    const tasaGar = Number(cotObj?.tasa_garantia ?? 0) || 0;
+    const tasaSegVida = resolverTasaSeguroVidaDecimal((cotObj as any)?.porcentaje_seguro_vida);
+
+    const precioTotal = Math.max(brutoMoto - descuentoNum, 0); // = valor_producto nuevo (neto)
+    const totalSinSeguros = Math.max(precioTotal - segurosMoto, 0);
+
+    // Saldo a financiar del negocio (moto): precio_total − garantía − cuota inicial
+    const saldoNegocio = Math.max(precioTotal - garantia - cuotaInicialNum, 0);
+    // saldo_financiar_a: total a financiar (incluye garantía), sin cuota inicial
+    const saldoFinanciar = Math.max(precioTotal - cuotaInicialNum, 0);
+
+    const cuotaPlazo = (meses: number) =>
+      calcularCreditoDirectoMoto({
+        incluir: true,
+        mesesGarantia: meses,
+        valorGarantia: garantia,
+        saldoFinanciar: saldoNegocio,
+        tasaFinanciacionPct: tasaFin,
+        tasaGarantiaPct: tasaGar,
+        tasaSeguroVidaDecimal: tasaSegVida,
+      }).cuotaTotal;
+
     const payload = {
       plazo_meses: v.plazoCuotas || undefined,
-      cuota_inicial: toNumberPesos(v.cuotaInicial) || 0,
+      cuota_inicial: cuotaInicialNum,
       comentario: (v.comentario?.trim() ?? "") || null,
       fecha_inicial: v.fechaInicio || null,
+      // Descuento de la moto seleccionada
+      descuento: descuentoNum,
+      moto_seleccionada: motoSeleccionada,
+      descuento_campo: descuentoCampo,
+      cotizacion_id: Number(creditoBackend?.cotizacion_id ?? 0) || null,
+      // ===== Valores recalculados para que el backend los persista =====
+      // creditos: valor_producto / total ; cotizaciones: precio_total_{suf},
+      // total_sin_seguros_{suf}, saldo_financiar_{suf}, cuota_*_{suf} (según moto_seleccionada).
+      valor_producto: precioTotal,
+      total: precioTotal,
+      precio_total: precioTotal,
+      total_sin_seguros: totalSinSeguros,
+      saldo_financiar: saldoFinanciar,
+      cuota_6: cuotaPlazo(6),
+      cuota_12: cuotaPlazo(12),
+      cuota_24: cuotaPlazo(24),
+      cuota_36: cuotaPlazo(36),
     };
 
     actualizarCredito.mutate(
@@ -161,6 +245,9 @@ const InfoProductoFormulario: React.FC = () => {
           setValue("comentario", payload.comentario ?? "", {
             shouldDirty: false,
           });
+          setValue("descuento", String(payload.descuento ?? 0), {
+            shouldDirty: false,
+          });
           next();
         },
       }
@@ -170,7 +257,20 @@ const InfoProductoFormulario: React.FC = () => {
   // 👇 Leemos lo que hay en el form
   const plazoCuotasWatch = watch("plazoCuotas");
   const cuotaInicialWatch = watch("cuotaInicial");
+  const descuentoWatch = watch("descuento");
   const fechaInicioWatch = watch("fechaInicio");
+
+  // Descuento actual del form (en vivo) y precio total recalculado en vivo
+  // sobre el BRUTO estable (componentes de la cotización).
+  const descuentoLive = toNumberPesos(descuentoWatch ?? descuentoMotoSel);
+  const precioTotalLive = Math.max(brutoMoto - descuentoLive, 0);
+
+  // "Valor de la moto" en vivo = precio total neto − garantía (se actualiza al cambiar el descuento).
+  const garantiaMoto = Number(creditoBackend?.garantia_extendida_valor ?? 0) || 0;
+  const valorMotoLive = Math.max(precioTotalLive - garantiaMoto, 0);
+  React.useEffect(() => {
+    setValue("valorMoto", String(valorMotoLive), { shouldDirty: false });
+  }, [valorMotoLive, setValue]);
 
   // ✅ Tabla: form → backend → 12 (pero ya todo es número)
   const plazoParaTabla = normalizePlazo(
@@ -184,7 +284,13 @@ const InfoProductoFormulario: React.FC = () => {
 
   const creditoParaTabla = creditoBackend
     ? {
-      valor_producto: (Number(creditoBackend.valor_producto) || 0) - (Number(creditoBackend.garantia_extendida_valor) || 0),
+      // precioTotalLive = precio neto con el descuento ACTUAL del form (en vivo).
+      // Se descuenta la garantía (se financia aparte). El descuento ya está en precioTotalLive.
+      valor_producto: Math.max(
+        precioTotalLive -
+        (Number(creditoBackend.garantia_extendida_valor) || 0),
+        0
+      ),
       cuota_inicial: cuotaInicialParaTabla,
       plazo_meses: plazoParaTabla,
       soat: creditoBackend.soat ?? "0",
@@ -265,6 +371,18 @@ const InfoProductoFormulario: React.FC = () => {
           />
 
           <FormInput
+            name="descuento"
+            label="Descuento / Plan de marca"
+            type="number"
+            control={control}
+            placeholder="0"
+            formatThousands
+            rules={{
+              validate: (val) => toNumberPesos(val) >= 0 || "Debe ser >= 0",
+            }}
+          />
+
+          <FormInput
             name="fechaInicio"
             label="Fecha inicio del crédito"
             type="date"
@@ -320,6 +438,7 @@ const InfoProductoFormulario: React.FC = () => {
             cotizacionId={Number(creditoBackend?.cotizacion_id ?? 0)}
             tasaFinanciacion={Number(cotObj?.tasa_financiacion) > 0 ? Number(cotObj.tasa_financiacion) : undefined}
             tasaGarantia={Number(cotObj?.tasa_garantia) > 0 ? Number(cotObj.tasa_garantia) : undefined}
+            porcentajeSeguroVida={(cotObj as any)?.porcentaje_seguro_vida}
             nombreCliente={nombreCliente}
             cedula={cedulaCot}
             direccion={infoPers?.direccion_residencia}

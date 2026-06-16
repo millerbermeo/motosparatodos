@@ -6,13 +6,11 @@ import { usePuntos, useDeletePunto } from "../../services/puntosServices";
 import { useEmpresas } from "../../services/empresasServices";
 import FormularioPuntos from "./FormularioPuntos";
 import { useLoaderStore } from "../../store/loader.store";
+import { BASE_URL } from "../../utils/url";
 
 const PAGE_SIZE = 10;
 const SIBLING_COUNT = 1;
 const BOUNDARY_COUNT = 1;
-
-const BASE_URL =
-    import.meta.env.VITE_API_URL ?? "https://tuclick.vozipcolombia.net.co/motos/back";
 
 
 
@@ -282,18 +280,18 @@ const TablaPuntos: React.FC = () => {
 
     return (
         <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
-            <div className="px-4 pt-4 flex items-center justify-between gap-3 flex-wrap my-3">
+            <div className="px-4 pt-4 my-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <h3 className="text-sm font-semibold tracking-wide text-base-content/70">
                     Módulo de Agencias
                 </h3>
-                <button className="btn bg-[#2BB352] text-white" onClick={openCrear}>
+                <button className="btn bg-[#2BB352] text-white w-full sm:w-auto" onClick={openCrear}>
                     Crear Punto
                 </button>
             </div>
 
             <div className="relative overflow-x-auto max-w-full px-4">
-                <table className="table table-zebra table-pin-rows min-w-[900px]">
-                    <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
+                <table className="table table-zebra table-pin-rows min-w-225">
+                    <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-backdrop-filter:backdrop-blur-md">
                         <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
                             <th className="w-12">#</th>
                             <th>Pertenece a la Empresa</th>
@@ -313,21 +311,21 @@ const TablaPuntos: React.FC = () => {
                                 <th className="text-base-content/50">{p.id}</th>
 
                                 {/* ✅ Click para ver info importante */}
-                                <td className="max-w-[240px] cursor-pointer" title={nombreEmpresa(p)}>
+                                <td className="max-w-60 cursor-pointer" title={nombreEmpresa(p)}>
                                     <button
                                         type="button"
                                         onClick={() => openEmpresa(p)}
                                         className="flex items-center gap-2 w-full text-left hover:opacity-90"
                                     >
                                         <Eye size={16} className="shrink-0 cursor-pointer opacity-70" />
-                                        <span className="truncate link link-hover font-medium max-w-[210px]">
+                                        <span className="truncate link link-hover font-medium max-w-52.5">
                                             {nombreEmpresa(p)}
                                         </span>
                                     </button>
                                 </td>
 
 
-                                <td className="max-w-[180px] truncate" title={p?.nit_empresa ?? ""}>
+                                <td className="max-w-45 truncate" title={p?.nit_empresa ?? ""}>
                                     {(p?.nit_empresa ?? "—").toString().trim() || "—"}
                                 </td>
 
@@ -341,7 +339,7 @@ const TablaPuntos: React.FC = () => {
                                 <td className="text-right">
                                     <div className="flex justify-end gap-2">
                                         <button
-                                            className="btn btn-sm bg-white btn-circle"
+                                            className="btn btn-sm bg-base-100 btn-circle"
                                             onClick={() => openEditar(p)}
                                             title="Editar"
                                             aria-label="Editar punto"
@@ -349,7 +347,7 @@ const TablaPuntos: React.FC = () => {
                                             <Pen size="18px" color="green" />
                                         </button>
                                         <button
-                                            className="btn btn-sm bg-white btn-circle"
+                                            className="btn btn-sm bg-base-100 btn-circle"
                                             onClick={() =>
                                                 confirmarEliminar(Number(p.id), p.nombre_punto)
                                             }

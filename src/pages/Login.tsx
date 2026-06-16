@@ -44,7 +44,7 @@ const Login: React.FC = () => {
   };
 
   return (
-    <main className="h-screen max-h-screen overflow-hidden w-full bg-linear-to-br from-slate-50 via-slate-100 to-slate-200">
+    <main className="h-screen max-h-screen overflow-hidden w-full bg-linear-to-br from-base-200 via-slate-100 to-slate-200">
       <div className="pointer-events-none absolute -top-24 -left-24 size-72 rounded-full bg-sky-500/50 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 right-0 size-72 rounded-full bg-red-400/50 blur-3xl" />
       <div className="mx-auto grid min-h-svh max-w-7xl grid-cols-1 lg:grid-cols-2">
@@ -65,7 +65,7 @@ const Login: React.FC = () => {
 
           <form
             onSubmit={handleSubmit(onSubmit)}
-            className="relative w-full max-w-md rounded-3xl bg-white p-8 shadow-xl ring-1 ring-black/5"
+            className="relative w-full max-w-md rounded-3xl bg-base-100 p-8 shadow-xl ring-1 ring-black/5"
             aria-describedby="form-status"
             noValidate
           >
@@ -77,10 +77,10 @@ const Login: React.FC = () => {
 
 
             <header className="mb-6 text-center pt-5">
-              <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+              <h1 className="text-3xl font-extrabold tracking-tight text-base-content">
                 Moto Para Todos
               </h1>
-              <p className="mt-1 text-sm text-slate-600">
+              <p className="mt-1 text-sm text-base-content/70">
                 Inicia sesión para continuar
               </p>
             </header>
@@ -89,20 +89,20 @@ const Login: React.FC = () => {
             <div className="mb-4">
               <label
                 htmlFor="username"
-                className="mb-2 block text-sm font-medium text-slate-700"
+                className="mb-2 block text-sm font-medium text-base-content"
               >
                 Usuario
               </label>
               <div className="relative">
                 <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Mail className="size-4 text-slate-400" aria-hidden="true" />
+                  <Mail className="size-4 text-base-content/50" aria-hidden="true" />
                 </span>
                 <input
                   id="username"
                   type="text"
                   autoComplete="username"
                   placeholder="username"
-                  className="block w-full rounded-2xl border border-slate-200 bg-white px-10 py-3 text-slate-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="block w-full rounded-2xl border border-base-300 bg-base-100 px-10 py-3 text-base-content outline-none transition focus:border-transparent focus:ring-2 focus:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
                   aria-invalid={!!errors.username}
                   {...register("username", {
                     required: "El nombre de usuario es obligatorio",
@@ -115,7 +115,7 @@ const Login: React.FC = () => {
                 />
               </div>
               {errors.username && (
-                <p className="mt-2 text-sm text-rose-600" role="alert">
+                <p className="mt-2 text-sm text-error" role="alert">
                   {errors.username.message}
                 </p>
               )}
@@ -125,20 +125,20 @@ const Login: React.FC = () => {
             <div className="mb-2">
               <label
                 htmlFor="password"
-                className="mb-2 block text-sm font-medium text-slate-700"
+                className="mb-2 block text-sm font-medium text-base-content"
               >
                 Contraseña
               </label>
               <div className="relative">
                 <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Lock className="size-4 text-slate-400" aria-hidden="true" />
+                  <Lock className="size-4 text-base-content/50" aria-hidden="true" />
                 </span>
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   placeholder="Tu contraseña"
-                  className="block w-full rounded-2xl border border-slate-200 bg-white px-10 py-3 text-slate-900 outline-none transition focus:border-transparent focus:ring-2 focus:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="block w-full rounded-2xl border border-base-300 bg-base-100 px-10 py-3 text-base-content outline-none transition focus:border-transparent focus:ring-2 focus:ring-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
                   aria-invalid={!!errors.password}
                   {...register("password", {
                     required: "La contraseña es obligatoria",
@@ -148,7 +148,7 @@ const Login: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute inset-y-0 right-0 mr-2 flex items-center rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
+                  className="absolute inset-y-0 right-0 mr-2 flex items-center rounded-xl p-2 text-base-content/60 transition hover:bg-base-200 hover:text-base-content focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
                   aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                 >
                   {showPassword ? (
@@ -159,7 +159,7 @@ const Login: React.FC = () => {
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-2 text-sm text-rose-600" role="alert">
+                <p className="mt-2 text-sm text-error" role="alert">
                   {errors.password.message}
                 </p>
               )}
@@ -167,16 +167,16 @@ const Login: React.FC = () => {
 
             {/* Extra actions */}
             <div className="mb-6 mt-3 flex items-center justify-between gap-3 text-sm">
-              <label className="inline-flex select-none items-center gap-2 text-slate-600">
+              <label className="inline-flex select-none items-center gap-2 text-base-content/70">
                 <input
                   type="checkbox"
-                  className="size-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                  className="size-4 rounded border-base-300 text-info focus:ring-cyan-500"
                 />
                 Recuérdame
               </label>
               <a
                 href="#/forgot-password"
-                className="font-medium text-cyan-700 underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
+                className="font-medium text-info underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
               >
                 ¿Olvidaste tu contraseña?
               </a>
@@ -201,14 +201,14 @@ const Login: React.FC = () => {
             {/* Mensajes de estado */}
             <div id="form-status" className="mt-4 min-h-6" aria-live="polite">
               {isError && (
-                <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-inset ring-rose-200">
+                <p className="rounded-xl bg-error/10 px-3 py-2 text-sm text-error ring-1 ring-inset ring-error/30">
                   {error?.message ?? "Ocurrió un error. Intenta nuevamente."}
                 </p>
               )}
             </div>
 
             {/* Footer legal */}
-            <p className="mt-6 text-center text-xs text-slate-500">
+            <p className="mt-6 text-center text-xs text-base-content/60">
               Al continuar aceptas nuestros <a href="#/terminos" className="underline underline-offset-2">Términos</a> y la <a href="#/privacidad" className="underline underline-offset-2">Política de Privacidad</a>.
             </p>
           </form>

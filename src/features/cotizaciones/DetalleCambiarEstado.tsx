@@ -4,11 +4,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useCotizacionById, useUpdateEstadoCotizacion } from '../../services/cotizacionesServices';
 import { api } from '../../services/axiosInstance';
 import Swal from 'sweetalert2';
+import { alert } from '../../utils/alerts';
 import { UserRound, CalendarDays, Mail, Phone, BadgeInfo, Bike } from 'lucide-react';
 import ButtonLink from '../../shared/components/ButtonLink';
 import { useLoaderStore } from '../../store/loader.store';
 import { useAuthStore } from '../../store/auth.store';
 import { calcularCreditoDirectoMoto, resolverTasaSeguroVidaDecimal } from '../../shared/components/credito/creditoDirecto.utils';
+import { fmtFecha as fmtFechaGlobal } from '../../utils/date';
 
 
 /* =======================
@@ -36,21 +38,8 @@ const fullName = (r: any) =>
     .replace(/\s+/g, ' ')
     .trim() || '—';
 
-// "YYYY-MM-DD HH:mm:ss" → local es-CO
-const fmtFecha = (iso?: string) => {
-  if (!iso) return '—';
-  const d = new Date(iso.replace(' ', 'T'));
-  if (isNaN(d.getTime())) return '—';
-  return d.toLocaleString('es-CO', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: 'numeric',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: true,
-  });
-};
+// Formato global (año-mes-día, hora 12h a. m./p. m.)
+const fmtFecha = (iso?: string) => fmtFechaGlobal(iso) || '—';
 
 const fmtCOP = (v: any) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(
@@ -693,6 +682,13 @@ const DetalleCambiarEstado: React.FC = () => {
           : null;
 
     if (esSolicitarFacturacion(estadoNombre)) {
+      const ok = await alert.confirm({
+        title: '¿Cambiar estado de la cotización?',
+        html: `La cotización pasará al estado <b>${/prefactura/i.test(estadoNombre) ? 'Solicitar facturación' : estadoNombre}</b> y te llevaremos al registro de facturación.`,
+        confirmText: 'Sí, cambiar',
+      });
+      if (!ok) return;
+
       try {
         setLoading(true);
 
@@ -717,6 +713,7 @@ const DetalleCambiarEstado: React.FC = () => {
             ...buildSolicitudState(row),
             motoSeleccion,
             motos: { seleccionada: motoSel },
+            esCreditoTerceros: tipoPagoLabel(row).includes('terceros'),
           },
         });
       } catch (err: any) {
@@ -737,6 +734,13 @@ const DetalleCambiarEstado: React.FC = () => {
       Swal.fire({ icon: 'warning', title: 'Escribe un comentario' });
       return;
     }
+
+    const ok = await alert.confirm({
+      title: '¿Cambiar estado de la cotización?',
+      html: `La cotización cambiará al estado <b>${/prefactura/i.test(estadoNombre) ? 'Solicitar facturación' : estadoNombre}</b>. ¿Deseas continuar?`,
+      confirmText: 'Sí, cambiar',
+    });
+    if (!ok) return;
 
     try {
       setLoading(true);
@@ -896,7 +900,7 @@ const DetalleCambiarEstado: React.FC = () => {
       </section>
 
       {/* Tarjeta: Información de la cotización */}
-      <section className="card bg-white border border-base-300/60 shadow-sm rounded-2xl mb-6">
+      <section className="card bg-base-100 border border-base-300/60 shadow-sm rounded-2xl mb-6">
         <div className="card-body">
           <div className="flex items-center gap-2 mb-2 bg-[#3498DB]/70 text-white p-2 rounded-xl">
             <BadgeInfo className="w-5 h-5" />

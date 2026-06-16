@@ -149,14 +149,14 @@ const TablaDistribuidoras: React.FC = () => {
 
   return (
     <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
-      <div className="px-4 pt-4 flex items-center justify-between gap-3 flex-wrap my-3">
+      <div className="px-4 pt-4 my-3 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
         <h3 className="text-sm font-semibold tracking-wide text-base-content/70">
           Módulo de distribuidoras
         </h3>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full lg:w-auto">
           <input
-            className="input input-sm input-bordered w-60"
+            className="input input-sm input-bordered w-full sm:w-60"
             placeholder="Buscar por nombre, teléfono o dirección"
             value={q}
             onChange={(e) => {
@@ -164,7 +164,7 @@ const TablaDistribuidoras: React.FC = () => {
               setQ(e.target.value);
             }}
           />
-          <button className="btn bg-[#2BB352] text-white" onClick={openCrear}>
+          <button className="btn bg-[#2BB352] text-white w-full sm:w-auto" onClick={openCrear}>
             Crear Distribuidora
           </button>
         </div>
@@ -204,14 +204,14 @@ const TablaDistribuidoras: React.FC = () => {
                 <td className="text-right">
                   <div className="flex justify-end gap-2">
                     <button
-                      className="btn btn-sm bg-white btn-circle"
+                      className="btn btn-sm bg-base-100 btn-circle"
                       onClick={() => openEditar(d)}
                       title="Editar"
                     >
                       <Pen size="18px" color="green" />
                     </button>
                     <button
-                      className="btn btn-sm bg-white btn-circle"
+                      className="btn btn-sm bg-base-100 btn-circle"
                       onClick={() => confirmarEliminar(d.id, d.nombre)}
                       title="Eliminar"
                     >
