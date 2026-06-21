@@ -48,9 +48,13 @@ export const Doc10: React.FC<DocBaseProps> = (p) => {
         irrevocable al ACREEDOR para que, en caso de incumplimiento (mora) en el pago
         de dos (2) o más cuotas de la obligación crediticia, proceda a la inmovilización
         y retención del vehículo descrito. EL DEUDOR conoce que el vehículo no será
-        devuelto hasta tanto no sea cancelado el valor total del capital vencido con sus
-        respectivos intereses, dentro de un plazo no mayor de cuarenta (40) días contados
-        a partir de la fecha de retención.
+        devuelto hasta tanto no sea cancelado el valor total vencido con sus respectivos
+        intereses y costos adicionales por inmovilización, dentro de un plazo no mayor de
+        cuarenta (40) días contados a partir de la fecha de retención. Una vez recuperada
+        la motocicleta si se vuelve a presentar el incumplimiento de una cuota, se da la
+        inmovilización de la motocicleta, si se presenta una 3ra inmovilización, se deberá
+        cancelar la totalidad de la obligación para poder devolver la moto en un plazo
+        máximo de 30 días.
       </C>
       <C t="SEGUNDA – DACIÓN EN PAGO:">
         Si transcurrido el plazo de cuarenta (40) días desde la retención del vehículo EL
