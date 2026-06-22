@@ -53,8 +53,16 @@ const BaseUrl = BASE_URL;
 const buildImageUrl = (path?: string): string | undefined => {
     if (!path) return undefined;
     if (/^https?:\/\//i.test(path)) return path; // ya es absoluta
+    // Encodear cada segmento (nombres con espacios/comas, p.ej. "Captura desde 2026 16-23.png")
+    const rel = String(path)
+        .replace(/^\/+/, "")
+        .split("/")
+        .map((seg) => encodeURIComponent(seg))
+        .join("/");
+    // En desarrollo, servir vía proxy same-origin (/__img) para evitar CORS al
+    // incrustar la imagen en PDF/Word (el backend no envía Access-Control-Allow-Origin).
+    if (import.meta.env.DEV) return `/__img/${rel}`;
     const root = (BaseUrl || "").replace(/\/+$/, "");
-    const rel = String(path).replace(/^\/+/, "");
     return `${root}/${rel}`;
 };
 
@@ -307,7 +315,7 @@ const CreditoDetalle: React.FC = () => {
 
     // Empresas disponibles para el select del paquete (solo MOTO PARA TODOS y VERIFICARTE)
     const { data: empresasAll = [] } = useEmpresas();
-    const EMPRESAS_PAQUETE = [3, 4];
+    const EMPRESAS_PAQUETE = [3, 4, 16]; // 16 = Cepresta
     const empresasPaquete = React.useMemo(
         () => (empresasAll ?? []).filter((e: any) => EMPRESAS_PAQUETE.includes(Number(e.id))),
         [empresasAll]
@@ -723,6 +731,11 @@ const CreditoDetalle: React.FC = () => {
             const formato = empresaIdSel.formato; // 'pdf' | 'word'
             const empresaElegida = opciones.find((e) => String(e.id) === String(empresaIdSel.empresaId)) ?? opciones[0];
 
+            // 🟣 Cepresta usa su propio paquete (4 documentos: autorización, pagaré, instrucciones, prenda)
+            const isCepresta =
+                String(empresaElegida.id) === '16' ||
+                /cepresta/i.test(String(empresaElegida.nombre_empresa ?? ''));
+
             const logoUrl = empresaElegida.foto ? buildImageUrl(empresaElegida.foto) : undefined;
 
             // Logo e info vienen del endpoint de empresas
@@ -877,17 +890,27 @@ const CreditoDetalle: React.FC = () => {
 
             if (formato === 'word') {
                 const logoWord = await resolveLogoArrayBuffer(logoUrl);
-                const { generarPaqueteCreditoWord } = await import('./word/PaqueteCreditoWord');
-                blob = await generarPaqueteCreditoWord(
-                    dataBase,
-                    { nombre: empresaPaquete.nombre, nit: empresaPaquete.nit, ciudad: empresaPaquete.ciudad },
-                    logoWord
-                );
+                if (isCepresta) {
+                    const { generarPaqueteCreditoCeprestaWord } = await import('./word/PaqueteCreditoCeprestaWord');
+                    blob = await generarPaqueteCreditoCeprestaWord(dataBase, logoWord);
+                } else {
+                    const { generarPaqueteCreditoWord } = await import('./word/PaqueteCreditoWord');
+                    blob = await generarPaqueteCreditoWord(
+                        dataBase,
+                        { nombre: empresaPaquete.nombre, nit: empresaPaquete.nit, ciudad: empresaPaquete.ciudad },
+                        logoWord
+                    );
+                }
                 nombreArchivo = `${nombreBase}.docx`;
             } else {
                 const { pdf } = await import('@react-pdf/renderer');
-                const { PaqueteCreditoPDFDoc } = await import('./pdf/PaqueteCreditoPDF');
-                blob = await pdf(<PaqueteCreditoPDFDoc data={dataBase} empresa={empresaPaquete} />).toBlob();
+                if (isCepresta) {
+                    const { PaqueteCreditoCeprestaPDFDoc } = await import('./pdf/PaqueteCreditoCeprestaPDF');
+                    blob = await pdf(<PaqueteCreditoCeprestaPDFDoc data={dataBase} logoSrc={empresaPaquete.logoSrc} />).toBlob();
+                } else {
+                    const { PaqueteCreditoPDFDoc } = await import('./pdf/PaqueteCreditoPDF');
+                    blob = await pdf(<PaqueteCreditoPDFDoc data={dataBase} empresa={empresaPaquete} />).toBlob();
+                }
                 nombreArchivo = `${nombreBase}.pdf`;
             }
 
