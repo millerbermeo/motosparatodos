@@ -25,3 +25,10 @@ export const getFotoUrl = (
   const key = `foto_${lado.toLowerCase()}`;
   return toAbsoluteUrlOrUndefined(payload?.[key]);
 };
+
+// Extensión en minúsculas de un nombre de archivo o URL (sin query string).
+export const getFileExtension = (fileNameOrUrl: string): string => {
+  const clean = fileNameOrUrl.split('?')[0];
+  const dot = clean.lastIndexOf('.');
+  return dot >= 0 ? clean.slice(dot + 1).toLowerCase() : '';
+};

@@ -13,7 +13,7 @@ const Home: React.FC = () => {
   }).format(new Date());
 
   return (
-    <main className="w-full bg-gradient-to-b from-base-200/40 to-transparent">
+    <main className="w-full bg-linear-to-b from-base-200/40 to-transparent">
       <section className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-8">
         {/* Hero */}
         <header className="relative overflow-hidden rounded-3xl border border-base-200 bg-gradient-to-br from-primary/10 via-base-100 to-info/10 p-6 sm:p-8 shadow-sm">

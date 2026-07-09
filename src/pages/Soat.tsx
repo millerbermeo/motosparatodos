@@ -4,7 +4,7 @@ const Soat: React.FC = () => {
   return (
     <main className="w-full">
       {/* HERO full width */}
-      <section className="relative w-full bg-gradient-to-r from-emerald-700 via-emerald-600 to-emerald-500 text-white">
+      <section className="relative w-full bg-linear-to-r from-emerald-700 via-emerald-600 to-emerald-500 text-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div>

@@ -5,7 +5,7 @@ const Revisiones: React.FC = () => {
   return (
     <main className="w-full">
       {/* HERO */}
-      <section className="relative w-full bg-gradient-to-r from-indigo-700 via-indigo-600 to-indigo-500 text-white">
+      <section className="relative w-full bg-linear-to-r from-indigo-700 via-indigo-600 to-indigo-500 text-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div>
