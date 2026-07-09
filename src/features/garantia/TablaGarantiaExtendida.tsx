@@ -5,31 +5,13 @@ import { Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useGarantiasExt, useGarantiaExtById } from "../../services/garantiaExtServices";
 import { useLoaderStore } from "../../store/loader.store";
-import { fmtFecha } from "../../utils/date";
+import { fmtFecha, timeAgo } from "../../utils/date";
+import { fmtCOP as money } from "../../utils/money";
 import { DataTable } from "../../shared/components/datatable/DataTable";
 import type { DataTableColumn } from "../../shared/components/datatable/types";
 
 /* ======================= Utils ======================= */
-const money = (n?: number | null) =>
-  typeof n === "number" && !Number.isNaN(n)
-    ? new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(n)
-    : "—";
-
-const humanizeDesde = (dateStr?: string | null) => {
-  if (!dateStr) return "—";
-  const d = new Date(String(dateStr).replace(" ", "T"));
-  if (isNaN(d.getTime())) return "—";
-  const diffMs = Date.now() - d.getTime();
-  if (diffMs < 0) return "justo ahora";
-  const sec = Math.floor(diffMs / 1000);
-  const min = Math.floor(sec / 60);
-  const hrs = Math.floor(min / 60);
-  const days = Math.floor(hrs / 24);
-  if (days > 0) return `hace ${days} día${days > 1 ? "s" : ""}`;
-  if (hrs > 0) return `hace ${hrs} hora${hrs > 1 ? "s" : ""}`;
-  if (min > 0) return `hace ${min} minuto${min > 1 ? "s" : ""}`;
-  return "justo ahora";
-};
+const humanizeDesde = timeAgo;
 
 const formatFechaLarga = (dateStr?: string | null) => fmtFecha(dateStr) || "—";
 

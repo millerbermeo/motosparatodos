@@ -2,7 +2,8 @@
 import React from "react";
 import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
 import type { CreditoMotoResultado } from "../../shared/components/credito/creditoDirecto.utils";
-import { BASE_URL } from "../../utils/url";
+import { toAbsoluteUrl } from "../../utils/files";
+import { buildFullName } from "../../utils/fullName";
 
 const formatSeguros = (raw: any): string => {
   if (!raw) return "—";
@@ -402,15 +403,7 @@ const fmtDateShort = (raw?: string) => {
 const safe = (v: any, fallback: string = "—") =>
   v === null || v === undefined || v === "" ? fallback : String(v);
 
-const BaseUrl = BASE_URL;
-
-const buildAbsUrl = (path?: string | null): string | null => {
-  if (!path) return null;
-  if (/^https?:\/\//i.test(path)) return path;
-  const root = String(BaseUrl || "").replace(/\/+$/, "");
-  const rel = String(path).replace(/^\/+/, "");
-  return `${root}/${rel}`;
-};
+const buildAbsUrl = toAbsoluteUrl;
 
 // Solo imagen real (sin fallback) para ahorrar alto en A; B puede verse sin imagen si no hay
 const calcCuotaForPlazo = (n: number, cd: CreditoMotoResultado): number => {
@@ -475,9 +468,7 @@ export const CotizacionDetalladaPDFDoc: React.FC<Props> = ({
   const d = cotizacion?.data || {};
   const g = garantiaExt?.data || {};
 
-  const nombreCompletoCliente = [d.name, d.s_name, d.last_name, d.s_last_name]
-    .filter(Boolean)
-    .join(" ");
+  const nombreCompletoCliente = buildFullName(d, "");
 
   const motoALabel = [d.marca_a, d.linea_a].filter(Boolean).join(" ");
   const motoBLabel = [d.marca_b, d.linea_b].filter(Boolean).join(" ");

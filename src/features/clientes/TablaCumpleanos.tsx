@@ -2,6 +2,7 @@
 import React from "react";
 import { useCumpleanosClientes } from "../../services/cumpleanosServices";
 import { useLoaderStore } from "../../store/loader.store";
+import { buildFullName } from "../../utils/fullName";
 import { DataTable } from "../../shared/components/datatable/DataTable";
 import type { DataTableColumn } from "../../shared/components/datatable/types";
 
@@ -27,11 +28,7 @@ const estados = [
   { value: "por_cumplir", label: "Por cumplir" },
 ];
 
-const fullName = (r: any) =>
-  [r?.name, r?.s_name, r?.last_name, r?.s_last_name]
-    .filter(Boolean)
-    .join(" ")
-    .trim() || "—";
+const fullName = buildFullName;
 
 const estadoTexto = (r: any) => {
   if (r?.days_until === 0) return "🎉 Hoy cumple";

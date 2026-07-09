@@ -7,16 +7,9 @@ import {
   Image,
   StyleSheet,
 } from "@react-pdf/renderer";
+import { fmtCOP } from "../../../utils/money";
 
 // ─── helpers ───────────────────────────────────────────────────────────────
-
-const fmtCOP = (n: number): string =>
-  new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(n);
 
 const safe = (v: any, fallback = ""): string =>
   v != null && String(v).trim() !== "" ? String(v).trim() : fallback;

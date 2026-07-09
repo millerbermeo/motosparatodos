@@ -7,6 +7,7 @@ import { useWizardStore } from "../../../store/wizardStore";
 import { Loader2, UploadCloud, FileText } from "lucide-react";
 import { useActualizarEstadoCredito } from "../../../services/creditosServices";
 import { validateFile, ACCEPT_ATTR } from "../../../utils/fileValidation";
+import { toAbsoluteUrl } from "../../../utils/files";
 
 type Props = { maxSizeMB?: number };
 
@@ -34,22 +35,8 @@ const SoporteFormulario: React.FC<Props> = () => {
 
   const openPicker = () => inputRef.current?.click();
 
-  // 🔹 Construir URL correcta usando VITE_API_URL
-  const buildUrl = (path: string) => {
-    if (!path) return "";
-
-    // si ya es URL completa no tocarla
-    if (path.startsWith("http")) return path;
-
-    const base = import.meta.env.VITE_API_URL;
-
-    if (!base) return path;
-
-    const cleanBase = base.replace(/\/$/, "");
-    const cleanPath = path.startsWith("/") ? path : `/${path}`;
-
-    return `${cleanBase}${cleanPath}`;
-  };
+  // 🔹 Construir URL correcta usando el helper centralizado (BASE_URL)
+  const buildUrl = (path: string) => toAbsoluteUrl(path) ?? "";
 
   const validateOnly = (incoming: FileList | File[]) => {
     const errs: string[] = [];

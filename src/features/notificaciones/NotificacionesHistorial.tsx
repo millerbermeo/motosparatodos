@@ -13,28 +13,12 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useNotificaciones, type Notificacion } from "../../services/notificacionesService";
 import { moduloBadgeClass } from "../../utils/moduloColor";
-import { fmtFecha } from "../../utils/date";
+import { fmtFecha, timeAgo } from "../../utils/date";
 
 /* =======================
    Utils
    ======================= */
-const humanizeDesde = (dateStr?: string) => {
-  if (!dateStr) return "—";
-  const d = new Date(dateStr.replace(" ", "T"));
-  if (isNaN(d.getTime())) return "—";
-  const diffMs = Date.now() - d.getTime();
-  if (diffMs < 0) return "justo ahora";
-  const sec = Math.floor(diffMs / 1000);
-  const min = Math.floor(sec / 60);
-  const hrs = Math.floor(min / 60);
-  const days = Math.floor(hrs / 24);
-  const weeks = Math.floor(days / 7);
-  if (weeks > 0) return `hace ${weeks} semana${weeks > 1 ? "s" : ""}`;
-  if (days > 0) return `hace ${days} día${days > 1 ? "s" : ""}`;
-  if (hrs > 0) return `hace ${hrs} hora${hrs > 1 ? "s" : ""}`;
-  if (min > 0) return `hace ${min} minuto${min > 1 ? "s" : ""}`;
-  return "justo ahora";
-};
+const humanizeDesde = (dateStr?: string) => timeAgo(dateStr, { includeWeeks: true });
 
 const formatFechaLarga = (dateStr?: string) => fmtFecha(dateStr) || "—";
 

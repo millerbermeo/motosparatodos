@@ -8,6 +8,7 @@ import { useLoaderStore } from "../../store/loader.store";
 import FiltrosUsuarios from "./FiltrosUsuarios";
 import { fmtFechaSolo } from "../../utils/date";
 import { PAGE_SIZE } from "../../constants/pagination";
+import { useDebouncedValue } from "../../shared/hooks/useDebounce";
 import { DataTable } from "../../shared/components/datatable/DataTable";
 import type { DataTableColumn } from "../../shared/components/datatable/types";
 
@@ -26,11 +27,7 @@ const TablaUsuarios: React.FC = () => {
   });
 
   // ✅ debounce para el buscador
-  const [debouncedQ, setDebouncedQ] = React.useState("");
-  React.useEffect(() => {
-    const t = setTimeout(() => setDebouncedQ(filters.q ?? ""), 300);
-    return () => clearTimeout(t);
-  }, [filters.q]);
+  const debouncedQ = useDebouncedValue(filters.q ?? "", 300);
 
   // ✅ reset page cuando cambia filtro
   React.useEffect(() => {

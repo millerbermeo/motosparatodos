@@ -26,7 +26,8 @@ import { useCotizacionFullById } from '../../../services/fullServices';
 import { useIvaDecimal } from '../../../services/ivaServices';
 import FacturarCreditoForm from '../../../shared/components/credito/FacturarCreditoForm';
 import { fmtFecha } from '../../../utils/date';
-import { BASE_URL } from '../../../utils/url';
+import { toAbsoluteUrl } from '../../../utils/files';
+import { siNoBadge, neutroBadge } from '../../../utils/badges';
 
 type MaybeNum = number | undefined | null;
 
@@ -280,8 +281,6 @@ const SolictudFacturarCredito: React.FC = () => {
     (credito as any)?.garantia_extendida_valor
   );
 
-
-  const BaseUrl = BASE_URL;
 
   return (
     <main className="min-h-screen w-full bg-base-200">
@@ -600,14 +599,14 @@ const SolictudFacturarCredito: React.FC = () => {
 
               {/* Badges de estado (DaisyUI) */}
               <div className="hidden md:flex flex-wrap items-center gap-2">
-                <span className={estadoBadge(solicitud?.autorizado).clase}>
-                  Autorizado: {estadoBadge(solicitud?.autorizado).texto}
+                <span className={siNoBadge(solicitud?.autorizado).clase}>
+                  Autorizado: {siNoBadge(solicitud?.autorizado).texto}
                 </span>
-                <span className={estadoBadge(solicitud?.facturado).clase}>
-                  Facturado: {estadoBadge(solicitud?.facturado).texto}
+                <span className={siNoBadge(solicitud?.facturado).clase}>
+                  Facturado: {siNoBadge(solicitud?.facturado).texto}
                 </span>
-                <span className={estadoBadge(solicitud?.entregaAutorizada).clase}>
-                  Entrega: {estadoBadge(solicitud?.entregaAutorizada).texto}
+                <span className={siNoBadge(solicitud?.entregaAutorizada).clase}>
+                  Entrega: {siNoBadge(solicitud?.entregaAutorizada).texto}
                 </span>
               </div>
             </div>
@@ -675,8 +674,8 @@ const SolictudFacturarCredito: React.FC = () => {
                   <div className="flex justify-between gap-4">
                     <dt className="text-base-content/60">Autorizado</dt>
                     <dd className="text-right">
-                      <span className={estadoBadge(solicitud?.autorizado).clase}>
-                        {estadoBadge(solicitud?.autorizado).texto}
+                      <span className={siNoBadge(solicitud?.autorizado).clase}>
+                        {siNoBadge(solicitud?.autorizado).texto}
                       </span>
                     </dd>
                   </div>
@@ -684,8 +683,8 @@ const SolictudFacturarCredito: React.FC = () => {
                   <div className="flex justify-between gap-4">
                     <dt className="text-base-content/60">Facturado</dt>
                     <dd className="text-right">
-                      <span className={estadoBadge(solicitud?.facturado).clase}>
-                        {estadoBadge(solicitud?.facturado).texto}
+                      <span className={siNoBadge(solicitud?.facturado).clase}>
+                        {siNoBadge(solicitud?.facturado).texto}
                       </span>
                     </dd>
                   </div>
@@ -694,11 +693,11 @@ const SolictudFacturarCredito: React.FC = () => {
                     <dt className="text-base-content/60">Entrega autorizada</dt>
                     <dd className="text-right">
                       <span
-                        className={estadoBadge(
+                        className={siNoBadge(
                           solicitud?.entregaAutorizada
                         ).clase}
                       >
-                        {estadoBadge(solicitud?.entregaAutorizada).texto}
+                        {siNoBadge(solicitud?.entregaAutorizada).texto}
                       </span>
                     </dd>
                   </div>
@@ -736,7 +735,7 @@ const SolictudFacturarCredito: React.FC = () => {
                     {solicitud?.cedulaPath ? (
                       <a
                         className="btn btn-sm btn-outline"
-                        href={`${BaseUrl}/${solicitud.cedulaPath}`}
+                        href={toAbsoluteUrl(solicitud.cedulaPath) ?? undefined}
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="Ver o descargar cédula"
@@ -744,8 +743,8 @@ const SolictudFacturarCredito: React.FC = () => {
                         Ver / descargar
                       </a>
                     ) : (
-                      <span className={badgeNeutro('No adjunta').clase}>
-                        {badgeNeutro('No adjunta').texto}
+                      <span className={neutroBadge('No adjunta').clase}>
+                        {neutroBadge('No adjunta').texto}
                       </span>
                     )}
                   </li>
@@ -762,7 +761,7 @@ const SolictudFacturarCredito: React.FC = () => {
                     {solicitud?.manifiestoPath ? (
                       <a
                         className="btn btn-sm btn-outline"
-                        href={`${BaseUrl}/${solicitud.manifiestoPath}`}
+                        href={toAbsoluteUrl(solicitud.manifiestoPath) ?? undefined}
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="Ver o descargar manifiesto"
@@ -770,8 +769,8 @@ const SolictudFacturarCredito: React.FC = () => {
                         Ver / descargar
                       </a>
                     ) : (
-                      <span className={badgeNeutro('No adjunto').clase}>
-                        {badgeNeutro('No adjunto').texto}
+                      <span className={neutroBadge('No adjunto').clase}>
+                        {neutroBadge('No adjunto').texto}
                       </span>
                     )}
                   </li>
@@ -828,14 +827,3 @@ const RowRight: React.FC<{
 );
 
 export default SolictudFacturarCredito;
-
-// Helper para badges DaisyUI
-const estadoBadge = (ok?: boolean) => ({
-  clase: `badge ${ok ? 'badge-success' : 'badge-error'} badge-sm font-medium`,
-  texto: ok ? 'Sí' : 'No',
-});
-
-const badgeNeutro = (texto?: string) => ({
-  clase: `badge badge-ghost badge-sm font-medium`,
-  texto: texto ?? '—',
-});

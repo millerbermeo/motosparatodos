@@ -20,6 +20,7 @@ import { toNum } from "../utils/convertirNumeroSeguro";
 import { fmtFecha } from "../utils/date";
 import { validateFileInput } from "../utils/fileValidation";
 import { fmtCOP } from "../utils/money";
+import { buildFullName } from "../utils/fullName";
 import { RowRight } from "../shared/components/facturacion/RowRight";
 import { buildMotoFromCotizacion } from "../shared/components/facturacion/buildMotoFromCotizacion";
 import { desglosarConIva } from "../shared/components/facturacion/desglosarIva";
@@ -306,12 +307,7 @@ const DetallesFacturacion: React.FC = () => {
 
   const clienteNombre = useMemo(
     () =>
-      pick<string>(
-        sol?.nombre_cliente,
-        [cot?.name, cot?.s_name, cot?.last_name, cot?.s_last_name]
-          .filter(Boolean)
-          .join(" ")
-      ) ?? "—",
+      pick<string>(sol?.nombre_cliente, buildFullName(cot, "")) ?? "—",
     [cot, sol]
   );
 

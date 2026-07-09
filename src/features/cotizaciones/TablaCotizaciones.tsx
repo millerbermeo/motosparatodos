@@ -7,7 +7,8 @@ import { useAuthStore } from '../../store/auth.store';
 import SelectCotizaciones from './SelectCotizaciones';
 import { useCotizacionById } from '../../services/cotizacionesServices';
 import { useLoaderStore } from '../../store/loader.store';
-import { fmtFecha } from '../../utils/date';
+import { fmtFecha, timeAgo } from '../../utils/date';
+import { buildFullName } from '../../utils/fullName';
 import { DataTable } from '../../shared/components/datatable/DataTable';
 import type { DataTableColumn } from '../../shared/components/datatable/types';
 
@@ -21,34 +22,10 @@ const estadoLabel = (estado?: string) => {
 /* =======================
    Utils de presentación
    ======================= */
-const fullName = (r: any) =>
-    [r?.name, r?.s_name, r?.last_name, r?.s_last_name]
-        .filter(Boolean)
-        .join(' ')
-        .replace(/\s+/g, ' ')
-        .trim() || '—';
+const fullName = buildFullName;
 
 // Relativo: "hace X minutos/horas/días"
-const humanizeDesde = (dateStr?: string) => {
-    if (!dateStr) return '—';
-    const d = new Date(dateStr.replace(' ', 'T')); // backend: "YYYY-MM-DD HH:mm:ss"
-    if (isNaN(d.getTime())) return '—';
-
-    const diffMs = Date.now() - d.getTime();
-    if (diffMs < 0) return 'justo ahora';
-
-    const sec = Math.floor(diffMs / 1000);
-    const min = Math.floor(sec / 60);
-    const hrs = Math.floor(min / 60);
-    const days = Math.floor(hrs / 24);
-    const weeks = Math.floor(days / 7);
-
-    if (weeks > 0) return `hace ${weeks} semana${weeks > 1 ? 's' : ''}`;
-    if (days > 0) return `hace ${days} día${days > 1 ? 's' : ''}`;
-    if (hrs > 0) return `hace ${hrs} hora${hrs > 1 ? 's' : ''}`;
-    if (min > 0) return `hace ${min} minuto${min > 1 ? 's' : ''}`;
-    return 'justo ahora';
-};
+const humanizeDesde = (dateStr?: string) => timeAgo(dateStr, { includeWeeks: true });
 
 // Absoluto: formato global (año-mes-día, hora 12h a. m./p. m.)
 const formatFechaLarga = (dateStr?: string) => fmtFecha(dateStr) || '—';

@@ -8,7 +8,7 @@ import {
 } from "../../services/solicitudServices";
 import { useLoaderStore } from "../../store/loader.store";
 import SelectCotizaciones from "../cotizaciones/SelectCotizaciones";
-import { fmtFecha } from "../../utils/date";
+import { fmtFecha, timeAgo } from "../../utils/date";
 import { DataTable } from "../../shared/components/datatable/DataTable";
 import type { DataTableColumn } from "../../shared/components/datatable/types";
 
@@ -56,24 +56,7 @@ const BadgeSiNo: React.FC<{ v: boolean | string | number }> = ({ v }) => {
   );
 };
 
-const humanizeDesde = (dateStr?: string | null) => {
-  if (!dateStr) return "—";
-  const d = new Date(dateStr.replace(" ", "T"));
-  if (isNaN(d.getTime())) return "—";
-
-  const diffMs = Date.now() - d.getTime();
-  if (diffMs < 0) return "justo ahora";
-
-  const sec = Math.floor(diffMs / 1000);
-  const min = Math.floor(sec / 60);
-  const hrs = Math.floor(min / 60);
-  const days = Math.floor(hrs / 24);
-
-  if (days > 0) return `hace ${days} día${days > 1 ? "s" : ""}`;
-  if (hrs > 0) return `hace ${hrs} hora${hrs > 1 ? "s" : ""}`;
-  if (min > 0) return `hace ${min} minuto${min > 1 ? "s" : ""}`;
-  return "justo ahora";
-};
+const humanizeDesde = (dateStr?: string | null) => timeAgo(dateStr);
 
 const formatFechaLarga = (dateStr?: string | null) => fmtFecha(dateStr) || "—";
 

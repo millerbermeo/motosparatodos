@@ -8,16 +8,10 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useDashboardCotizacionesKPIs } from "../../services/dash/cotizacionesDash";
+import { fmtCOP as formatCOP } from "../../utils/money";
 
 // --- Utilities --------------------------------------------------------------
 const cx = (...c: Array<string | false | null | undefined>) => c.filter(Boolean).join(" ");
-
-const formatCOP = (v: number) =>
-  new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0,
-  }).format(v || 0);
 
 const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
 

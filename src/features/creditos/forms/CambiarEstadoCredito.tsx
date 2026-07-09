@@ -8,15 +8,13 @@ import { useCambiarEstadoCredito } from "../../../services/creditosServices";
 import { useAuthStore } from "../../../store/auth.store";
 import { useNavigate } from "react-router-dom";
 import { FileText, X as XIcon } from "lucide-react";
-import { BASE_URL } from "../../../utils/url";
+import { toAbsoluteUrlOrUndefined } from "../../../utils/files";
 import { validateFileInput, ACCEPT_ATTR } from "../../../utils/fileValidation";
-
-const BaseUrl = BASE_URL;
 
 const buildDocUrl = (filename?: string): string | undefined => {
   if (!filename) return undefined;
   const path = filename.startsWith("docs_creditos/") ? filename : `docs_creditos/${filename}`;
-  return `${BaseUrl.replace(/\/+$/, "")}/${path}`;
+  return toAbsoluteUrlOrUndefined(path);
 };
 
 // Tabla en pantalla

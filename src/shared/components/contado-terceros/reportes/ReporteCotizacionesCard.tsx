@@ -3,6 +3,7 @@ import { Download, FileSpreadsheet, CalendarDays, Filter } from "lucide-react";
 // xlsx se carga bajo demanda (import dinámico) dentro del handler de exportación
 import Swal from "sweetalert2";
 import { usePrecargarReporteCotizacionesFull } from "../../../../services/cotizacionesReporteService";
+import { buildFullName } from "../../../../utils/fullName";
 
 const ESTADOS_COTIZACION = [
   "Solicitar crédito",
@@ -104,9 +105,7 @@ const ReporteCotizacionesCard: React.FC = () => {
         const linea = (c.moto_seleccionada === "B" ? c.linea_b : c.linea_a) ?? "";
         const modelo = (c.moto_seleccionada === "B" ? c.modelo_b : c.modelo_a) ?? "";
 
-        const nombreCompleto = [c.name, c.s_name, c.last_name, c.s_last_name]
-          .filter(Boolean)
-          .join(" ");
+        const nombreCompleto = buildFullName(c, "");
 
         return {
           "Id cotizacion": String(c.idPrimaria ?? c.id_cotizacion ?? c.id ?? ""),

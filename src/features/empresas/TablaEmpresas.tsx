@@ -4,7 +4,7 @@ import { useModalStore } from "../../store/modalStore";
 import { useEmpresas, useDeleteEmpresa } from "../../services/empresasServices";
 import FormularioEmpresas from "./FormularioEmpresas";
 import { useLoaderStore } from "../../store/loader.store";
-import { BASE_URL } from "../../utils/url";
+import { toAbsoluteUrl } from "../../utils/files";
 import { DataTable } from "../../shared/components/datatable/DataTable";
 import { RowActions, RowActionButton } from "../../shared/components/datatable/RowActions";
 import type { DataTableColumn } from "../../shared/components/datatable/types";
@@ -53,7 +53,7 @@ const TablaEmpresas: React.FC = () => {
             render: (e) =>
                 e.foto ? (
                     <img
-                        src={/^https?:\/\//.test(e.foto) ? e.foto : `${BASE_URL}/${e.foto}`}
+                        src={toAbsoluteUrl(e.foto) ?? undefined}
                         alt={e.nombre_empresa}
                         className="h-10 w-10 object-cover rounded-md border"
                     />

@@ -15,7 +15,7 @@ import ImpuestosMotosFormulario from "./forms/ImpuestosMotosFormulario";
 import DescuentosMotosFormulario from "./forms/DescuentosMotosFormulario";
 import { useLoaderStore } from "../../store/loader.store";
 import { PAGE_SIZE } from "../../constants/pagination";
-import { BASE_URL } from "../../utils/url";
+import { toAbsoluteUrl } from "../../utils/files";
 import { DataTable } from "../../shared/components/datatable/DataTable";
 import type { DataTableColumn } from "../../shared/components/datatable/types";
 import { confirmDelete } from "../../utils/confirmDelete";
@@ -164,7 +164,7 @@ const TablaMotos: React.FC = () => {
       render: (m) =>
         m.foto ? (
           <img
-            src={`${BASE_URL}/${m.foto}`}
+            src={toAbsoluteUrl(m.foto) ?? undefined}
             alt={`${m.marca} ${m.linea}`}
             className="h-12 w-16 object-cover rounded-md border"
           />

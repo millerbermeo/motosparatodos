@@ -7,9 +7,10 @@ import { useWizardStore } from "../../../store/wizardStore";
 import Swal from "sweetalert2";
 import { CotizacionSingleMotoPDFButton } from "../../cotizaciones/CotizacionSingleMotoPDFButton";
 import { validateFileInput } from "../../../utils/fileValidation";
+import { BASE_URL } from "../../../utils/url";
 
-// 🔧 BASE URL PARA ARCHIVOS DEL BACK — derivada de VITE_API_URL (mismo back que axios)
-const BASE_URL_BACK = `${String(import.meta.env.VITE_API_URL ?? "").replace(/\/+$/, "")}/`;
+// 🔧 BASE URL PARA ARCHIVOS DEL BACK — derivada del helper centralizado (mismo back que axios)
+const BASE_URL_BACK = `${BASE_URL.replace(/\/+$/, "")}/`;
 
 const buildFirmasUrl = (path?: string | null): string | null => {
   if (!path) return null;

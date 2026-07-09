@@ -5,7 +5,7 @@ import { usePuntos, useDeletePunto } from "../../services/puntosServices";
 import { useEmpresas } from "../../services/empresasServices";
 import FormularioPuntos from "./FormularioPuntos";
 import { useLoaderStore } from "../../store/loader.store";
-import { BASE_URL } from "../../utils/url";
+import { toAbsoluteUrl } from "../../utils/files";
 import { DataTable } from "../../shared/components/datatable/DataTable";
 import { RowActions, RowActionButton } from "../../shared/components/datatable/RowActions";
 import type { DataTableColumn } from "../../shared/components/datatable/types";
@@ -28,11 +28,7 @@ function EmpresaInfo({ p }: { p: any }) {
 
     const foto = (p?.empresa_foto ?? "").toString().trim();
 
-    const fotoSrc = foto
-        ? /^https?:\/\//.test(foto)
-            ? foto
-            : `${BASE_URL}/${foto}`
-        : "";
+    const fotoSrc = toAbsoluteUrl(foto) ?? "";
     return (
         <div className="space-y-6">
             {/* Header empresa */}

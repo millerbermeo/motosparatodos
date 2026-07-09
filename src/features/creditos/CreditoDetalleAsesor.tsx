@@ -15,10 +15,7 @@ import { useAuthStore } from '../../store/auth.store';
 import CerrarCreditoFormulario from './forms/CerrarCreditoFormulario';
 import { useLoaderStore } from '../../store/loader.store';
 import ButtonLink from '../../shared/components/ButtonLink';
-
-
-const fmtCOP = (v: number) =>
-    new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
+import { fmtCOP } from '../../utils/money';
 
 
 const BadgeEstado: React.FC<{ value?: string }> = ({ value }) => {

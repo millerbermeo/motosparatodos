@@ -14,7 +14,7 @@ import { fmtCOP, toNumberOrNullMoney, toNumberSafe } from "../../../utils/money"
 import { garantiaExtendidaOptions } from "../../../shared/components/options/garantia-extendida-options";
 import { aNumeroOUndefined } from "../../../utils/number";
 import MotoImage from "../detalles-cotizacion/sub-components/MotoImage";
-import { BASE_URL } from "../../../utils/url";
+import { toAbsoluteUrlOrUndefined } from "../../../utils/files";
 import { gpsOptions } from "../../../shared/components/options/gps-options";
 import { buildMotoOptions } from "./motoHelpers";
 import { alert } from "../../../utils/alerts";
@@ -1721,7 +1721,7 @@ const CotizacionFormulario: React.FC = () => {
                                             {incluirMoto1 && (
                                                 <div className="mt-2 flex justify-center">
                                                     <MotoImage
-                                                        src={fotoMoto1 ? `${BASE_URL}/${fotoMoto1}` : undefined}
+                                                        src={toAbsoluteUrlOrUndefined(fotoMoto1)}
                                                         thumbClassName="w-32 h-32"
                                                     />
                                                 </div>
@@ -2281,7 +2281,7 @@ const CotizacionFormulario: React.FC = () => {
                                             {incluirMoto2 && (
                                                 <div className="mt-2 flex justify-center">
                                                     <MotoImage
-                                                        src={fotoMoto2 ? `${BASE_URL}/${fotoMoto2}` : undefined}
+                                                        src={toAbsoluteUrlOrUndefined(fotoMoto2)}
                                                         thumbClassName="w-32 h-32"
                                                     />
                                                 </div>

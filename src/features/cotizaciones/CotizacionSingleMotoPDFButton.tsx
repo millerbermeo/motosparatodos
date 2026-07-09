@@ -2,7 +2,7 @@
 import React from "react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { Download } from "lucide-react";
-import { BASE_URL } from "../../utils/url";
+import { toAbsoluteUrlOrUndefined } from "../../utils/files";
 
 import {
   CotizacionDetalladaPDFDocV2,
@@ -61,22 +61,13 @@ const getMesesGarantia = (value: unknown): number => {
 
 
 
-const BaseUrl = BASE_URL;
-
 const sameChipStyles =
   "group flex w-full items-center cursor-pointer max-h-14 justify-between " +
   "rounded-xl px-4 py-2 text-sm font-medium text-white " +
   "shadow-md transition-all hover:shadow-lg focus:outline-none " +
   "bg-blue-500 hover:bg-blue-600 disabled:opacity-60 disabled:cursor-not-allowed";
 
-// Igual que en DetalleCotizacion
-const buildImageUrl = (path?: string): string | undefined => {
-  if (!path) return undefined;
-  if (/^https?:\/\//i.test(path)) return path; // ya es absoluta
-  const root = (BaseUrl || "").replace(/\/+$/, "");
-  const rel = String(path).replace(/^\/+/, "");
-  return `${root}/${rel}`;
-};
+const buildImageUrl = toAbsoluteUrlOrUndefined;
 
 // 🚀 Construye un payload "single moto" donde
 // la moto seleccionada (1 = A, 2 = B) SIEMPRE queda en los campos *_a / *_1

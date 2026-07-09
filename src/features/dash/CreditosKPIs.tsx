@@ -10,16 +10,10 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useDashboardCreditosKPIs } from "../../services/dash/dashboardCreditosServices";
+import { fmtCOP as formatCOP } from "../../utils/money";
 
 // --- Utils -----------------------------------------------------------------
 const cx = (...c: Array<string | false | null | undefined>) => c.filter(Boolean).join(" ");
-
-const formatCOP = (v: number) =>
-  new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0,
-  }).format(v || 0);
 
 const palette = [
   { dot: "bg-primary", bar: "bg-primary" },

@@ -3,6 +3,7 @@ import React, { useMemo, useState } from "react";
 import Swal from "sweetalert2";
 import { useFormatos, useCreateFormato, useDeleteFormato } from "../services/formatosServices";
 import { toAbsoluteUrl } from "../utils/files";
+import { confirmDelete } from "../utils/confirmDelete";
 import FormatoCard from "../features/formatos/components/FormatoCard";
 import FormatoUploadForm from "../features/formatos/components/FormatoUploadForm";
 import DownloadToast from "../features/formatos/components/DownloadToast";
@@ -82,17 +83,14 @@ const Formatos: React.FC = () => {
   };
 
   const handleDelete = async (item: UiFormato) => {
-    const { isConfirmed } = await Swal.fire({
-      icon: "warning",
-      title: "¿Eliminar formato?",
-      html: `<div style="text-align:left">
+    const ok = await confirmDelete(
+      `<div style="text-align:left">
                <p>Se eliminará <b>${item.title}</b>.</p>
              </div>`,
-      showCancelButton: true,
-      confirmButtonText: "Sí, eliminar",
-      cancelButtonText: "Cancelar",
-    });
-    if (!isConfirmed) return;
+      "¿Eliminar formato?",
+      { confirmButtonColor: "#3085d6" }
+    );
+    if (!ok) return;
 
     deleteFormato.mutate(Number(item.id));
   };

@@ -9,7 +9,8 @@ import {
 import { useDistribuidoras } from '../../../services/distribuidoraServices'; // 👈 nuevo import
 import FacturaFinalDownload from '../pdf/FacturaFinal';
 import ButtonLink from '../../../shared/components/ButtonLink';
-import { BASE_URL } from '../../../utils/url';
+import { toAbsoluteUrl } from '../../../utils/files';
+import { siNoBadge, neutroBadge } from '../../../utils/badges';
 import { validateFileInput } from '../../../utils/fileValidation';
 
 const fmtSize = (bytes: number) => {
@@ -349,8 +350,6 @@ const FacturarCreditoSolicitud: React.FC = () => {
       cotizacion?.tipo_pago,
     ]
   );
-
-  const BaseUrl = BASE_URL;
 
   return (
     <main className="min-h-screen w-full bg-base-200">
@@ -760,14 +759,14 @@ const FacturarCreditoSolicitud: React.FC = () => {
               <h3 className="text-lg font-semibold text-base-content">Solicitud registrada</h3>
 
               <div className="hidden md:flex flex-wrap items-center gap-2">
-                <span className={estadoBadge(solicitud?.autorizado).clase}>
-                  Autorizado: {estadoBadge(solicitud?.autorizado).texto}
+                <span className={siNoBadge(solicitud?.autorizado).clase}>
+                  Autorizado: {siNoBadge(solicitud?.autorizado).texto}
                 </span>
-                <span className={estadoBadge(solicitud?.facturado).clase}>
-                  Facturado: {estadoBadge(solicitud?.facturado).texto}
+                <span className={siNoBadge(solicitud?.facturado).clase}>
+                  Facturado: {siNoBadge(solicitud?.facturado).texto}
                 </span>
-                <span className={estadoBadge(solicitud?.entregaAutorizada).clase}>
-                  Entrega: {estadoBadge(solicitud?.entregaAutorizada).texto}
+                <span className={siNoBadge(solicitud?.entregaAutorizada).clase}>
+                  Entrega: {siNoBadge(solicitud?.entregaAutorizada).texto}
                 </span>
               </div>
             </div>
@@ -793,24 +792,24 @@ const FacturarCreditoSolicitud: React.FC = () => {
                   <KV
                     k="Autorizado"
                     v={
-                      <span className={estadoBadge(solicitud?.autorizado).clase}>
-                        {estadoBadge(solicitud?.autorizado).texto}
+                      <span className={siNoBadge(solicitud?.autorizado).clase}>
+                        {siNoBadge(solicitud?.autorizado).texto}
                       </span>
                     }
                   />
                   <KV
                     k="Facturado"
                     v={
-                      <span className={estadoBadge(solicitud?.facturado).clase}>
-                        {estadoBadge(solicitud?.facturado).texto}
+                      <span className={siNoBadge(solicitud?.facturado).clase}>
+                        {siNoBadge(solicitud?.facturado).texto}
                       </span>
                     }
                   />
                   <KV
                     k="Entrega autorizada"
                     v={
-                      <span className={estadoBadge(solicitud?.entregaAutorizada).clase}>
-                        {estadoBadge(solicitud?.entregaAutorizada).texto}
+                      <span className={siNoBadge(solicitud?.entregaAutorizada).clase}>
+                        {siNoBadge(solicitud?.entregaAutorizada).texto}
                       </span>
                     }
                   />
@@ -834,7 +833,7 @@ const FacturarCreditoSolicitud: React.FC = () => {
                     {solicitud?.cedulaPath ? (
                       <a
                         className="btn btn-sm btn-outline"
-                        href={`${BaseUrl}/${solicitud.cedulaPath}`}
+                        href={toAbsoluteUrl(solicitud.cedulaPath) ?? undefined}
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="Ver o descargar cédula"
@@ -842,8 +841,8 @@ const FacturarCreditoSolicitud: React.FC = () => {
                         Ver / descargar
                       </a>
                     ) : (
-                      <span className={badgeNeutro('No adjunta').clase}>
-                        {badgeNeutro('No adjunta').texto}
+                      <span className={neutroBadge('No adjunta').clase}>
+                        {neutroBadge('No adjunta').texto}
                       </span>
                     )}
                   </li>
@@ -858,7 +857,7 @@ const FacturarCreditoSolicitud: React.FC = () => {
                     {solicitud?.manifiestoPath ? (
                       <a
                         className="btn btn-sm btn-outline"
-                        href={`${BaseUrl}/${solicitud.manifiestoPath}`}
+                        href={toAbsoluteUrl(solicitud.manifiestoPath) ?? undefined}
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="Ver o descargar manifiesto"
@@ -866,8 +865,8 @@ const FacturarCreditoSolicitud: React.FC = () => {
                         Ver / descargar
                       </a>
                     ) : (
-                      <span className={badgeNeutro('No adjunto').clase}>
-                        {badgeNeutro('No adjunto').texto}
+                      <span className={neutroBadge('No adjunto').clase}>
+                        {neutroBadge('No adjunto').texto}
                       </span>
                     )}
                   </li>
@@ -928,15 +927,6 @@ const KV: React.FC<{ k: string; v?: React.ReactNode }> = ({ k, v }) => (
   </div>
 );
 
-const estadoBadge = (ok?: boolean) => ({
-  clase: `badge ${ok ? 'badge-success' : 'badge-error'} badge-sm font-medium`,
-  texto: ok ? 'Sí' : 'No',
-});
-
-const badgeNeutro = (texto?: string) => ({
-  clase: `badge badge-ghost badge-sm font-medium`,
-  texto: texto ?? '',
-});
 
 /** Evita recalcular useMemo de lista de seguros con objetos iguales */
 function regKey(obj: unknown): string {

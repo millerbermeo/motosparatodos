@@ -6,22 +6,12 @@ import {
     useActualizarDescuentosContraentrega,
 } from "../../services/solicitudServices";
 import { alert } from "../../utils/alerts";
+import { fmtCOP } from "../../utils/money";
 
 type Props = {
     /** id de la fila en solicitudes_facturacion (PRIMARY KEY) */
     idSolicitud: number | string;
 };
-
-type Num = number | null | undefined;
-
-const fmtCOP = (v?: Num) =>
-    typeof v === "number" && Number.isFinite(v)
-        ? new Intl.NumberFormat("es-CO", {
-            style: "currency",
-            currency: "COP",
-            maximumFractionDigits: 0,
-        }).format(v)
-        : "—";
 
 /** Convierte "500.000 COP" o "500000" -> 500000 */
 const parseMoney = (raw: string): number | null => {

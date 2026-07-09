@@ -6,7 +6,7 @@ import { useCreditos } from "../../services/creditosServices"; // <— nuevo hoo
 import { useAuthStore } from "../../store/auth.store";
 import SelectCreditos from "./SelectCreditos";
 import { useLoaderStore } from "../../store/loader.store";
-import { fmtFecha } from "../../utils/date";
+import { fmtFecha, timeAgo } from "../../utils/date";
 import { DataTable } from "../../shared/components/datatable/DataTable";
 import type { DataTableColumn } from "../../shared/components/datatable/types";
 
@@ -36,19 +36,8 @@ const badgeEstado = (estado?: string) => {
   return <span className={`badge ${cls} whitespace-nowrap`}>{estado ?? "-"}</span>;
 };
 
-const timeAgo = (iso?: string) => {
-    if (!iso) return "-";
-    const d = new Date(iso.replace(" ", "T"));
-    const diffMs = Date.now() - d.getTime();
-    if (!Number.isFinite(diffMs)) return iso;
-    const m = Math.floor(diffMs / 60000);
-    if (m < 1) return "justo ahora";
-    if (m < 60) return `hace ${m} minuto${m === 1 ? "" : "s"}`;
-    const h = Math.floor(m / 60);
-    if (h < 24) return `hace ${h} hora${h === 1 ? "" : "s"}`;
-    const d2 = Math.floor(h / 24);
-    return `hace ${d2} día${d2 === 1 ? "" : "s"}`;
-};
+const timeAgoCredito = (iso?: string) =>
+    timeAgo(iso, { emptyFallback: "-", invalidFallback: (raw) => raw });
 
 const TablaCreditos: React.FC = () => {
     // ---- estado ----
@@ -198,7 +187,7 @@ const TablaCreditos: React.FC = () => {
             className: "whitespace-nowrap text-sm text-base-content/70",
             render: (c) => (
                 <>
-                    {timeAgo(c.actualizado)}{c.actualizado ? ` · ${fmtFecha(c.actualizado)}` : ""}
+                    {timeAgoCredito(c.actualizado)}{c.actualizado ? ` · ${fmtFecha(c.actualizado)}` : ""}
                 </>
             ),
         },

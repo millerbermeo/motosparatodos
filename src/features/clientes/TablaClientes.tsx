@@ -3,18 +3,15 @@ import React, { useState } from "react";
 import { useClientes } from "../../services/clientesServices";
 import { useLoaderStore } from "../../store/loader.store";
 import { fmtFechaSolo } from "../../utils/date";
+import { buildFullName } from "../../utils/fullName";
+import { useDebouncedValue } from "../../shared/hooks/useDebounce";
 import { DataTable } from "../../shared/components/datatable/DataTable";
 import type { DataTableColumn } from "../../shared/components/datatable/types";
 
 /* =======================
    Utils de presentación
    ======================= */
-const fullName = (r: any) =>
-  [r?.name, r?.s_name, r?.last_name, r?.s_last_name]
-    .filter(Boolean)
-    .join(' ')
-    .replace(/\s+/g, ' ')
-    .trim() || '—';
+const fullName = buildFullName;
 
 const formatDate = (date?: string) => {
   if (!date) return '—';
@@ -36,17 +33,14 @@ const TablaClientes: React.FC = () => {
   const [search, setSearch] = useState('');
 
   /* 🔍 debounce simple para búsqueda por nombre */
+  const debouncedSearch = useDebouncedValue(search, 400);
   React.useEffect(() => {
-    const t = setTimeout(() => {
-      setFilters((prev) => ({
-        ...prev,
-        nombre: search,
-      }));
-      setPage(1);
-    }, 400);
-
-    return () => clearTimeout(t);
-  }, [search]);
+    setFilters((prev) => ({
+      ...prev,
+      nombre: debouncedSearch,
+    }));
+    setPage(1);
+  }, [debouncedSearch]);
 
   const { data, isPending, isError, isFetching } = useClientes(page, perPage, filters);
 

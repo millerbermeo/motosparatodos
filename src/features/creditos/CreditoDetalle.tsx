@@ -43,28 +43,11 @@ import CambiarEstadoCredito from './forms/CambiarEstadoCredito';
 import CodeudoresDetalle from './CodeudoresDetalle';
 import { resolverTasaSeguroVidaDecimal, calcularCreditoDirectoMoto } from '../../shared/components/credito/creditoDirecto.utils';
 import { fmtFecha } from '../../utils/date';
-import { BASE_URL } from '../../utils/url';
+import { toAbsoluteUrl, toEmbeddableImageUrl } from '../../utils/files';
+import { fmtCOP } from '../../utils/money';
+import { confirmDelete } from '../../utils/confirmDelete';
 
-const fmtCOP = (v: number) =>
-    new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
-const BaseUrl = BASE_URL;
-
-
-const buildImageUrl = (path?: string): string | undefined => {
-    if (!path) return undefined;
-    if (/^https?:\/\//i.test(path)) return path; // ya es absoluta
-    // Encodear cada segmento (nombres con espacios/comas, p.ej. "Captura desde 2026 16-23.png")
-    const rel = String(path)
-        .replace(/^\/+/, "")
-        .split("/")
-        .map((seg) => encodeURIComponent(seg))
-        .join("/");
-    // En desarrollo, servir vía proxy same-origin (/__img) para evitar CORS al
-    // incrustar la imagen en PDF/Word (el backend no envía Access-Control-Allow-Origin).
-    if (import.meta.env.DEV) return `/__img/${rel}`;
-    const root = (BaseUrl || "").replace(/\/+$/, "");
-    return `${root}/${rel}`;
-};
+const buildImageUrl = toEmbeddableImageUrl;
 
 // Descarga el logo del endpoint y lo convierte a data URL.
 // react-pdf no carga imágenes remotas con CORS restringido; el data URL sí funciona.
@@ -495,18 +478,13 @@ const CreditoDetalle: React.FC = () => {
 
 
     const handleEliminar = async () => {
-        const result = await Swal.fire({
-            title: "¿Eliminar garantía y seguros?",
-            text: "Esta acción no se puede deshacer",
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonText: "Sí, eliminar",
-            cancelButtonText: "Cancelar",
-            confirmButtonColor: "#d33",
-            cancelButtonColor: "#6b7280", // gris Tailwind
-        });
+        const confirmed = await confirmDelete(
+            "Esta acción no se puede deshacer",
+            "¿Eliminar garantía y seguros?",
+            { confirmButtonColor: "#d33", cancelButtonColor: "#6b7280" }
+        );
 
-        if (result.isConfirmed) {
+        if (confirmed) {
             await Swal.fire({
                 title: "Eliminada",
                 text: "La garantía y seguros fue eliminada correctamente ✅",
@@ -621,28 +599,19 @@ const CreditoDetalle: React.FC = () => {
         ...soportesFromJson,
     ];
 
-    const BaseUrl = BASE_URL;
-
     // URLs completas para abrir en nueva pestaña
     const firmasHref: string | undefined =
         typeof credito?.firmas === 'string' && credito.firmas.length > 0
-            ? `${BaseUrl}/${credito.firmas}`
+            ? toAbsoluteUrl(credito.firmas) ?? undefined
             : undefined;
-
-    // const formatoReferenciaHref: string | undefined =
-    //     typeof credito?.formato_referencia === 'string' && credito.formato_referencia.length > 0
-    //         ? `${BaseUrl}/${credito.formato_referencia.startsWith('docs_creditos/')
-    //             ? credito.formato_referencia
-    //             : `docs_creditos/${credito.formato_referencia}`
-    //         }`
-    //         : undefined;
 
     const formatoDatacreditoHref: string | undefined =
         typeof credito?.formato_datacredito === 'string' && credito.formato_datacredito.length > 0
-            ? `${BaseUrl}/${credito.formato_datacredito.startsWith('docs_creditos/')
-                ? credito.formato_datacredito
-                : `docs_creditos/${credito.formato_datacredito}`
-            }`
+            ? toAbsoluteUrl(
+                credito.formato_datacredito.startsWith('docs_creditos/')
+                    ? credito.formato_datacredito
+                    : `docs_creditos/${credito.formato_datacredito}`
+            ) ?? undefined
             : undefined;
 
     const { show, hide } = useLoaderStore();
@@ -1468,7 +1437,7 @@ const CreditoDetalle: React.FC = () => {
                             ) : (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {soportes.map((s, idx) => {
-                                        const href = `${BaseUrl.replace(/\/+$/, "")}/${String(s).replace(/^\/+/, "").replace(/\\/g, "")}`;
+                                        const href = toAbsoluteUrl(String(s).replace(/\\/g, "")) ?? "";
                                         const fileName = s.split('/').pop() ?? `Soporte ${idx + 1}`;
                                         const isImg = /\.(png|jpe?g|gif|webp)$/i.test(s);
                                         const isPdf = /\.pdf$/i.test(s);
