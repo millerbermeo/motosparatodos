@@ -73,8 +73,6 @@ const TablaMotos: React.FC = () => {
   const currentPage = Number(data?.pagination?.current_page ?? page) || page;
   const lastPage = Number(data?.pagination?.last_page ?? Math.max(1, Math.ceil(total / serverPerPage)));
 
-  const start = total === 0 ? 0 : (currentPage - 1) * serverPerPage + 1;
-  const end = Math.min(currentPage * serverPerPage, total);
   const visible = motos;
 
   const openCrear = () =>
@@ -319,25 +317,6 @@ const TablaMotos: React.FC = () => {
             </div>
           </div>
 
-          {/* Filas: a la derecha, encima de la tabla (duplicado con el selector del footer, tal como estaba) */}
-          <div className="flex items-center justify-end gap-2 py-3">
-            {isFetching && <span className="loading loading-spinner loading-xs" />}
-            <label className="text-xs opacity-70 whitespace-nowrap">Filas:</label>
-            <select
-              className="select select-accent select-sm select-bordered w-20"
-              value={serverPerPage}
-              onChange={(e) => {
-                setPerPage(Number(e.target.value) || PAGE_SIZE);
-                setPage(1);
-              }}
-            >
-              {[10, 20, 50].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-          </div>
         </>
       }
       tableClassName="min-w-225"
@@ -354,25 +333,12 @@ const TablaMotos: React.FC = () => {
         totalItems: total,
         pageSize: serverPerPage,
         onPageChange: setPage,
-        summaryOverride: (
-          <>
-            Mostrando {total === 0 ? 0 : start}–{end} de {total}
-            {isFetching && <span className="loading loading-spinner loading-xs ml-2" />}
-            <label className="text-xs opacity-70 ml-3">Filas:</label>
-            <select
-              className="select select-bordered select-xs w-16 ml-1"
-              value={perPage}
-              onChange={(e) => {
-                setPerPage(Number(e.target.value));
-                setPage(1);
-              }}
-            >
-              {[10, 20, 50].map((n) => (
-                <option key={n} value={n}>{n}</option>
-              ))}
-            </select>
-          </>
-        ),
+        onPageSizeChange: (v) => {
+          setPerPage(v || PAGE_SIZE);
+          setPage(1);
+        },
+        pageSizeOptions: [10, 20, 50],
+        isFetching,
       }}
     />
   );

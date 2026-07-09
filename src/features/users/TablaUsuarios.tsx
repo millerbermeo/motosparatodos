@@ -156,29 +156,9 @@ const TablaUsuarios: React.FC = () => {
           </div>
 
           <div className="pt-4 flex items-center justify-end gap-3 flex-wrap my-3">
-            <div className="flex items-center gap-3">
-              <label className="text-xs opacity-70">Filas:</label>
-              <select
-                className="select select-accent select-sm select-bordered w-20"
-                value={perPage}
-                onChange={(e) => {
-                  setPerPage(Number(e.target.value) || PAGE_SIZE);
-                  setPage(1);
-                }}
-              >
-                {[PAGE_SIZE, 50, 100].map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-
-              {isFetching && <span className="loading loading-spinner loading-xs" />}
-
-              <button className="btn bg-[#2BB352] text-white" onClick={openCrear}>
-                Crear Usuario
-              </button>
-            </div>
+            <button className="btn bg-[#2BB352] text-white" onClick={openCrear}>
+              Crear Usuario
+            </button>
           </div>
         </>
       }
@@ -196,6 +176,12 @@ const TablaUsuarios: React.FC = () => {
         totalItems: total,
         pageSize: perPage,
         onPageChange: setPage,
+        onPageSizeChange: (v) => {
+          setPerPage(v || PAGE_SIZE);
+          setPage(1);
+        },
+        pageSizeOptions: [PAGE_SIZE, 50, 100],
+        isFetching,
       }}
     />
   );

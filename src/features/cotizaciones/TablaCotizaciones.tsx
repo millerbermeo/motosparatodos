@@ -317,24 +317,6 @@ const TablaCotizaciones: React.FC = () => {
                     </div>
 
                     <div className="flex items-center justify-end gap-2 py-3">
-                        {isFetching && <span className="loading loading-spinner loading-xs" />}
-                        <label className="text-xs opacity-70 whitespace-nowrap">Filas:</label>
-                        <select
-                            className="select select-accent select-sm select-bordered w-20"
-                            value={serverPerPage}
-                            onChange={(e) => {
-                                const v = Number(e.target.value) || 10;
-                                setPerPage(v);
-                                setPage(1);
-                            }}
-                        >
-                            {[10, 20, 50].map((n) => (
-                                <option key={n} value={n}>
-                                    {n}
-                                </option>
-                            ))}
-                        </select>
-
                         {user?.rol === "Asesor" && (
                             <div className="flex border-t border-base-200">
                                 <Link to="/cotizaciones/crear-cotizaciones" className="w-full sm:w-auto">
@@ -360,6 +342,12 @@ const TablaCotizaciones: React.FC = () => {
                 totalItems: total,
                 pageSize: serverPerPage,
                 onPageChange: setPage,
+                onPageSizeChange: (v) => {
+                    setPerPage(v || 10);
+                    setPage(1);
+                },
+                pageSizeOptions: [10, 20, 50],
+                isFetching,
                 hideControls: isDetail,
             }}
         />

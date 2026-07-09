@@ -197,27 +197,6 @@ const TablaGarantiaExtendida: React.FC = () => {
               Limpiar Filtros
             </button>
           </div>
-
-          {/* Paginación / filas */}
-          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
-            <label className="text-xs opacity-70">Filas:</label>
-            <select
-              className="select select-accent select-sm select-bordered w-20"
-              value={serverPerPage}
-              onChange={(e) => {
-                const v = Number(e.target.value) || 10;
-                setPerPage(v);
-                setPage(1);
-              }}
-            >
-              {[10, 20, 50].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-            {isFetching && <span className="loading loading-spinner loading-xs" />}
-          </div>
         </div>
       }
       tableClassName="min-w-300"
@@ -234,6 +213,12 @@ const TablaGarantiaExtendida: React.FC = () => {
         totalItems: total,
         pageSize: serverPerPage,
         onPageChange: setPage,
+        onPageSizeChange: (v) => {
+          setPerPage(v || 10);
+          setPage(1);
+        },
+        pageSizeOptions: [10, 20, 50],
+        isFetching,
         hideControls: isDetail,
       }}
     />

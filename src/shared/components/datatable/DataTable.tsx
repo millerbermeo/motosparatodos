@@ -20,31 +20,74 @@ const btnEllipsis =
 const alignClass = (align?: "left" | "right" | "center") =>
   align === "right" ? "text-right" : align === "center" ? "text-center" : "";
 
-function PaginationFooter({ pagination }: { pagination: PaginationConfig }) {
+function PaginationFooter({
+  pagination,
+  isLoading,
+}: {
+  pagination: PaginationConfig;
+  isLoading?: boolean;
+}) {
   const {
     page,
     totalPages,
     totalItems,
     pageSize,
     onPageChange,
+    onPageSizeChange,
+    pageSizeOptions,
     siblingCount,
     boundaryCount,
     variant = "numbered",
     activeButtonClassName,
     hideControls,
     summaryOverride,
+    isFetching,
   } = pagination;
 
   const goPrev = () => onPageChange(Math.max(1, page - 1));
   const goNext = () => onPageChange(Math.min(totalPages, page + 1));
   const goTo = (p: number) => onPageChange(Math.min(Math.max(1, p), totalPages));
 
+  const start = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
+  const end = Math.min(page * pageSize, totalItems);
+
+  const defaultSummary =
+    variant === "simple" ? (
+      <>Página {page} de {totalPages} — Total: {totalItems}</>
+    ) : (
+      <>Mostrando {start}–{end} de {totalItems}</>
+    );
+
+  // Único selector de "cantidad de registros": vive acá, junto al resumen.
+  const summaryBlock = (
+    <div className="flex items-center gap-2 flex-wrap">
+      <span className="text-xs text-base-content/50">{summaryOverride ?? defaultSummary}</span>
+      {(isFetching ?? isLoading) && (
+        <span className="loading loading-spinner loading-xs" aria-hidden="true" />
+      )}
+      {onPageSizeChange && (
+        <span className="flex items-center gap-1.5">
+          <label className="text-xs opacity-70 whitespace-nowrap">Filas:</label>
+          <select
+            className="select select-bordered select-xs w-16"
+            value={pageSize}
+            onChange={(e) => onPageSizeChange(Number(e.target.value))}
+          >
+            {(pageSizeOptions ?? [10, 20, 50]).map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </span>
+      )}
+    </div>
+  );
+
   if (variant === "simple") {
     return (
-      <div className="flex justify-between items-center p-4">
-        <span className="text-xs opacity-70">
-          Página {page} de {totalPages} — Total: {totalItems}
-        </span>
+      <div className="flex flex-wrap justify-between items-center gap-3 p-4">
+        {summaryBlock}
         <div className="flex items-center gap-2">
           <button className={btnGhost} onClick={goPrev} disabled={page === 1} aria-label="Página anterior">
             «
@@ -57,15 +100,11 @@ function PaginationFooter({ pagination }: { pagination: PaginationConfig }) {
     );
   }
 
-  const start = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
-  const end = Math.min(page * pageSize, totalItems);
   const items = getPaginationItems(page, totalPages, siblingCount, boundaryCount);
 
   return (
-    <div className="flex items-center justify-between px-4 pb-4 pt-2">
-      <span className="text-xs text-base-content/50">
-        {summaryOverride ?? <>Mostrando {start}–{end} de {totalItems}</>}
-      </span>
+    <div className="flex items-center justify-between px-4 pb-4 pt-2 flex-wrap gap-3">
+      {summaryBlock}
 
       {!hideControls && (
         <div className="flex items-center gap-2 flex-wrap">
@@ -171,26 +210,6 @@ function DataTableInner<T>({
 
       {filters && <div className="px-4 pb-3">{filters}</div>}
 
-      {pagination?.onPageSizeChange && (
-        <div className="flex items-center justify-end gap-2 px-4 py-3">
-          {(pagination.isFetching ?? isLoading) && (
-            <span className="loading loading-spinner loading-xs" aria-hidden="true" />
-          )}
-          <label className="text-xs opacity-70 whitespace-nowrap">Filas:</label>
-          <select
-            className="select select-accent select-sm select-bordered w-20"
-            value={pagination.pageSize}
-            onChange={(e) => pagination.onPageSizeChange?.(Number(e.target.value))}
-          >
-            {(pagination.pageSizeOptions ?? [10, 20, 50]).map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
       <div className="relative overflow-x-auto max-w-full px-4">
         <table
           className={`table table-zebra ${theadVariant === "styled" ? "table-pin-rows" : ""} ${tableClassName ?? ""}`}
@@ -290,7 +309,7 @@ function DataTableInner<T>({
 
       {footer}
 
-      {pagination && <PaginationFooter pagination={pagination} />}
+      {pagination && <PaginationFooter pagination={pagination} isLoading={isLoading} />}
     </div>
   );
 }

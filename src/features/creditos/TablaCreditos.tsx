@@ -230,19 +230,6 @@ const TablaCreditos: React.FC = () => {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
-                        {!isDetail && (
-                            <>
-                                <label className="text-xs opacity-70">Filas:</label>
-                                <select
-                                    className="select select-accent select-sm select-bordered w-20"
-                                    value={pageSize}
-                                    onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
-                                >
-                                    {[10, 25, 50].map((n) => <option key={n} value={n}>{n}</option>)}
-                                </select>
-                            </>
-                        )}
-
                         {useAuthStore.getState().user?.rol === "Asesor" && (
                             <Link to="/creditos/crear-cotizaciones-credito?tipo=credibike">
                                 <button className="btn bg-[#2BB352] text-white">Crear Crédito</button>
@@ -268,6 +255,11 @@ const TablaCreditos: React.FC = () => {
                           totalItems: serverMeta?.total ?? serverItems.length,
                           pageSize,
                           onPageChange: setPage,
+                          onPageSizeChange: (v) => {
+                              setPageSize(Number(v));
+                              setPage(1);
+                          },
+                          pageSizeOptions: [10, 25, 50],
                           summaryOverride: serverMeta ? (
                               <>
                                   Mostrando página {serverMeta.current_page} de {serverMeta.last_page} — {serverMeta.total} registros
