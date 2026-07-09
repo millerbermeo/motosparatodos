@@ -121,7 +121,7 @@ const KpiStat: React.FC<{
 
   return (
     <div className="group relative h-full overflow-hidden rounded-2xl border border-base-200 bg-base-100 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-base-300">
-      <div className={cx("absolute inset-x-0 top-0 h-1 bg-gradient-to-r", tone.bar)} />
+      <div className={cx("absolute inset-x-0 top-0 h-1 bg-linear-to-r", tone.bar)} />
       <div className="p-5 sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <p className="min-w-0 truncate pt-1 text-sm font-medium text-base-content/60">{title}</p>
