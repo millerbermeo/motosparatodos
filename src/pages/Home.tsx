@@ -16,7 +16,7 @@ const Home: React.FC = () => {
     <main className="w-full bg-linear-to-b from-base-200/40 to-transparent">
       <section className="w-full px-4 sm:px-6 lg:px-8 py-6 space-y-8">
         {/* Hero */}
-        <header className="relative overflow-hidden rounded-3xl border border-base-200 bg-gradient-to-br from-primary/10 via-base-100 to-info/10 p-6 sm:p-8 shadow-sm">
+        <header className="relative overflow-hidden rounded-3xl border border-base-200 bg-linear-to-br from-primary/10 via-base-100 to-info/10 p-6 sm:p-8 shadow-sm">
           <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-20 left-1/3 h-48 w-48 rounded-full bg-info/10 blur-3xl" />
 

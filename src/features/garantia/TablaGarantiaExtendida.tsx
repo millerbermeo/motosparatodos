@@ -6,43 +6,8 @@ import { Link } from "react-router-dom";
 import { useGarantiasExt, useGarantiaExtById } from "../../services/garantiaExtServices";
 import { useLoaderStore } from "../../store/loader.store";
 import { fmtFecha } from "../../utils/date";
-
-/* ========= Paginación (mismo helper que cotizaciones) ========= */
-const SIBLING_COUNT = 1;
-const BOUNDARY_COUNT = 1;
-const range = (start: number, end: number) => Array.from({ length: end - start + 1 }, (_, i) => start + i);
-function getPaginationItems(
-  current: number,
-  totalPages: number,
-  siblingCount = SIBLING_COUNT,
-  boundaryCount = BOUNDARY_COUNT
-) {
-  if (totalPages <= 1) return [1];
-  const startPages = range(1, Math.min(boundaryCount, totalPages));
-  const endPages = range(Math.max(totalPages - boundaryCount + 1, boundaryCount + 1), totalPages);
-  const siblingsStart = Math.max(
-    Math.min(current - siblingCount, totalPages - boundaryCount - siblingCount * 2 - 1),
-    boundaryCount + 2
-  );
-  const siblingsEnd = Math.min(
-    Math.max(current + siblingCount, boundaryCount + siblingCount * 2 + 2),
-    endPages.length > 0 ? Number(endPages[0]) - 2 : totalPages - 1
-  );
-  const items: (number | "...")[] = [];
-  items.push(...startPages);
-  if (siblingsStart > boundaryCount + 2) items.push("...");
-  else if (boundaryCount + 1 < totalPages - boundaryCount) items.push(boundaryCount + 1);
-  items.push(...range(siblingsStart, siblingsEnd));
-  if (siblingsEnd < totalPages - boundaryCount - 1) items.push("...");
-  else if (totalPages - boundaryCount > boundaryCount) items.push(totalPages - boundaryCount);
-  items.push(...endPages);
-  return items.filter((v, i, a) => a.indexOf(v) === i);
-}
-
-const btnBase = "btn btn-xs rounded-xl min-w-8 h-8 px-3 font-medium shadow-none border-0";
-const btnGhost = `${btnBase} btn-ghost bg-base-200 text-base-content/70 hover:bg-base-300`;
-const btnActive = `${btnBase} bg-[#3498DB] text-primary-content`;
-const btnEllipsis = "btn btn-xs rounded-xl min-w-8 h-8 px-3 bg-base-200 text-base-content/60 pointer-events-none";
+import { DataTable } from "../../shared/components/datatable/DataTable";
+import type { DataTableColumn } from "../../shared/components/datatable/types";
 
 /* ======================= Utils ======================= */
 const money = (n?: number | null) =>
@@ -113,14 +78,6 @@ const TablaGarantiaExtendida: React.FC = () => {
   const serverPerPage = isDetail ? rows.length : Number(listQuery.data?.pagination?.per_page ?? perPage) || perPage;
   const currentPage = isDetail ? 1 : Number(listQuery.data?.pagination?.current_page ?? page) || page;
   const lastPage = isDetail ? 1 : Math.max(1, Number(listQuery.data?.pagination?.last_page ?? Math.ceil(total / serverPerPage)));
-  const items = useMemo(() => getPaginationItems(currentPage, lastPage), [currentPage, lastPage]);
-
-  const goPrev = () => setPage((p) => Math.max(1, p - 1));
-  const goNext = () => setPage((p) => Math.min(lastPage, p + 1));
-  const goTo = (p: number) => setPage(Math.min(Math.max(1, p), lastPage));
-
-  const start = total === 0 ? 0 : (currentPage - 1) * serverPerPage + 1;
-  const end = Math.min(currentPage * serverPerPage, total);
 
   const cleanFilters = () => {
     setIdDetalle(null);
@@ -132,203 +89,154 @@ const TablaGarantiaExtendida: React.FC = () => {
     setPerPage(10);
   };
 
-  if (isError) {
-    return (
-      <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4 text-error">
-        Error al cargar garantía y seguros
-      </div>
-    );
-  }
+  const columns: DataTableColumn<any>[] = [
+    { key: "id", header: "ID", className: "text-sm text-base-content/70", render: (r) => r.id },
+    {
+      key: "cotizacion",
+      header: "Cotización",
+      className: "text-sm text-base-content/70",
+      render: (r) => (
+        <div className="flex gap-2">
+          {r.cotizacion_id && (
+            <Link to={`/cotizaciones/${r.cotizacion_id}`} className="btn btn-sm bg-base-100 btn-circle" title="Ver cotización">
+              <div className="text-info">
+                <Eye size="18px" />
+              </div>
+            </Link>
+          )}
+        </div>
+      ),
+    },
+    { key: "cliente", header: "Cliente", className: "font-medium", render: (r) => r.cliente_nombre ?? "—" },
+    { key: "cedula", header: "Cédula", className: "text-sm text-base-content/70", render: (r) => r.cliente_cedula ?? "—" },
+    { key: "celular", header: "Celular", className: "text-sm text-base-content/70", render: (r) => r.cliente_celular ?? "—" },
+    { key: "email", header: "Email", className: "text-sm text-base-content/70", render: (r) => r.cliente_email ?? "—" },
+    { key: "moto_a", header: "Moto A", className: "text-sm text-base-content/70", render: (r) => r.moto_a ?? "—" },
+    { key: "ge_a", header: "GE A", className: "text-sm text-base-content/70", render: (r) => r.garantia_extendida_a ?? "—" },
+    { key: "meses_a", header: "Meses A", className: "text-sm text-base-content/70", render: (r) => r.meses_a ?? "—" },
+    { key: "valor_a", header: "Valor A", className: "text-sm text-base-content/70", render: (r) => money(r.valor_a) },
+    { key: "moto_b", header: "Moto B", className: "text-sm text-base-content/70", render: (r) => r.moto_b ?? "—" },
+    { key: "ge_b", header: "GE B", className: "text-sm text-base-content/70", render: (r) => r.garantia_extendida_b ?? "—" },
+    { key: "meses_b", header: "Meses B", className: "text-sm text-base-content/70", render: (r) => r.meses_b ?? "—" },
+    { key: "valor_b", header: "Valor B", className: "text-sm text-base-content/70", render: (r) => money(r.valor_b) },
+    {
+      key: "actualizado",
+      header: "Actualizado",
+      className: "text-sm text-base-content/70",
+      render: (r) => (
+        <>
+          {humanizeDesde(r.actualizado_en)} · {formatFechaLarga(r.actualizado_en)}
+        </>
+      ),
+    },
+  ];
 
   return (
-    <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
-      {/* Filtros */}
-      <div className="px-4 pt-4 my-3 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
-        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 w-full lg:flex-1 lg:min-w-0">
-          {/* Buscar texto libre */}
-          <input
-            type="text"
-            className="input input-bordered w-full sm:w-auto sm:flex-1 sm:min-w-52 sm:max-w-[18rem]"
-            placeholder="Buscar por cliente, cédula, moto, email…"
-            value={q}
-            onChange={(e) => {
-              setQ(e.target.value);
-              setPage(1);
-            }}
-          />
+    <DataTable
+      filters={
+        <div className="pt-4 my-3 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 w-full lg:flex-1 lg:min-w-0">
+            {/* Buscar texto libre */}
+            <input
+              type="text"
+              className="input input-bordered w-full sm:w-auto sm:flex-1 sm:min-w-52 sm:max-w-[18rem]"
+              placeholder="Buscar por cliente, cédula, moto, email…"
+              value={q}
+              onChange={(e) => {
+                setQ(e.target.value);
+                setPage(1);
+              }}
+            />
 
-          {/* Filtro por ID garantía (detalle) */}
-          <input
-            type="number"
-            className="input input-bordered w-37.5 hidden"
-            placeholder="ID garantía"
-            value={idDetalle ?? ""}
-            onChange={(e) => {
-              const v = e.target.value.trim();
-              setIdDetalle(v === "" ? null : Number(v));
-            }}
-          />
+            {/* Filtro por ID garantía (detalle) */}
+            <input
+              type="number"
+              className="input input-bordered w-37.5 hidden"
+              placeholder="ID garantía"
+              value={idDetalle ?? ""}
+              onChange={(e) => {
+                const v = e.target.value.trim();
+                setIdDetalle(v === "" ? null : Number(v));
+              }}
+            />
 
-          {/* Filtro por ID de cotización */}
-          <input
-            type="number"
-            className="input input-bordered w-42.5 hidden"
-            placeholder="ID cotización"
-            value={cotizacionId ?? ""}
-            onChange={(e) => {
-              const v = e.target.value.trim();
-              setCotizacionId(v === "" ? null : Number(v));
-              setPage(1);
-            }}
-          />
+            {/* Filtro por ID de cotización */}
+            <input
+              type="number"
+              className="input input-bordered w-42.5 hidden"
+              placeholder="ID cotización"
+              value={cotizacionId ?? ""}
+              onChange={(e) => {
+                const v = e.target.value.trim();
+                setCotizacionId(v === "" ? null : Number(v));
+                setPage(1);
+              }}
+            />
 
-          {/* Rango de fechas (columna `fecha`) */}
-          <input
-            type="date"
-            className="input input-bordered w-full sm:w-auto"
-            value={desde}
-            onChange={(e) => {
-              setDesde(e.target.value);
-              setPage(1);
-            }}
-          />
-          <input
-            type="date"
-            className="input input-bordered w-full sm:w-auto"
-            value={hasta}
-            onChange={(e) => {
-              setHasta(e.target.value);
-              setPage(1);
-            }}
-          />
+            {/* Rango de fechas (columna `fecha`) */}
+            <input
+              type="date"
+              className="input input-bordered w-full sm:w-auto"
+              value={desde}
+              onChange={(e) => {
+                setDesde(e.target.value);
+                setPage(1);
+              }}
+            />
+            <input
+              type="date"
+              className="input input-bordered w-full sm:w-auto"
+              value={hasta}
+              onChange={(e) => {
+                setHasta(e.target.value);
+                setPage(1);
+              }}
+            />
 
-          <button onClick={cleanFilters} className="btn btn-accent w-full sm:w-auto sm:min-w-36">
-            Limpiar Filtros
-          </button>
-        </div>
-
-        {/* Paginación / filas */}
-        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
-          <label className="text-xs opacity-70">Filas:</label>
-          <select
-            className="select select-accent select-sm select-bordered w-20"
-            value={serverPerPage}
-            onChange={(e) => {
-              const v = Number(e.target.value) || 10;
-              setPerPage(v);
-              setPage(1);
-            }}
-          >
-            {[10, 20, 50].map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-          {isFetching && <span className="loading loading-spinner loading-xs" />}
-        </div>
-      </div>
-
-      {/* Tabla */}
-      <div className="relative overflow-x-auto max-w-full px-4">
-        <table className="table table-zebra table-pin-rows min-w-300">
-          <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-backdrop-filter:backdrop-blur-md">
-            <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
-              <th>ID</th>
-              <th>Cotización</th>
-              {/* <th>ID Cotización</th> */}
-              <th>Cliente</th>
-              <th>Cédula</th>
-              <th>Celular</th>
-              <th>Email</th>
-              <th>Moto A</th>
-              <th>GE A</th>
-              <th>Meses A</th>
-              <th>Valor A</th>
-              <th>Moto B</th>
-              <th>GE B</th>
-              <th>Meses B</th>
-              <th>Valor B</th>
-              <th>Actualizado</th>
-            </tr>
-          </thead>
-          <tbody className="[&>tr:hover]:bg-base-200/40">
-            {rows.map((r: any) => (
-              <tr key={r.id} className="transition-colors">
-                <td className="text-sm text-base-content/70">{r.id}</td>
-                <td className="text-sm text-base-content/70">
-                  <div className="flex gap-2">
-                    {/* Si tienes ruta de cotización, enlázala */}
-                    {r.cotizacion_id && (
-                      <Link to={`/cotizaciones/${r.cotizacion_id}`} className="btn btn-sm bg-base-100 btn-circle" title="Ver cotización">
-                        <div className="text-info">
-                          <Eye size="18px" />
-                        </div>
-                      </Link>
-                    )}
-                  </div>
-                </td>
-                {/* <td className="text-sm text-base-content/70">{r.cotizacion_id ?? "—"}</td> */}
-                <td className="font-medium">{r.cliente_nombre ?? "—"}</td>
-                <td className="text-sm text-base-content/70">{r.cliente_cedula ?? "—"}</td>
-                <td className="text-sm text-base-content/70">{r.cliente_celular ?? "—"}</td>
-                <td className="text-sm text-base-content/70">{r.cliente_email ?? "—"}</td>
-
-                <td className="text-sm text-base-content/70">{r.moto_a ?? "—"}</td>
-                <td className="text-sm text-base-content/70">{r.garantia_extendida_a ?? "—"}</td>
-                <td className="text-sm text-base-content/70">{r.meses_a ?? "—"}</td>
-                <td className="text-sm text-base-content/70">{money(r.valor_a)}</td>
-
-                <td className="text-sm text-base-content/70">{r.moto_b ?? "—"}</td>
-                <td className="text-sm text-base-content/70">{r.garantia_extendida_b ?? "—"}</td>
-                <td className="text-sm text-base-content/70">{r.meses_b ?? "—"}</td>
-                <td className="text-sm text-base-content/70">{money(r.valor_b)}</td>
-
-                <td className="text-sm text-base-content/70">
-                  {humanizeDesde(r.actualizado_en)} · {formatFechaLarga(r.actualizado_en)}
-                </td>
-              </tr>
-            ))}
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={16} className="text-center py-8 text-base-content/60">
-                  Sin resultados
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Footer paginación */}
-      <div className="flex items-center justify-between px-4 pb-4 pt-2">
-        <span className="text-xs text-base-content/50">Mostrando {start}–{end} de {total}</span>
-
-        {!isDetail && (
-          <div className="flex items-center gap-2">
-            <button className={btnGhost} onClick={goPrev} disabled={currentPage === 1}>
-              «
-            </button>
-            {items.map((it, i) =>
-              it === "..." ? (
-                <span key={`e-${i}`} className={btnEllipsis}>…</span>
-              ) : (
-                <button
-                  key={`p-${it}`}
-                  className={Number(it) === currentPage ? btnActive : btnGhost}
-                  onClick={() => goTo(Number(it))}
-                >
-                  {it}
-                </button>
-              )
-            )}
-            <button className={btnGhost} onClick={goNext} disabled={currentPage === lastPage}>
-              »
+            <button onClick={cleanFilters} className="btn btn-accent w-full sm:w-auto sm:min-w-36">
+              Limpiar Filtros
             </button>
           </div>
-        )}
-      </div>
-    </div>
+
+          {/* Paginación / filas */}
+          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
+            <label className="text-xs opacity-70">Filas:</label>
+            <select
+              className="select select-accent select-sm select-bordered w-20"
+              value={serverPerPage}
+              onChange={(e) => {
+                const v = Number(e.target.value) || 10;
+                setPerPage(v);
+                setPage(1);
+              }}
+            >
+              {[10, 20, 50].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+            {isFetching && <span className="loading loading-spinner loading-xs" />}
+          </div>
+        </div>
+      }
+      tableClassName="min-w-300"
+      columns={columns}
+      rows={rows}
+      rowKey={(r) => r.id}
+      isLoading={isLoading}
+      isError={isError}
+      errorMessage="Error al cargar garantía y seguros"
+      emptyMessage="Sin resultados"
+      pagination={{
+        page: currentPage,
+        totalPages: lastPage,
+        totalItems: total,
+        pageSize: serverPerPage,
+        onPageChange: setPage,
+        hideControls: isDetail,
+      }}
+    />
   );
 };
 

@@ -4,6 +4,9 @@ import { useModalStore } from "../../store/modalStore";
 import { useLoaderStore } from "../../store/loader.store";
 import { useRangosCilindraje } from "../../services/useRangosCilindraje";
 import FormRangoCilindraje from "./FormRangoCilindraje";
+import { DataTable } from "../../shared/components/datatable/DataTable";
+import { RowActionButton } from "../../shared/components/datatable/RowActions";
+import type { DataTableColumn } from "../../shared/components/datatable/types";
 
 const TablaRangoCilindraje: React.FC = () => {
   const open = useModalStore((s) => s.open);
@@ -47,94 +50,82 @@ const TablaRangoCilindraje: React.FC = () => {
       maximumFractionDigits: 0,
     });
 
-  if (isError)
-    return (
-      <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4 text-error">
-        Error al cargar rangos de cilindraje
-      </div>
-    );
+  const money = (className: string) => (className ? `text-right pr-4 font-mono text-xs ${className}` : "text-right pr-4 font-mono text-xs");
+
+  const columns: DataTableColumn<any>[] = [
+    { key: "id", header: "ID", render: (r) => r.id },
+    {
+      key: "editar",
+      header: "Editar",
+      align: "right",
+      headerClassName: "pr-4",
+      className: "pr-4",
+      render: (r) => (
+        <RowActionButton icon={<Pen size={18} color="green" />} title="Editar" onClick={() => openEditar(r)} />
+      ),
+    },
+    { key: "descripcion", header: "Descripción", className: "font-medium", render: (r) => r.descripcion },
+    { key: "cilindraje", header: "Cilindraje", render: (r) => formatRango(r) },
+    { key: "soat", header: "SOAT", align: "right", headerClassName: "pr-4", className: money(""), render: (r) => formatMoney(r.soat) },
+    {
+      key: "matricula_credito",
+      header: "Matr. crédito",
+      align: "right",
+      headerClassName: "pr-4",
+      className: money(""),
+      render: (r) => formatMoney(r.matricula_credito),
+    },
+    {
+      key: "matricula_contado",
+      header: "Matr. contado",
+      align: "right",
+      headerClassName: "pr-4",
+      className: money(""),
+      render: (r) => formatMoney(r.matricula_contado),
+    },
+    {
+      key: "impuestos",
+      header: "Impuestos",
+      align: "right",
+      headerClassName: "pr-4",
+      className: money(""),
+      render: (r) => formatMoney(r.impuestos),
+    },
+    {
+      key: "total_credito",
+      header: "Total crédito",
+      align: "right",
+      headerClassName: "pr-4",
+      className: money("font-semibold"),
+      render: (r) => formatMoney(r.total_credito),
+    },
+    {
+      key: "total_contado",
+      header: "Total contado",
+      align: "right",
+      headerClassName: "pr-4",
+      className: money("font-semibold"),
+      render: (r) => formatMoney(r.total_contado),
+    },
+  ];
 
   return (
-    <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
-      <div className="px-4 pt-4 flex items-center justify-between gap-3 flex-wrap mb-3">
-        <h3 className="text-sm font-semibold tracking-wide text-base-content/70">
-          Configuración de rangos de cilindraje y tarifas
-        </h3>
+    <DataTable
+      title="Configuración de rangos de cilindraje y tarifas"
+      toolbar={
         <button className="btn hidden btn-primary" onClick={openCrear}>
           Nuevo rango
         </button>
-      </div>
-
-      <div className="relative overflow-x-auto max-w-full px-4 pb-3">
-        <table className="table table-zebra min-w-250">
-          <thead className="bg-base-200">
-            <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider bg-[#3498DB] [&>th]:text-white">
-              <th>ID</th>
-               <th className="text-right pr-4">Editar</th>
-              <th>Descripción</th>
-              <th>Cilindraje</th>
-              {/* <th className="text-right pr-4">Precio base</th> */}
-              <th className="text-right pr-4">SOAT</th>
-              <th className="text-right pr-4">Matr. crédito</th>
-              <th className="text-right pr-4">Matr. contado</th>
-              <th className="text-right pr-4">Impuestos</th>
-              <th className="text-right pr-4">Total crédito</th>
-              <th className="text-right pr-4">Total contado</th>
-             
-            </tr>
-          </thead>
-          <tbody>
-            {rangos.map((r) => (
-              <tr key={r.id}>
-                <td>{r.id}</td>
-                  <td className="text-right pr-4">
-                  <button
-                    className="btn btn-sm bg-base-100 btn-circle"
-                    onClick={() => openEditar(r)}
-                    title="Editar"
-                  >
-                    <Pen size={18} color="green" />
-                  </button>
-                </td>
-                <td className="font-medium">{r.descripcion}</td>
-                <td>{formatRango(r)}</td>
-                {/* <td className="text-right pr-4 font-mono text-xs">
-                  {formatMoney(r.precio)}
-                </td> */}
-                <td className="text-right pr-4 font-mono text-xs">
-                  {formatMoney(r.soat)}
-                </td>
-                <td className="text-right pr-4 font-mono text-xs">
-                  {formatMoney(r.matricula_credito)}
-                </td>
-                <td className="text-right pr-4 font-mono text-xs">
-                  {formatMoney(r.matricula_contado)}
-                </td>
-                <td className="text-right pr-4 font-mono text-xs">
-                  {formatMoney(r.impuestos)}
-                </td>
-                <td className="text-right pr-4 font-mono text-xs font-semibold">
-                  {formatMoney(r.total_credito)}
-                </td>
-                <td className="text-right pr-4 font-mono text-xs font-semibold">
-                  {formatMoney(r.total_contado)}
-                </td>
-              
-              </tr>
-            ))}
-
-            {rangos.length === 0 && !isPending && (
-              <tr>
-                {/* ahora son 11 columnas */}
-                <td colSpan={11} className="text-center py-6 text-base-content/60">
-                  No hay rangos configurados.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+      }
+      tableClassName="min-w-250"
+      columns={columns}
+      rows={rangos}
+      rowKey={(r) => r.id}
+      isLoading={isPending}
+      isError={isError}
+      errorMessage="Error al cargar rangos de cilindraje"
+      emptyMessage="No hay rangos configurados."
+    />
   );
 };
 
