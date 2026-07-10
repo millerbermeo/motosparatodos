@@ -19,6 +19,8 @@ import { toAbsoluteUrl } from "../../utils/files";
 import { DataTable } from "../../shared/components/datatable/DataTable";
 import type { DataTableColumn } from "../../shared/components/datatable/types";
 import { confirmDelete } from "../../utils/confirmDelete";
+import { ImageWithFallback } from "../../shared/components/ImageWithFallback";
+import { MotoDetalleModal } from "./components/MotoDetalleModal";
 
 const TablaMotos: React.FC = () => {
   const open = useModalStore((s) => s.open);
@@ -87,6 +89,38 @@ const TablaMotos: React.FC = () => {
       `Editar moto: ${m.marca} ${m.linea}`,
       { size: "5xl", position: "center" }
     );
+
+  // Precarga fuera del DOM: así sabemos si la imagen existe/carga ANTES de
+  // abrir el modal. El modal global no desmonta su contenido al cerrarse
+  // (solo lo oculta con CSS), así que sin esto el <img> reciclado mostraba
+  // por un instante la foto de la moto anterior mientras cargaba la nueva.
+  const preloadImage = (src: string) =>
+    new Promise<boolean>((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false);
+      img.src = src;
+    });
+
+  const openDetalleMoto = async (m: any) => {
+    const titulo = `${m.marca ?? ""} ${m.linea ?? ""}`.trim() || "Detalle de la moto";
+    const src = toAbsoluteUrl(m.foto);
+
+    if (!src) {
+      open(<MotoDetalleModal key={m.id} moto={m} imagenSrc={null} />, titulo, { size: "3xl", position: "center" });
+      return;
+    }
+
+    show();
+    const ok = await preloadImage(src);
+    hide();
+
+    open(
+      <MotoDetalleModal key={m.id} moto={m} imagenSrc={ok ? src : null} />,
+      titulo,
+      { size: "3xl", position: "center" }
+    );
+  };
 
   const openImpuestos = (m: any) => {
     const initialValues = {
@@ -161,16 +195,14 @@ const TablaMotos: React.FC = () => {
     {
       key: "imagen",
       header: "Imagen",
-      render: (m) =>
-        m.foto ? (
-          <img
-            src={toAbsoluteUrl(m.foto) ?? undefined}
-            alt={`${m.marca} ${m.linea}`}
-            className="h-12 w-16 object-cover rounded-md border"
-          />
-        ) : (
-          <div className="h-12 w-16 bg-base-200 rounded-md" />
-        ),
+      render: (m) => (
+        <ImageWithFallback
+          src={toAbsoluteUrl(m.foto)}
+          alt={`${m.marca} ${m.linea}`}
+          className="h-12 w-16 object-cover rounded-md border cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={() => openDetalleMoto(m)}
+        />
+      ),
     },
     { key: "marca", header: "Marca", className: "font-medium", render: (m) => m.marca ?? "" },
     { key: "linea", header: "Línea", render: (m) => m.linea ?? "" },
