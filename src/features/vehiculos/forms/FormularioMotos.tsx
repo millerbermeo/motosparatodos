@@ -10,6 +10,8 @@ import { useEmpresasSelect } from "../../../services/empresasServices";
 import { useSubDistribucion } from "../../../services/distribucionesServices";
 import Swal from "sweetalert2";
 import { validateFileInput } from "../../../utils/fileValidation";
+import { toAbsoluteUrl } from "../../../utils/files";
+import { ImageWithFallback } from "../../../shared/components/ImageWithFallback";
 
 // 🔹 hooks de rango
 import {
@@ -27,7 +29,7 @@ type Base = {
   estado: string;
   precio_base: number;
   descrip: string;
-  imagen?: string;
+  foto?: string; // ruta relativa de la imagen ya subida (así la devuelve list_motos.php)
 
   empresa?: string;
   subdistribucion?: string;
@@ -169,7 +171,7 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
   const { data: subdistribs, isPending: loadingSubd } = useSubDistribucion();
 
   const [file, setFile] = React.useState<File | null>(null);
-  const [preview, setPreview] = React.useState<string | null>(initialValues?.imagen ?? null);
+  const [preview, setPreview] = React.useState<string | null>(toAbsoluteUrl(initialValues?.foto));
 
   // 🔹 ENTERO para búsqueda
   const [cilindrajeBusqueda, setCilindrajeBusqueda] = React.useState<number | null>(null);
@@ -221,7 +223,7 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
     });
 
     setFile(null);
-    setPreview(initialValues?.imagen ?? null);
+    setPreview(toAbsoluteUrl(initialValues?.foto));
     setCilindrajeBusqueda(null);
   }, [initialValues, mode, reset]);
 
@@ -566,16 +568,19 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
               }
             }}
           />
-          {preview && (
-            <div className="mt-2">
-              <img src={preview} alt="Preview" className="h-24 rounded-md object-cover" />
-              {file && (
-                <div className="text-xs opacity-70 mt-1">
-                  Tamaño: {(file.size / 1024).toFixed(1)} KB
-                </div>
-              )}
-            </div>
-          )}
+          <div className="mt-2">
+            <ImageWithFallback
+              src={preview}
+              alt="Vista previa de la moto"
+              className="h-24 w-32 rounded-md object-cover border border-base-300"
+              iconSize={28}
+            />
+            {file && (
+              <div className="text-xs opacity-70 mt-1">
+                Tamaño: {(file.size / 1024).toFixed(1)} KB
+              </div>
+            )}
+          </div>
         </label>
 
         <div className="md:col-span-2">
