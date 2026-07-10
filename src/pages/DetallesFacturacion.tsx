@@ -26,6 +26,7 @@ import { buildMotoFromCotizacion } from "../shared/components/facturacion/buildM
 import { desglosarConIva } from "../shared/components/facturacion/desglosarIva";
 import { toAbsoluteUrl } from "../utils/files";
 import { alert } from "../utils/alerts";
+import Swal from "sweetalert2";
 import { max0, pick, sum } from "../shared/components/facturacion/utilsFacturacion";
 import { normalizarTexto } from "../utils/text";
 
@@ -666,10 +667,15 @@ const DetallesFacturacion: React.FC = () => {
     }
 
     if (!facturaFile) {
-      alert.info(
-        "Archivo requerido",
-        "Selecciona un archivo de factura antes de enviar."
-      );
+      Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "warning",
+        title: "Selecciona un archivo de factura antes de enviar.",
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+      });
       return;
     }
 
@@ -1202,7 +1208,7 @@ const DetallesFacturacion: React.FC = () => {
                             <button
                               type="button"
                               onClick={handleSubirFactura}
-                              disabled={isSubiendoFactura || !facturaFile}
+                              disabled={isSubiendoFactura}
                               className="btn btn-sm border bg-base-100 text-success"
                             >
                               {isSubiendoFactura
