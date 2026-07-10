@@ -116,6 +116,11 @@ const WizardTimeline: React.FC<WizardProps> = ({
   }, [idx, steps.length]);
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    // Solo navegar el wizard si el foco está en un tab del timeline,
+    // no cuando el usuario usa las flechas dentro de un input/select del formulario.
+    const target = e.target as HTMLElement;
+    if (target.getAttribute('role') !== 'tab') return;
+
     if (e.key === 'ArrowRight') { e.preventDefault(); next(); }
     if (e.key === 'ArrowLeft')  { e.preventDefault(); prev(); }
     if (e.key === 'Home')       { e.preventDefault(); goTo(0); }
