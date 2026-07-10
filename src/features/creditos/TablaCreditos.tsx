@@ -9,8 +9,13 @@ import { useLoaderStore } from "../../store/loader.store";
 import { fmtFecha, timeAgo } from "../../utils/date";
 import { DataTable } from "../../shared/components/datatable/DataTable";
 import type { DataTableColumn } from "../../shared/components/datatable/types";
+import { useClientPagination } from "../../shared/hooks/useClientPagination";
 
 const DEFAULT_PAGE_SIZE = 10;
+// list_creditos.php no soporta filtrar por estado/texto en servidor: traemos todo
+// de una vez (hoy ~125 registros) y filtramos+paginamos en cliente, igual que
+// TablaMarcas/TablaEmpresas. Tope generoso para cubrir crecimiento del dataset.
+const ALL_CREDITOS_PAGE_SIZE = 5000;
 
 const moneyCOP = (n: number) => `${Number(n || 0).toLocaleString()} COP`;
 
@@ -41,21 +46,18 @@ const timeAgoCredito = (iso?: string) =>
 
 const TablaCreditos: React.FC = () => {
     // ---- estado ----
-    const [pageSize, setPageSize] = React.useState(DEFAULT_PAGE_SIZE);
-    const [page, setPage] = React.useState(1);
     const [q, setQ] = React.useState("");
     const [estadoFilter, setEstadoFilter] = React.useState<string>("");
     const [creditoId, setCreditoId] = React.useState<number | null>(null);
 
     // ---- queries ----
     const oneQry = useCreditoById(creditoId);                    // detalle por id
-    const listQry = useCreditos(page, pageSize);         // lista paginada del servidor
+    const listQry = useCreditos(1, ALL_CREDITOS_PAGE_SIZE);       // todos los créditos
 
     const isDetail = Boolean(creditoId);
 
     // Dataset visible:
     const serverItems = listQry.data?.items ?? [];
-    const serverMeta = listQry.data?.pagination;
     const listLoading = listQry.isLoading;
     const oneLoading = oneQry.isLoading;
 
@@ -67,7 +69,7 @@ const TablaCreditos: React.FC = () => {
         ? (oneQry.data ? [oneQry.data] : [])
         : serverItems;
 
-    // Filtros client-side (solo sobre la página actual)
+    // Filtros client-side sobre el dataset completo (no solo la página actual)
     const creditosFiltrados = React.useMemo(() => {
         if (isDetail) return baseData;
         const term = q.trim().toLowerCase();
@@ -84,27 +86,35 @@ const TablaCreditos: React.FC = () => {
     const estados = React.useMemo(() => {
         if (isDetail) return [];
         const set = new Set<string>();
-        // estados fijos garantizados aunque no estén en la página actual
+        // estados fijos garantizados aunque no estén en el dataset actual
         set.add("En Facturación");
         (serverItems ?? []).forEach((c: any) => c?.estado && set.add(c.estado));
         return Array.from(set).sort();
     }, [serverItems, isDetail]);
 
-    // Paginación (del servidor):
-    const totalPages = isDetail ? 1 : (serverMeta?.last_page ?? 1);
-    const currentPage = isDetail ? 1 : (serverMeta?.current_page ?? page);
+    // Paginación (en cliente, sobre el resultado ya filtrado):
+    const {
+        page,
+        setPage,
+        pageSize,
+        setPageSize,
+        totalPages,
+        totalItems,
+        pageItems,
+    } = useClientPagination(creditosFiltrados, DEFAULT_PAGE_SIZE);
 
+    // vuelve a la página 1 cada vez que cambia el filtro o el modo detalle
     React.useEffect(() => {
-        if (!isDetail && page !== currentPage) setPage(currentPage);
+        setPage(1);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentPage, isDetail]);
+    }, [q, estadoFilter, isDetail]);
 
     const cleanFilters = () => {
         setCreditoId(null);
-        setPage(1);
-        setPageSize(DEFAULT_PAGE_SIZE);
         setEstadoFilter("");
         setQ("");
+        setPage(1);
+        setPageSize(DEFAULT_PAGE_SIZE);
     };
 
     const { show, hide } = useLoaderStore();
@@ -118,7 +128,7 @@ const TablaCreditos: React.FC = () => {
         }
     }, [isLoading, show, hide]);
 
-    const visible = creditosFiltrados; // ya es la página actual (posible filtrada en cliente)
+    const visible = isDetail ? creditosFiltrados : pageItems;
 
     const columns: DataTableColumn<any>[] = [
         { key: "id", header: "Id", render: (c) => c.id || "-" },
@@ -201,7 +211,7 @@ const TablaCreditos: React.FC = () => {
                         {/* Selector que setea el ID → modo detalle */}
                         <SelectCreditos onSelect={(id) => { setCreditoId(id ?? null); }} />
 
-                        {/* Filtros (cliente, sobre la página actual) */}
+                        {/* Filtro por estado (cliente, sobre el dataset completo) */}
                         {!isDetail && (
                             <select
                                 className="select select-md select-bordered w-full sm:w-auto sm:flex-1 sm:min-w-44 sm:max-w-56"
@@ -239,31 +249,13 @@ const TablaCreditos: React.FC = () => {
                 isDetail
                     ? undefined
                     : {
-                          page: currentPage,
+                          page,
                           totalPages,
-                          totalItems: serverMeta?.total ?? serverItems.length,
+                          totalItems,
                           pageSize,
                           onPageChange: setPage,
-                          onPageSizeChange: (v) => {
-                              setPageSize(Number(v));
-                              setPage(1);
-                          },
+                          onPageSizeChange: (v) => setPageSize(Number(v)),
                           pageSizeOptions: [10, 25, 50],
-                          summaryOverride: serverMeta ? (
-                              <>
-                                  Mostrando página {serverMeta.current_page} de {serverMeta.last_page} — {serverMeta.total} registros
-                                  {(q || estadoFilter) && (
-                                      <span className="ml-2 italic opacity-70">(filtro aplicado sobre la página)</span>
-                                  )}
-                              </>
-                          ) : (
-                              <>
-                                  Mostrando {serverItems.length} registros
-                                  {(q || estadoFilter) && (
-                                      <span className="ml-2 italic opacity-70">(filtro aplicado sobre la página)</span>
-                                  )}
-                              </>
-                          ),
                       }
             }
         />
