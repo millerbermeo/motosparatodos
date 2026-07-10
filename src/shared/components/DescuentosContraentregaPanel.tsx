@@ -6,19 +6,18 @@ import {
     useActualizarDescuentosContraentrega,
 } from "../../services/solicitudServices";
 import { alert } from "../../utils/alerts";
-import { fmtCOP } from "../../utils/money";
+import { fmtCOP, formatThousands, unformatNumber } from "../../utils/money";
 
 type Props = {
     /** id de la fila en solicitudes_facturacion (PRIMARY KEY) */
     idSolicitud: number | string;
 };
 
-/** Convierte "500.000 COP" o "500000" -> 500000 */
+/** Convierte "500.000" o "500000" -> 500000 */
 const parseMoney = (raw: string): number | null => {
-    if (!raw) return null;
-    const cleaned = raw.replace(/[^\d.-]/g, "");
-    if (cleaned === "") return null;
-    const n = Number(cleaned);
+    const digits = unformatNumber(raw, { allowDecimals: false });
+    if (digits === "") return null;
+    const n = Number(digits);
     return Number.isFinite(n) ? n : null;
 };
 
@@ -54,8 +53,8 @@ const DescuentosContraentregaPanel: React.FC<Props> = ({ idSolicitud }) => {
         const dB = data.descuentoAutorizadoB ?? data.descuentoSolicitadoA ?? null;
         const sB = data.saldoContraentregaB ?? data.saldoContraentregaA ?? null;
 
-        setDescuentoStr(dB != null ? String(dB) : "");
-        setSaldoStr(sB != null ? String(sB) : "");
+        setDescuentoStr(dB != null ? formatThousands(String(dB), { allowDecimals: false }) : "");
+        setSaldoStr(sB != null ? formatThousands(String(sB), { allowDecimals: false }) : "");
         setObservacion2(data.observacion2 ?? "");
     }, [data]);
 
@@ -172,7 +171,14 @@ const DescuentosContraentregaPanel: React.FC<Props> = ({ idSolicitud }) => {
                                         type="text"
                                         value={descuentoStr}
                                         disabled={isGuardando || isFinal}
-                                        onChange={(e) => setDescuentoStr(e.target.value)}
+                                        onChange={(e) =>
+                                            setDescuentoStr(
+                                                formatThousands(
+                                                    unformatNumber(e.target.value, { allowDecimals: false }),
+                                                    { allowDecimals: false }
+                                                )
+                                            )
+                                        }
                                         onBlur={() => setTouched(true)}
                                         className={`block w-full rounded-lg border px-3 py-2 text-sm outline-none
                       ${hasErrorDescuento
@@ -197,7 +203,14 @@ const DescuentosContraentregaPanel: React.FC<Props> = ({ idSolicitud }) => {
                                         type="text"
                                         value={saldoStr}
                                         disabled={isGuardando || isFinal}
-                                        onChange={(e) => setSaldoStr(e.target.value)}
+                                        onChange={(e) =>
+                                            setSaldoStr(
+                                                formatThousands(
+                                                    unformatNumber(e.target.value, { allowDecimals: false }),
+                                                    { allowDecimals: false }
+                                                )
+                                            )
+                                        }
                                         onBlur={() => setTouched(true)}
                                         className={`block w-full rounded-lg border px-3 py-2 text-sm outline-none
                       ${hasErrorSaldo

@@ -33,6 +33,7 @@ export interface CartaAprobacionPDFProps {
   // moto / crédito
   producto: string;          // "HERO ECO DELUXE CW - 2027"
   modeloMoto: string;        // "2027"
+  facturarANombreDe?: string; // quien debe firmar las prendas (caso de multas)
   plazo: number;             // meses: 24, 36…
   precioVentaTotal: number;
   cuotaInicial: number;
@@ -47,6 +48,7 @@ export interface CartaAprobacionPDFProps {
 const EMPRESA = "VERIFICARTE AAA S.A.S.";
 const NIT = "901155548-8";
 const FOOTER_TEXT = `${EMPRESA}\nNIT. ${NIT}`;
+const TIPO_GARANTIA = "Prenda sobre la motocicleta";
 
 // ─── paleta ────────────────────────────────────────────────────────────────
 
@@ -304,8 +306,12 @@ export const CartaAprobacionPDFDoc: React.FC<CartaAprobacionPDFProps> = ({
   nombreAsesor,
   telefonoAsesor = "",
   producto,
+  modeloMoto,
+  facturarANombreDe = "",
   plazo,
   precioVentaTotal,
+  cuotaInicial,
+  garantiaExtendida = 0,
   valorAFinanciar,
   valorCuotaMensual = 0,
   fechaVencimientoPrimeraCuota = "",
@@ -335,8 +341,16 @@ export const CartaAprobacionPDFDoc: React.FC<CartaAprobacionPDFProps> = ({
         {/* TABLA PRINCIPAL */}
         <View style={S.dataTable} wrap={false}>
           <DataRow label="Producto" value={safe(producto)} />
+          <DataRow label="Modelo" value={safe(modeloMoto)} />
+          <DataRow
+            label="Facturar a nombre de: (quien debe firmar las prendas; esto es en caso de multas)"
+            value={safe(facturarANombreDe, "")}
+          />
+          <DataRow label="Garantía" value={TIPO_GARANTIA} />
           <DataRow label="Plazo" value={String(plazo)} />
           <DataRow label="Precio de venta total" value={fmtCOP(precioVentaTotal)} />
+          <DataRow label="Cuota inicial" value={fmtCOP(cuotaInicial)} />
+          <DataRow label="Garantía y seguros" value={fmtCOP(garantiaExtendida)} />
           <DataRow label="Valor a financiar" value={fmtCOP(valorAFinanciar)} />
           <DataRow
             label="Valor cuota mensual"

@@ -32,6 +32,7 @@ type ReportRow = {
   Marca: string;
   Linea: string;
   Modelo: string;
+  "Valor a financiar": string;
 
   Cliente: string;
   "Nombre Cliente": string;
@@ -56,6 +57,7 @@ const COLUMNS = [
   "Marca",
   "Linea",
   "Modelo",
+  "Valor a financiar",
   "Cliente",
   "Nombre Cliente",
   "Telefono",
@@ -71,6 +73,16 @@ const COLUMNS = [
 ] as const;
 
 type ColumnKey = (typeof COLUMNS)[number];
+
+const formatCOP = (v: any) => {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "";
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0,
+  }).format(n);
+};
 
 const ReporteCotizacionesCard: React.FC = () => {
   const now = new Date();
@@ -104,6 +116,7 @@ const ReporteCotizacionesCard: React.FC = () => {
         const marca = (c.moto_seleccionada === "B" ? c.marca_b : c.marca_a) ?? "";
         const linea = (c.moto_seleccionada === "B" ? c.linea_b : c.linea_a) ?? "";
         const modelo = (c.moto_seleccionada === "B" ? c.modelo_b : c.modelo_a) ?? "";
+        const saldoFinanciar = c.moto_seleccionada === "B" ? c.saldo_financiar_b : c.saldo_financiar_a;
 
         const nombreCompleto = buildFullName(c, "");
 
@@ -116,6 +129,7 @@ const ReporteCotizacionesCard: React.FC = () => {
           Marca: String(marca),
           Linea: String(linea),
           Modelo: String(modelo),
+          "Valor a financiar": formatCOP(saldoFinanciar),
 
           Cliente: String(nombreCompleto),
           "Nombre Cliente": String(c.name ?? ""),

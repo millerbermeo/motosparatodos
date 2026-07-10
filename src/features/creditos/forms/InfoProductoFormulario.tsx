@@ -320,7 +320,13 @@ const InfoProductoFormulario: React.FC = () => {
 
   return (
     <>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') e.preventDefault();
+        }}
+        className="space-y-6"
+      >
         <div className="badge text-xl badge-success text-white mb-3">
           Solicitud de crédito - Información del producto
         </div>
@@ -398,6 +404,8 @@ const InfoProductoFormulario: React.FC = () => {
             control={control}
             placeholder="Ingrese el comentario de crédito"
             className="min-h-28"
+            multiline
+            rows={4}
             rules={{
               required: "La descripción es obligatoria",
               minLength: { value: 5, message: "Debe tener al menos 5 caracteres" },

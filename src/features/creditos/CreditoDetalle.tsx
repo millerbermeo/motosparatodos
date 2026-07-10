@@ -967,7 +967,13 @@ const CreditoDetalle: React.FC = () => {
             ).toBlob();
 
             const url = URL.createObjectURL(blob);
-            window.open(url, '_blank');
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Garantia_Extendida_${codigo_credito}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
         } catch (err) {
             console.error(err);
             alert('No fue posible generar la garantía y seguros.');
@@ -1041,6 +1047,7 @@ const CreditoDetalle: React.FC = () => {
                     nombreAsesor={credito.asesor ?? ''}
                     producto={productoNombre}
                     modeloMoto={modeloAnio}
+                    facturarANombreDe=""
                     plazo={Number(moto.numeroCuotas ?? 36)}
                     precioVentaTotal={Number(precioVentaTotal)}
                     cuotaInicial={Number(cuotaInicialNum)}
@@ -1052,7 +1059,13 @@ const CreditoDetalle: React.FC = () => {
             ).toBlob();
 
             const url = URL.createObjectURL(blob);
-            window.open(url, '_blank');
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Carta_Aprobacion_${codigo_credito}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
         } catch (err) {
             console.error(err);
             alert('No fue posible generar la carta de aprobación.');
@@ -1084,7 +1097,13 @@ const CreditoDetalle: React.FC = () => {
                 />
             ).toBlob();
             const url = URL.createObjectURL(blob);
-            window.open(url, '_blank');
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Formato_Solicitud_${codigo_credito}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
         } catch (err) {
             console.error(err);
             alert('No fue posible generar la solicitud de crédito.');

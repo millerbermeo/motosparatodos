@@ -287,7 +287,7 @@ const TablaCotizaciones: React.FC = () => {
                                 <option value="Credito de terceros">Crédito de terceros</option>
                             </select>
 
-                            <button onClick={cleanFilters} className="btn btn-accent w-full">
+                            <button onClick={cleanFilters} className="btn btn-accent w-full sm:w-auto sm:min-w-36 justify-self-start">
                                 Limpiar Filtros
                             </button>
                         </div>

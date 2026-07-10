@@ -13,6 +13,7 @@ import { useRegistrarSolicitudFacturacion2 } from "../../../services/solicitudSe
 import { HeaderSolicitud } from "../solicitar-facturacion/HeaderSolicitud";
 import { withFileValidation, validateFileInput } from "../../../utils/fileValidation";
 import { alert } from "../../../utils/alerts";
+import { unformatNumber } from "../../../utils/money";
 
 export type FormValues = {
   documentos: "Si" | "No";
@@ -443,8 +444,8 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
     fd.append("entrega_autorizada", "No");
     fd.append("observaciones", values.observaciones || "");
     fd.append("is_act", "2");
-    fd.append("descuento_solicitado_a", values.descuentoAut || "0");
-    fd.append("saldo_contraentrega_a", values.saldoContraentrega || "0");
+    fd.append("descuento_solicitado_a", unformatNumber(values.descuentoAut, { allowDecimals: false }) || "0");
+    fd.append("saldo_contraentrega_a", unformatNumber(values.saldoContraentrega, { allowDecimals: false }) || "0");
 
     if (values.cedulaFile?.[0]) fd.append("cedula", values.cedulaFile[0]);
     if (values.manifiestoFile?.[0])
@@ -595,11 +596,15 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
                 label="Saldo contraentrega"
                 control={control}
                 placeholder="0"
+                formatThousands
                 rules={{
                   validate: (v) => {
-                    const str = typeof v === "string" ? v : "";
+                    const str = unformatNumber(
+                      typeof v === "string" ? v : "",
+                      { allowDecimals: false }
+                    );
                     return (
-                      !str || /^\d+$/.test(str.trim()) || "Solo números enteros"
+                      !str || /^\d+$/.test(str) || "Solo números enteros"
                     );
                   },
                 }}
@@ -707,11 +712,15 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
                 label="Descuento a autorizar"
                 control={control}
                 placeholder="0"
+                formatThousands
                 rules={{
                   validate: (v) => {
-                    const str = typeof v === "string" ? v : "";
+                    const str = unformatNumber(
+                      typeof v === "string" ? v : "",
+                      { allowDecimals: false }
+                    );
                     return (
-                      !str || /^\d+$/.test(str.trim()) || "Solo números enteros"
+                      !str || /^\d+$/.test(str) || "Solo números enteros"
                     );
                   },
                 }}

@@ -247,19 +247,13 @@ const TablaMotos: React.FC = () => {
 
   return (
     <DataTable
-      title="Módulo de motos"
-      toolbar={
-        <button className="btn bg-[#2BB352] text-white" onClick={openCrear}>
-          Crear Moto
-        </button>
-      }
       filters={
         <>
           <div className="bg-base-100 rounded-xl border border-base-200 p-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-              <div className="flex flex-col gap-1">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="flex flex-col gap-1 flex-1 min-w-35">
                 <label className="text-sm font-medium text-base-content">Marca</label>
-                <select className="select select-bordered" value={filters.marca ?? ""} onChange={set("marca")}>
+                <select className="select select-bordered w-full" value={filters.marca ?? ""} onChange={set("marca")}>
                   <option value="">Todas</option>
                   {marcaOptions.map((x) => (
                     <option key={x} value={x}>{x}</option>
@@ -267,9 +261,9 @@ const TablaMotos: React.FC = () => {
                 </select>
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 flex-1 min-w-35">
                 <label className="text-sm font-medium text-base-content">Línea</label>
-                <select className="select select-bordered" value={filters.linea ?? ""} onChange={set("linea")}>
+                <select className="select select-bordered w-full" value={filters.linea ?? ""} onChange={set("linea")}>
                   <option value="">Todas</option>
                   {lineaOptions.map((x) => (
                     <option key={x} value={x}>{x}</option>
@@ -277,9 +271,9 @@ const TablaMotos: React.FC = () => {
                 </select>
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 flex-1 min-w-35">
                 <label className="text-sm font-medium text-base-content">Modelo</label>
-                <select className="select select-bordered" value={filters.modelo ?? ""} onChange={set("modelo")}>
+                <select className="select select-bordered w-full" value={filters.modelo ?? ""} onChange={set("modelo")}>
                   <option value="">Todos</option>
                   {modeloOptions.map((x) => (
                     <option key={x} value={x}>{x}</option>
@@ -287,9 +281,9 @@ const TablaMotos: React.FC = () => {
                 </select>
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 flex-1 min-w-35">
                 <label className="text-sm font-medium text-base-content">Empresa</label>
-                <select className="select select-bordered" value={filters.empresa ?? ""} onChange={set("empresa")}>
+                <select className="select select-bordered w-full" value={filters.empresa ?? ""} onChange={set("empresa")}>
                   <option value="">Todas</option>
                   {empresaOptions.map((x) => (
                     <option key={x} value={x}>{x}</option>
@@ -297,23 +291,33 @@ const TablaMotos: React.FC = () => {
                 </select>
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 flex-1 min-w-35">
                 <label className="text-sm font-medium text-base-content">Estado</label>
-                <select className="select select-bordered" value={filters.estado ?? ""} onChange={set("estado")}>
+                <select className="select select-bordered w-full" value={filters.estado ?? ""} onChange={set("estado")}>
                   <option value="">Todos</option>
                   <option value="Nueva">Nueva</option>
                   <option value="Usada">Usada</option>
                 </select>
               </div>
+
+              <div className="flex gap-2 shrink-0 w-full sm:w-auto">
+                <button className="btn bg-[#2BB352] text-white whitespace-nowrap flex-1 sm:flex-none" onClick={openCrear}>
+                  Crear Moto
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline btn-error whitespace-nowrap flex-1 sm:flex-none"
+                  onClick={clearFilters}
+                >
+                  Limpiar
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center justify-between mt-3">
+            <div className="mt-3">
               <span className="text-xs text-base-content/60">
                 {isPending ? "Cargando..." : `Resultados: ${total}`}
               </span>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={clearFilters}>
-                Limpiar filtros
-              </button>
             </div>
           </div>
 

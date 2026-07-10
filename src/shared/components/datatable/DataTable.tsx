@@ -10,12 +10,12 @@ import type {
 } from "./types";
 
 const btnBase =
-  "btn btn-xs rounded-xl min-w-8 h-8 px-3 font-medium shadow-none border-0";
-const btnGhost = `${btnBase} btn-ghost bg-base-200 text-base-content/70 hover:bg-base-300`;
+  "btn btn-xs rounded-xl min-w-8 h-8 px-3 font-medium shadow-none border-0 transition-all duration-150";
+const btnGhost = `${btnBase} btn-ghost bg-base-200/70 text-base-content/60 hover:bg-base-300 hover:text-base-content`;
 // Mismo azul de marca que el thead (bg-[#3498DB]); index.css lo atenúa en modo oscuro.
-const btnActive = `${btnBase} bg-[#3498DB] text-white`;
+const btnActive = `${btnBase} bg-[#3498DB] text-white shadow-sm shadow-[#3498DB]/30`;
 const btnEllipsis =
-  "btn btn-xs rounded-xl min-w-8 h-8 px-3 bg-base-200 text-base-content/60 pointer-events-none";
+  "btn btn-xs rounded-xl min-w-8 h-8 px-3 bg-transparent text-base-content/40 pointer-events-none";
 
 const alignClass = (align?: "left" | "right" | "center") =>
   align === "right" ? "text-right" : align === "center" ? "text-center" : "";
@@ -61,15 +61,15 @@ function PaginationFooter({
   // Único selector de "cantidad de registros": vive acá, junto al resumen.
   const summaryBlock = (
     <div className="flex items-center gap-2 flex-wrap">
-      <span className="text-xs text-base-content/50">{summaryOverride ?? defaultSummary}</span>
+      <span className="text-xs font-medium text-base-content/50">{summaryOverride ?? defaultSummary}</span>
       {(isFetching ?? isLoading) && (
-        <span className="loading loading-spinner loading-xs" aria-hidden="true" />
+        <span className="loading loading-spinner loading-xs text-[#3498DB]" aria-hidden="true" />
       )}
       {onPageSizeChange && (
         <span className="flex items-center gap-1.5">
-          <label className="text-xs opacity-70 whitespace-nowrap">Filas:</label>
+          <label className="text-xs opacity-60 whitespace-nowrap">Filas:</label>
           <select
-            className="select select-bordered select-xs w-16"
+            className="select select-bordered select-xs w-16 rounded-lg"
             value={pageSize}
             onChange={(e) => onPageSizeChange(Number(e.target.value))}
           >
@@ -86,7 +86,7 @@ function PaginationFooter({
 
   if (variant === "simple") {
     return (
-      <div className="flex flex-wrap justify-between items-center gap-3 p-4">
+      <div className="flex flex-wrap justify-between items-center gap-3 p-4 border-t border-base-200">
         {summaryBlock}
         <div className="flex items-center gap-2">
           <button className={btnGhost} onClick={goPrev} disabled={page === 1} aria-label="Página anterior">
@@ -103,7 +103,7 @@ function PaginationFooter({
   const items = getPaginationItems(page, totalPages, siblingCount, boundaryCount);
 
   return (
-    <div className="flex items-center justify-between px-4 pb-4 pt-2 flex-wrap gap-3">
+    <div className="flex items-center justify-between px-4 pb-4 pt-3 flex-wrap gap-3 border-t border-base-200">
       {summaryBlock}
 
       {!hideControls && (
@@ -183,8 +183,8 @@ function DataTableInner<T>({
 }: DataTableProps<T>) {
   if (isError) {
     return (
-      <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4 text-error">
-        {errorMessage}
+      <div className="overflow-x-auto rounded-2xl border border-base-200 bg-base-100 shadow-sm p-6 flex items-center gap-2 text-error">
+        <span className="text-sm font-medium">{errorMessage}</span>
       </div>
     );
   }
@@ -192,9 +192,11 @@ function DataTableInner<T>({
   const colSpan = columns.length + (selection ? 1 : 0);
 
   return (
-    <div className={`rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl ${className ?? ""}`}>
+    <div
+      className={`rounded-2xl flex flex-col border border-base-200 bg-base-100 shadow-sm hover:shadow-md transition-shadow duration-200 ${className ?? ""}`}
+    >
       {(title || toolbar) && (
-        <div className="px-4 pt-4 my-3 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
+        <div className="px-4 pt-4 pb-3 mb-1 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between border-b border-base-200">
           {title && (
             <h3 className="text-sm font-semibold tracking-wide text-base-content/70">
               {title}
@@ -208,11 +210,11 @@ function DataTableInner<T>({
         </div>
       )}
 
-      {filters && <div className="px-4 pb-3">{filters}</div>}
+      {filters && <div className="px-4 pt-3 pb-3">{filters}</div>}
 
       <div className="relative overflow-x-auto max-w-full px-4">
         <table
-          className={`table table-zebra ${theadVariant === "styled" ? "table-pin-rows" : ""} ${tableClassName ?? ""}`}
+          className={`table ${theadVariant === "styled" ? "table-pin-rows" : ""} ${tableClassName ?? ""}`}
         >
           <thead
             className={
@@ -225,7 +227,7 @@ function DataTableInner<T>({
               className={
                 theadVariant === "plain"
                   ? ""
-                  : "[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]"
+                  : "[&>th]:uppercase [&>th]:text-[11px] [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB] shadow-sm"
               }
             >
               {selection && (
@@ -241,12 +243,12 @@ function DataTableInner<T>({
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`py-4 ${alignClass(col.align)} ${col.headerClassName ?? ""}`}
+                  className={`py-3.5 ${alignClass(col.align)} ${col.headerClassName ?? ""}`}
                 >
                   {col.sortable && sort ? (
                     <button
                       type="button"
-                      className="inline-flex items-center gap-1"
+                      className="inline-flex items-center gap-1 hover:opacity-80 transition-opacity"
                       onClick={() => sort.onSortChange(col.key)}
                     >
                       {col.header}
@@ -265,14 +267,14 @@ function DataTableInner<T>({
             </tr>
           </thead>
 
-          <tbody className="[&>tr:hover]:bg-base-200/40">
+          <tbody className="[&>tr]:border-base-200 [&>tr:nth-child(even)]:bg-base-200/30 [&>tr:hover]:bg-[#3498DB]/8!">
             {rows.map((row, idx) => {
               const key = rowKey(row, idx);
               const isSelected = selection?.selectedKeys.has(key);
               return (
                 <tr
                   key={key}
-                  className={`transition-colors ${onRowClick ? "cursor-pointer" : ""} ${
+                  className={`transition-colors duration-150 ${onRowClick ? "cursor-pointer" : ""} ${
                     rowClassName?.(row) ?? ""
                   }`}
                   onClick={() => onRowClick?.(row)}
@@ -298,7 +300,7 @@ function DataTableInner<T>({
 
             {!isLoading && rows.length === 0 && (
               <tr>
-                <td colSpan={colSpan} className="text-center text-base-content/50 py-10">
+                <td colSpan={colSpan} className="text-center text-base-content/40 py-14 text-sm font-medium">
                   {emptyMessage}
                 </td>
               </tr>
