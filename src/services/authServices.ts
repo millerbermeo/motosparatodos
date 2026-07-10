@@ -7,6 +7,7 @@ import { useAuthStore } from "../store/auth.store";
 interface LoginRequest {
   username: string;
   password: string;
+  recordar?: boolean;
 }
 
 export const loginRequest = async (credentials: LoginRequest): Promise<LoginResponse> => {

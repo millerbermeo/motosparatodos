@@ -14,7 +14,7 @@ import { fmtCOP, toNumberOrNullMoney, toNumberSafe } from "../../../utils/money"
 import { garantiaExtendidaOptions } from "../../../shared/components/options/garantia-extendida-options";
 import { aNumeroOUndefined } from "../../../utils/number";
 import MotoImage from "../detalles-cotizacion/sub-components/MotoImage";
-import { BASE_URL } from "../../../utils/url";
+import { toAbsoluteUrlOrUndefined } from "../../../utils/files";
 import { gpsOptions } from "../../../shared/components/options/gps-options";
 import { buildMotoOptions } from "./motoHelpers";
 import { alert } from "../../../utils/alerts";
@@ -1462,6 +1462,17 @@ const CotizacionFormulario: React.FC = () => {
 
 
 
+    const aplicarCliente = (cliente: any) => {
+        setValue("primer_nombre", cliente.name || "");
+        setValue("segundo_nombre", cliente.s_name || "");
+        setValue("primer_apellido", cliente.last_name || "");
+        setValue("segundo_apellido", cliente.s_last_name || "");
+        setValue("celular", cliente.celular || "");
+        setValue("email", cliente.email || "");
+        setValue("fecha_nac", cliente.fecha_nacimiento || "");
+    };
+
+    // Click manual en la lupa: valida y avisa si no encuentra el cliente.
     const handleBuscarCliente = async () => {
         if (!cedulaValue || cedulaValue.length < 5) {
             alert.warn("Cédula inválida", "Ingresa una cédula válida");
@@ -1475,14 +1486,17 @@ const CotizacionFormulario: React.FC = () => {
             return;
         }
 
-        // ✅ Rellenar formulario automáticamente
-        setValue("primer_nombre", cliente.name || "");
-        setValue("segundo_nombre", cliente.s_name || "");
-        setValue("primer_apellido", cliente.last_name || "");
-        setValue("segundo_apellido", cliente.s_last_name || "");
-        setValue("celular", cliente.celular || "");
-        setValue("email", cliente.email || "");
-        setValue("fecha_nac", cliente.fecha_nacimiento || "");
+        aplicarCliente(cliente);
+    };
+
+    // Al perder foco el input: busca automáticamente en silencio (sin alertas).
+    const handleBuscarClienteAlPerderFoco = async () => {
+        if (!cedulaValue || cedulaValue.length < 5) return;
+
+        const { data: cliente } = await buscarCliente();
+        if (!cliente) return;
+
+        aplicarCliente(cliente);
     };
 
 
@@ -1613,6 +1627,7 @@ const CotizacionFormulario: React.FC = () => {
                             label="Cédula"
                             control={control}
                             placeholder="Número de documento"
+                            onBlur={handleBuscarClienteAlPerderFoco}
                             rules={{
                                 required: "La cédula es obligatoria.",
                                 pattern: {
@@ -1721,7 +1736,7 @@ const CotizacionFormulario: React.FC = () => {
                                             {incluirMoto1 && (
                                                 <div className="mt-2 flex justify-center">
                                                     <MotoImage
-                                                        src={fotoMoto1 ? `${BASE_URL}/${fotoMoto1}` : undefined}
+                                                        src={toAbsoluteUrlOrUndefined(fotoMoto1)}
                                                         thumbClassName="w-32 h-32"
                                                     />
                                                 </div>
@@ -2281,7 +2296,7 @@ const CotizacionFormulario: React.FC = () => {
                                             {incluirMoto2 && (
                                                 <div className="mt-2 flex justify-center">
                                                     <MotoImage
-                                                        src={fotoMoto2 ? `${BASE_URL}/${fotoMoto2}` : undefined}
+                                                        src={toAbsoluteUrlOrUndefined(fotoMoto2)}
                                                         thumbClassName="w-32 h-32"
                                                     />
                                                 </div>

@@ -20,6 +20,13 @@ select optgroup {
     background-color: var(--color-base-300) !important;
 }
 
+/* Login: en modo oscuro, fondo uniforme en vez del degradado claro (slate-100/200)
+   que quedaba desparejo/manchado sobre el tema oscuro. */
+[data-theme="dark"] .login-page-bg {
+    background-image: none !important;
+    background-color: var(--color-base-200) !important;
+}
+
 .loader {
     --cell-size: 52px;
     --cell-spacing: 1px;

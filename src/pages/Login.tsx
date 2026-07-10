@@ -9,6 +9,7 @@ import { useLoaderStore } from "../store/loader.store"; // o "../store/loader.st
 interface LoginRequest {
   username: string;
   password: string;
+  recordar: boolean;
 }
 
 const Login: React.FC = () => {
@@ -19,7 +20,7 @@ const Login: React.FC = () => {
   } = useForm<LoginRequest>({
     mode: "onTouched",
     reValidateMode: "onChange",
-    defaultValues: { username: "", password: "" },
+    defaultValues: { username: "", password: "", recordar: false },
   });
   const navigate = useNavigate();                 // 👈
 
@@ -44,7 +45,7 @@ const Login: React.FC = () => {
   };
 
   return (
-    <main className="h-screen max-h-screen overflow-hidden w-full bg-linear-to-br from-base-200 via-slate-100 to-slate-200">
+    <main className="login-page-bg h-screen max-h-screen overflow-hidden w-full bg-linear-to-br from-base-200 via-slate-100 to-slate-200">
       <div className="pointer-events-none absolute -top-24 -left-24 size-72 rounded-full bg-sky-500/50 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 right-0 size-72 rounded-full bg-red-400/50 blur-3xl" />
       <div className="mx-auto grid min-h-svh max-w-7xl grid-cols-1 lg:grid-cols-2">
@@ -171,6 +172,7 @@ const Login: React.FC = () => {
                 <input
                   type="checkbox"
                   className="size-4 rounded border-base-300 text-info focus:ring-cyan-500"
+                  {...register("recordar")}
                 />
                 Recuérdame
               </label>

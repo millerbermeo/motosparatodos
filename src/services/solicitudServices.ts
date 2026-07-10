@@ -324,7 +324,8 @@ export const useRegistrarSolicitudFacturacion = (
       window.location.reload();
     },
     onError: (error) => {
-      const raw = error.response?.data?.message ?? "No se pudo registrar la solicitud";
+      const data = error.response?.data as any;
+      const raw = data?.message ?? data?.error ?? "No se pudo registrar la solicitud";
       const arr = Array.isArray(raw) ? raw : [raw];
       Swal.fire({ icon: "error", title: "Error", html: arr.join("<br/>") });
     },

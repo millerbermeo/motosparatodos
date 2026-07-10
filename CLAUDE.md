@@ -33,16 +33,24 @@ React 18 + TypeScript + Vite app (motorcycle dealership management system — "M
 
 **Wizard / multi-step forms** — `useWizardStore` ([src/store/wizardStore.ts](src/store/wizardStore.ts)) manages step index and prev/next/goTo. Used by credit registration flow.
 
-**PDF generation** — two libraries in use:
+**Document generation** — three libraries, by output type:
 - `@react-pdf/renderer` — declarative PDF documents (e.g. amortization tables, cotización PDFs)
 - `jspdf` + `jspdf-autotable` — imperative PDF in some reports
+- `docx` — generates `.docx` files (see [src/features/creditos/word/](src/features/creditos/word/))
 
-**Styling** — Tailwind CSS v4 (via `@tailwindcss/vite` plugin, no separate `tailwind.config`). DaisyUI v5 for component classes (`btn`, `modal`, `modal-box`, etc.). Icons from `lucide-react`.
+Dev-only image proxy: `vite.config.ts` proxies `/__img` → the backend, because it doesn't send CORS headers and `react-pdf`/`docx` fetch logos cross-origin to embed them. Use `/__img/...` (not the raw backend URL) when embedding backend images in generated PDFs/docs during local dev.
 
-**Feature structure** — business logic lives in [src/features/](src/features/) grouped by domain (`creditos`, `cotizaciones`, `vehiculos`, `clientes`, …). Each domain folder holds table components, form components, and PDF doc components. Pages in [src/pages/](src/pages/) are thin wrappers that compose feature components.
+**Styling** — Tailwind CSS v4 (via `@tailwindcss/vite` plugin, no separate `tailwind.config`). DaisyUI v5 for component classes (`btn`, `modal`, `modal-box`, etc.). Icons from `lucide-react` — prefer importing icons directly from `lucide-react` over hand-rolled SVG components; only hand-roll an inline SVG for brand marks lucide doesn't have (e.g. WhatsApp).
+
+**Feature structure** — business logic lives in [src/features/](src/features/) grouped by domain (`creditos`, `cotizaciones`, `vehiculos`, `clientes`, …). Each domain folder holds table components, form components, and PDF/docx doc components, typically under a `components/` subfolder. Pages in [src/pages/](src/pages/) are thin wrappers that compose feature components — extract page-local markup (repeated cards, icons, small stateful widgets) into `src/features/<domain>/components/` rather than leaving it inline in the page.
+
+**Services** — one file per domain in [src/services/](src/services/) (`creditosServices.ts`, `cotizacionesServices.ts`, `vehiculosServices.ts`, …), all built on the shared `api` axios instance ([src/services/axiosInstance.ts](src/services/axiosInstance.ts)). The response interceptor there logs the user out and reloads on `401`.
 
 **Shared utilities:**
 - [src/shared/components/FormInput.tsx](src/shared/components/FormInput.tsx) / [FormSelect.tsx](src/shared/components/FormSelect.tsx) — controlled inputs for `react-hook-form`
+- [src/shared/components/CopyButton.tsx](src/shared/components/CopyButton.tsx) — self-contained "copy to clipboard" button (own `copied` state, no lifting needed)
 - [src/utils/money.ts](src/utils/money.ts) — currency formatting
-- [src/utils/date.ts](src/utils/date.ts) — date helpers
+- [src/utils/date.ts](src/utils/date.ts) — date helpers (`fmtFecha`, `fmtFechaSolo`, `fmtHora`)
+- [src/utils/files.ts](src/utils/files.ts) — `toAbsoluteUrl`/`toAbsoluteUrlOrUndefined` (backend-relative path → absolute URL) and `getFileExtension`; use these instead of re-deriving a base-URL/extension helper per page
+- [src/utils/officeViewer.ts](src/utils/officeViewer.ts) — `getOfficeViewerUrl` wraps Office-format URLs (doc/docx/xlsx/pptx) with the Office Online viewer
 - [src/utils/arrayMenu.ts](src/utils/arrayMenu.ts) — sidebar navigation config

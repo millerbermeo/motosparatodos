@@ -1,28 +1,14 @@
 // src/pages/cotizaciones/utils/detalleCotizacion.mapper.ts
 import { fmtFecha } from '../../../../utils/date';
-import { BASE_URL } from '../../../../utils/url';
 import { aNumeroOUndefined } from '../../../../utils/number';
 import type { Cotizacion, Cuotas, Motocicleta } from '../detallesCotizacion.type';
 import { sanitizePhone } from '../../../../utils/phone';
 import { normalizarTexto } from '../../../../utils/text';
+import { toAbsoluteUrl, toAbsoluteUrlOrUndefined } from '../../../../utils/files';
 
-export const buildImageUrl = (path?: string): string | undefined => {
-  if (!path) return undefined;
-  if (/^https?:\/\//i.test(path)) return path;
-  const root = (BASE_URL || "").replace(/\/+$/, "");
-  const rel = String(path).replace(/^\/+/, "");
-  return `${root}/${rel}`;
-};
+export const buildImageUrl = toAbsoluteUrlOrUndefined;
 
-
-
-export const buildFileUrl = (path?: string | null): string | null => {
-  if (!path) return null;
-  if (/^https?:\/\//i.test(path)) return path;
-  const root = (BASE_URL || "").replace(/\/+$/, "");
-  const rel = String(path).replace(/^\/+/, "");
-  return `${root}/${rel}`;
-};
+export const buildFileUrl = toAbsoluteUrl;
 
 
 

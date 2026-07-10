@@ -3,61 +3,15 @@ import React, { useState } from "react";
 import { useClientes } from "../../services/clientesServices";
 import { useLoaderStore } from "../../store/loader.store";
 import { fmtFechaSolo } from "../../utils/date";
-
-/* =======================
-   Paginación (mismo estilo que cotizaciones)
-   ======================= */
-const SIBLING_COUNT = 1;
-const BOUNDARY_COUNT = 1;
-
-const range = (start: number, end: number) =>
-  Array.from({ length: end - start + 1 }, (_, i) => start + i);
-
-function getPaginationItems(
-  current: number,
-  totalPages: number,
-  siblingCount = SIBLING_COUNT,
-  boundaryCount = BOUNDARY_COUNT
-) {
-  if (totalPages <= 1) return [1];
-  const startPages = range(1, Math.min(boundaryCount, totalPages));
-  const endPages = range(
-    Math.max(totalPages - boundaryCount + 1, boundaryCount + 1),
-    totalPages
-  );
-  const siblingsStart = Math.max(
-    Math.min(current - siblingCount, totalPages - boundaryCount - siblingCount * 2 - 1),
-    boundaryCount + 2
-  );
-  const siblingsEnd = Math.min(
-    Math.max(current + siblingCount, boundaryCount + siblingCount * 2 + 2),
-    endPages.length > 0 ? Number(endPages[0]) - 2 : totalPages - 1
-  );
-  const items: (number | '...')[] = [];
-  items.push(...startPages);
-  if (siblingsStart > boundaryCount + 2) items.push('...');
-  else if (boundaryCount + 1 < totalPages - boundaryCount) items.push(boundaryCount + 1);
-  items.push(...range(siblingsStart, siblingsEnd));
-  if (siblingsEnd < totalPages - boundaryCount - 1) items.push('...');
-  else if (totalPages - boundaryCount > boundaryCount) items.push(totalPages - boundaryCount);
-  items.push(...endPages);
-  return items.filter((v, i, a) => a.indexOf(v) === i);
-}
-
-const btnBase = 'btn btn-xs rounded-xl min-w-8 h-8 px-3 font-medium shadow-none border-0';
-const btnGhost = `${btnBase} btn-ghost bg-base-200 text-base-content/70 hover:bg-base-300`;
-const btnActive = `${btnBase} bg-[#3498DB] text-primary-content`;
-const btnEllipsis = 'btn btn-xs rounded-xl min-w-8 h-8 px-3 bg-base-200 text-base-content/60 pointer-events-none';
+import { buildFullName } from "../../utils/fullName";
+import { useDebouncedValue } from "../../shared/hooks/useDebounce";
+import { DataTable } from "../../shared/components/datatable/DataTable";
+import type { DataTableColumn } from "../../shared/components/datatable/types";
 
 /* =======================
    Utils de presentación
    ======================= */
-const fullName = (r: any) =>
-  [r?.name, r?.s_name, r?.last_name, r?.s_last_name]
-    .filter(Boolean)
-    .join(' ')
-    .replace(/\s+/g, ' ')
-    .trim() || '—';
+const fullName = buildFullName;
 
 const formatDate = (date?: string) => {
   if (!date) return '—';
@@ -79,17 +33,14 @@ const TablaClientes: React.FC = () => {
   const [search, setSearch] = useState('');
 
   /* 🔍 debounce simple para búsqueda por nombre */
+  const debouncedSearch = useDebouncedValue(search, 400);
   React.useEffect(() => {
-    const t = setTimeout(() => {
-      setFilters((prev) => ({
-        ...prev,
-        nombre: search,
-      }));
-      setPage(1);
-    }, 400);
-
-    return () => clearTimeout(t);
-  }, [search]);
+    setFilters((prev) => ({
+      ...prev,
+      nombre: debouncedSearch,
+    }));
+    setPage(1);
+  }, [debouncedSearch]);
 
   const { data, isPending, isError, isFetching } = useClientes(page, perPage, filters);
 
@@ -103,14 +54,6 @@ const TablaClientes: React.FC = () => {
     }
   }, [isPending, show, hide]);
 
-  if (isError) {
-    return (
-      <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4 text-error">
-        Error al cargar clientes
-      </div>
-    );
-  }
-
   const clientes = data?.data ?? [];
 
   const total = Number(data?.pagination?.total ?? clientes.length ?? 0) || 0;
@@ -120,18 +63,6 @@ const TablaClientes: React.FC = () => {
     data?.pagination?.last_page ?? Math.max(1, Math.ceil(total / serverPerPage))
   );
 
-  const items = React.useMemo(
-    () => getPaginationItems(currentPage, lastPage),
-    [currentPage, lastPage]
-  );
-
-  const goPrev = () => setPage((p) => Math.max(1, p - 1));
-  const goNext = () => setPage((p) => Math.min(lastPage, p + 1));
-  const goTo = (p: number) => setPage(Math.min(Math.max(1, p), lastPage));
-
-  const start = total === 0 ? 0 : (currentPage - 1) * serverPerPage + 1;
-  const end = Math.min(currentPage * serverPerPage, total);
-
   const cleanFilters = () => {
     setFilters({ cedula: '', nombre: '' });
     setSearch('');
@@ -139,12 +70,38 @@ const TablaClientes: React.FC = () => {
     setPerPage(10);
   };
 
+  const columns: DataTableColumn<any>[] = [
+    {
+      key: "item",
+      header: "Item",
+      render: (_c, i) => (
+        <span className="text-sm font-semibold text-base-content/70">
+          {(currentPage - 1) * serverPerPage + i + 1}
+        </span>
+      ),
+    },
+    { key: "codigo", header: "Codigo", className: "text-sm text-base-content/70", render: (c) => c?.id || "—" },
+    { key: "cedula", header: "Cédula", className: "text-sm text-base-content/70", render: (c) => c.cedula || "—" },
+    { key: "nombre", header: "Nombre", className: "font-medium", render: (c) => fullName(c) },
+    { key: "celular", header: "Teléfono", className: "text-sm text-base-content/70", render: (c) => c.celular || "" },
+    { key: "email", header: "Email", className: "text-sm text-base-content/70", render: (c) => c.email || "—" },
+    {
+      key: "fecha_nacimiento",
+      header: "Nacimiento",
+      className: "text-sm text-base-content/70",
+      render: (c) => formatDate(c.fecha_nacimiento),
+    },
+    {
+      key: "fecha_creacion",
+      header: "Creación",
+      className: "text-sm text-base-content/70",
+      render: (c) => formatDate(c.fecha_creacion),
+    },
+  ];
+
   return (
-    <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
-
-      <div className="px-4 pt-4 my-3 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
-
-        {/* Filtros */}
+    <DataTable
+      toolbar={
         <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 w-full lg:flex-1 lg:min-w-0">
           <input
             type="text"
@@ -165,113 +122,33 @@ const TablaClientes: React.FC = () => {
             }}
           />
 
-          <button
-            onClick={cleanFilters}
-            className="btn btn-accent w-full sm:w-auto sm:min-w-36"
-          >
+          <button onClick={cleanFilters} className="btn btn-accent w-full sm:w-auto sm:min-w-36">
             Limpiar Filtros
           </button>
         </div>
-
-        {/* Opciones de paginación */}
-        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-between lg:justify-end">
-          <label className="text-xs opacity-70">Filas:</label>
-          <select
-            className="select select-accent select-sm select-bordered w-20"
-            value={serverPerPage}
-            onChange={(e) => {
-              const v = Number(e.target.value) || 10;
-              setPerPage(v);
-              setPage(1);
-            }}
-          >
-            {[10, 20, 50].map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-          {isFetching && <span className="loading loading-spinner loading-xs" />}
-        </div>
-      </div>
-
-
-      <div className="relative overflow-x-auto max-w-full px-4">
-        <table className="table table-zebra table-pin-rows min-w-250">
-          <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-backdrop-filter:backdrop-blur-md">
-            <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
-              <th>Item</th>
-              <th>Codigo</th>
-              <th>Cédula</th>
-              <th>Nombre</th>
-              <th>Teléfono</th>
-              <th>Email</th>
-              <th>Nacimiento</th>
-              <th>Creación</th>
-            </tr>
-          </thead>
-
-          <tbody className="[&>tr:hover]:bg-base-200/40">
-
-            {clientes.map((c: any, i: number) => {
-              const index = (currentPage - 1) * serverPerPage + i + 1;
-
-              return (
-                <tr key={c.id} className="transition-colors">
-                  <td className="text-sm font-semibold text-base-content/70">{index}</td>
-
-                  <td className="text-sm text-base-content/70">{c?.id || '—'}</td>
-                  <td className="text-sm text-base-content/70">{c.cedula || '—'}</td>
-                  <td className="font-medium">{fullName(c)}</td>
-                  <td className="text-sm text-base-content/70">{c.celular || ''}</td>
-                  <td className="text-sm text-base-content/70">{c.email || '—'}</td>
-                  <td className="text-sm text-base-content/70">{formatDate(c.fecha_nacimiento)}</td>
-                  <td className="text-sm text-base-content/70">{formatDate(c.fecha_creacion)}</td>
-                </tr>
-              );
-            })}
-
-            {!isPending && clientes.length === 0 && (
-              <tr>
-                <td colSpan={8} className="text-center py-5 opacity-60">
-                  Sin resultados
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="flex items-center justify-between px-4 pb-4 pt-2">
-        <span className="text-xs text-base-content/50">
-          Mostrando {start}–{end} de {total}
-        </span>
-
-        <div className="flex items-center gap-2">
-          <button className={btnGhost} onClick={goPrev} disabled={currentPage === 1}>
-            «
-          </button>
-          {items.map((it, i) =>
-            it === '...' ? (
-              <span key={`e-${i}`} className={btnEllipsis}>
-                …
-              </span>
-            ) : (
-              <button
-                key={`p-${it}`}
-                className={Number(it) === currentPage ? btnActive : btnGhost}
-                onClick={() => goTo(Number(it))}
-              >
-                {it}
-              </button>
-            )
-          )}
-          <button className={btnGhost} onClick={goNext} disabled={currentPage === lastPage}>
-            »
-          </button>
-        </div>
-      </div>
-    </div>
+      }
+      tableClassName="min-w-250"
+      columns={columns}
+      rows={clientes}
+      rowKey={(c) => c.id}
+      isLoading={isPending}
+      isError={isError}
+      errorMessage="Error al cargar clientes"
+      emptyMessage="Sin resultados"
+      pagination={{
+        page: currentPage,
+        totalPages: lastPage,
+        totalItems: total,
+        pageSize: serverPerPage,
+        onPageChange: setPage,
+        onPageSizeChange: (v) => {
+          setPerPage(v);
+          setPage(1);
+        },
+        pageSizeOptions: [10, 20, 50],
+        isFetching,
+      }}
+    />
   );
 };
 

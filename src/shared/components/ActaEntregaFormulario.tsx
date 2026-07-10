@@ -175,8 +175,10 @@ registrarActa(fd, {
         : undefined
     );
 
-    close();                // cierro el modal (opcional, porque al recargar igual se irá)
-    window.location.reload(); // 🔄 recarga toda la página
+    close(); // cierro el modal
+
+    // Espera a que se vea el alert de éxito (timer 1600ms) antes de recargar
+    setTimeout(() => window.location.reload(), 1700);
   },
 });
 

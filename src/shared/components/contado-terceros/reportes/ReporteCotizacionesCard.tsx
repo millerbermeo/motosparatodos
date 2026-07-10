@@ -3,6 +3,7 @@ import { Download, FileSpreadsheet, CalendarDays, Filter } from "lucide-react";
 // xlsx se carga bajo demanda (import dinámico) dentro del handler de exportación
 import Swal from "sweetalert2";
 import { usePrecargarReporteCotizacionesFull } from "../../../../services/cotizacionesReporteService";
+import { buildFullName } from "../../../../utils/fullName";
 
 const ESTADOS_COTIZACION = [
   "Solicitar crédito",
@@ -31,6 +32,7 @@ type ReportRow = {
   Marca: string;
   Linea: string;
   Modelo: string;
+  "Valor a financiar": string;
 
   Cliente: string;
   "Nombre Cliente": string;
@@ -55,6 +57,7 @@ const COLUMNS = [
   "Marca",
   "Linea",
   "Modelo",
+  "Valor a financiar",
   "Cliente",
   "Nombre Cliente",
   "Telefono",
@@ -70,6 +73,16 @@ const COLUMNS = [
 ] as const;
 
 type ColumnKey = (typeof COLUMNS)[number];
+
+const formatCOP = (v: any) => {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "";
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0,
+  }).format(n);
+};
 
 const ReporteCotizacionesCard: React.FC = () => {
   const now = new Date();
@@ -103,10 +116,9 @@ const ReporteCotizacionesCard: React.FC = () => {
         const marca = (c.moto_seleccionada === "B" ? c.marca_b : c.marca_a) ?? "";
         const linea = (c.moto_seleccionada === "B" ? c.linea_b : c.linea_a) ?? "";
         const modelo = (c.moto_seleccionada === "B" ? c.modelo_b : c.modelo_a) ?? "";
+        const saldoFinanciar = c.moto_seleccionada === "B" ? c.saldo_financiar_b : c.saldo_financiar_a;
 
-        const nombreCompleto = [c.name, c.s_name, c.last_name, c.s_last_name]
-          .filter(Boolean)
-          .join(" ");
+        const nombreCompleto = buildFullName(c, "");
 
         return {
           "Id cotizacion": String(c.idPrimaria ?? c.id_cotizacion ?? c.id ?? ""),
@@ -117,6 +129,7 @@ const ReporteCotizacionesCard: React.FC = () => {
           Marca: String(marca),
           Linea: String(linea),
           Modelo: String(modelo),
+          "Valor a financiar": formatCOP(saldoFinanciar),
 
           Cliente: String(nombreCompleto),
           "Nombre Cliente": String(c.name ?? ""),

@@ -1,10 +1,10 @@
 import React from 'react'
 import TablaCumpleanos from '../features/clientes/TablaCumpleanos'
 
-const Happy:  React.FC = () => {
+const Happy: React.FC = () => {
   return (
-   <main className="w-full">
-   <TablaCumpleanos />
+    <main className="w-full">
+      <TablaCumpleanos />
     </main>
   )
 }

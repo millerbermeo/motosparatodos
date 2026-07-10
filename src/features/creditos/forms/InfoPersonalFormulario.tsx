@@ -551,7 +551,13 @@ const InfoPersonalFormulario: React.FC = () => {
   }, [cotizacion, data, id, getValues, reset]);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') e.preventDefault();
+      }}
+      className="space-y-8"
+    >
       {/* ================== DATOS PERSONALES ================== */}
       <section>
         <div className="divider divider-start divider-success">

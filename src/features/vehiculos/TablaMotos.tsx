@@ -14,54 +14,11 @@ import FormularioMotos from "./forms/FormularioMotos";
 import ImpuestosMotosFormulario from "./forms/ImpuestosMotosFormulario";
 import DescuentosMotosFormulario from "./forms/DescuentosMotosFormulario";
 import { useLoaderStore } from "../../store/loader.store";
-import { BOUNDARY_COUNT, PAGE_SIZE, SIBLING_COUNT } from "../../constants/pagination";
-import { BASE_URL } from "../../utils/url";
-
-const range = (start: number, end: number) =>
-  Array.from({ length: end - start + 1 }, (_, i) => start + i);
-
-function getPaginationItems(
-  current: number,
-  totalPages: number,
-  siblingCount = SIBLING_COUNT,
-  boundaryCount = BOUNDARY_COUNT
-) {
-  if (totalPages <= 1) return [1];
-  const startPages = range(1, Math.min(boundaryCount, totalPages));
-  const endPages = range(
-    Math.max(totalPages - boundaryCount + 1, boundaryCount + 1),
-    totalPages
-  );
-  const siblingsStart = Math.max(
-    Math.min(
-      current - siblingCount,
-      totalPages - boundaryCount - siblingCount * 2 - 1
-    ),
-    boundaryCount + 2
-  );
-  const siblingsEnd = Math.min(
-    Math.max(current + siblingCount, boundaryCount + siblingCount * 2 + 2),
-    endPages.length > 0 ? endPages[0] - 2 : totalPages - 1
-  );
-  const items: (number | "...")[] = [];
-  items.push(...startPages);
-  if (siblingsStart > boundaryCount + 2) items.push("...");
-  else if (boundaryCount + 1 < totalPages - boundaryCount)
-    items.push(boundaryCount + 1);
-  items.push(...range(siblingsStart, siblingsEnd));
-  if (siblingsEnd < totalPages - boundaryCount - 1) items.push("...");
-  else if (totalPages - boundaryCount > boundaryCount)
-    items.push(totalPages - boundaryCount);
-  items.push(...endPages);
-  return items.filter((v, i, a) => a.indexOf(v) === i);
-}
-
-const btnBase =
-  "btn btn-xs rounded-xl min-w-8 h-8 px-3 font-medium shadow-none border-0";
-const btnGhost = `${btnBase} btn-ghost bg-base-200 text-base-content/70 hover:bg-base-300`;
-const btnActive = `${btnBase} btn-primary text-primary-content`;
-const btnEllipsis =
-  "btn btn-xs rounded-xl min-w-8 h-8 px-3 bg-base-200 text-base-content/60 pointer-events-none";
+import { PAGE_SIZE } from "../../constants/pagination";
+import { toAbsoluteUrl } from "../../utils/files";
+import { DataTable } from "../../shared/components/datatable/DataTable";
+import type { DataTableColumn } from "../../shared/components/datatable/types";
+import { confirmDelete } from "../../utils/confirmDelete";
 
 const TablaMotos: React.FC = () => {
   const open = useModalStore((s) => s.open);
@@ -116,14 +73,7 @@ const TablaMotos: React.FC = () => {
   const currentPage = Number(data?.pagination?.current_page ?? page) || page;
   const lastPage = Number(data?.pagination?.last_page ?? Math.max(1, Math.ceil(total / serverPerPage)));
 
-  const start = total === 0 ? 0 : (currentPage - 1) * serverPerPage + 1;
-  const end = Math.min(currentPage * serverPerPage, total);
   const visible = motos;
-  const items = getPaginationItems(currentPage, lastPage);
-
-  const goPrev = () => setPage((p) => Math.max(1, p - 1));
-  const goNext = () => setPage((p) => Math.min(lastPage, p + 1));
-  const goTo = (p: number) => setPage(Math.min(Math.max(1, p), lastPage));
 
   const openCrear = () =>
     open(<FormularioMotos key="create" />, "Crear moto", {
@@ -167,16 +117,8 @@ const TablaMotos: React.FC = () => {
   };
 
   const confirmarEliminar = async (id: number, nombre: string) => {
-    const res = await Swal.fire({
-      icon: "warning",
-      title: "Eliminar moto",
-      html: `¿Seguro que deseas eliminar <b>${nombre}</b>?`,
-      showCancelButton: true,
-      confirmButtonText: "Sí, eliminar",
-      cancelButtonText: "Cancelar",
-      confirmButtonColor: "#ef4444",
-    });
-    if (res.isConfirmed) deleteMoto.mutate(id);
+    const ok = await confirmDelete(`¿Seguro que deseas eliminar <b>${nombre}</b>?`, "Eliminar moto");
+    if (ok) deleteMoto.mutate(id);
   };
 
   const { show, hide } = useLoaderStore();
@@ -185,15 +127,6 @@ const TablaMotos: React.FC = () => {
     if (isPending) show();
     else hide();
   }, [isPending, show, hide]);
-
-  if (isError)
-    return (
-      <div className="overflow-x-auto rounded-2xl border border-base-300 bg-base-100 shadow-xl p-4 text-error">
-        Error al cargar motos
-      </div>
-    );
-
-
 
   // ✅ ahora
   const set = (k: keyof MotoFilters) => (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -223,269 +156,195 @@ const TablaMotos: React.FC = () => {
     toggleEstado.mutate(id, { onSettled: () => setTogglingId(null) });
   };
 
-  return (
-    <div className="rounded-2xl flex flex-col border border-base-300 bg-base-100 shadow-xl">
-      <div className="px-4 pt-4 flex items-center justify-between gap-3 flex-wrap my-3">
-        <h3 className="text-sm font-semibold tracking-wide text-base-content/70">
-          Módulo de motos
-        </h3>
-        <button className="btn bg-[#2BB352] text-white" onClick={openCrear}>
-          Crear Moto
-        </button>
-      </div>
-
-      {/* FILTROS */}
-      <div className="px-4 pb-3">
-        <div className="bg-base-100 rounded-xl border border-base-200 p-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-base-content">Marca</label>
-              <select
-                className="select select-bordered"
-                value={filters.marca ?? ""}
-                onChange={set("marca")}
-              >
-                <option value="">Todas</option>
-                {marcaOptions.map((x) => (
-                  <option key={x} value={x}>{x}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-base-content">Línea</label>
-              <select
-                className="select select-bordered"
-                value={filters.linea ?? ""}
-                onChange={set("linea")}
-              >
-                <option value="">Todas</option>
-                {lineaOptions.map((x) => (
-                  <option key={x} value={x}>{x}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-base-content">Modelo</label>
-              <select
-                className="select select-bordered"
-                value={filters.modelo ?? ""}
-                onChange={set("modelo")}
-              >
-                <option value="">Todos</option>
-                {modeloOptions.map((x) => (
-                  <option key={x} value={x}>{x}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-base-content">Empresa</label>
-              <select
-                className="select select-bordered"
-                value={filters.empresa ?? ""}
-                onChange={set("empresa")}
-              >
-                <option value="">Todas</option>
-                {empresaOptions.map((x) => (
-                  <option key={x} value={x}>{x}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-base-content">Estado</label>
-              <select
-                className="select select-bordered"
-                value={filters.estado ?? ""}
-                onChange={set("estado")}
-              >
-                <option value="">Todos</option>
-                <option value="Nueva">Nueva</option>
-                <option value="Usada">Usada</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between mt-3">
-            <span className="text-xs text-base-content/60">
-              {isPending ? "Cargando..." : `Resultados: ${total}`}
-            </span>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={clearFilters}>
-              Limpiar filtros
-            </button>
-          </div>
+  const columns: DataTableColumn<any>[] = [
+    { key: "id", header: "#", className: "w-12", render: (m) => <span className="text-base-content/50">{m.id}</span> },
+    {
+      key: "imagen",
+      header: "Imagen",
+      render: (m) =>
+        m.foto ? (
+          <img
+            src={toAbsoluteUrl(m.foto) ?? undefined}
+            alt={`${m.marca} ${m.linea}`}
+            className="h-12 w-16 object-cover rounded-md border"
+          />
+        ) : (
+          <div className="h-12 w-16 bg-base-200 rounded-md" />
+        ),
+    },
+    { key: "marca", header: "Marca", className: "font-medium", render: (m) => m.marca ?? "" },
+    { key: "linea", header: "Línea", render: (m) => m.linea ?? "" },
+    { key: "cilindraje", header: "Cilindraje", render: (m) => (m.cilindraje != null ? `${m.cilindraje} CC` : "-") },
+    { key: "tipo_moto", header: "Tipo", render: (m) => m.tipo_moto ?? "" },
+    { key: "modelo", header: "Modelo", render: (m) => m.modelo ?? "" },
+    {
+      key: "empresa",
+      header: "Empresa",
+      headerClassName: "hidden md:table-cell",
+      className: "hidden md:table-cell",
+      render: (m) => m.empresa ?? "",
+    },
+    {
+      key: "subdistribucion",
+      header: "Subdistribucion",
+      headerClassName: "hidden lg:table-cell",
+      className: "hidden lg:table-cell",
+      render: (m) => m.subdistribucion ?? "",
+    },
+    {
+      key: "mostrar",
+      header: "Mostrar",
+      headerClassName: "hidden sm:table-cell",
+      className: "hidden sm:table-cell",
+      render: (m) => (
+        <div className="flex items-center justify-center gap-2">
+          <input
+            type="checkbox"
+            className="toggle toggle-success"
+            checked={Number(m.estado_moto) === 1}
+            disabled={togglingId === Number(m.id)}
+            onChange={() => onToggleEstadoMoto(m)}
+          />
+          <span className="text-xs font-semibold">{Number(m.estado_moto) === 1 ? "Sí" : "No"}</span>
         </div>
-      </div>
-
-      {/* Filas: a la derecha, encima de la tabla */}
-      <div className="flex items-center justify-end gap-2 px-4 py-3">
-        {isFetching && <span className="loading loading-spinner loading-xs" />}
-        <label className="text-xs opacity-70 whitespace-nowrap">Filas:</label>
-        <select
-          className="select select-accent select-sm select-bordered w-20"
-          value={serverPerPage}
-          onChange={(e) => {
-            setPerPage(Number(e.target.value) || PAGE_SIZE);
-            setPage(1);
-          }}
-        >
-          {[10, 20, 50].map((n) => (
-            <option key={n} value={n}>
-              {n}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* TABLA */}
-      <div className="relative overflow-x-auto max-w-full px-4">
-        <table className="table table-zebra table-pin-rows min-w-225">
-          <thead className="sticky top-0 z-10 bg-base-200/80 backdrop-blur supports-backdrop-filter:backdrop-blur-md">
-            <tr className="[&>th]:uppercase [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wider [&>th]:text-white bg-[#3498DB]">
-              <th className="w-12">#</th>
-              <th>Imagen</th>
-              <th>Marca</th>
-              <th>Línea</th>
-              <th>Cilindraje</th>
-              <th>Tipo</th>
-              <th>Modelo</th>
-              <th className="hidden md:table-cell">Empresa</th>
-              <th className="hidden lg:table-cell">Subdistribucion</th>
-              <th className="hidden sm:table-cell">Mostrar</th>
-              <th className="text-right pr-6 whitespace-nowrap">Precio</th>
-              <th className="text-right pr-6">Acciones</th>
-            </tr>
-          </thead>
-
-          <tbody className="[&>tr:hover]:bg-base-200/40">
-            {visible.map((m: any, idx: number) => (
-              <tr key={m.id ?? `${start + idx}`} className="transition-colors">
-                <th className="text-base-content/50">{m.id}</th>
-                <td>
-                  {m.foto ? (
-                    <img
-                      src={`${BASE_URL}/${m.foto}`}
-                      alt={`${m.marca} ${m.linea}`}
-                      className="h-12 w-16 object-cover rounded-md border"
-                    />
-                  ) : (
-                    <div className="h-12 w-16 bg-base-200 rounded-md" />
-                  )}
-                </td>
-                <td className="font-medium">{m.marca ?? ""}</td>
-                <td>{m.linea ?? ""}</td>
-                <td>{m.cilindraje != null ? `${m.cilindraje} CC` : "-"}</td>
-                <td>{m.tipo_moto ?? ""}</td>
-                <td>{m.modelo ?? ""}</td>
-                <td className="hidden md:table-cell">{m.empresa ?? ""}</td>
-                <td className="hidden lg:table-cell">{m.subdistribucion ?? ""}</td>
-                <td className="hidden sm:table-cell">
-                  <div className="flex items-center justify-center gap-2">
-                    <input
-                      type="checkbox"
-                      className="toggle toggle-success"
-                      checked={Number(m.estado_moto) === 1}
-                      disabled={togglingId === Number(m.id)}
-                      onChange={() => onToggleEstadoMoto(m)}
-                    />
-                    <span className="text-xs font-semibold">
-                      {Number(m.estado_moto) === 1 ? "Sí" : "No"}
-                    </span>
-                  </div>
-                </td>
-                <td className="text-right whitespace-nowrap">
-                  {Number(m.precio_base || 0).toLocaleString()}
-                </td>
-                <td className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <button
-                      className="btn btn-sm bg-base-100 btn-circle"
-                      onClick={() => openDescuentos(m)}
-                      title="Editar descuentos"
-                    >
-                      <Percent size="18px" />
-                    </button>
-                    <button
-                      className="btn btn-sm bg-base-100 btn-circle"
-                      onClick={() => openImpuestos(m)}
-                      title="Editar impuestos"
-                    >
-                      <Banknote size="18px" />
-                    </button>
-                    <button
-                      className="btn btn-sm bg-base-100 btn-circle"
-                      onClick={() => openEditar(m)}
-                      title="Editar"
-                    >
-                      <Pen size="18px" color="green" />
-                    </button>
-                    <button
-                      className="btn btn-sm bg-base-100 btn-circle"
-                      onClick={() => confirmarEliminar(Number(m.id), `${m.marca} ${m.linea}`)}
-                      title="Eliminar"
-                    >
-                      <Trash2 size="18px" color="#ef4444" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-
-            {!isPending && visible.length === 0 && (
-              <tr>
-                <td colSpan={12} className="text-center py-6 opacity-70">
-                  No hay resultados con esos filtros.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* PAGINACIÓN */}
-      <div className="flex items-center justify-between px-4 pb-4 pt-2 flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-base-content/50">
-            Mostrando {total === 0 ? 0 : start}–{end} de {total}
-          </span>
-          {isFetching && <span className="loading loading-spinner loading-xs" />}
-          <label className="text-xs opacity-70">Filas:</label>
-          <select
-            className="select select-bordered select-xs w-16"
-            value={perPage}
-            onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
+      ),
+    },
+    {
+      key: "precio",
+      header: "Precio",
+      align: "right",
+      headerClassName: "pr-6 whitespace-nowrap",
+      className: "whitespace-nowrap",
+      render: (m) => Number(m.precio_base || 0).toLocaleString(),
+    },
+    {
+      key: "acciones",
+      header: "Acciones",
+      align: "right",
+      headerClassName: "pr-6",
+      render: (m) => (
+        <div className="flex justify-end gap-2">
+          <button className="btn btn-sm bg-base-100 btn-circle" onClick={() => openDescuentos(m)} title="Editar descuentos">
+            <Percent size="18px" />
+          </button>
+          <button className="btn btn-sm bg-base-100 btn-circle" onClick={() => openImpuestos(m)} title="Editar impuestos">
+            <Banknote size="18px" />
+          </button>
+          <button className="btn btn-sm bg-base-100 btn-circle" onClick={() => openEditar(m)} title="Editar">
+            <Pen size="18px" color="green" />
+          </button>
+          <button
+            className="btn btn-sm bg-base-100 btn-circle"
+            onClick={() => confirmarEliminar(Number(m.id), `${m.marca} ${m.linea}`)}
+            title="Eliminar"
           >
-            {[10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button className={btnGhost} onClick={goPrev} disabled={currentPage === 1}>
-            «
-          </button>
-
-          {items.map((it, i) =>
-            it === "..." ? (
-              <span key={`e-${i}`} className={btnEllipsis}>…</span>
-            ) : (
-              <button
-                key={`p-${it}`}
-                className={Number(it) === currentPage ? btnActive : btnGhost}
-                onClick={() => goTo(Number(it))}
-              >
-                {it}
-              </button>
-            )
-          )}
-
-          <button className={btnGhost} onClick={goNext} disabled={currentPage === lastPage}>
-            »
+            <Trash2 size="18px" color="#ef4444" />
           </button>
         </div>
-      </div>
-    </div>
+      ),
+    },
+  ];
+
+  return (
+    <DataTable
+      filters={
+        <>
+          <div className="bg-base-100 rounded-xl border border-base-200 p-3">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="flex flex-col gap-1 flex-1 min-w-35">
+                <label className="text-sm font-medium text-base-content">Marca</label>
+                <select className="select select-bordered w-full" value={filters.marca ?? ""} onChange={set("marca")}>
+                  <option value="">Todas</option>
+                  {marcaOptions.map((x) => (
+                    <option key={x} value={x}>{x}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1 flex-1 min-w-35">
+                <label className="text-sm font-medium text-base-content">Línea</label>
+                <select className="select select-bordered w-full" value={filters.linea ?? ""} onChange={set("linea")}>
+                  <option value="">Todas</option>
+                  {lineaOptions.map((x) => (
+                    <option key={x} value={x}>{x}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1 flex-1 min-w-35">
+                <label className="text-sm font-medium text-base-content">Modelo</label>
+                <select className="select select-bordered w-full" value={filters.modelo ?? ""} onChange={set("modelo")}>
+                  <option value="">Todos</option>
+                  {modeloOptions.map((x) => (
+                    <option key={x} value={x}>{x}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1 flex-1 min-w-35">
+                <label className="text-sm font-medium text-base-content">Empresa</label>
+                <select className="select select-bordered w-full" value={filters.empresa ?? ""} onChange={set("empresa")}>
+                  <option value="">Todas</option>
+                  {empresaOptions.map((x) => (
+                    <option key={x} value={x}>{x}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1 flex-1 min-w-35">
+                <label className="text-sm font-medium text-base-content">Estado</label>
+                <select className="select select-bordered w-full" value={filters.estado ?? ""} onChange={set("estado")}>
+                  <option value="">Todos</option>
+                  <option value="Nueva">Nueva</option>
+                  <option value="Usada">Usada</option>
+                </select>
+              </div>
+
+              <div className="flex gap-2 shrink-0 w-full sm:w-auto">
+                <button className="btn bg-[#2BB352] text-white whitespace-nowrap flex-1 sm:flex-none" onClick={openCrear}>
+                  Crear Moto
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline btn-error whitespace-nowrap flex-1 sm:flex-none"
+                  onClick={clearFilters}
+                >
+                  Limpiar
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <span className="text-xs text-base-content/60">
+                {isPending ? "Cargando..." : `Resultados: ${total}`}
+              </span>
+            </div>
+          </div>
+
+        </>
+      }
+      tableClassName="min-w-225"
+      columns={columns}
+      rows={visible}
+      rowKey={(m, idx) => m.id ?? idx}
+      isLoading={isPending}
+      isError={isError}
+      errorMessage="Error al cargar motos"
+      emptyMessage="No hay resultados con esos filtros."
+      pagination={{
+        page: currentPage,
+        totalPages: lastPage,
+        totalItems: total,
+        pageSize: serverPerPage,
+        onPageChange: setPage,
+        onPageSizeChange: (v) => {
+          setPerPage(v || PAGE_SIZE);
+          setPage(1);
+        },
+        pageSizeOptions: [10, 20, 50],
+        isFetching,
+      }}
+    />
   );
 };
 

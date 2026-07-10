@@ -599,7 +599,13 @@ const CoodeudoresFormulario: React.FC = () => {
   return (
     <div className="space-y-10">
       {/* ================== FORM (edición directa) ================== */}
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') e.preventDefault();
+        }}
+        className="space-y-10"
+      >
         {fields.map((field, idx) => (
           <div key={field.id} className="space-y-8 border border-base-300 rounded-xl p-4">
 

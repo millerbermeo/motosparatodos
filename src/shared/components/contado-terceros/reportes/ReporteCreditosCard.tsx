@@ -38,6 +38,7 @@ type ReportRow = {
   "Valor producto": string;
   "Plazo (meses)": string;
   "Cuota inicial": string;
+  "Valor a financiar": string;
 
   "Preaprobado": string;
   "Revisado": string;
@@ -75,6 +76,7 @@ const COLUMNS = [
   "Valor producto",
   "Plazo (meses)",
   "Cuota inicial",
+  "Valor a financiar",
   "Preaprobado",
   "Revisado",
   "Entrega autorizada",
@@ -165,6 +167,7 @@ const ReporteCreditosCard: React.FC = () => {
           "Valor producto": formatCOP(c.valor_producto),
           "Plazo (meses)": toSafeString(c.plazo_meses),
           "Cuota inicial": formatCOP(c.cuota_inicial),
+          "Valor a financiar": formatCOP(Number(c.valor_producto ?? 0) - Number(c.cuota_inicial ?? 0)),
 
           // Checks que suelen pedir en auditoría/seguimiento
           Preaprobado: toSafeString(c.proaprobado),

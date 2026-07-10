@@ -15,6 +15,13 @@ type FormInputProps<T extends FieldValues> = {
   className?: string;
   /** 👉 Si true, enmascara con puntos de miles mientras escribe (COP sin decimales) */
   formatThousands?: boolean;
+  /** 👉 Si true, renderiza un <textarea> (permite salto de línea con Enter) */
+  multiline?: boolean;
+  rows?: number;
+  /** 👉 Se llama además del onBlur de react-hook-form (ej. disparar una búsqueda al perder foco) */
+  onBlur?: () => void;
+  /** 👉 Elemento (ej. botón mostrar/ocultar contraseña) anclado a la derecha, centrado verticalmente con el input */
+  endAdornment?: React.ReactNode;
 };
 
 export function FormInput<T extends FieldValues>({
@@ -27,6 +34,10 @@ export function FormInput<T extends FieldValues>({
   disabled,
   className = "",
   formatThousands = false,
+  multiline = false,
+  rows = 4,
+  onBlur: onBlurExtra,
+  endAdornment,
 }: FormInputProps<T>) {
   const id = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -75,50 +86,78 @@ export function FormInput<T extends FieldValues>({
                 {rules?.required ? <span className="text-error"> *</span> : null}
               </label>
 
-              <input
-                id={id}
-                ref={(el) => {
-                  inputRef.current = el;
-                  // RHF ref
-                  field.ref(el);
-                }}
-                type={inputType}
-                inputMode={formatThousands ? "numeric" : undefined}
-                placeholder={label ?? placeholder}
-                disabled={disabled}
+              {multiline ? (
+                <textarea
+                  id={id}
+                  ref={field.ref}
+                  rows={rows}
+                  placeholder={label ?? placeholder}
+                  disabled={disabled}
+                  name={field.name}
+                  className={[
+                    "w-full bg-transparent outline-none border-none resize-y",
+                    "px-3 pt-6 pb-2 text-base",
+                    "rounded-lg",
+                  ].join(" ")}
+                  value={display}
+                  onChange={field.onChange}
+                  onBlur={() => {
+                    field.onBlur();
+                    onBlurExtra?.();
+                  }}
+                />
+              ) : (
+                <input
+                  id={id}
+                  ref={(el) => {
+                    inputRef.current = el;
+                    // RHF ref
+                    field.ref(el);
+                  }}
+                  type={inputType}
+                  inputMode={formatThousands ? "numeric" : undefined}
+                  placeholder={label ?? placeholder}
+                  disabled={disabled}
 
-                // 👇 evita autocompletado / sugerencias (Chrome a veces ignora "off")
-                autoComplete="new-password"
-                autoCorrect="off"
-                spellCheck={false}
+                  // 👇 evita autocompletado / sugerencias (Chrome a veces ignora "off")
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  spellCheck={false}
 
-                // 👇 opcional (a veces ayuda): que el name sea el del field
-                name={field.name}
+                  // 👇 opcional (a veces ayuda): que el name sea el del field
+                  name={field.name}
 
-                // 👇 "modo nuclear": bloquea autofill al montar y lo habilita al enfocar
-                readOnly={ro}
-                onFocus={(e) => {
-                  console.log(e.target.value);
-                  setRo(false);
-                }}
+                  // 👇 "modo nuclear": bloquea autofill al montar y lo habilita al enfocar
+                  readOnly={ro}
+                  onFocus={() => setRo(false)}
 
-                className={[
-                  "w-full bg-transparent outline-none border-none",
-                  "px-3 pt-6 pb-2 text-base",
-                  "rounded-lg",
-                ].join(" ")}
-                value={display}
-                onChange={(e) => {
-                  if (!formatThousands) {
-                    field.onChange(e);
-                    return;
-                  }
-                  const digits = unformatNumber(e.target.value);
-                  const formatted = fmt(digits);
-                  field.onChange(formatted); // guardamos formateado en el form
-                }}
-                onBlur={field.onBlur}
-              />
+                  className={[
+                    "w-full bg-transparent outline-none border-none",
+                    "px-3 pt-6 pb-2 text-base",
+                    "rounded-lg",
+                  ].join(" ")}
+                  value={display}
+                  onChange={(e) => {
+                    if (!formatThousands) {
+                      field.onChange(e);
+                      return;
+                    }
+                    const digits = unformatNumber(e.target.value);
+                    const formatted = fmt(digits);
+                    field.onChange(formatted); // guardamos formateado en el form
+                  }}
+                  onBlur={() => {
+                    field.onBlur();
+                    onBlurExtra?.();
+                  }}
+                />
+              )}
+
+              {endAdornment ? (
+                <div className="absolute inset-y-0 right-2 flex items-center">
+                  {endAdornment}
+                </div>
+              ) : null}
             </div>
 
             {fieldState.error?.message ? (

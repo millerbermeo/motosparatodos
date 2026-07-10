@@ -20,11 +20,13 @@ import { toNum } from "../utils/convertirNumeroSeguro";
 import { fmtFecha } from "../utils/date";
 import { validateFileInput } from "../utils/fileValidation";
 import { fmtCOP } from "../utils/money";
+import { buildFullName } from "../utils/fullName";
 import { RowRight } from "../shared/components/facturacion/RowRight";
 import { buildMotoFromCotizacion } from "../shared/components/facturacion/buildMotoFromCotizacion";
 import { desglosarConIva } from "../shared/components/facturacion/desglosarIva";
 import { toAbsoluteUrl } from "../utils/files";
 import { alert } from "../utils/alerts";
+import Swal from "sweetalert2";
 import { max0, pick, sum } from "../shared/components/facturacion/utilsFacturacion";
 import { normalizarTexto } from "../utils/text";
 
@@ -306,12 +308,7 @@ const DetallesFacturacion: React.FC = () => {
 
   const clienteNombre = useMemo(
     () =>
-      pick<string>(
-        sol?.nombre_cliente,
-        [cot?.name, cot?.s_name, cot?.last_name, cot?.s_last_name]
-          .filter(Boolean)
-          .join(" ")
-      ) ?? "—",
+      pick<string>(sol?.nombre_cliente, buildFullName(cot, "")) ?? "—",
     [cot, sol]
   );
 
@@ -670,10 +667,15 @@ const DetallesFacturacion: React.FC = () => {
     }
 
     if (!facturaFile) {
-      alert.info(
-        "Archivo requerido",
-        "Selecciona un archivo de factura antes de enviar."
-      );
+      Swal.fire({
+        toast: true,
+        position: "top-end",
+        icon: "warning",
+        title: "Selecciona un archivo de factura antes de enviar.",
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+      });
       return;
     }
 
@@ -1206,7 +1208,7 @@ const DetallesFacturacion: React.FC = () => {
                             <button
                               type="button"
                               onClick={handleSubirFactura}
-                              disabled={isSubiendoFactura || !facturaFile}
+                              disabled={isSubiendoFactura}
                               className="btn btn-sm border bg-base-100 text-success"
                             >
                               {isSubiendoFactura

@@ -1,8 +1,6 @@
 import React from 'react';
 import { Users, Car, Briefcase, UserCheck, User2 } from 'lucide-react';
-
-const fmtCOP = (v: number) =>
-    new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
+import { fmtCOP } from '../../utils/money';
 
 const isNonEmpty = (v?: string | number | null) =>
     v !== undefined && v !== null && String(v).trim().length > 0;

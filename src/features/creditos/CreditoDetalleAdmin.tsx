@@ -13,14 +13,11 @@ import CambiarEstadoCredito from './forms/CambiarEstadoCredito';
 import { useAuthStore } from '../../store/auth.store';
 import { useLoaderStore } from '../../store/loader.store';
 import ButtonLink from '../../shared/components/ButtonLink';
+import { fmtCOP } from '../../utils/money';
 
 // 1) Helper arriba (fuera del componente o dentro, como prefieras)
 const isNonEmpty = (v?: string | number | null) =>
     v !== undefined && v !== null && String(v).trim().length > 0;
-
-
-const fmtCOP = (v: number) =>
-    new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
 
 
 const BadgeEstado: React.FC<{ value?: string }> = ({ value }) => {

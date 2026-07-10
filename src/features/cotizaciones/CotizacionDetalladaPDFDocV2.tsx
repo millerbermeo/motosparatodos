@@ -2,7 +2,8 @@
 import React from "react";
 import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
 import type { CreditoMotoResultado } from "../../shared/components/credito/creditoDirecto.utils";
-import { BASE_URL } from "../../utils/url";
+import { toAbsoluteUrl } from "../../utils/files";
+import { buildFullName } from "../../utils/fullName";
 
 const formatSeguros = (raw: any): string => {
   if (!raw) return "—";
@@ -343,15 +344,7 @@ const fmtDateShort = (raw?: string) => {
 const safe = (v: any, fallback: string = "—") =>
   v === null || v === undefined || v === "" ? fallback : String(v);
 
-const BaseUrl = BASE_URL;
-
-const buildAbsUrl = (path?: string | null): string | null => {
-  if (!path) return null;
-  if (/^https?:\/\//i.test(path)) return path;
-  const root = String(BaseUrl || "").replace(/\/+$/, "");
-  const rel = String(path).replace(/^\/+/, "");
-  return `${root}/${rel}`;
-};
+const buildAbsUrl = toAbsoluteUrl;
 
 const calcCuotaForPlazo = (n: number, cd: CreditoMotoResultado): number => {
   if (n === cd.meses) {
@@ -410,9 +403,7 @@ export const CotizacionDetalladaPDFDocV2: React.FC<PropsV2> = ({
 
 
 
-  const nombreCompletoCliente = [d.name, d.s_name, d.last_name, d.s_last_name]
-    .filter(Boolean)
-    .join(" ");
+  const nombreCompletoCliente = buildFullName(d, "");
 
   // ✅ 1 sola moto: usa campos sin suffix si vienen, si no cae a _a
   const motoLabel = [d.marca ?? d.marca_a, d.linea ?? d.linea_a].filter(Boolean).join(" ");

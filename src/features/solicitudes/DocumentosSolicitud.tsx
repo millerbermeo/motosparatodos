@@ -7,7 +7,7 @@ import {
   useSubirManifiestoSolicitud,
   useSubirCedulaSolicitud,
 } from "../../services/solicitudServices";
-import { BASE_URL } from "../../utils/url";
+import { toAbsoluteUrl } from "../../utils/files";
 import { validateFileInput } from "../../utils/fileValidation";
 
 type Docs = {
@@ -34,15 +34,7 @@ type Props = {
   tiene_factura?: boolean;
 };
 
-const API_BASE = BASE_URL.replace(/\/+$/, "");
-
-const resolveUrl = (url?: string | null): string | null => {
-  if (!url) return null;
-  if (/^https?:\/\//i.test(url)) return url;
-  const base = API_BASE.replace(/\/+$/, "");
-  const path = url.replace(/^\/+/, "");
-  return `${base}/${path}`;
-};
+const resolveUrl = toAbsoluteUrl;
 
 const DocumentosSolicitud: React.FC<Props> = ({
   id,
