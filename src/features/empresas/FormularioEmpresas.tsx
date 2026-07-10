@@ -7,7 +7,7 @@ import {
 } from "../../services/empresasServices";
 import type { Empresa } from "../../shared/types/empresas";
 import { FormInput } from "../../shared/components/FormInput";
-import { validateFileInput } from "../../utils/fileValidation";
+import { FileUpload } from "../../shared/components/FileUpload";
 
 type Base = {
   id?: number;
@@ -201,26 +201,20 @@ const FormularioEmpresas: React.FC<Props> = ({ initialValues, mode = "create" })
         />
 
         {/* Imagen (NO RHF) */}
-        <label className="form-control w-full">
-          <span className="label-text">Logo / Imagen (opcional)</span>
-          <input
-            type="file"
+        <div className="form-control w-full">
+          <FileUpload
+            files={file ? [file] : []}
+            onFilesChange={(files) => setFile(files[0] ?? null)}
             accept="image/*"
-            className="file-input file-input-bordered w-full"
-            onChange={(e) => {
-              if (!validateFileInput(e)) {
-                setFile(null);
-                return;
-              }
-              setFile(e.target.files?.[0] ?? null);
-            }}
+            label="Logo / Imagen (opcional)"
           />
-          {preview && (
+
+          {!file && preview && (
             <div className="mt-2">
-              <img src={preview} alt="Preview" className="h-24 rounded-md object-cover" />
+              <img src={preview} alt="Imagen actual" className="h-24 rounded-md object-cover" />
             </div>
           )}
-        </label>
+        </div>
       </div>
 
       <div className="flex justify-end gap-2">

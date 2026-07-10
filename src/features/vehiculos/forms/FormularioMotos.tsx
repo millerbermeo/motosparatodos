@@ -9,9 +9,9 @@ import { useLineas } from "../../../services/lineasMarcasServices";
 import { useEmpresasSelect } from "../../../services/empresasServices";
 import { useSubDistribucion } from "../../../services/distribucionesServices";
 import Swal from "sweetalert2";
-import { validateFileInput } from "../../../utils/fileValidation";
 import { toAbsoluteUrl } from "../../../utils/files";
 import { ImageWithFallback } from "../../../shared/components/ImageWithFallback";
+import { FileUpload } from "../../../shared/components/FileUpload";
 
 // 🔹 hooks de rango
 import {
@@ -172,6 +172,39 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
 
   const [file, setFile] = React.useState<File | null>(null);
   const [preview, setPreview] = React.useState<string | null>(toAbsoluteUrl(initialValues?.foto));
+  const [isCompressing, setIsCompressing] = React.useState(false);
+
+  const handleImagenChange = React.useCallback(async (files: File[]) => {
+    const picked = files[0] ?? null;
+    if (!picked) {
+      setFile(null);
+      return;
+    }
+
+    setIsCompressing(true);
+    try {
+      const compressed = await compressImageToMax70KB(picked);
+
+      if (compressed.size > MAX_IMAGE_BYTES) {
+        Swal.fire({
+          icon: "warning",
+          title: "Imagen muy pesada",
+          text: "No se pudo comprimir a 70KB. Prueba con una imagen más liviana.",
+        });
+      }
+
+      setFile(compressed);
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "No se pudo procesar la imagen.",
+      });
+    } finally {
+      setIsCompressing(false);
+    }
+  }, []);
 
   // 🔹 ENTERO para búsqueda
   const [cilindrajeBusqueda, setCilindrajeBusqueda] = React.useState<number | null>(null);
@@ -528,60 +561,28 @@ const FormularioMotos: React.FC<Props> = ({ initialValues, mode = "create" }) =>
         />
 
         {/* Imagen (<=70KB) */}
-        <label className="form-control w-full">
-          <span className="label-text">Imagen</span>
-          <input
-            type="file"
+        <div className="form-control w-full">
+          <FileUpload
+            files={file ? [file] : []}
+            onFilesChange={handleImagenChange}
             accept="image/*"
-            className="file-input file-input-bordered w-full"
-            onChange={async (e) => {
-              if (!validateFileInput(e)) {
-                setFile(null);
-                return;
-              }
-              const picked = e.target.files?.[0] ?? null;
-              if (!picked) {
-                setFile(null);
-                return;
-              }
-
-              try {
-                const compressed = await compressImageToMax70KB(picked);
-
-                if (compressed.size > MAX_IMAGE_BYTES) {
-                  Swal.fire({
-                    icon: "warning",
-                    title: "Imagen muy pesada",
-                    text: "No se pudo comprimir a 70KB. Prueba con una imagen más liviana.",
-                  });
-                }
-
-                setFile(compressed);
-                e.target.value = "";
-              } catch (err) {
-                console.error(err);
-                Swal.fire({
-                  icon: "error",
-                  title: "Error",
-                  text: "No se pudo procesar la imagen.",
-                });
-              }
-            }}
+            loading={isCompressing}
+            label="Imagen"
+            helperText="Se comprime automáticamente a máx. 70 KB"
           />
-          <div className="mt-2">
-            <ImageWithFallback
-              src={preview}
-              alt="Vista previa de la moto"
-              className="h-24 w-32 rounded-md object-cover border border-base-300"
-              iconSize={28}
-            />
-            {file && (
-              <div className="text-xs opacity-70 mt-1">
-                Tamaño: {(file.size / 1024).toFixed(1)} KB
-              </div>
-            )}
-          </div>
-        </label>
+
+          {!file && preview && (
+            <div className="mt-2">
+              <ImageWithFallback
+                src={preview}
+                alt="Imagen actual de la moto"
+                className="h-24 w-32 rounded-md object-cover border border-base-300"
+                iconSize={28}
+              />
+              <div className="text-xs text-base-content/50 mt-1">Imagen actual</div>
+            </div>
+          )}
+        </div>
 
         <div className="md:col-span-2">
           <FormInput<MotoFormValues>

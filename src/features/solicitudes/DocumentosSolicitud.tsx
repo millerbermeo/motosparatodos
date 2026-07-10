@@ -8,7 +8,7 @@ import {
   useSubirCedulaSolicitud,
 } from "../../services/solicitudServices";
 import { toAbsoluteUrl } from "../../utils/files";
-import { validateFileInput } from "../../utils/fileValidation";
+import { FileUpload } from "../../shared/components/FileUpload";
 
 type Docs = {
   manifiesto_url?: string | null;
@@ -56,8 +56,6 @@ const DocumentosSolicitud: React.FC<Props> = ({
   const { mutate: subirManifiesto, isPending: subManifiesto } = useSubirManifiestoSolicitud();
   const { mutate: subirCedula, isPending: subCedula } = useSubirCedulaSolicitud();
 
-  const manifiestoRef = React.useRef<HTMLInputElement>(null);
-  const cedulaRef = React.useRef<HTMLInputElement>(null);
   const [manifiestoFile, setManifiestoFile] = React.useState<File | null>(null);
   const [cedulaFile, setCedulaFile] = React.useState<File | null>(null);
 
@@ -117,7 +115,6 @@ const DocumentosSolicitud: React.FC<Props> = ({
     subirManifiesto(fd, {
       onSuccess: () => {
         setManifiestoFile(null);
-        if (manifiestoRef.current) manifiestoRef.current.value = "";
         onDocumentUploaded?.();
       },
     });
@@ -149,7 +146,6 @@ const DocumentosSolicitud: React.FC<Props> = ({
     subirCedula(fd, {
       onSuccess: () => {
         setCedulaFile(null);
-        if (cedulaRef.current) cedulaRef.current.value = "";
         onDocumentUploaded?.();
       },
     });
@@ -193,9 +189,7 @@ const DocumentosSolicitud: React.FC<Props> = ({
         ) : puedeSubir ? (
           <UploadCard
             label="Manifiesto"
-            fieldName="manifiesto"
             file={manifiestoFile}
-            inputRef={manifiestoRef}
             isPending={subManifiesto}
             onFileChange={(f) => setManifiestoFile(f)}
             onUpload={handleSubirManifiesto}
@@ -219,9 +213,7 @@ const DocumentosSolicitud: React.FC<Props> = ({
         ) : puedeSubir ? (
           <UploadCard
             label="Cédula"
-            fieldName="cedula"
             file={cedulaFile}
-            inputRef={cedulaRef}
             isPending={subCedula}
             onFileChange={(f) => setCedulaFile(f)}
             onUpload={handleSubirCedula}
@@ -333,34 +325,19 @@ const DownloadButton: React.FC<{
 /* ---------- Tarjeta de carga ---------- */
 const UploadCard: React.FC<{
   label: string;
-  fieldName: string;
   file: File | null;
-  inputRef: React.RefObject<HTMLInputElement>;
   isPending: boolean;
   onFileChange: (f: File | null) => void;
   onUpload: () => void;
-}> = ({ label, file, inputRef, isPending, onFileChange, onUpload }) => (
+}> = ({ label, file, isPending, onFileChange, onUpload }) => (
   <div className="flex flex-col gap-2 rounded-lg border border-dashed border-blue-300 bg-info/10 p-3">
     <span className="text-xs font-semibold text-info">{label} — no disponible</span>
-    <input
-      ref={inputRef}
-      type="file"
+    <FileUpload
+      files={file ? [file] : []}
+      onFilesChange={(files) => onFileChange(files[0] ?? null)}
+      loading={isPending}
       accept=".pdf,image/*"
-      disabled={isPending}
-      onChange={(e) => {
-        if (!validateFileInput(e)) return onFileChange(null);
-        onFileChange(e.target.files?.[0] ?? null);
-      }}
-      className="block w-full text-xs text-base-content/70
-        file:mr-2 file:py-1 file:px-2 file:rounded file:border-0
-        file:text-xs file:font-semibold file:bg-base-100 file:text-base-content
-        hover:file:bg-base-200"
     />
-    {file && (
-      <span className="text-[11px] text-base-content/60 truncate">
-        {file.name}
-      </span>
-    )}
     <button
       type="button"
       onClick={onUpload}

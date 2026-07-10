@@ -106,6 +106,16 @@ export const withFileValidation = (reg: {
   },
 });
 
+/**
+ * Convierte un array de File a un FileList real (vía DataTransfer), para
+ * escribir en campos de react-hook-form tipados como FileList (register + FileList).
+ */
+export const filesToFileList = (files: File[]): FileList => {
+  const dt = new DataTransfer();
+  files.forEach((f) => dt.items.add(f));
+  return dt.files;
+};
+
 export const validateFileInput = (
   e: React.ChangeEvent<HTMLInputElement>
 ): boolean => {

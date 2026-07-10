@@ -7,8 +7,8 @@ import { useWizardStore } from "../../../store/wizardStore";
 import Swal from "sweetalert2";
 import { CotizacionSingleMotoPDFButton } from "../../cotizaciones/CotizacionSingleMotoPDFButton";
 import { DescargarFormatoSolicitudWordButton } from "../components/DescargarFormatoSolicitudWordButton";
-import { validateFileInput } from "../../../utils/fileValidation";
 import { BASE_URL } from "../../../utils/url";
+import { FileUpload } from "../../../shared/components/FileUpload";
 
 // 🔧 BASE URL PARA ARCHIVOS DEL BACK — derivada del helper centralizado (mismo back que axios)
 const BASE_URL_BACK = `${BASE_URL.replace(/\/+$/, "")}/`;
@@ -21,6 +21,7 @@ const buildFirmasUrl = (path?: string | null): string | null => {
 
 const SolicitudFormulario: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
 
   // Wizard (Zustand)
   const next = useWizardStore((s) => s.next);
@@ -74,8 +75,10 @@ const SolicitudFormulario: React.FC = () => {
       return;
     }
 
+    setUploadProgress(0);
+
     subirFirma.mutate(
-      { codigo_credito, firma: file },
+      { codigo_credito, firma: file, onUploadProgress: setUploadProgress },
       {
         onSuccess: () => {
           Swal.fire({
@@ -114,22 +117,14 @@ const SolicitudFormulario: React.FC = () => {
       <div className="space-y-2 w-full">
         <h2 className="text-lg font-semibold">2. Adjuntar firmas (opcional)</h2>
 
-        <input
-          type="file"
+        <FileUpload
+          files={file ? [file] : []}
+          onFilesChange={(files) => setFile(files[0] ?? null)}
+          loading={isUploading}
+          progress={uploadProgress}
           accept="application/pdf,image/*"
-          className="file-input file-input-bordered w-full max-w-full"
-          onChange={(e) => {
-            if (!validateFileInput(e)) return setFile(null);
-            setFile(e.target.files?.[0] ?? null);
-          }}
-          disabled={isUploading}
+          helperText="PDF o imagen · máx. 1.5 MB"
         />
-        {file && (
-          <div className="text-sm opacity-70">
-            Archivo seleccionado:{" "}
-            <span className="font-medium">{file.name}</span>
-          </div>
-        )}
 
         {/* 👇 Mostrar firma registrada (si existe en el backend) */}
         <div className="mt-4 space-y-2">

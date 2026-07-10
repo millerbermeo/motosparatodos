@@ -9,7 +9,8 @@ import { useAuthStore } from "../../../store/auth.store";
 import { useNavigate } from "react-router-dom";
 import { FileText, X as XIcon } from "lucide-react";
 import { toAbsoluteUrlOrUndefined } from "../../../utils/files";
-import { validateFileInput, ACCEPT_ATTR } from "../../../utils/fileValidation";
+import { ACCEPT_ATTR } from "../../../utils/fileValidation";
+import { FileUpload } from "../../../shared/components/FileUpload";
 
 const buildDocUrl = (filename?: string): string | undefined => {
   if (!filename) return undefined;
@@ -259,14 +260,10 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
                 <label className="label">
                   <span className="label-text">Formato de referenciación {!showExistingRef && "*"}</span>
                 </label>
-                <input
-                  type="file"
+                <FileUpload
+                  files={field.value ? [field.value] : []}
+                  onFilesChange={(files) => field.onChange(files[0] ?? null)}
                   accept={ACCEPT_ATTR}
-                  className="file-input file-input-bordered w-full"
-                  onChange={(e) => {
-                    if (!validateFileInput(e)) return field.onChange(null);
-                    field.onChange(e.target.files?.[0] ?? null);
-                  }}
                 />
                 {fieldState.error && (
                   <span className="text-error text-xs mt-1">
@@ -307,14 +304,10 @@ const CambiarEstadoCredito: React.FC<Props> = ({ codigo_credito, data }) => {
                 <label className="label">
                   <span className="label-text">Datacrédito deudor 1 {!showExistingDc && "*"}</span>
                 </label>
-                <input
-                  type="file"
+                <FileUpload
+                  files={field.value ? [field.value] : []}
+                  onFilesChange={(files) => field.onChange(files[0] ?? null)}
                   accept={ACCEPT_ATTR}
-                  className="file-input file-input-bordered w-full"
-                  onChange={(e) => {
-                    if (!validateFileInput(e)) return field.onChange(null);
-                    field.onChange(e.target.files?.[0] ?? null);
-                  }}
                 />
                 {fieldState.error && (
                   <span className="text-error text-xs mt-1">

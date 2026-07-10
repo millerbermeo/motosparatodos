@@ -1,14 +1,15 @@
 // src/features/formatos/components/FormatoUploadForm.tsx
 import React from "react";
-import { validateFileInput } from "../../../utils/fileValidation";
+import { FileUpload } from "../../../shared/components/FileUpload";
 
 const FormatoUploadForm: React.FC<{
   name: string;
   onNameChange: (name: string) => void;
+  file: File | null;
   onFileChange: (file: File | null) => void;
   onSubmit: (e: React.FormEvent) => void;
   isPending: boolean;
-}> = ({ name, onNameChange, onFileChange, onSubmit, isPending }) => (
+}> = ({ name, onNameChange, file, onFileChange, onSubmit, isPending }) => (
   <form
     onSubmit={onSubmit}
     className="w-full bg-base-100 border border-base-300 rounded-xl p-4 md:p-5 flex flex-col md:flex-row gap-3 md:items-end"
@@ -26,18 +27,11 @@ const FormatoUploadForm: React.FC<{
       />
     </div>
     <div className="form-control w-full md:max-w-md">
-      <label className="label">
-        <span className="label-text">Archivo</span>
-      </label>
-      <input
-        id="file-input"
-        type="file"
-        className="file-input file-input-bordered w-full"
-        onChange={(e) => {
-          if (!validateFileInput(e)) return onFileChange(null);
-          onFileChange(e.target.files?.[0] ?? null);
-        }}
+      <FileUpload
+        files={file ? [file] : []}
+        onFilesChange={(files) => onFileChange(files[0] ?? null)}
         accept=".doc,.docx,.pdf,.xlsx,.pptx"
+        label="Archivo"
       />
     </div>
     <button

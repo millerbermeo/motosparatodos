@@ -114,6 +114,7 @@ const Formatos: React.FC = () => {
             <FormatoUploadForm
               name={name}
               onNameChange={setName}
+              file={file}
               onFileChange={setFile}
               onSubmit={handleCreate}
               isPending={createFormato.isPending}
