@@ -18,6 +18,8 @@ type FormInputProps<T extends FieldValues> = {
   /** 👉 Si true, renderiza un <textarea> (permite salto de línea con Enter) */
   multiline?: boolean;
   rows?: number;
+  /** 👉 Se llama además del onBlur de react-hook-form (ej. disparar una búsqueda al perder foco) */
+  onBlur?: () => void;
 };
 
 export function FormInput<T extends FieldValues>({
@@ -32,6 +34,7 @@ export function FormInput<T extends FieldValues>({
   formatThousands = false,
   multiline = false,
   rows = 4,
+  onBlur: onBlurExtra,
 }: FormInputProps<T>) {
   const id = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -95,7 +98,10 @@ export function FormInput<T extends FieldValues>({
                   ].join(" ")}
                   value={display}
                   onChange={field.onChange}
-                  onBlur={field.onBlur}
+                  onBlur={() => {
+                    field.onBlur();
+                    onBlurExtra?.();
+                  }}
                 />
               ) : (
                 <input
@@ -137,7 +143,10 @@ export function FormInput<T extends FieldValues>({
                     const formatted = fmt(digits);
                     field.onChange(formatted); // guardamos formateado en el form
                   }}
-                  onBlur={field.onBlur}
+                  onBlur={() => {
+                    field.onBlur();
+                    onBlurExtra?.();
+                  }}
                 />
               )}
             </div>
