@@ -24,7 +24,7 @@ const WizardTimeline: React.FC<WizardProps> = ({
   onChangeStep,
   className = '',
 }) => {
-  const {  setSteps, idx, next, prev, goTo } = useWizardStore();
+  const {  setSteps, idx, goTo } = useWizardStore();
   const activeId = useWizardStore(s => s.activeId);
 
   // credito_id viene de la ruta /creditos/registrar/:id
@@ -115,20 +115,8 @@ const WizardTimeline: React.FC<WizardProps> = ({
     return Math.round((idx / (steps.length - 1)) * 100);
   }, [idx, steps.length]);
 
-  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    // Solo navegar el wizard si el foco está en un tab del timeline,
-    // no cuando el usuario usa las flechas dentro de un input/select del formulario.
-    const target = e.target as HTMLElement;
-    if (target.getAttribute('role') !== 'tab') return;
-
-    if (e.key === 'ArrowRight') { e.preventDefault(); next(); }
-    if (e.key === 'ArrowLeft')  { e.preventDefault(); prev(); }
-    if (e.key === 'Home')       { e.preventDefault(); goTo(0); }
-    if (e.key === 'End')        { e.preventDefault(); goTo(steps.length - 1); }
-  };
-
   return (
-    <section className={`w-full ${className}`} aria-label="Asistente" onKeyDown={onKeyDown}>
+    <section className={`w-full ${className}`} aria-label="Asistente">
       {/* Encabezado */}
       <div className="mb-6 max-w-full mx-auto">
         <div className="flex items-center justify-between gap-4">
