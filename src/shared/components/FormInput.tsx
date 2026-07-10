@@ -20,6 +20,8 @@ type FormInputProps<T extends FieldValues> = {
   rows?: number;
   /** 👉 Se llama además del onBlur de react-hook-form (ej. disparar una búsqueda al perder foco) */
   onBlur?: () => void;
+  /** 👉 Elemento (ej. botón mostrar/ocultar contraseña) anclado a la derecha, centrado verticalmente con el input */
+  endAdornment?: React.ReactNode;
 };
 
 export function FormInput<T extends FieldValues>({
@@ -35,6 +37,7 @@ export function FormInput<T extends FieldValues>({
   multiline = false,
   rows = 4,
   onBlur: onBlurExtra,
+  endAdornment,
 }: FormInputProps<T>) {
   const id = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -149,6 +152,12 @@ export function FormInput<T extends FieldValues>({
                   }}
                 />
               )}
+
+              {endAdornment ? (
+                <div className="absolute inset-y-0 right-2 flex items-center">
+                  {endAdornment}
+                </div>
+              ) : null}
             </div>
 
             {fieldState.error?.message ? (

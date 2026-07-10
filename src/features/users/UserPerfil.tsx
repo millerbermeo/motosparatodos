@@ -171,7 +171,7 @@ const UserPerfil: React.FC<Props> = ({ id }) => {
         />
 
         {/* Campo pass con ojito */}
-        <div className="md:col-span-2 relative">
+        <div className="md:col-span-2">
           <FormInput<FormValues>
             name="pass"
             label="Contraseña (opcional)"
@@ -187,18 +187,19 @@ const UserPerfil: React.FC<Props> = ({ id }) => {
                 return true;
               }
             }}
+            endAdornment={
+              <button
+                type="button"
+                aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"}
+                className="btn btn-ghost btn-xs"
+                onClick={() => setShowPass((s) => !s)}
+                disabled={busy}
+                tabIndex={-1}
+              >
+                {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            }
           />
-
-          <button
-            type="button"
-            aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"}
-            className="btn btn-ghost btn-xs absolute right-2 top-9.5 md:top-10.5"
-            onClick={() => setShowPass((s) => !s)}
-            disabled={busy}
-            tabIndex={-1}
-          >
-            {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
 
           {!passValue && (
             <p className="text-xs text-base-content/60 mt-1">
@@ -209,7 +210,7 @@ const UserPerfil: React.FC<Props> = ({ id }) => {
 
         {/* Confirmar contraseña: solo si escribió una contraseña */}
         {!!passValue && (
-          <div className="md:col-span-2 relative">
+          <div className="md:col-span-2">
             <FormInput<FormValues>
               name="pass2"
               label="Confirmar contraseña"
@@ -222,18 +223,19 @@ const UserPerfil: React.FC<Props> = ({ id }) => {
                 validate: (v) =>
                   v === passValue || "Las contraseñas no coinciden"
               }}
+              endAdornment={
+                <button
+                  type="button"
+                  aria-label={showPass2 ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  className="btn btn-ghost btn-xs"
+                  onClick={() => setShowPass2((s) => !s)}
+                  disabled={busy}
+                  tabIndex={-1}
+                >
+                  {showPass2 ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              }
             />
-
-            <button
-              type="button"
-              aria-label={showPass2 ? "Ocultar contraseña" : "Mostrar contraseña"}
-              className="btn btn-ghost btn-xs absolute right-2 top-9.5 md:top-10.5"
-              onClick={() => setShowPass2((s) => !s)}
-              disabled={busy}
-              tabIndex={-1}
-            >
-              {showPass2 ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
           </div>
         )}
 
