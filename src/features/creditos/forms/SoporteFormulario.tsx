@@ -23,6 +23,7 @@ const SoporteFormulario: React.FC<Props> = () => {
   const prev = useWizardStore(s => s.prev);
   const isFirst = useWizardStore(s => s.isFirst);
   const readOnly = useWizardStore(s => s.readOnly);
+  const bloqueaRevision = useWizardStore(s => s.bloqueaRevision);
 
 
   const { mutateAsync: actualizarEstado } = useActualizarEstadoCredito();
@@ -91,7 +92,7 @@ const SoporteFormulario: React.FC<Props> = () => {
   };
 
   const handleRegisterAndFinish = () => {
-    if (readOnly) return;
+    if (bloqueaRevision) return;
     Swal.fire({
       icon: "warning",
       title: "¿Deseas registrar este proceso?",
@@ -234,10 +235,10 @@ const SoporteFormulario: React.FC<Props> = () => {
             data-wizard-save
             type="button"
             className="btn btn-success"
-            onClick={readOnly ? () => navigate(redirectTo) : handleRegisterAndFinish}
+            onClick={bloqueaRevision ? () => navigate(redirectTo) : handleRegisterAndFinish}
             disabled={isUploading}
           >
-            {readOnly ? "Ver detalle del crédito" : "Continuar y pasar a revisión →"}
+            {bloqueaRevision ? "Ver detalle del crédito" : "Continuar y pasar a revisión →"}
           </button>
         </div>
       </div>
