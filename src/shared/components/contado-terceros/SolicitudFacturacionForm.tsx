@@ -1,17 +1,18 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useState } from "react";
 import type {
   Control,
   FieldErrors,
   UseFormHandleSubmit,
   UseFormRegister,
 } from "react-hook-form";
-import { useWatch } from "react-hook-form";
+import { useController } from "react-hook-form";
 import Swal from "sweetalert2";
 import { FormInput } from "../../../shared/components/FormInput";
 import { FormSelect } from "../../../shared/components/FormSelect";
+import { FileUpload } from "../../../shared/components/FileUpload";
 import { useRegistrarSolicitudFacturacion2 } from "../../../services/solicitudServices";
 import { HeaderSolicitud } from "../solicitar-facturacion/HeaderSolicitud";
-import { withFileValidation, validateFileInput } from "../../../utils/fileValidation";
+import { filesToFileList } from "../../../utils/fileValidation";
 import { alert } from "../../../utils/alerts";
 import { unformatNumber } from "../../../utils/money";
 
@@ -107,65 +108,6 @@ type Props = {
   totales: Totales;
 };
 
-function filesToArray(files?: FileList) {
-  return files ? Array.from(files) : [];
-}
-
-function isImage(file: File) {
-  return /^image\/(png|jpe?g)$/i.test(file.type);
-}
-
-function isPdf(file: File) {
-  return file.type === "application/pdf" || /\.pdf$/i.test(file.name);
-}
-
-function fileKey(file: File) {
-  return `${file.name}-${file.size}-${file.lastModified}`;
-}
-
-type FilePreview = { file: File; url: string };
-
-function useFileListPreviews(files?: FileList) {
-  const arr = useMemo(() => filesToArray(files), [files]);
-  const [items, setItems] = useState<FilePreview[]>([]);
-
-  useEffect(() => {
-    if (!arr.length) {
-      setItems([]);
-      return;
-    }
-
-    const next = arr.map((f) => ({ file: f, url: URL.createObjectURL(f) }));
-    setItems(next);
-
-    return () => {
-      next.forEach((x) => URL.revokeObjectURL(x.url));
-    };
-  }, [arr]);
-
-  return items;
-}
-
-function useFilesPreviews(files: File[]) {
-  const [items, setItems] = useState<FilePreview[]>([]);
-
-  useEffect(() => {
-    if (!files.length) {
-      setItems([]);
-      return;
-    }
-
-    const next = files.map((f) => ({ file: f, url: URL.createObjectURL(f) }));
-    setItems(next);
-
-    return () => {
-      next.forEach((x) => URL.revokeObjectURL(x.url));
-    };
-  }, [files]);
-
-  return items;
-}
-
 type UploadBlockProps = {
   label: string;
   required?: boolean;
@@ -204,121 +146,6 @@ const UploadBlock: React.FC<UploadBlockProps> = ({
   );
 };
 
-const NormalPreviewList: React.FC<{ items: FilePreview[] }> = ({ items }) => {
-  if (!items.length) return null;
-
-  return (
-    <div className="space-y-3">
-      <p className="text-xs font-medium text-base-content">
-        Archivos seleccionados ({items.length})
-      </p>
-
-      <div className="grid grid-cols-1 gap-3">
-        {items.map(({ file, url }) => (
-          <div
-            key={fileKey(file)}
-            className="rounded-lg border border-base-300 bg-base-200 overflow-hidden"
-          >
-            <div className="px-3 py-2 flex items-center justify-between gap-2">
-              <p className="text-xs text-base-content truncate">{file.name}</p>
-              <span className="text-[11px] text-base-content/60 whitespace-nowrap">
-                {(file.size / 1024).toFixed(0)} KB
-              </span>
-            </div>
-
-            {isImage(file) ? (
-              <div className="bg-base-100 border-t border-base-300">
-                <img
-                  src={url}
-                  alt={file.name}
-                  className="w-full object-contain max-h-56"
-                />
-              </div>
-            ) : isPdf(file) ? (
-              <div className="px-3 py-3 text-[11px] text-base-content/60 border-t border-base-300">
-                PDF cargado (vista previa pequeña en “Otros”, aquí solo nombre).
-              </div>
-            ) : (
-              <div className="px-3 py-3 text-[11px] text-base-content/60 border-t border-base-300">
-                Sin vista previa para este archivo.
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const SmallOthersGrid: React.FC<{
-  items: FilePreview[];
-  onRemove: (file: File) => void;
-  onClear: () => void;
-}> = ({ items, onRemove, onClear }) => {
-  if (!items.length) return null;
-
-  return (
-    <div>
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-base-content">
-          Otros documentos ({items.length})
-        </p>
-        <button
-          type="button"
-          className="text-xs text-base-content/70 underline"
-          onClick={onClear}
-        >
-          Limpiar
-        </button>
-      </div>
-
-      {/* ✅ pequeños todos juntos */}
-      <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        {items.map(({ file, url }) => (
-          <div
-            key={fileKey(file)}
-            className="rounded-lg border border-base-300 bg-base-200 overflow-hidden"
-            title={file.name}
-          >
-            <div className="px-2 py-2 flex items-center justify-between gap-2">
-              <p className="text-[11px] text-base-content truncate">{file.name}</p>
-              <button
-                type="button"
-                className="text-[11px] text-error"
-                onClick={() => onRemove(file)}
-              >
-                ✕
-              </button>
-            </div>
-
-            {isImage(file) ? (
-              <div className="bg-base-100 border-t border-base-300">
-                <img
-                  src={url}
-                  alt={file.name}
-                  className="w-full object-cover h-24"
-                />
-              </div>
-            ) : isPdf(file) ? (
-              <div className="bg-base-100 border-t border-base-300 h-24 flex items-center justify-center">
-                <span className="text-[11px] text-base-content/70 px-2 text-center">
-                  PDF
-                </span>
-              </div>
-            ) : (
-              <div className="bg-base-100 border-t border-base-300 h-24 flex items-center justify-center">
-                <span className="text-[11px] text-base-content/70 px-2 text-center">
-                  Archivo
-                </span>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
 export const SolicitarFacturacionForm: React.FC<Props> = ({
   control,
   register,
@@ -328,12 +155,6 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
 
   docValue,
   esCreditoTercerosCot,
-
-  // si el padre los manda (opcionales)
-  cartaFiles,
-  manifiestoFiles,
-  cedulaFiles,
-  otrosDocumentosFiles,
 
   DIST_OPTS,
   loadingDists,
@@ -353,58 +174,30 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
       endpoint: "/crear_solicitud_facturacion.php",
     });
 
-  // ✅ watchers para re-render al escoger archivos
-  const watchedCarta = useWatch({ control, name: "cartaFile" });
-  const watchedManifiesto = useWatch({ control, name: "manifiestoFile" });
-  const watchedCedula = useWatch({ control, name: "cedulaFile" });
-  const watchedOtros = useWatch({ control, name: "otrosDocumentosFile" });
+  // ✅ campos de archivo controlados (mismo `control` del form del padre)
+  const cartaCtrl = useController({
+    name: "cartaFile",
+    control,
+    rules: {
+      validate: (files) =>
+        !esCreditoTercerosCot ||
+        (files && files.length > 0) ||
+        "Requerido cuando es crédito de terceros",
+    },
+  });
+  const manifiestoCtrl = useController({ name: "manifiestoFile", control });
+  const cedulaCtrl = useController({
+    name: "cedulaFile",
+    control,
+    rules: {
+      validate: (files) =>
+        docValue === "No" || (files && files.length > 0) || "Requerido",
+    },
+  });
 
-  // ✅ fuente final por input (props si llegan, o watch si no)
-  const cartaFinal = cartaFiles ?? watchedCarta;
-  const manifiestoFinal = manifiestoFiles ?? watchedManifiesto;
-  const cedulaFinal = cedulaFiles ?? watchedCedula;
-
-  // ✅ previews por input (debajo de cada input)
-  const cartaPreviews = useFileListPreviews(cartaFinal);
-  const manifiestoPreviews = useFileListPreviews(manifiestoFinal);
-  const cedulaPreviews = useFileListPreviews(cedulaFinal);
-
-  // ✅ OTROS: acumulación real (se van sumando)
+  // ✅ OTROS: acumulación real (se van sumando), lo maneja FileUpload en modo múltiple
   const [otrosDocs, setOtrosDocs] = useState<File[]>([]);
-
-  // si llegan del padre, los incorporamos (sin duplicar)
-  useEffect(() => {
-    const arr = filesToArray(otrosDocumentosFiles ?? undefined);
-    if (!arr.length) return;
-
-    setOtrosDocs((prev) => {
-      const map = new Map(prev.map((f) => [fileKey(f), f]));
-      arr.forEach((f) => map.set(fileKey(f), f));
-      return Array.from(map.values());
-    });
-  }, [otrosDocumentosFiles]);
-
-  const addOtrosDocs = (incoming?: FileList | null) => {
-    if (!incoming || incoming.length === 0) return;
-    const newFiles = Array.from(incoming);
-
-    setOtrosDocs((prev) => {
-      const map = new Map(prev.map((f) => [fileKey(f), f]));
-      newFiles.forEach((f) => map.set(fileKey(f), f));
-      return Array.from(map.values());
-    });
-  };
-
-  const removeOtro = (file: File) => {
-    setOtrosDocs((prev) => prev.filter((f) => fileKey(f) !== fileKey(file)));
-  };
-
   const clearOtros = () => setOtrosDocs([]);
-
-  const otrosPreviews = useFilesPreviews(otrosDocs);
-
-  // register para otros con onChange custom
-  const otrosReg = register("otrosDocumentosFile");
 
   // ✅ SUBMIT ACÁ (ya no viene de la page)
   const onSubmitInternal = async (values: FormValues) => {
@@ -620,43 +413,34 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
               <UploadBlock
                 label="Carta de Aprobación del crédito"
                 required
-                helper="Adjunta carta (PDF o imagen). Debajo verás cada archivo."
+                helper="Adjunta carta (PDF o imagen)."
                 error={errors.cartaFile?.message as string | undefined}
                 input={
-                  <input
-                    type="file"
+                  <FileUpload
+                    files={cartaCtrl.field.value ? Array.from(cartaCtrl.field.value as FileList) : []}
+                    onFilesChange={(files) => cartaCtrl.field.onChange(filesToFileList(files))}
                     multiple
+                    maxFiles={10}
                     accept=".pdf,.jpg,.jpeg,.png"
-                    className={`file-input file-input-bordered w-full bg-base-200 ${errors.cartaFile ? "file-input-error" : ""
-                      }`}
-                    {...withFileValidation(register("cartaFile", {
-                      validate: (files) =>
-                        !esCreditoTercerosCot ||
-                        (files && files.length > 0) ||
-                        "Requerido cuando es crédito de terceros",
-                    }))}
                   />
                 }
-                below={<NormalPreviewList items={cartaPreviews} />}
               />
             )}
 
             {/* Manifiesto (opcional) */}
             <UploadBlock
               label="Manifiesto"
-              helper="Opcional. Debajo verás cada archivo."
+              helper="Opcional."
               error={errors.manifiestoFile?.message as string | undefined}
               input={
-                <input
-                  type="file"
+                <FileUpload
+                  files={manifiestoCtrl.field.value ? Array.from(manifiestoCtrl.field.value as FileList) : []}
+                  onFilesChange={(files) => manifiestoCtrl.field.onChange(filesToFileList(files))}
                   multiple
+                  maxFiles={10}
                   accept=".pdf,.jpg,.jpeg,.png"
-                  className={`file-input file-input-bordered w-full bg-base-200 ${errors.manifiestoFile ? "file-input-error" : ""
-                    }`}
-                  {...withFileValidation(register("manifiestoFile"))} // ✅ opcional
                 />
               }
-              below={<NormalPreviewList items={manifiestoPreviews} />}
             />
 
             {/* Observaciones */}
@@ -735,70 +519,44 @@ export const SolicitarFacturacionForm: React.FC<Props> = ({
             <UploadBlock
               label="Copia de la cédula"
               required={docValue === "Si"}
-              helper="Debajo verás cada archivo."
+              helper="Adjunta la cédula (PDF o imagen)."
               error={errors.cedulaFile?.message as string | undefined}
               input={
-                <input
-                  type="file"
+                <FileUpload
+                  files={cedulaCtrl.field.value ? Array.from(cedulaCtrl.field.value as FileList) : []}
+                  onFilesChange={(files) => cedulaCtrl.field.onChange(filesToFileList(files))}
                   multiple
+                  maxFiles={10}
                   accept=".pdf,.jpg,.jpeg,.png"
-                  className={`file-input file-input-bordered w-full bg-base-200 ${errors.cedulaFile ? "file-input-error" : ""
-                    }`}
-                  {...withFileValidation(register("cedulaFile", {
-                    validate: (files) =>
-                      docValue === "No" ||
-                      (files && files.length > 0) ||
-                      "Requerido",
-                  }))}
                 />
               }
-              below={<NormalPreviewList items={cedulaPreviews} />}
             />
 
-            {/* ✅ Otros documentos: todos juntos pequeños debajo del input */}
+            {/* ✅ Otros documentos: se acumulan al seleccionar */}
             <UploadBlock
               label="Otros documentos"
-              helper="Opcional. Puedes subir muchos y se acumulan. Abajo se verán todos juntos en pequeño."
-              error={errors.otrosDocumentosFile?.message as string | undefined}
+              helper="Opcional. Puedes subir muchos y se acumulan."
               input={
-                <input
-                  type="file"
-                  multiple
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  className={`file-input file-input-bordered w-full bg-base-200 ${errors.otrosDocumentosFile ? "file-input-error" : ""
-                    }`}
-                  name={otrosReg.name}
-                  ref={otrosReg.ref}
-                  onBlur={otrosReg.onBlur}
-                  onChange={(e) => {
-                    if (!validateFileInput(e)) return; // valida tipo + tamaño
-
-                    // RHF (mantiene el último FileList)
-                    otrosReg.onChange(e);
-
-                    // ✅ acumulación real (esto es lo que enviamos al backend)
-                    addOtrosDocs(e.target.files);
-
-                    // ✅ permite volver a seleccionar el mismo archivo luego
-                    e.currentTarget.value = "";
-                  }}
-                />
-              }
-              below={
-                <SmallOthersGrid
-                  items={otrosPreviews}
-                  onRemove={removeOtro}
-                  onClear={clearOtros}
-                />
+                <div className="space-y-2">
+                  <FileUpload
+                    files={otrosDocs}
+                    onFilesChange={setOtrosDocs}
+                    multiple
+                    maxFiles={20}
+                    accept=".pdf,.jpg,.jpeg,.png"
+                  />
+                  {otrosDocs.length > 0 && (
+                    <button
+                      type="button"
+                      className="text-xs text-base-content/70 underline"
+                      onClick={clearOtros}
+                    >
+                      Limpiar todos
+                    </button>
+                  )}
+                </div>
               }
             />
-
-            {/* (Opcional) info del último FileList de RHF */}
-            {watchedOtros?.length ? (
-              <p className="text-[11px] text-base-content/60">
-                Última selección: {watchedOtros.length} archivo(s).
-              </p>
-            ) : null}
           </div>
         </div>
 

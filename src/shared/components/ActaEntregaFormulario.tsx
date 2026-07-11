@@ -1,12 +1,12 @@
 // src/features/entregas/ActaEntregaFormulario.tsx
-import React, { useMemo, useState, useCallback, useRef } from "react";
+import React, { useMemo, useState } from "react";
 import { useModalStore } from "../../store/modalStore";
 import { useAuthStore } from "../../store/auth.store";
 import Swal from "sweetalert2";
-import { PenLine, UploadCloud, CheckCircle2, X } from "lucide-react";
+import { PenLine, CheckCircle2 } from "lucide-react";
 import { useRegistrarActaEntrega } from "../../services/solicitudServices"; // ajusta el path exacto
-import { validateFileInput, validateFile } from "../../utils/fileValidation";
 import { alert } from "../../utils/alerts";
+import { FileUpload } from "./FileUpload";
 
 type EstadoActa = "borrador" | "cerrada";
 
@@ -22,22 +22,6 @@ const toMySQLDateTime = (d: Date) => {
     d.getHours()
   )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 };
-
-const formatBytes = (bytes: number) => {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-};
-
-const readAsDataURL = (file: File) =>
-  new Promise<string>((resolve, reject) => {
-    const fr = new FileReader();
-    fr.onload = () => resolve(String(fr.result || ""));
-    fr.onerror = reject;
-    fr.readAsDataURL(file);
-  });
 
 const ActaEntregaFormulario: React.FC<Props> = ({
   id_factura,
@@ -59,10 +43,7 @@ const ActaEntregaFormulario: React.FC<Props> = ({
 
   const [observaciones, setObservaciones] = useState("");
   const [firmaFile, setFirmaFile] = useState<File | null>(null);
-  const [firmaPreview, setFirmaPreview] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
-  const [previews, setPreviews] = useState<string[]>([]);
-  const dropRef = useRef<HTMLDivElement | null>(null);
 
   // ⬅️ Hook correcto
   const { mutate: registrarActa, isPending } = useRegistrarActaEntrega();
@@ -71,61 +52,6 @@ const ActaEntregaFormulario: React.FC<Props> = ({
     if (!id_factura || !fechaEntrega || !responsable) return false;
     return !!firmaFile && files.length >= 1;
   }, [id_factura, fechaEntrega, responsable, firmaFile, files.length]);
-
-  const onFirmaChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!validateFileInput(e)) {
-      setFirmaFile(null);
-      setFirmaPreview(null);
-      return;
-    }
-    const f = e.target.files?.[0] ?? null;
-    setFirmaFile(f);
-    setFirmaPreview(f ? await readAsDataURL(f) : null);
-  };
-
-  const onFotosChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!validateFileInput(e)) return;
-    const list = e.target.files;
-    if (!list) return;
-    const arr = Array.from(list);
-    setFiles((prev) => [...prev, ...arr]);
-    const newPreviews = await Promise.all(arr.map((f) => readAsDataURL(f)));
-    setPreviews((prev) => [...prev, ...newPreviews]);
-    e.currentTarget.value = "";
-  };
-
-  const onDrop = useCallback(async (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const dropped = Array.from(e.dataTransfer.files || []).filter(
-      (f) =>
-        /image\/|\.png$|\.jpg$|\.jpeg$|\.webp$/i.test(f.type || f.name) &&
-        validateFile(f).ok // tipo permitido + tamaño <= 1.5 MB
-    );
-    if (!dropped.length) return;
-
-    setFiles((prev) => [...prev, ...dropped]);
-    const newPrev = await Promise.all(dropped.map((f) => readAsDataURL(f)));
-    setPreviews((prev) => [...prev, ...newPrev]);
-    dropRef.current?.classList.remove("ring-emerald-400");
-  }, []);
-
-  const onDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dropRef.current?.classList.add("ring-emerald-400");
-  };
-
-  const onDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dropRef.current?.classList.remove("ring-emerald-400");
-  };
-
-  const removeFoto = (idx: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== idx));
-    setPreviews((prev) => prev.filter((_, i) => i !== idx));
-  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -235,54 +161,12 @@ registrarActa(fd, {
           )}
         </div>
 
-        {!firmaFile ? (
-          /* Estado vacío: contenedor claro e informativo */
-          <label
-            className={`flex flex-col items-center justify-center text-center gap-2 rounded-2xl border-2 border-dashed p-6 cursor-pointer transition
-              border-emerald-300 bg-success/5 hover:bg-success/10 hover:border-emerald-400`}
-          >
-            <input
-              type="file"
-              accept="image/*,.png,.jpg,.jpeg,.webp"
-              className="hidden"
-              onChange={onFirmaChange}
-            />
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-600/10 text-emerald-600">
-              <UploadCloud className="w-5 h-5" />
-            </div>
-            <p className="text-sm font-medium text-base-content">
-              Subir imagen de la firma del cliente
-            </p>
-            <p className="text-xs text-base-content/60">
-              Haz clic para seleccionar una imagen (JPG, PNG, WEBP · máx. 1.5 MB)
-            </p>
-            <span className="mt-1 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium">
-              Seleccionar firma
-            </span>
-          </label>
-        ) : (
-          /* Estado cargado: preview + datos + quitar */
-          <div className="flex items-center gap-4 rounded-2xl border border-success/30 bg-success/5 p-4">
-            {firmaPreview && (
-              <img
-                src={firmaPreview}
-                alt="Firma del cliente"
-                className="h-20 w-36 object-contain rounded-lg border border-base-300 bg-base-100"
-              />
-            )}
-            <div className="min-w-0 flex-1 text-xs text-base-content/70">
-              <div className="font-medium text-base-content truncate">{firmaFile.name}</div>
-              <div>{formatBytes(firmaFile.size)}</div>
-            </div>
-            <button
-              type="button"
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-error hover:bg-error/10 text-xs font-medium"
-              onClick={() => { setFirmaFile(null); setFirmaPreview(null); }}
-            >
-              <X className="w-3.5 h-3.5" /> Quitar
-            </button>
-          </div>
-        )}
+        <FileUpload
+          files={firmaFile ? [firmaFile] : []}
+          onFilesChange={(fs) => setFirmaFile(fs[0] ?? null)}
+          accept="image/*,.png,.jpg,.jpeg,.webp"
+          helperText="JPG, PNG, WEBP · máx. 1.5 MB"
+        />
 
         {!firmaFile && (
           <p className="text-xs text-error mt-1">* Requerida para registrar el acta.</p>
@@ -293,69 +177,19 @@ registrarActa(fd, {
       </div>
 
       {/* Fotos */}
-      <div
-        ref={dropRef}
-        onDrop={onDrop}
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        className="rounded-2xl border-2 border-dashed border-base-300 p-5 bg-base-200 hover:bg-base-200 transition ring-0"
-      >
-        <div className="flex flex-col items-center justify-center text-center">
-          <p className="text-sm font-medium text-base-content">
-            Arrastra y suelta fotos aquí
-          </p>
-          <p className="text-xs text-base-content/60">o</p>
-          <label className="mt-2 inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer">
-            <input
-              type="file"
-              accept="image/*,.png,.jpg,.jpeg,.webp"
-              multiple
-              className="hidden"
-              onChange={onFotosChange}
-            />
-            Seleccionar archivos
-          </label>
-          <p className="mt-2 text-[11px] text-base-content/60">
-            Formatos: JPG, PNG, WEBP.{" "}
-            {files.length > 0
-              ? `${files.length} seleccionadas.`
-              : "Puedes seleccionar varias."}
-          </p>
-        </div>
+      <div className="rounded-2xl border-2 border-dashed border-base-300 p-5 bg-base-200">
+        <p className="text-sm font-medium text-base-content text-center mb-3">
+          Fotos de soporte
+        </p>
 
-        {files.length > 0 && (
-          <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {files.map((f, i) => (
-              <div
-                key={`${f.name}-${i}`}
-                className="relative group rounded-xl border border-base-300 bg-base-100 p-2"
-              >
-                {previews[i] ? (
-                  <img
-                    src={previews[i]}
-                    alt={f.name}
-                    className="h-28 w-full object-cover rounded-lg"
-                  />
-                ) : (
-                  <div className="h-28 w-full rounded-lg bg-base-200" />
-                )}
-                <div className="mt-2 text-[11px] text-base-content/70 truncate">
-                  {f.name}
-                </div>
-                <div className="text-[10px] text-base-content/50">
-                  {formatBytes(f.size)}
-                </div>
-                <button
-                  type="button"
-                  className="absolute top-2 right-2 px-2 py-1 text-[10px] rounded bg-rose-600 text-white opacity-0 group-hover:opacity-100 transition"
-                  onClick={() => removeFoto(i)}
-                >
-                  Quitar
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+        <FileUpload
+          files={files}
+          onFilesChange={setFiles}
+          multiple
+          maxFiles={20}
+          accept="image/*,.png,.jpg,.jpeg,.webp"
+          helperText="JPG, PNG, WEBP · puedes seleccionar varias"
+        />
 
         {files.length < 1 && (
           <p className="mt-2 text-xs text-error">

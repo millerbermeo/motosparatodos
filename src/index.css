@@ -99,6 +99,58 @@ select optgroup {
     --cell-color: #0277bd;
 }
 
+/* FileUpload: entrada suave de tarjetas de archivo y sacudida al rechazar un archivo inválido. */
+@keyframes fu-pop {
+    0% {
+        opacity: 0;
+        transform: scale(0.94) translateY(4px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes fu-shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    20% {
+        transform: translateX(-4px);
+    }
+
+    40% {
+        transform: translateX(4px);
+    }
+
+    60% {
+        transform: translateX(-3px);
+    }
+
+    80% {
+        transform: translateX(3px);
+    }
+}
+
+/* FileUpload: barra de progreso indeterminada mientras se sube el archivo. */
+@keyframes fu-progress {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    50% {
+        transform: translateX(50%);
+    }
+
+    100% {
+        transform: translateX(250%);
+    }
+}
+
 @keyframes ripple {
     0% {
         background-color: transparent;

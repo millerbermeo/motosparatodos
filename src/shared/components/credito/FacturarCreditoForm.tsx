@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import Swal from "sweetalert2";
 import { useRegistrarSolicitudFacturacion } from "../../../services/solicitudServices";
 import { HeaderSolicitud } from "../solicitar-facturacion/HeaderSolicitud";
-import { validateFileInput } from "../../../utils/fileValidation";
+import { FileUpload } from "../FileUpload";
 
 const AGENCIAS = ["Sucursal Norte", "Sucursal Centro", "Sucursal Sur"];
 
@@ -15,41 +16,6 @@ type Props = {
   loadingDistribuidoras: boolean;
   errorDistribuidoras: unknown;
 };
-
-// -------------------- Helpers de archivos / preview --------------------
-function isImage(file: File) {
-  return /^image\/(png|jpe?g)$/i.test(file.type);
-}
-
-function isPdf(file: File) {
-  return file.type === "application/pdf" || /\.pdf$/i.test(file.name);
-}
-
-function fileKey(file: File) {
-  return `${file.name}-${file.size}-${file.lastModified}`;
-}
-
-type FilePreview = { file: File; url: string };
-
-function useFilesPreviews(files: File[]) {
-  const [items, setItems] = useState<FilePreview[]>([]);
-
-  useEffect(() => {
-    if (!files.length) {
-      setItems([]);
-      return;
-    }
-
-    const next = files.map((f) => ({ file: f, url: URL.createObjectURL(f) }));
-    setItems(next);
-
-    return () => {
-      next.forEach((x) => URL.revokeObjectURL(x.url));
-    };
-  }, [files]);
-
-  return items;
-}
 
 // -------------------- UI blocks --------------------
 const UploadBlock: React.FC<{
@@ -78,120 +44,6 @@ const UploadBlock: React.FC<{
       {error ? <p className="text-xs text-error mt-2">{error}</p> : null}
 
       {below ? <div className="mt-3">{below}</div> : null}
-    </div>
-  );
-};
-
-const PreviewCard: React.FC<{ item: FilePreview; onRemove?: () => void }> = ({
-  item,
-  onRemove,
-}) => {
-  const { file, url } = item;
-
-  return (
-    <div
-      className="rounded-xl border border-base-300 bg-base-200 overflow-hidden"
-      title={file.name}
-    >
-      <div className="px-3 py-2 flex items-center justify-between gap-2">
-        <p className="text-xs text-base-content truncate">{file.name}</p>
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] text-base-content/60 whitespace-nowrap">
-            {(file.size / 1024).toFixed(0)} KB
-          </span>
-          {onRemove ? (
-            <button
-              type="button"
-              className="text-[11px] text-error"
-              onClick={onRemove}
-              aria-label="Quitar archivo"
-              title="Quitar"
-            >
-              ✕
-            </button>
-          ) : null}
-        </div>
-      </div>
-
-      {isImage(file) ? (
-        <div className="bg-base-100 border-t border-base-300">
-          <img src={url} alt={file.name} className="w-full object-contain max-h-56" />
-        </div>
-      ) : isPdf(file) ? (
-        <div className="bg-base-100 border-t border-base-300 px-3 py-4 text-[11px] text-base-content/70">
-          PDF cargado (sin vista previa aquí). Se enviará al guardar.
-        </div>
-      ) : (
-        <div className="bg-base-100 border-t border-base-300 px-3 py-4 text-[11px] text-base-content/70">
-          Archivo cargado (sin vista previa). Se enviará al guardar.
-        </div>
-      )}
-    </div>
-  );
-};
-
-const SmallOthersGrid: React.FC<{
-  items: FilePreview[];
-  onRemove: (file: File) => void;
-  onClear: () => void;
-}> = ({ items, onRemove, onClear }) => {
-  if (!items.length) return null;
-
-  return (
-    <div>
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold text-base-content">
-          Otros documentos ({items.length})
-        </p>
-        <button
-          type="button"
-          className="text-xs text-base-content/70 underline"
-          onClick={onClear}
-        >
-          Limpiar
-        </button>
-      </div>
-
-      <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        {items.map(({ file, url }) => (
-          <div
-            key={fileKey(file)}
-            className="rounded-xl border border-base-300 bg-base-200 overflow-hidden"
-            title={file.name}
-          >
-            <div className="px-2 py-2 flex items-center justify-between gap-2">
-              <p className="text-[11px] text-base-content truncate">{file.name}</p>
-              <button
-                type="button"
-                className="text-[11px] text-error"
-                onClick={() => onRemove(file)}
-                aria-label="Quitar documento"
-                title="Quitar"
-              >
-                ✕
-              </button>
-            </div>
-
-            {isImage(file) ? (
-              <div className="bg-base-100 border-t border-base-300">
-                <img src={url} alt={file.name} className="w-full object-cover h-24" />
-              </div>
-            ) : isPdf(file) ? (
-              <div className="bg-base-100 border-t border-base-300 h-24 flex items-center justify-center">
-                <span className="text-[11px] text-base-content/70 px-2 text-center">
-                  PDF
-                </span>
-              </div>
-            ) : (
-              <div className="bg-base-100 border-t border-base-300 h-24 flex items-center justify-center">
-                <span className="text-[11px] text-base-content/70 px-2 text-center">
-                  Archivo
-                </span>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
     </div>
   );
 };
@@ -231,27 +83,6 @@ const FacturarCreditoForm: React.FC<Props> = ({
       distribuidorasActivas.find((d: any) => String(d.id) === distribuidoraId),
     [distribuidorasActivas, distribuidoraId]
   );
-
-  // previews
-  const cedulaPreviews = useFilesPreviews(cedulaFiles);
-  const manifiestoPreviews = useFilesPreviews(manifiestoFiles);
-  const otrosPreviews = useFilesPreviews(otrosDocs);
-
-  // helpers otros
-  const addOtrosDocs = (incoming?: FileList | null) => {
-    if (!incoming || incoming.length === 0) return;
-    const newFiles = Array.from(incoming);
-
-    setOtrosDocs((prev) => {
-      const map = new Map(prev.map((f) => [fileKey(f), f]));
-      newFiles.forEach((f) => map.set(fileKey(f), f));
-      return Array.from(map.values());
-    });
-  };
-
-  const removeOtro = (file: File) => {
-    setOtrosDocs((prev) => prev.filter((f) => fileKey(f) !== fileKey(file)));
-  };
 
   const clearOtros = () => setOtrosDocs([]);
 
@@ -299,10 +130,21 @@ const FacturarCreditoForm: React.FC<Props> = ({
       // otros documentos múltiples
       otrosDocs.forEach((f) => fd.append("otros_documentos[]", f));
 
-      registrarSolicitud(fd, {
-        onSuccess: () => {
-          window.location.reload();
-        },
+      Swal.fire({
+        icon: "warning",
+        title: "¿Enviar solicitud de facturación?",
+        text: `Se registrará la solicitud de facturación para el crédito ${codigoCredito}.`,
+        showCancelButton: true,
+        confirmButtonText: "Sí, enviar",
+        cancelButtonText: "Cancelar",
+      }).then((res) => {
+        if (!res.isConfirmed) return;
+
+        registrarSolicitud(fd, {
+          onSuccess: () => {
+            window.location.reload();
+          },
+        });
       });
     },
     [
@@ -402,29 +244,11 @@ const FacturarCreditoForm: React.FC<Props> = ({
               required
               helper="Adjunta la cédula (PDF o imagen). Debajo verás la vista previa."
             >
-              <input
-                type="file"
+              <FileUpload
+                files={cedulaFiles}
+                onFilesChange={setCedulaFiles}
                 accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                className="file-input file-input-bordered w-full bg-base-200"
-                onChange={(e) => {
-                  if (!validateFileInput(e)) return setCedulaFiles([]);
-                  const file = e.target.files?.[0] ?? null;
-                  setCedulaFiles(file ? [file] : []);
-                }}
-                required
               />
-
-              {cedulaPreviews.length ? (
-                <div className="mt-3 space-y-3">
-                  {cedulaPreviews.map((p) => (
-                    <PreviewCard
-                      key={fileKey(p.file)}
-                      item={p}
-                      onRemove={() => setCedulaFiles([])}
-                    />
-                  ))}
-                </div>
-              ) : null}
             </UploadBlock>
 
             {/* Manifiesto (opcional) */}
@@ -432,54 +256,34 @@ const FacturarCreditoForm: React.FC<Props> = ({
               label="Manifiesto"
               helper="Opcional. Puedes adjuntarlo (PDF o imagen)."
             >
-              <input
-                type="file"
+              <FileUpload
+                files={manifiestoFiles}
+                onFilesChange={setManifiestoFiles}
                 accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                className="file-input file-input-bordered w-full bg-base-200"
-                onChange={(e) => {
-                  if (!validateFileInput(e)) return setManifiestoFiles([]);
-                  const file = e.target.files?.[0] ?? null;
-                  setManifiestoFiles(file ? [file] : []);
-                }}
               />
-
-              {manifiestoPreviews.length ? (
-                <div className="mt-3 space-y-3">
-                  {manifiestoPreviews.map((p) => (
-                    <PreviewCard
-                      key={fileKey(p.file)}
-                      item={p}
-                      onRemove={() => setManifiestoFiles([])}
-                    />
-                  ))}
-                </div>
-              ) : null}
             </UploadBlock>
 
             {/* Otros documentos */}
             <UploadBlock
               label="Otros documentos"
-              helper="Opcional. Puedes subir muchos y se acumulan. Abajo se verán todos juntos."
+              helper="Opcional. Puedes subir muchos y se acumulan."
             >
-              <input
-                type="file"
+              <FileUpload
+                files={otrosDocs}
+                onFilesChange={setOtrosDocs}
                 multiple
+                maxFiles={20}
                 accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                className="file-input file-input-bordered w-full bg-base-200"
-                onChange={(e) => {
-                  if (!validateFileInput(e)) return; // valida tipo + tamaño
-                  addOtrosDocs(e.target.files);
-                  e.currentTarget.value = "";
-                }}
               />
-
-              <div className="mt-3">
-                <SmallOthersGrid
-                  items={otrosPreviews}
-                  onRemove={removeOtro}
-                  onClear={clearOtros}
-                />
-              </div>
+              {otrosDocs.length > 0 && (
+                <button
+                  type="button"
+                  className="mt-2 text-xs text-base-content/70 underline"
+                  onClick={clearOtros}
+                >
+                  Limpiar todos
+                </button>
+              )}
             </UploadBlock>
           </div>
         </div>

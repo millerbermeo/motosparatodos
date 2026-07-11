@@ -2,7 +2,8 @@ import React from "react";
 import Swal from "sweetalert2";
 import { UploadCloud, RefreshCw } from "lucide-react";
 import { useSubirManifiestoSolicitud } from "../../services/solicitudServices";
-import { validateFileInput, ACCEPT_ATTR } from "../../utils/fileValidation";
+import { ACCEPT_ATTR } from "../../utils/fileValidation";
+import { FileUpload } from "./FileUpload";
 
 type Props = {
   idSolicitud?: number;
@@ -21,16 +22,6 @@ const ManifiestoUploader: React.FC<Props> = ({
 }) => {
   const { mutate: subirManifiesto, isPending } = useSubirManifiestoSolicitud();
   const [file, setFile] = React.useState<File | null>(null);
-  const inputRef = React.useRef<HTMLInputElement | null>(null);
-
-  const onChangeFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!validateFileInput(e)) {
-      setFile(null);
-      return;
-    }
-    const f = e.target.files?.[0] ?? null;
-    setFile(f);
-  };
 
   const validar = (f: File) => {
     const okType =
@@ -102,7 +93,6 @@ const ManifiestoUploader: React.FC<Props> = ({
     subirManifiesto(fd, {
       onSuccess: () => {
         setFile(null);
-        if (inputRef.current) inputRef.current.value = ""; // ✅ permite volver a seleccionar el mismo archivo
         onUploaded?.();
       },
     });
@@ -130,37 +120,24 @@ const ManifiestoUploader: React.FC<Props> = ({
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-        <input
-          ref={inputRef}
-          type="file"
+      <div className="flex flex-col gap-2">
+        <FileUpload
+          files={file ? [file] : []}
+          onFilesChange={(files) => setFile(files[0] ?? null)}
+          loading={isPending}
           accept={ACCEPT_ATTR}
-          onChange={onChangeFile}
-          className="block w-full text-xs text-base-content/70
-            file:mr-3 file:py-1.5 file:px-3
-            file:rounded-md file:border-0
-            file:text-xs file:font-semibold
-            file:bg-base-200 file:text-base-content
-            hover:file:bg-base-300"
-          disabled={isPending}
         />
 
         <button
           type="button"
           onClick={onUpload}
           disabled={isPending || !file}
-          className="btn btn-sm bg-amber-600 hover:bg-amber-700 text-white border-amber-600"
+          className="btn btn-sm bg-amber-600 hover:bg-amber-700 text-white border-amber-600 self-start"
         >
           {manifiestoUrlFinal ? <RefreshCw className="w-4 h-4" /> : <UploadCloud className="w-4 h-4" />}
           {isPending ? "Subiendo…" : manifiestoUrlFinal ? "Reemplazar" : "Subir manifiesto"}
         </button>
       </div>
-
-      {file && (
-        <div className="text-xs text-base-content/70">
-          Archivo seleccionado: <span className="font-medium">{file.name}</span>
-        </div>
-      )}
     </div>
   );
 };

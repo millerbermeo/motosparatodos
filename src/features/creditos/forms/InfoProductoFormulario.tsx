@@ -65,6 +65,7 @@ const InfoProductoFormulario: React.FC = () => {
   const next = useWizardStore((s) => s.next);
   const prev = useWizardStore((s) => s.prev);
   const isFirst = useWizardStore((s) => s.isFirst);
+  const readOnly = useWizardStore((s) => s.readOnly);
 
   const { id: codigoFromUrl } = useParams<{ id: string }>();
   const codigo_credito = String(codigoFromUrl ?? "");
@@ -178,6 +179,7 @@ const InfoProductoFormulario: React.FC = () => {
   }, [creditoBackend, setValue]);
 
   const onSubmit = (v: ProductoValues) => {
+    if (readOnly) return;
     const cuotaInicialNum = toNumberPesos(v.cuotaInicial) || 0;
     const descuentoNum = toNumberPesos(v.descuento) || 0;
 
@@ -336,6 +338,7 @@ const InfoProductoFormulario: React.FC = () => {
           <div className="text-sm text-error">No se pudo cargar el crédito.</div>
         )}
 
+        <fieldset disabled={readOnly} className="contents">
         <div className={grid}>
           <FormInput
             name="producto"
@@ -397,7 +400,7 @@ const InfoProductoFormulario: React.FC = () => {
           />
         </div>
 
-        <div>
+        <div className="mt-6">
           <FormInput
             name="comentario"
             label="Comentario"
@@ -412,8 +415,9 @@ const InfoProductoFormulario: React.FC = () => {
             }}
           />
         </div>
+        </fieldset>
 
-        <div className="flex items-center justify-between gap-2">
+        <div className="mt-6 flex items-center justify-between gap-2">
           <button
             type="button"
             className="btn btn-ghost"
@@ -429,7 +433,7 @@ const InfoProductoFormulario: React.FC = () => {
               data-wizard-save
               type="submit"
               className="btn btn-warning"
-              disabled={isSaving}
+              disabled={isSaving || readOnly}
               title="Guardar cambios (avanza solo si se guarda correctamente)"
             >
               {isSaving ? "Guardando..." : "Guardar"}

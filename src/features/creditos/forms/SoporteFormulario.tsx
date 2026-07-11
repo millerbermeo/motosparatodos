@@ -1,20 +1,19 @@
 // src/components/solicitudes/SoporteFormulario.tsx
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import Swal from "sweetalert2";
 import { useSubirFormatos, useCreditoConDocumentos } from "../../../services/documentosServices";
 import { useParams, useNavigate } from "react-router-dom";
 import { useWizardStore } from "../../../store/wizardStore";
-import { Loader2, UploadCloud, FileText } from "lucide-react";
+import { Loader2, FileText } from "lucide-react";
 import { useActualizarEstadoCredito } from "../../../services/creditosServices";
-import { validateFile, ACCEPT_ATTR } from "../../../utils/fileValidation";
+import { ACCEPT_ATTR } from "../../../utils/fileValidation";
 import { toAbsoluteUrl } from "../../../utils/files";
+import { FileUpload } from "../../../shared/components/FileUpload";
 
 type Props = { maxSizeMB?: number };
 
 const SoporteFormulario: React.FC<Props> = () => {
-  const [errors, setErrors] = useState<string[]>([]);
   const [selected, setSelected] = useState<File[]>([]);
-  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const { id: codigoFromUrl } = useParams<{ id: string }>();
   const codigo_credito = String(codigoFromUrl ?? "");
@@ -23,6 +22,8 @@ const SoporteFormulario: React.FC<Props> = () => {
 
   const prev = useWizardStore(s => s.prev);
   const isFirst = useWizardStore(s => s.isFirst);
+  const readOnly = useWizardStore(s => s.readOnly);
+  const bloqueaRevision = useWizardStore(s => s.bloqueaRevision);
 
 
   const { mutateAsync: actualizarEstado } = useActualizarEstadoCredito();
@@ -33,39 +34,11 @@ const SoporteFormulario: React.FC<Props> = () => {
 
 
 
-  const openPicker = () => inputRef.current?.click();
-
   // 🔹 Construir URL correcta usando el helper centralizado (BASE_URL)
   const buildUrl = (path: string) => toAbsoluteUrl(path) ?? "";
 
-  const validateOnly = (incoming: FileList | File[]) => {
-    const errs: string[] = [];
-    const validFiles: File[] = [];
-
-    Array.from(incoming).forEach((f) => {
-      // Valida tipo permitido (imágenes/PDF/Word/Excel) y tamaño <= 1.5 MB
-      if (!validateFile(f).ok) return; // validateFile ya muestra el alert
-      validFiles.push(f);
-    });
-
-    setErrors(errs);
-
-    if (validFiles.length) {
-      setSelected(prev => [...prev, ...validFiles]);
-    }
-  };
-
-  const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.length) validateOnly(e.target.files);
-    e.target.value = "";
-  };
-
-  const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    if (e.dataTransfer.files?.length) validateOnly(e.dataTransfer.files);
-  };
-
   const handleManualUpload = () => {
+    if (readOnly) return;
     if (!codigo_credito) {
       Swal.fire({ icon: "error", title: "Código de crédito no encontrado" });
       return;
@@ -119,6 +92,7 @@ const SoporteFormulario: React.FC<Props> = () => {
   };
 
   const handleRegisterAndFinish = () => {
+    if (bloqueaRevision) return;
     Swal.fire({
       icon: "warning",
       title: "¿Deseas registrar este proceso?",
@@ -155,13 +129,18 @@ const SoporteFormulario: React.FC<Props> = () => {
         });
       } catch (err: any) {
         console.error(err);
-        const raw = err?.response?.data?.message ?? "No fue posible actualizar el estado";
+        const raw =
+          err?.response?.data?.error ??
+          err?.response?.data?.message ??
+          "No fue posible actualizar el estado";
         const arr = Array.isArray(raw) ? raw : [raw];
 
         Swal.fire({
           icon: "error",
           title: "Error",
           html: arr.join("<br/>"),
+        }).then(() => {
+          navigate(redirectTo);
         });
       }
     });
@@ -175,56 +154,15 @@ const SoporteFormulario: React.FC<Props> = () => {
         Adjuntar Soportes del Crédito
       </h3>
 
-      <div
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={onDrop}
-        className="border-2 border-dashed border-blue-400 bg-info/10 hover:bg-info/10 
-                   rounded-2xl p-8 text-center cursor-pointer transition-all"
-        onClick={openPicker}
-      >
-        <UploadCloud className="w-12 h-12 mx-auto text-info mb-2" />
-
-        <p className="text-base-content/70">
-          Arrastra y suelta tus archivos aquí o{" "}
-          <span className="text-info font-semibold">
-            haz clic para seleccionar
-          </span>
-        </p>
-
-        <input
-          ref={inputRef}
-          type="file"
-          multiple
-          accept={ACCEPT_ATTR}
-          onChange={onInputChange}
-          className="hidden"
-          disabled={isUploading}
-        />
-      </div>
-
-      {errors.length > 0 && (
-        <div className="bg-error/10 text-error p-3 rounded-lg shadow-sm">
-          {errors.map((e, i) => (
-            <div key={i}> {e}</div>
-          ))}
-        </div>
-      )}
-
-      {selected.length > 0 && (
-        <div className="bg-base-100 border border-base-300 rounded-xl p-3">
-          <div className="font-semibold mb-2">
-            Archivos seleccionados (pendientes de subir):
-          </div>
-
-          <ul className="list-disc ml-5 text-sm">
-            {selected.map((f, i) => (
-              <li key={i} className="truncate">
-                ({i + 1}) {f.name}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <FileUpload
+        files={selected}
+        onFilesChange={setSelected}
+        multiple
+        maxFiles={20}
+        accept={ACCEPT_ATTR}
+        disabled={isUploading || readOnly}
+        helperText="Arrastra y suelta tus archivos aquí o haz clic para seleccionar"
+      />
 
       <div>
         <h4 className="font-semibold mb-3">📑 Soportes registrados</h4>
@@ -282,7 +220,7 @@ const SoporteFormulario: React.FC<Props> = () => {
             type="button"
             className="btn btn-primary"
             onClick={handleManualUpload}
-            disabled={isUploading || selected.length === 0}
+            disabled={isUploading || selected.length === 0 || readOnly}
           >
             {isUploading ? (
               <span className="inline-flex items-center gap-2">
@@ -297,10 +235,10 @@ const SoporteFormulario: React.FC<Props> = () => {
             data-wizard-save
             type="button"
             className="btn btn-success"
-            onClick={handleRegisterAndFinish}
+            onClick={bloqueaRevision ? () => navigate(redirectTo) : handleRegisterAndFinish}
             disabled={isUploading}
           >
-            Continuar y pasar a revisión →
+            {bloqueaRevision ? "Ver detalle del crédito" : "Continuar y pasar a revisión →"}
           </button>
         </div>
       </div>

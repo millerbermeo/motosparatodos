@@ -427,6 +427,7 @@ const CoodeudoresFormulario: React.FC = () => {
   const next = useWizardStore(s => s.next);
   const prev = useWizardStore(s => s.prev);
   const isFirst = useWizardStore(s => s.isFirst);
+  const readOnly = useWizardStore(s => s.readOnly);
 
   const { id: codigoCredito } = useParams<{ id: string }>();
   if (!codigoCredito) return <div>Error: no se encontró el parámetro en la URL</div>;
@@ -551,6 +552,7 @@ const CoodeudoresFormulario: React.FC = () => {
   const isSaving = registrar.isPending || actualizar.isPending;
 
   const onSubmit = async (values: FormValues) => {
+    if (readOnly) return;
     // Genera payload por cada codeudor conservando el índice
     const entries = values.codeudores.map((c, idx) => ({
       idx,
@@ -606,6 +608,7 @@ const CoodeudoresFormulario: React.FC = () => {
         }}
         className="space-y-10"
       >
+        <fieldset disabled={readOnly} className="contents space-y-10">
         {fields.map((field, idx) => (
           <div key={field.id} className="space-y-8 border border-base-300 rounded-xl p-4">
 
@@ -817,9 +820,10 @@ const CoodeudoresFormulario: React.FC = () => {
 
           </div>
         ))}
+        </fieldset>
 
         {/* ========== Controles (cambiados) ========== */}
-        <div className="flex items-center justify-between">
+        <div className="mt-10 flex items-center justify-between">
           {/* ← Anterior (solo si hay paso previo) */}
           <button
             type="button"
@@ -831,6 +835,7 @@ const CoodeudoresFormulario: React.FC = () => {
             ← Anterior
           </button>
 
+          <fieldset disabled={readOnly} className="contents">
           <div className="flex gap-2">
             {fields.length < 2 && (
               <button type="button" className="btn btn-outline" onClick={addSecond} disabled={isSaving}>
@@ -856,6 +861,7 @@ const CoodeudoresFormulario: React.FC = () => {
                   : "Guardar"}
             </button>
           </div>
+          </fieldset>
         </div>
       </form>
     </div>

@@ -9,11 +9,19 @@ type WizardState = {
   isFirst: boolean;
   isLast: boolean;
 
+  // crédito en estado Facturado/En Facturación: solo consulta, sin edición
+  readOnly: boolean;
+  // crédito en estado Facturado/Aprobado/En Facturación: se puede seguir editando
+  // (salvo que readOnly también esté activo), pero ya no puede volver a "Revision"
+  bloqueaRevision: boolean;
+
   // acciones
   setSteps: (ids: string[], initialId?: string) => void;
   goTo: (i: number) => void;
   next: () => void;
   prev: () => void;
+  setReadOnly: (v: boolean) => void;
+  setBloqueaRevision: (v: boolean) => void;
 };
 
 export const useWizardStore = create<WizardState>((set, get) => ({
@@ -22,6 +30,8 @@ export const useWizardStore = create<WizardState>((set, get) => ({
   idx: 0,
   isFirst: true,
   isLast: true,
+  readOnly: false,
+  bloqueaRevision: false,
 
   setSteps: (ids, initialId) => {
     const safeIds = Array.isArray(ids) ? ids : [];
@@ -63,5 +73,15 @@ export const useWizardStore = create<WizardState>((set, get) => ({
     const { idx } = get();
     const p = Math.max(idx - 1, 0);
     get().goTo(p);
+  },
+
+  setReadOnly: (v) => {
+    if (get().readOnly === v) return;
+    set({ readOnly: v });
+  },
+
+  setBloqueaRevision: (v) => {
+    if (get().bloqueaRevision === v) return;
+    set({ bloqueaRevision: v });
   },
 }));

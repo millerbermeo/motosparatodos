@@ -2,6 +2,8 @@ import React, { useMemo, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useWizardStore } from '../../store/wizardStore';
 import { useCreditoProgreso } from '../../services/creditoProgresoService';
+import { useCredito } from '../../services/creditosServices';
+import { esWizardSoloLectura, esWizardSinRevision } from '../../utils/creditoEstado';
 import { alert } from '../../utils/alerts';
 
 export type Step = {
@@ -24,12 +26,28 @@ const WizardTimeline: React.FC<WizardProps> = ({
   onChangeStep,
   className = '',
 }) => {
-  const {  setSteps, idx, goTo } = useWizardStore();
+  const {  setSteps, idx, goTo, setReadOnly, setBloqueaRevision } = useWizardStore();
   const activeId = useWizardStore(s => s.activeId);
+  const readOnly = useWizardStore(s => s.readOnly);
 
   // credito_id viene de la ruta /creditos/registrar/:id
   const { id: creditoId } = useParams<{ id: string }>();
   const { data: progreso, refetch: refetchProgreso } = useCreditoProgreso(creditoId);
+
+  // estado del crédito: Facturado/En Facturación → wizard de solo lectura;
+  // Aprobado → se puede seguir editando, pero ya no puede volver a "Revision"
+  const { data: creditoResp } = useCredito(
+    { codigo_credito: creditoId ?? '' },
+    !!creditoId
+  );
+  const estadoCredito = creditoResp?.success && creditoResp.creditos?.length
+    ? creditoResp.creditos[0].estado
+    : undefined;
+
+  useEffect(() => {
+    setReadOnly(esWizardSoloLectura(estadoCredito));
+    setBloqueaRevision(esWizardSinRevision(estadoCredito));
+  }, [estadoCredito, setReadOnly, setBloqueaRevision]);
 
   // refrescar progreso cuando cambia el paso (un form pudo completar el paso en backend)
   useEffect(() => {
@@ -64,11 +82,13 @@ const WizardTimeline: React.FC<WizardProps> = ({
   // avanzar al resto: requiere los pasos anteriores completos.
   const canGoTo = useCallback(
     (i: number): boolean => {
+      // Solo lectura: toda la línea de tiempo queda libre para consultar.
+      if (readOnly) return true;
       if (i <= idx) return true;
       if (i >= steps.length - 2) return true;
       return firstIncompleteBefore(i) === -1;
     },
-    [idx, firstIncompleteBefore, steps.length]
+    [idx, firstIncompleteBefore, steps.length, readOnly]
   );
 
   // goTo gateado: solo aplica al click en iconos del timeline

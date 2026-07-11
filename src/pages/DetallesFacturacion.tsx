@@ -18,8 +18,8 @@ import ManifiestoUploader from "../shared/components/ManifiestoUploader";
 import CedulaUploader from "../shared/components/CedulaUploader";
 import { toNum } from "../utils/convertirNumeroSeguro";
 import { fmtFecha } from "../utils/date";
-import { validateFileInput } from "../utils/fileValidation";
 import { fmtCOP } from "../utils/money";
+import { FileUpload } from "../shared/components/FileUpload";
 import { buildFullName } from "../utils/fullName";
 import { RowRight } from "../shared/components/facturacion/RowRight";
 import { buildMotoFromCotizacion } from "../shared/components/facturacion/buildMotoFromCotizacion";
@@ -646,15 +646,6 @@ const DetallesFacturacion: React.FC = () => {
   const tieneManifiesto = !!manifiestoUrlFinal;
 
 
-  const handleFacturaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!validateFileInput(e)) {
-      setFacturaFile(null);
-      return;
-    }
-    const file = e.target.files?.[0] ?? null;
-    setFacturaFile(file || null);
-  };
-
   const navigate = useNavigate();
 
   const handleSubirFactura = async () => {
@@ -1193,36 +1184,23 @@ const DetallesFacturacion: React.FC = () => {
                           </div>
                         )}
                         {idSolicitud && (
-                          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-                            <input
-                              type="file"
+                          <div className="flex flex-col gap-2">
+                            <FileUpload
+                              files={facturaFile ? [facturaFile] : []}
+                              onFilesChange={(files) => setFacturaFile(files[0] ?? null)}
+                              loading={isSubiendoFactura}
                               accept=".pdf,image/*"
-                              onChange={handleFacturaChange}
-                              className="block w-full text-xs text-base-content/70
-                            file:mr-3 file:py-1.5 file:px-3
-                            file:rounded-md file:border-0
-                            file:text-xs file:font-semibold
-                            file:bg-base-200 file:text-base-content
-                            hover:file:bg-base-300"
                             />
                             <button
                               type="button"
                               onClick={handleSubirFactura}
                               disabled={isSubiendoFactura}
-                              className="btn btn-sm border bg-base-100 text-success"
+                              className="btn btn-sm border bg-base-100 text-success self-start"
                             >
                               {isSubiendoFactura
                                 ? "Subiendo factura…"
                                 : "Facturar"}
                             </button>
-                          </div>
-                        )}
-                        {facturaFile && (
-                          <div className="text-xs text-base-content/60">
-                            Archivo seleccionado:{" "}
-                            <span className="font-medium">
-                              {facturaFile.name}
-                            </span>
                           </div>
                         )}
                       </div>

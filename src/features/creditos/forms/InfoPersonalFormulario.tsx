@@ -244,6 +244,7 @@ const InfoPersonalFormulario: React.FC = () => {
   const prev = useWizardStore((s) => s.prev);
   const navDirRef = React.useRef<"next" | "prev">("next");
   const isFirst = useWizardStore((s) => s.isFirst);
+  const readOnly = useWizardStore((s) => s.readOnly);
 
   const { id } = useParams<{ id: string }>();
 
@@ -419,6 +420,7 @@ const InfoPersonalFormulario: React.FC = () => {
   };
 
   const onSubmit = (values: InfoPersonalFormValues) => {
+    if (readOnly) return;
     // ✅ construye referencias para backend:
     // - si referencia está vacía → se omite
     // - si tiene algo → debe estar completa y teléfono 10 dígitos
@@ -558,6 +560,7 @@ const InfoPersonalFormulario: React.FC = () => {
       }}
       className="space-y-8"
     >
+      <fieldset disabled={readOnly} className="contents space-y-8">
       {/* ================== DATOS PERSONALES ================== */}
       <section>
         <div className="divider divider-start divider-success">
@@ -895,8 +898,9 @@ const InfoPersonalFormulario: React.FC = () => {
           />
         </div>
       </section>
+      </fieldset>
 
-      <div className="flex justify-between gap-2">
+      <div className="mt-8 flex justify-between gap-2">
         <button
           className="btn btn-ghost"
           type="button"
@@ -907,6 +911,7 @@ const InfoPersonalFormulario: React.FC = () => {
           ← Anterior
         </button>
 
+        <fieldset disabled={readOnly} className="contents">
         {!((data as any)?.informacion_personal?.codigo_credito || (data as any)?.data?.informacion_personal?.codigo_credito) && (
           <button
             className="btn btn-ghost"
@@ -977,6 +982,7 @@ const InfoPersonalFormulario: React.FC = () => {
             ? "Actualizar"
             : "Guardar"}
         </button>
+        </fieldset>
       </div>
     </form>
   );

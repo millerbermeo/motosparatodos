@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./axiosInstance";
-import type { AxiosError } from "axios";
+import type { AxiosError, AxiosProgressEvent } from "axios";
 import Swal from "sweetalert2";
 
 export interface SubirFirmaPayload {
   codigo_credito: string | number;
   firma: File; // archivo que se adjunta
+  /** Progreso real de subida (0-100), útil para animar la UI */
+  onUploadProgress?: (percent: number) => void;
 }
 
 export interface SubirFirmaResponse {
@@ -27,7 +29,7 @@ export const useSubirFirma = () => {
   const qc = useQueryClient();
 
   return useMutation<SubirFirmaResponse, AxiosError<ServerError>, SubirFirmaPayload>({
-    mutationFn: async ({ codigo_credito, firma }) => {
+    mutationFn: async ({ codigo_credito, firma, onUploadProgress }) => {
       const formData = new FormData();
       formData.append("codigo_credito", String(codigo_credito));
       formData.append("firma", firma);
@@ -37,6 +39,10 @@ export const useSubirFirma = () => {
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
+          onUploadProgress: (evt: AxiosProgressEvent) => {
+            if (!onUploadProgress || !evt.total) return;
+            onUploadProgress(Math.round((evt.loaded * 100) / evt.total));
+          },
         }
       );
       return data;

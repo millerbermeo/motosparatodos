@@ -287,22 +287,20 @@ const TablaCotizaciones: React.FC = () => {
                                 <option value="Credito de terceros">Crédito de terceros</option>
                             </select>
 
-                            <button onClick={cleanFilters} className="btn btn-accent w-full sm:w-auto sm:min-w-36 justify-self-start">
-                                Limpiar Filtros
-                            </button>
-                        </div>
-                    </div>
+                            <div className="flex flex-col sm:flex-row gap-2 w-full">
+                                <button onClick={cleanFilters} className="btn btn-accent w-full sm:flex-1">
+                                    Limpiar Filtros
+                                </button>
 
-                    <div className="flex items-center justify-end gap-2 py-3">
-                        {user?.rol === "Asesor" && (
-                            <div className="flex border-t border-base-200">
-                                <Link to="/cotizaciones/crear-cotizaciones" className="w-full sm:w-auto">
-                                    <button className="btn bg-[#2BB352] text-white w-full sm:w-auto sm:min-w-40">
-                                        Crear Cotización
-                                    </button>
-                                </Link>
+                                {user?.rol === "Asesor" && (
+                                    <Link to="/cotizaciones/crear-cotizaciones" className="w-full sm:flex-1">
+                                        <button className="btn bg-[#2BB352] text-white w-full">
+                                            Crear Cotización
+                                        </button>
+                                    </Link>
+                                )}
                             </div>
-                        )}
+                        </div>
                     </div>
                 </>
             }

@@ -11,18 +11,7 @@ import FacturaFinalDownload from '../pdf/FacturaFinal';
 import ButtonLink from '../../../shared/components/ButtonLink';
 import { toAbsoluteUrl } from '../../../utils/files';
 import { siNoBadge, neutroBadge } from '../../../utils/badges';
-import { validateFileInput } from '../../../utils/fileValidation';
-
-const fmtSize = (bytes: number) => {
-  if (!Number.isFinite(bytes)) return '';
-  if (bytes < 1024) return `${bytes} B`;
-  const kb = bytes / 1024;
-  if (kb < 1024) return `${kb.toFixed(1)} KB`;
-  const mb = kb / 1024;
-  return `${mb.toFixed(1)} MB`;
-};
-
-const isImage = (file: File) => file.type.startsWith('image/');
+import { FileUpload } from '../../../shared/components/FileUpload';
 
 type MaybeNum = number | undefined | null;
 
@@ -595,131 +584,35 @@ const FacturarCreditoSolicitud: React.FC = () => {
                 <label className="text-sm text-base-content/70">
                   Copia de la cédula <span className="text-error">*</span>
                 </label>
-                <input
-                  type="file"
+                <FileUpload
+                  files={cedulaFile ? [cedulaFile] : []}
+                  onFilesChange={(files) => setCedulaFile(files[0] ?? null)}
                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                  className="file-input file-input-bordered w-full"
-                  onChange={(e) => {
-                    if (!validateFileInput(e)) return setCedulaFile(null);
-                    setCedulaFile(e.target.files?.[0] ?? null);
-                  }}
-                  required
                 />
-
-                {/* ✅ Vista pequeña + quitar cédula */}
-                {cedulaFile && (
-                  <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-base-300 bg-base-200 px-3 py-2">
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-base-content truncate">
-                        {cedulaFile.name}
-                      </p>
-                      <p className="text-[11px] text-base-content/60">{fmtSize(cedulaFile.size)}</p>
-                    </div>
-                    <button
-                      type="button"
-                      className="btn btn-xs btn-ghost"
-                      onClick={() => setCedulaFile(null)}
-                    >
-                      Quitar
-                    </button>
-                  </div>
-                )}
               </div>
 
               <div className="flex flex-col gap-1">
                 <label className="text-sm text-base-content/70">Manifiesto</label>
-                <input
-                  type="file"
+                <FileUpload
+                  files={manifiestoFile ? [manifiestoFile] : []}
+                  onFilesChange={(files) => setManifiestoFile(files[0] ?? null)}
                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                  className="file-input file-input-bordered w-full"
-                  onChange={(e) => {
-                    if (!validateFileInput(e)) return setManifiestoFile(null);
-                    setManifiestoFile(e.target.files?.[0] ?? null);
-                  }}
                 />
-
-                {/* ✅ Vista pequeña + quitar manifiesto */}
-                {manifiestoFile && (
-                  <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-base-300 bg-base-200 px-3 py-2">
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-base-content truncate">
-                        {manifiestoFile.name}
-                      </p>
-                      <p className="text-[11px] text-base-content/60">{fmtSize(manifiestoFile.size)}</p>
-                    </div>
-                    <button
-                      type="button"
-                      className="btn btn-xs btn-ghost"
-                      onClick={() => setManifiestoFile(null)}
-                    >
-                      Quitar
-                    </button>
-                  </div>
-                )}
               </div>
 
-              {/* ✅ NUEVO: Otros documentos (múltiples) + vista pequeña + quitar */}
+              {/* ✅ NUEVO: Otros documentos (múltiples), se acumulan al seleccionar */}
               <div className="md:col-span-2 flex flex-col gap-1">
                 <label className="text-sm text-base-content/70">
                   Otros documentos <span className="text-base-content/50">(opcional)</span>
                 </label>
 
-                <input
-                  type="file"
+                <FileUpload
+                  files={otrosDocs}
+                  onFilesChange={setOtrosDocs}
                   multiple
+                  maxFiles={20}
                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                  className="file-input file-input-bordered w-full"
-                  onChange={(e) => {
-                    if (!validateFileInput(e)) return; // valida tipo + tamaño y limpia
-                    const files = Array.from(e.target.files ?? []);
-                    if (files.length) {
-                      setOtrosDocs((prev) => [...prev, ...files]); // 👈 acumula (no borra)
-                    }
-                    // permite volver a seleccionar el mismo archivo
-                    (e.target as HTMLInputElement).value = '';
-                  }}
                 />
-
-                {otrosDocs.length > 0 && (
-                  <div className="mt-2 space-y-2">
-                    {otrosDocs.map((f, i) => (
-                      <div
-                        key={`${f.name}-${i}`}
-                        className="flex items-center justify-between gap-3 rounded-lg border border-base-300 bg-base-200 px-3 py-2"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          {isImage(f) ? (
-                            <img
-                              src={URL.createObjectURL(f)}
-                              alt={f.name}
-                              className="h-8 w-8 rounded object-cover border border-base-300"
-                              onLoad={(ev) =>
-                                URL.revokeObjectURL((ev.target as HTMLImageElement).src)
-                              }
-                            />
-                          ) : (
-                            <div className="h-8 w-8 rounded border border-base-300 bg-base-100 flex items-center justify-center text-[10px] text-base-content/60">
-                              DOC
-                            </div>
-                          )}
-
-                          <div className="min-w-0">
-                            <p className="text-xs font-medium text-base-content truncate">{f.name}</p>
-                            <p className="text-[11px] text-base-content/60">{fmtSize(f.size)}</p>
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          className="btn btn-xs btn-ghost"
-                          onClick={() => setOtrosDocs((prev) => prev.filter((_, idx) => idx !== i))}
-                        >
-                          Quitar
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
 
               <div className="md:col-span-2 flex flex-col gap-1">
