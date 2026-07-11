@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useCredito, useDeudor } from '../../../services/creditosServices';
 import {
   CalendarDays,
@@ -13,6 +13,15 @@ import {
   MapPin,
   Wallet,
   ClipboardList,
+  ClipboardCheck,
+  Building2,
+  Landmark,
+  Hash,
+  IdCard,
+  Download,
+  CheckCircle2,
+  XCircle,
+  Tag,
 } from 'lucide-react';
 import {
   useSolicitudesPorCodigoCredito,
@@ -27,7 +36,7 @@ import { useIvaDecimal } from '../../../services/ivaServices';
 import FacturarCreditoForm from '../../../shared/components/credito/FacturarCreditoForm';
 import { fmtFecha } from '../../../utils/date';
 import { toAbsoluteUrl } from '../../../utils/files';
-import { siNoBadge, neutroBadge } from '../../../utils/badges';
+import { neutroBadge } from '../../../utils/badges';
 
 type MaybeNum = number | undefined | null;
 
@@ -135,6 +144,13 @@ const SolictudFacturarCredito: React.FC = () => {
     safeStr(deudorData?.informacion_personal?.celular) ||
     safeStr(deudorData?.informacion_personal?.telefono_fijo);
   const clienteCorreo = safeStr(deudorData?.informacion_personal?.email);
+  const clienteIniciales =
+    clienteNombre
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((p) => p[0]?.toUpperCase())
+      .join('') || '—';
 
   // -------------------- SELECCIÓN MOTO A / B (usando full) --------------------
   let motoSeleccionada: 'a' | 'b' | undefined;
@@ -294,8 +310,8 @@ const SolictudFacturarCredito: React.FC = () => {
             {/* IZQUIERDA: botón volver */}
             <div className="flex items-center gap-3">
               <ButtonLink
-                to="/solicitudes"
-                label="Volver a facturación"
+                to={`/creditos/detalle/${codigo_credito}`}
+                label="Volver al crédito"
                 direction="back"
               />
             </div>
@@ -332,67 +348,53 @@ const SolictudFacturarCredito: React.FC = () => {
           </div>
         )}
 
-        <section className="rounded-2xl border border-info/30 bg-info/10 shadow-sm p-4 md:p-6">
+        <section className="rounded-2xl border border-base-300 bg-base-100 overflow-hidden shadow-sm">
+          <div className="bg-linear-to-r from-sky-600 to-emerald-600 px-5 md:px-6 py-4 flex items-center gap-2">
+            <User2 className="h-5 w-5 text-white" />
+            <h2 className="text-white font-semibold text-base md:text-lg">
+              Información del cliente
+            </h2>
+          </div>
 
-          <div className="flex flex-col lg:flex-row gap-6 lg:items-center lg:justify-between">
-
+          <div className="p-5 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* IZQUIERDA: Info cliente */}
-            <div className="flex-1 space-y-2 text-center lg:text-left">
-
-              <h2 className="inline-flex items-center gap-1.5 text-sm font-semibold text-info uppercase tracking-wide">
-                <User2 className="h-4 w-4" />
-                Información del cliente
-              </h2>
-
-              <div className="text-base md:text-lg font-semibold text-base-content">
-                {clienteNombre}
-              </div>
-
-              <div className="text-sm text-base-content/70">
-                {clienteDoc}
-              </div>
-
-              <div className="flex items-center gap-1.5 text-sm text-base-content/70 justify-center lg:justify-start">
-                <MapPin className="h-4 w-4 text-info shrink-0" />
-                {clienteDireccion || "—"}
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-base-content/70 justify-center lg:justify-start">
-                <div className="flex items-center gap-1.5">
-                  <Phone className="h-4 w-4 text-info shrink-0" />
-                  <span className="font-semibold text-base-content">Tel:</span>{" "}
-                  {clienteTelefono || "—"}
+            <div className="lg:col-span-2 space-y-5">
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-info/10 text-info text-lg font-semibold ring-1 ring-info/30">
+                  {clienteIniciales}
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <Mail className="h-4 w-4 text-info shrink-0" />
-                  <span className="font-semibold text-base-content">Correo:</span>{" "}
-                  {clienteCorreo || "—"}
+                <div className="min-w-0">
+                  <div className="text-base md:text-lg font-semibold text-base-content truncate">
+                    {clienteNombre || "—"}
+                  </div>
+                  <div className="text-sm text-base-content/70">{clienteDoc || "—"}</div>
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <ContactRow icon={MapPin} label="Dirección" value={clienteDireccion} />
+                <ContactRow icon={Phone} label="Teléfono" value={clienteTelefono} />
+                <ContactRow icon={Mail} label="Correo" value={clienteCorreo} />
+              </div>
             </div>
 
             {/* DERECHA: info solicitud */}
-            <div className="w-full lg:w-auto">
-              <div className="h-full rounded-xl bg-base-100 border border-info/30 p-4 flex flex-col items-center lg:items-end text-center lg:text-right shadow-sm">
-
-                <div className="text-base md:text-lg font-semibold text-base-content">
-                  Solicitud #{numeroSolicitud ?? "—"}
-                </div>
-
-                <div className="text-xs md:text-sm text-base-content/70 flex items-center gap-1 mt-1">
-                  <CalendarDays className="w-4 h-4 text-info" />
-                  <span>{fechaCreacion}</span>
-                </div>
-
-                <div className="text-xs md:text-sm text-base-content/70 flex items-center gap-1 mt-1">
-                  <User2 className="w-4 h-4 text-info" />
-                  <span>Asesor {asesor}</span>
-                </div>
-
+            <div className="rounded-xl border border-base-300 bg-base-200/50 p-4 flex flex-col justify-center gap-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-base-content/60">
+                Solicitud
+              </div>
+              <div className="text-xl font-bold text-base-content">
+                #{numeroSolicitud ?? "—"}
+              </div>
+              <div className="flex items-center gap-2 text-sm text-base-content/70">
+                <CalendarDays className="h-4 w-4 text-info shrink-0" />
+                {fechaCreacion || "—"}
+              </div>
+              <div className="flex items-center gap-2 text-sm text-base-content/70">
+                <User2 className="h-4 w-4 text-info shrink-0" />
+                Asesor {asesor || "—"}
               </div>
             </div>
-
           </div>
         </section>
 
@@ -590,192 +592,86 @@ const SolictudFacturarCredito: React.FC = () => {
           </div>
 
           {/* Si hay solicitud registrada, mostramos el detalle */}
-          <section className="rounded-2xl border border-base-300 bg-base-100 p-6 shadow-sm">
+          <section className="rounded-2xl border border-base-300 bg-base-100 overflow-hidden shadow-sm">
             {/* Encabezado */}
-            <div className="flex items-center justify-between gap-3 mb-6">
-              <h3 className="text-lg font-semibold text-base-content">
+            <div className="bg-linear-to-r from-sky-600 to-emerald-600 px-5 md:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <h3 className="inline-flex items-center gap-2 text-white font-semibold text-base md:text-lg">
+                <ClipboardCheck className="h-5 w-5" />
                 Solicitud registrada
               </h3>
 
-              {/* Badges de estado (DaisyUI) */}
-              <div className="hidden md:flex flex-wrap items-center gap-2">
-                <span className={siNoBadge(solicitud?.autorizado).clase}>
-                  Autorizado: {siNoBadge(solicitud?.autorizado).texto}
-                </span>
-                <span className={siNoBadge(solicitud?.facturado).clase}>
-                  Facturado: {siNoBadge(solicitud?.facturado).texto}
-                </span>
-                <span className={siNoBadge(solicitud?.entregaAutorizada).clase}>
-                  Entrega: {siNoBadge(solicitud?.entregaAutorizada).texto}
-                </span>
+              {/* Badges de estado */}
+              <div className="flex flex-wrap items-center gap-2">
+                <EstadoPill onDark label="Autorizado" ok={solicitud?.autorizado} />
+                <EstadoPill onDark label="Facturado" ok={solicitud?.facturado} />
+                <EstadoPill onDark label="Entrega" ok={solicitud?.entregaAutorizada} />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="p-5 md:p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Datos de la solicitud */}
-              <div className="rounded-xl border border-base-300 p-4">
-                <h4 className="font-semibold text-base-content mb-3">
+              <div className="rounded-xl border border-base-300 overflow-hidden">
+                <div className="bg-base-200 px-4 py-2.5 text-sm font-semibold text-base-content flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4 text-base-content/60" />
                   Datos de la solicitud
-                </h4>
+                </div>
 
-                <dl className="text-sm text-base-content grid grid-cols-1 gap-2">
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-base-content/60">Agencia</dt>
-                    <dd className="font-medium text-right">
-                      {solicitud?.agencia ?? '—'}
-                    </dd>
-                  </div>
-
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-base-content/60">Distribuidora</dt>
-                    <dd className="font-medium text-right">
-                      {solicitud?.distribuidora ?? '—'}
-                    </dd>
-                  </div>
-
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-base-content/60">Código</dt>
-                    <dd className="font-medium text-right">
-                      {solicitud?.codigo ?? '—'}
-                    </dd>
-                  </div>
-
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-base-content/60">Código crédito</dt>
-                    <dd className="font-medium text-right">
-                      {solicitud?.codigoCredito ?? '—'}
-                    </dd>
-                  </div>
-
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-base-content/60">Cliente</dt>
-                    <dd className="font-medium text-right">
-                      {solicitud?.cliente ?? '—'}
-                    </dd>
-                  </div>
-
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-base-content/60">Tipo</dt>
-                    <dd className="text-right">
+                <dl className="divide-y divide-base-200 text-sm">
+                  <InfoRow icon={Building2} label="Agencia" value={solicitud?.agencia} />
+                  <InfoRow icon={Landmark} label="Distribuidora" value={solicitud?.distribuidora} />
+                  <InfoRow icon={Hash} label="Código" value={solicitud?.codigo} />
+                  <InfoRow icon={Hash} label="Código crédito" value={solicitud?.codigoCredito} />
+                  <InfoRow icon={User2} label="Cliente" value={solicitud?.cliente} />
+                  <InfoRow
+                    icon={Tag}
+                    label="Tipo"
+                    value={
                       <span className="badge badge-info badge-sm font-medium">
                         {solicitud?.tipo ?? '—'}
                       </span>
-                    </dd>
-                  </div>
-
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-base-content/60">Recibo pago</dt>
-                    <dd className="font-medium text-right">
-                      {solicitud?.numeroRecibo ?? '—'}
-                    </dd>
-                  </div>
-
-                  {/* Badges en detalle también */}
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-base-content/60">Autorizado</dt>
-                    <dd className="text-right">
-                      <span className={siNoBadge(solicitud?.autorizado).clase}>
-                        {siNoBadge(solicitud?.autorizado).texto}
-                      </span>
-                    </dd>
-                  </div>
-
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-base-content/60">Facturado</dt>
-                    <dd className="text-right">
-                      <span className={siNoBadge(solicitud?.facturado).clase}>
-                        {siNoBadge(solicitud?.facturado).texto}
-                      </span>
-                    </dd>
-                  </div>
-
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-base-content/60">Entrega autorizada</dt>
-                    <dd className="text-right">
-                      <span
-                        className={siNoBadge(
-                          solicitud?.entregaAutorizada
-                        ).clase}
-                      >
-                        {siNoBadge(solicitud?.entregaAutorizada).texto}
-                      </span>
-                    </dd>
-                  </div>
-
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-base-content/60">Creado</dt>
-                    <dd className="font-medium text-right">
-                      {fmtFecha(solicitud?.fechaCreacion) || (solicitud?.fechaCreacion ?? '—')}
-                    </dd>
-                  </div>
-
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-base-content/60">Actualizado</dt>
-                    <dd className="font-medium text-right">
-                      {fmtFecha(solicitud?.actualizado) || (solicitud?.actualizado ?? '—')}
-                    </dd>
-                  </div>
+                    }
+                  />
+                  <InfoRow icon={Receipt} label="Recibo pago" value={solicitud?.numeroRecibo} />
+                  <InfoRow label="Autorizado" value={<EstadoPill ok={solicitud?.autorizado} />} />
+                  <InfoRow label="Facturado" value={<EstadoPill ok={solicitud?.facturado} />} />
+                  <InfoRow label="Entrega autorizada" value={<EstadoPill ok={solicitud?.entregaAutorizada} />} />
+                  <InfoRow
+                    icon={CalendarDays}
+                    label="Creado"
+                    value={fmtFecha(solicitud?.fechaCreacion) || solicitud?.fechaCreacion}
+                  />
+                  <InfoRow
+                    icon={CalendarDays}
+                    label="Actualizado"
+                    value={fmtFecha(solicitud?.actualizado) || solicitud?.actualizado}
+                  />
                 </dl>
               </div>
 
               {/* Documentos */}
-              <div className="rounded-xl border border-base-300 p-4">
-                <h4 className="font-semibold text-base-content mb-3">Documentos</h4>
+              <div className="rounded-xl border border-base-300 overflow-hidden h-fit">
+                <div className="bg-base-200 px-4 py-2.5 text-sm font-semibold text-base-content flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-base-content/60" />
+                  Documentos
+                </div>
 
-                <ul className="text-sm text-base-content space-y-3">
-                  {/* Cédula */}
-                  <li className="flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <span className="font-medium block">Cédula</span>
-                      <span className="text-xs text-base-content/60">
-                        Documento de identidad
-                      </span>
-                    </div>
+                <ul className="divide-y divide-base-200 text-sm">
+                  <DocumentoRow
+                    icon={IdCard}
+                    titulo="Cédula"
+                    subtitulo="Documento de identidad"
+                    path={solicitud?.cedulaPath}
+                    faltaTexto="No adjunta"
+                  />
+                  <DocumentoRow
+                    icon={FileText}
+                    titulo="Manifiesto"
+                    subtitulo="Soporte de manifiesto"
+                    path={solicitud?.manifiestoPath}
+                    faltaTexto="No adjunto"
+                  />
 
-                    {solicitud?.cedulaPath ? (
-                      <a
-                        className="btn btn-sm btn-outline"
-                        href={toAbsoluteUrl(solicitud.cedulaPath) ?? undefined}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label="Ver o descargar cédula"
-                      >
-                        Ver / descargar
-                      </a>
-                    ) : (
-                      <span className={neutroBadge('No adjunta').clase}>
-                        {neutroBadge('No adjunta').texto}
-                      </span>
-                    )}
-                  </li>
-
-                  {/* Manifiesto */}
-                  <li className="flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <span className="font-medium block">Manifiesto</span>
-                      <span className="text-xs text-base-content/60">
-                        Soporte de manifiesto
-                      </span>
-                    </div>
-
-                    {solicitud?.manifiestoPath ? (
-                      <a
-                        className="btn btn-sm btn-outline"
-                        href={toAbsoluteUrl(solicitud.manifiestoPath) ?? undefined}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label="Ver o descargar manifiesto"
-                      >
-                        Ver / descargar
-                      </a>
-                    ) : (
-                      <span className={neutroBadge('No adjunto').clase}>
-                        {neutroBadge('No adjunto').texto}
-                      </span>
-                    )}
-                  </li>
-
-                  <li className=" items-center justify-between gap-4 hidden">
+                  <li className="items-center justify-between gap-4 px-4 py-3 hidden">
                     <div className="min-w-0">
                       <span className="font-medium block">Factura</span>
                       <span className="text-xs text-base-content/60">
@@ -789,25 +685,113 @@ const SolictudFacturarCredito: React.FC = () => {
             </div>
 
             {/* Footer */}
-            <div className="mt-6 flex items-center justify-end">
-              <Link to={`/creditos/detalle/${codigo_credito}`}>
-                <button
-                  type="button"
-                  className="btn border-base-300 bg-base-100 hover:bg-base-200 text-base-content"
-                  aria-label="Volver al detalle del crédito"
-                  title="Volver al detalle del crédito"
-                >
-                  ⟵ Volver
-                </button>
-              </Link>
+            <div className="px-5 md:px-6 pb-5 md:pb-6 flex items-center justify-end">
+              <ButtonLink
+                to={`/creditos/detalle/${codigo_credito}`}
+                label="Volver al detalle del crédito"
+                direction="back"
+                variant="outline"
+              />
             </div>
           </section>
+
+
+          
           </>
         )}
       </div>
     </main>
   );
 };
+
+const ContactRow: React.FC<{
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value?: React.ReactNode;
+}> = ({ icon: Icon, label, value }) => (
+  <div className="flex items-center gap-3 min-w-0">
+    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-info/10 text-info">
+      <Icon className="h-4 w-4" />
+    </div>
+    <div className="min-w-0">
+      <div className="text-xs text-base-content/60">{label}</div>
+      <div className="text-sm font-medium text-base-content truncate">{value || '—'}</div>
+    </div>
+  </div>
+);
+
+const EstadoPill: React.FC<{ ok?: boolean; label?: string; onDark?: boolean }> = ({
+  ok,
+  label,
+  onDark,
+}) => {
+  const Icon = ok ? CheckCircle2 : XCircle;
+  const tono = ok
+    ? onDark
+      ? 'bg-white/15 text-white ring-1 ring-white/30'
+      : 'bg-success/10 text-success ring-1 ring-success/30'
+    : onDark
+      ? 'bg-white/10 text-white/80 ring-1 ring-white/20'
+      : 'bg-error/10 text-error ring-1 ring-error/30';
+
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full text-xs font-medium px-2.5 py-1 ${tono}`}>
+      <Icon className="h-3 w-3" />
+      {label ? `${label}: ${ok ? 'Sí' : 'No'}` : ok ? 'Sí' : 'No'}
+    </span>
+  );
+};
+
+const InfoRow: React.FC<{
+  icon?: React.ComponentType<{ className?: string }>;
+  label: string;
+  value?: React.ReactNode;
+}> = ({ icon: Icon, label, value }) => (
+  <div className="flex items-center justify-between gap-4 px-4 py-2.5">
+    <dt className="inline-flex items-center gap-1.5 text-base-content/60">
+      {Icon && <Icon className="h-3.5 w-3.5 shrink-0" />}
+      {label}
+    </dt>
+    <dd className="font-medium text-right text-base-content">
+      {value === undefined || value === null || value === '' ? '—' : value}
+    </dd>
+  </div>
+);
+
+const DocumentoRow: React.FC<{
+  icon: React.ComponentType<{ className?: string }>;
+  titulo: string;
+  subtitulo: string;
+  path?: string | null;
+  faltaTexto: string;
+}> = ({ icon: Icon, titulo, subtitulo, path, faltaTexto }) => (
+  <li className="flex items-center justify-between gap-4 px-4 py-3">
+    <div className="flex items-center gap-3 min-w-0">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-base-200 text-base-content/60">
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="min-w-0">
+        <span className="font-medium block text-base-content">{titulo}</span>
+        <span className="text-xs text-base-content/60">{subtitulo}</span>
+      </div>
+    </div>
+
+    {path ? (
+      <a
+        className="btn btn-sm btn-outline gap-1.5"
+        href={toAbsoluteUrl(path) ?? undefined}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`Ver o descargar ${titulo.toLowerCase()}`}
+      >
+        <Download className="h-3.5 w-3.5" />
+        Ver / descargar
+      </a>
+    ) : (
+      <span className={neutroBadge(faltaTexto).clase}>{neutroBadge(faltaTexto).texto}</span>
+    )}
+  </li>
+);
 
 const RowRight: React.FC<{
   label: string;

@@ -50,7 +50,7 @@ const Home: React.FC = () => {
 
         <CotizacionesKPIs refetchInterval={60_000} />
 
-        <div className="divider my-2" />
+        <div className="h-px w-full bg-linear-to-r from-transparent via-base-300 to-transparent" />
 
         <CreditosKPIs refetchInterval={60_000} />
 

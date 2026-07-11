@@ -417,6 +417,7 @@ const InfoProductoFormulario: React.FC = () => {
         </div>
         </fieldset>
 
+        {!readOnly && (
         <div className="mt-6 flex items-center justify-between gap-2">
           <button
             type="button"
@@ -433,13 +434,14 @@ const InfoProductoFormulario: React.FC = () => {
               data-wizard-save
               type="submit"
               className="btn btn-warning"
-              disabled={isSaving || readOnly}
+              disabled={isSaving}
               title="Guardar cambios (avanza solo si se guarda correctamente)"
             >
               {isSaving ? "Guardando..." : "Guardar"}
             </button>
           </div>
         </div>
+        )}
       </form>
 
       {creditoParaTabla && (

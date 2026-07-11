@@ -22,6 +22,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Receipt,
+  Wallet,
+  ClipboardList,
+  ShieldCheck,
 } from "lucide-react";
 
 type FormValues = {
@@ -73,11 +76,11 @@ const slugify = (s: string) =>
 
 
 const HeadRow = ({ cols }: { cols: React.ReactNode[] }) => (
-  <div className="grid grid-cols-12 bg-sky-700 text-white text-xs md:text-sm font-semibold">
+  <div className="grid grid-cols-12 bg-linear-to-r from-sky-700 to-sky-800 text-white text-xs md:text-sm font-semibold uppercase tracking-wide">
     {cols.map((c, i) => (
       <div
         key={i}
-        className="px-3 py-2 border-r border-sky-600 last:border-r-0 col-span-2"
+        className="px-3 py-2.5 border-r border-sky-600/60 last:border-r-0 col-span-2"
       >
         {c}
       </div>
@@ -92,11 +95,18 @@ const Row = ({
   cols: React.ReactNode[];
   emphasis?: "none" | "success" | "danger";
 }) => (
-  <div className="grid grid-cols-12 border-b last:border-b-0 border-base-200 bg-base-100">
+  <div
+    className={`grid grid-cols-12 border-b last:border-b-0 border-base-200 transition-colors ${emphasis === "success"
+      ? "bg-success/5"
+      : emphasis === "danger"
+        ? "bg-error/5"
+        : "bg-base-100 hover:bg-base-200/60"
+      }`}
+  >
     {cols.map((c, i) => (
       <div
         key={i}
-        className={`px-3 py-2 text-xs md:text-sm ${i === 0
+        className={`px-3 py-2.5 text-xs md:text-sm ${i === 0
           ? "col-span-6 md:col-span-6 font-medium text-base-content/70"
           : `col-span-6 md:col-span-6 text-right ${emphasis === "success"
             ? "text-success font-semibold"
@@ -584,59 +594,14 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
     );
   }
 
-  const encabezadoCliente = (
-    <div className="w-full bg-info/10 border border-info/30 rounded-2xl p-4 md:p-5 shadow-sm">
-
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-
-        {/* IZQUIERDA: Info cliente */}
-        <div className="flex items-center gap-3 text-center md:text-left">
-          <div className="hidden md:flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-600/10 text-info">
-            <User2 className="h-5 w-5" />
-          </div>
-          <div className="space-y-0.5">
-            <h3 className="text-base md:text-lg font-semibold text-base-content">
-              {safe(data.nombre_cliente)}
-            </h3>
-
-            <div className="text-sm text-base-content/70">
-              C.C. <span className="font-medium">{safe(data.numero_documento)}</span>
-            </div>
-
-            {data.email && (
-              <div className="text-xs text-base-content/60">
-                {data.email}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* DERECHA: badges / info */}
-        <div className="flex flex-wrap justify-center md:justify-end items-center gap-2 text-xs">
-
-          <span className={`inline-flex items-center rounded-full px-3 py-1 font-semibold border ${estadoBadgeColor((cotF as any)?.estado ?? (data as any)?.estado)}`}>
-            {estadoLabel((cotF as any)?.estado ?? (data as any)?.estado)}
-          </span>
-
-          <span className="px-2 py-1 rounded-full bg-base-100 text-base-content/70 border border-base-300 shadow-sm">
-            IVA: <span className="font-semibold">{IVA_PCT.toFixed(2)}%</span>
-          </span>
-
-          <span className="px-2 py-1 rounded-full bg-base-100 text-base-content/70 border border-base-300 shadow-sm">
-            Pago:{" "}
-            <span className="font-semibold">
-              {esCreditoTercerosCot
-                ? "Crédito de terceros"
-                : esContado
-                  ? "Contado"
-                  : cotF?.tipo_pago || cotF?.metodo_pago || "—"}
-            </span>
-          </span>
-
-        </div>
-      </div>
-    </div>
-  );
+  const clienteIniciales =
+    String(data.nombre_cliente ?? "")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((p) => p[0]?.toUpperCase())
+      .join("") || "—";
 
   return (
     <main className="min-h-screen bg-linear-to-b w-full from-base-200 to-base-100 py-6 md:py-8">
@@ -647,8 +612,8 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
           {/* Botón volver */}
           <div>
             <ButtonLink
-              to="/solicitudes"
-              label="Volver a facturación"
+              to={`/cotizaciones/${cotizacionId}`}
+              label="Volver a la cotización"
               direction="back"
             />
           </div>
@@ -670,13 +635,60 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
             </div>
           </div>
         </div>
-        {/* Header */}
-        <section className="rounded-2xl border border-base-300 bg-base-100 shadow-sm p-4 md:p-6">
-          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 md:gap-6">
-            <div className="flex-1">{encabezadoCliente}</div>
+        {/* Header: cliente + resumen de cotización */}
+        <section className="rounded-2xl border border-base-300 bg-base-100 overflow-hidden shadow-sm">
+          <div className="bg-linear-to-r from-sky-600 to-emerald-600 px-5 md:px-6 py-4 flex items-center gap-2">
+            <User2 className="h-5 w-5 text-white" />
+            <h2 className="text-white font-semibold text-base md:text-lg">
+              Información del cliente
+            </h2>
+          </div>
 
-            <div className="flex flex-col items-start md:items-end gap-1 w-full md:w-auto">
-              <div className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-base-content/50">
+          <div className="p-5 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* IZQUIERDA: Info cliente */}
+            <div className="lg:col-span-2 space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-info/10 text-info text-lg font-semibold ring-1 ring-info/30">
+                  {clienteIniciales}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-base md:text-lg font-semibold text-base-content truncate">
+                    {safe(data.nombre_cliente)}
+                  </div>
+                  <div className="text-sm text-base-content/70">
+                    C.C. <span className="font-medium">{safe(data.numero_documento)}</span>
+                  </div>
+                  {data.email && (
+                    <div className="text-xs text-base-content/60">{data.email}</div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className={`inline-flex items-center rounded-full px-3 py-1 font-semibold border ${estadoBadgeColor((cotF as any)?.estado ?? (data as any)?.estado)}`}>
+                  {estadoLabel((cotF as any)?.estado ?? (data as any)?.estado)}
+                </span>
+
+                <span className="px-2.5 py-1 rounded-full bg-base-200 text-base-content/70 border border-base-300">
+                  IVA: <span className="font-semibold text-base-content">{IVA_PCT.toFixed(2)}%</span>
+                </span>
+
+                <span className="px-2.5 py-1 rounded-full bg-base-200 text-base-content/70 border border-base-300">
+                  Pago:{" "}
+                  <span className="font-semibold text-base-content">
+                    {esCreditoTercerosCot
+                      ? "Crédito de terceros"
+                      : esContado
+                        ? "Contado"
+                        : cotF?.tipo_pago || cotF?.metodo_pago || "—"}
+                  </span>
+                </span>
+              </div>
+            </div>
+
+            {/* DERECHA: resumen de cotización */}
+            <div className="rounded-xl border border-base-300 bg-base-200/50 p-4 flex flex-col gap-2">
+              <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-base-content/60">
                 <FileText className="h-3.5 w-3.5" />
                 Resumen de cotización
               </div>
@@ -685,24 +697,22 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
                 Cotización #{data.cotizacion_id ?? "—"}
               </div>
 
-              <div className="flex flex-wrap md:justify-end items-center gap-2 text-xs mt-1">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-base-200 text-base-content border border-base-300">
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-base-100 text-base-content border border-base-300">
                   <Hash className="h-3 w-3 text-base-content/50" />
                   Código: <span className="font-medium">{data.codigo}</span>
                 </span>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-base-200 text-base-content border border-base-300">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-base-100 text-base-content border border-base-300">
                   ID: <span className="font-medium">{data.idPrimaria}</span>
                 </span>
               </div>
 
-              <div className="mt-3 w-full md:w-auto md:min-w-50">
-                <div className="rounded-xl border border-success/30 bg-linear-to-br from-success/10 to-success/10/50 px-4 py-3 text-right shadow-sm">
-                  <div className="text-[11px] text-success font-semibold tracking-wide uppercase">
-                    Total general
-                  </div>
-                  <div className="text-xl font-bold text-success">
-                    {fmtCOP(totalGeneralNum)}
-                  </div>
+              <div className="mt-1 rounded-lg border border-success/30 bg-success/10 px-4 py-3 text-right">
+                <div className="text-[11px] text-success font-semibold tracking-wide uppercase">
+                  Total general
+                </div>
+                <div className="text-xl font-bold text-success">
+                  {fmtCOP(totalGeneralNum)}
                 </div>
               </div>
             </div>
@@ -711,7 +721,7 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
 
         {/* Datos del cliente / solicitud */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-          <Box title="Datos del cliente" tone="emerald">
+          <Box title="Datos del cliente" tone="emerald" icon={User2}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-base-content">
               <div>
                 <span className="font-semibold">Fecha de nacimiento:</span>{" "}
@@ -740,7 +750,7 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
             </div>
           </Box>
 
-          <Box title="Información de la solicitud" tone="emerald">
+          <Box title="Información de la solicitud" tone="emerald" icon={ClipboardList}>
             <div className="space-y-1.5 text-sm text-base-content">
               {(cotF as any)?.asesor && (
                 <div className="flex items-center gap-2">
@@ -821,6 +831,7 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
         <Box
           title="Condiciones del negocio"
           tone="emerald"
+          icon={Wallet}
           right={<span className="font-semibold text-sm">Costos</span>}
         >
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-0">
@@ -874,6 +885,7 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
           <Box
             title="Adicionales y accesorios"
             tone="sky"
+            icon={ShieldCheck}
             right={<span className="font-semibold text-sm">Detalle</span>}
           >
             <div className="space-y-3">
@@ -922,7 +934,7 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
             </div>
           </Box>
 
-          <Box title="Total de la operación" tone="sky">
+          <Box title="Total de la operación" tone="sky" icon={Receipt}>
             <div className="space-y-3">
               <div className="rounded-lg border border-base-300 overflow-hidden">
                 <Row
@@ -995,42 +1007,40 @@ const SolicitarFacturacionPageContadoTercero: React.FC = () => {
             </div>
           </div>
         ) : (
-          <section className="rounded-2xl border border-base-300 bg-base-100 shadow-sm p-4 md:p-6 lg:p-7">
-            <SolicitarFacturacionForm
-              control={control}
-              register={register}
-              handleSubmit={handleSubmit}
-              errors={errors}
-              isSubmitting={isSubmitting}
-              docValue={docValue}
-              esCreditoTercerosCot={esCreditoTercerosCot}
-              cartaFiles={cartaFiles}
-              manifiestoFiles={manifiestoFiles}
-              cedulaFiles={cedulaFiles}
-              DIST_OPTS={DIST_OPTS}
-              loadingDists={loadingDists}
-              onBack={() => navigate(-1)}
-              codigo={data.codigo || ""}
-              solicitudData={data}
-              distSlugMap={distSlugMap}
-              userRol={user?.rol}
-              navigateTo={(path) => navigate(path)}
-              totales={{
-                tot_valor_moto,
-                cn_bruto: cn_bruto ?? 0,
-                cn_iva: cn_iva ?? 0,
-                cn_total: cn_total ?? 0,
-                accesorios_bruto: accesorios_bruto ?? 0,
-                accesorios_iva: accesorios_iva ?? 0,
-                accesorios_total: accesorios_total ?? 0,
-                soatNum: soatNum ?? 0,
-                matriculaNum: matriculaNum ?? 0,
-                impuestosNum: impuestosNum ?? 0,
-                tot_seguros_accesorios: tot_seguros_accesorios ?? 0,
-                totalGeneralNum: totalGeneralNum ?? 0,
-              }}
-            />
-          </section>
+          <SolicitarFacturacionForm
+            control={control}
+            register={register}
+            handleSubmit={handleSubmit}
+            errors={errors}
+            isSubmitting={isSubmitting}
+            docValue={docValue}
+            esCreditoTercerosCot={esCreditoTercerosCot}
+            cartaFiles={cartaFiles}
+            manifiestoFiles={manifiestoFiles}
+            cedulaFiles={cedulaFiles}
+            DIST_OPTS={DIST_OPTS}
+            loadingDists={loadingDists}
+            onBack={() => navigate(-1)}
+            codigo={data.codigo || ""}
+            solicitudData={data}
+            distSlugMap={distSlugMap}
+            userRol={user?.rol}
+            navigateTo={(path) => navigate(path)}
+            totales={{
+              tot_valor_moto,
+              cn_bruto: cn_bruto ?? 0,
+              cn_iva: cn_iva ?? 0,
+              cn_total: cn_total ?? 0,
+              accesorios_bruto: accesorios_bruto ?? 0,
+              accesorios_iva: accesorios_iva ?? 0,
+              accesorios_total: accesorios_total ?? 0,
+              soatNum: soatNum ?? 0,
+              matriculaNum: matriculaNum ?? 0,
+              impuestosNum: impuestosNum ?? 0,
+              tot_seguros_accesorios: tot_seguros_accesorios ?? 0,
+              totalGeneralNum: totalGeneralNum ?? 0,
+            }}
+          />
         )}
       </div>
     </main>

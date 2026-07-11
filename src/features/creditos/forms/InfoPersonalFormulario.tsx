@@ -900,6 +900,7 @@ const InfoPersonalFormulario: React.FC = () => {
       </section>
       </fieldset>
 
+      {!readOnly && (
       <div className="mt-8 flex justify-between gap-2">
         <button
           className="btn btn-ghost"
@@ -911,7 +912,7 @@ const InfoPersonalFormulario: React.FC = () => {
           ← Anterior
         </button>
 
-        <fieldset disabled={readOnly} className="contents">
+        <div className="flex gap-2">
         {!((data as any)?.informacion_personal?.codigo_credito || (data as any)?.data?.informacion_personal?.codigo_credito) && (
           <button
             className="btn btn-ghost"
@@ -982,8 +983,9 @@ const InfoPersonalFormulario: React.FC = () => {
             ? "Actualizar"
             : "Guardar"}
         </button>
-        </fieldset>
+        </div>
       </div>
+      )}
     </form>
   );
 };

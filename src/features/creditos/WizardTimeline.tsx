@@ -34,20 +34,23 @@ const WizardTimeline: React.FC<WizardProps> = ({
   const { id: creditoId } = useParams<{ id: string }>();
   const { data: progreso, refetch: refetchProgreso } = useCreditoProgreso(creditoId);
 
-  // estado del crédito: Facturado/En Facturación → wizard de solo lectura;
-  // Aprobado → se puede seguir editando, pero ya no puede volver a "Revision"
+  // estado del crédito: Facturado/En Facturación (o crédito cerrado) → wizard
+  // de solo lectura; Aprobado → se puede seguir editando, pero ya no puede
+  // volver a "Revision"
   const { data: creditoResp } = useCredito(
     { codigo_credito: creditoId ?? '' },
     !!creditoId
   );
-  const estadoCredito = creditoResp?.success && creditoResp.creditos?.length
-    ? creditoResp.creditos[0].estado
+  const creditoActual = creditoResp?.success && creditoResp.creditos?.length
+    ? creditoResp.creditos[0]
     : undefined;
+  const estadoCredito = creditoActual?.estado;
+  const creditoCerrado = creditoActual?.credito_cerrado;
 
   useEffect(() => {
-    setReadOnly(esWizardSoloLectura(estadoCredito));
+    setReadOnly(esWizardSoloLectura(estadoCredito, creditoCerrado));
     setBloqueaRevision(esWizardSinRevision(estadoCredito));
-  }, [estadoCredito, setReadOnly, setBloqueaRevision]);
+  }, [estadoCredito, creditoCerrado, setReadOnly, setBloqueaRevision]);
 
   // refrescar progreso cuando cambia el paso (un form pudo completar el paso en backend)
   useEffect(() => {
