@@ -478,6 +478,7 @@ export interface CreditoLine {
   capacidad?: string | null;
   cilindraje?: string | null;
   valor_cuota?: string | number | null;
+  credito_cerrado?: number | string | null;
 
 }
 

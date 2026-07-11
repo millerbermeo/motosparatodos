@@ -1,5 +1,5 @@
 import React from "react";
-import { Eye, Pen, Pencil } from "lucide-react";
+import { Eye, Pen, Pencil, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCreditoById } from "../../services/creditosServices";
 import { useCreditos } from "../../services/creditosServices"; // <— nuevo hook
@@ -10,6 +10,7 @@ import { fmtFecha, timeAgo } from "../../utils/date";
 import { DataTable } from "../../shared/components/datatable/DataTable";
 import type { DataTableColumn } from "../../shared/components/datatable/types";
 import { PAGE_SIZE } from "../../constants/pagination";
+import { esWizardSoloLectura } from "../../utils/creditoEstado";
 
 // list_creditos.php pagina y filtra por estado en servidor. Catálogo fijo
 // (no se deriva de la página cargada) para que el select siempre muestre todas las opciones.
@@ -128,12 +129,23 @@ const TablaCreditos: React.FC = () => {
                             <Eye size="18px" />
                         </button>
                     </Link>
-                    {useAuthStore.getState().user?.rol === "Asesor" && c.estado !== "Facturado" && (
-                        <Link to={`/creditos/registrar/${c.codigo_credito}`}>
-                            <button className="btn btn-sm text-warning bg-base-100 btn-circle" title="Editar">
-                                <Pen size="18px" />
-                            </button>
-                        </Link>
+                    {useAuthStore.getState().user?.rol === "Asesor" && (
+                        esWizardSoloLectura(c.estado, c.credito_cerrado) ? (
+                            <Link to={`/creditos/registrar/${c.codigo_credito}`}>
+                                <button
+                                    className="btn btn-sm text-base-content/60 bg-base-100 btn-circle"
+                                    title={Number(c.credito_cerrado) === 1 ? "Solo ver (crédito cerrado)" : `Solo ver (crédito ${c.estado})`}
+                                >
+                                    <Search size="18px" />
+                                </button>
+                            </Link>
+                        ) : (
+                            <Link to={`/creditos/registrar/${c.codigo_credito}`}>
+                                <button className="btn btn-sm text-warning bg-base-100 btn-circle" title="Editar">
+                                    <Pen size="18px" />
+                                </button>
+                            </Link>
+                        )
                     )}
                 </>
             ),

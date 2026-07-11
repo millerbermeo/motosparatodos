@@ -18,8 +18,9 @@ type Props = {
   codigo_credito: string | number;
   id_cotizacion: string | number;
   initialValues?: Partial<Omit<CerrarCreditoValues, "cerrar_credito">>;
+  yaCerrado?: boolean;
 };
-const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito, id_cotizacion, initialValues }) => {
+const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito, id_cotizacion, initialValues, yaCerrado }) => {
   const cerrar = useCerrarCredito();
 
   const {
@@ -230,7 +231,7 @@ const CerrarCreditoFormulario: React.FC<Props> = ({ codigo_credito, id_cotizacio
             type="submit"
             disabled={!enabled || isSubmitting || cerrar.isPending}
           >
-            Guardar cierre
+            {yaCerrado ? "Actualizar crédito" : "Guardar cierre"}
           </button>
         </div>
       </div>

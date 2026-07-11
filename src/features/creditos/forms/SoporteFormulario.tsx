@@ -206,39 +206,43 @@ const SoporteFormulario: React.FC<Props> = () => {
       </div>
 
       <div className="mt-4 flex items-center justify-between gap-2">
-        <button
-          type="button"
-          className="btn btn-ghost"
-          onClick={prev}
-          disabled={isFirst || isUploading}
-        >
-          ← Anterior
-        </button>
-
-        <div className="flex gap-2">
+        {!readOnly && (
           <button
             type="button"
-            className="btn btn-primary"
-            onClick={handleManualUpload}
-            disabled={isUploading || selected.length === 0 || readOnly}
+            className="btn btn-ghost"
+            onClick={prev}
+            disabled={isFirst || isUploading}
           >
-            {isUploading ? (
-              <span className="inline-flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" /> Subiendo…
-              </span>
-            ) : (
-              "📤 Subir soportes"
-            )}
+            ← Anterior
           </button>
+        )}
+
+        <div className="flex gap-2 ml-auto">
+          {!readOnly && (
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleManualUpload}
+              disabled={isUploading || selected.length === 0}
+            >
+              {isUploading ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Subiendo…
+                </span>
+              ) : (
+                "📤 Subir soportes"
+              )}
+            </button>
+          )}
 
           <button
             data-wizard-save
             type="button"
             className="btn btn-success"
-            onClick={bloqueaRevision ? () => navigate(redirectTo) : handleRegisterAndFinish}
+            onClick={readOnly || bloqueaRevision ? () => navigate(redirectTo) : handleRegisterAndFinish}
             disabled={isUploading}
           >
-            {bloqueaRevision ? "Ver detalle del crédito" : "Continuar y pasar a revisión →"}
+            {readOnly || bloqueaRevision ? "Ver detalle del crédito" : "Continuar y pasar a revisión →"}
           </button>
         </div>
       </div>

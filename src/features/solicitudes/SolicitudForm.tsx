@@ -687,19 +687,15 @@ const SolicitudForm: React.FC = () => {
 
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
               <button
-                type="button"
-                className="btn btn-ghost border border-base-300 hover:border-base-300 text-base-content"
-                onClick={() => reset()}
-                disabled={isSubmitting || isPending}
-              >
-                Limpiar
-              </button>
-              <button
                 type="submit"
                 className="btn btn-success shadow-md shadow-emerald-500/30 px-6"
                 disabled={isSubmitting || isPending}
               >
-                {isSubmitting || isPending ? "Procesando..." : "Continuar"}
+                {isSubmitting || isPending
+                  ? "Procesando..."
+                  : pcData
+                    ? "Actualizar solicitud"
+                    : "Guardar solicitud"}
               </button>
             </div>
           </div>

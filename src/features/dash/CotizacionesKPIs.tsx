@@ -220,20 +220,22 @@ const CotizacionesKPIs: React.FC<Props> = ({ desde, hasta, refetchInterval, clas
       </div>
 
       {/* Filtros */}
-      <SectionCard className="border-success/30 bg-success/5">
+      <SectionCard className="border-success/30 bg-linear-to-br from-success/5 via-base-100 to-base-100">
         <div className="card-body gap-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="card-title text-base md:text-lg">
-                  <CalendarRange className="h-5 w-5 text-success" />
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-success/15 text-success">
+                    <CalendarRange className="h-4.5 w-4.5" />
+                  </span>
                   Filtros de fecha
                 </h3>
 
                 <span
                   className={cx(
-                    "badge badge-sm md:badge-md",
-                    modo === "rango" ? "badge-primary" : "badge-info"
+                    "badge badge-sm md:badge-md border-0 font-medium",
+                    modo === "rango" ? "badge-success text-success-content" : "bg-success/15 text-success"
                   )}
                 >
                   {modo === "rango" ? "rango aplicado" : "mes actual"}
@@ -246,21 +248,21 @@ const CotizacionesKPIs: React.FC<Props> = ({ desde, hasta, refetchInterval, clas
             </div>
 
             {isFetching && !isLoading && (
-              <span className="loading loading-spinner loading-sm text-primary self-start sm:self-center" />
+              <span className="loading loading-spinner loading-sm text-success self-start sm:self-center" />
             )}
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-[1fr_1fr_auto_auto] lg:items-end">
             {/* Desde */}
-            <div className="xl:col-span-3">
-              <label className="label pb-2">
-                <span className="label-text font-medium">Desde</span>
+            <div className="col-span-1">
+              <label className="label pb-1.5">
+                <span className="label-text text-xs font-semibold uppercase tracking-wide text-base-content/60">Desde</span>
               </label>
               <input
                 type="date"
                 className={cx(
-                  "input input-bordered w-full bg-base-100",
-                  "h-12 rounded-xl",
+                  "input input-bordered w-full bg-base-100 focus:border-success",
+                  "h-11 rounded-xl",
                   invalidRange && "input-error"
                 )}
                 value={desdeInput}
@@ -269,15 +271,15 @@ const CotizacionesKPIs: React.FC<Props> = ({ desde, hasta, refetchInterval, clas
             </div>
 
             {/* Hasta */}
-            <div className="xl:col-span-3">
-              <label className="label pb-2">
-                <span className="label-text font-medium">Hasta</span>
+            <div className="col-span-1">
+              <label className="label pb-1.5">
+                <span className="label-text text-xs font-semibold uppercase tracking-wide text-base-content/60">Hasta</span>
               </label>
               <input
                 type="date"
                 className={cx(
-                  "input input-bordered w-full bg-base-100",
-                  "h-12 rounded-xl",
+                  "input input-bordered w-full bg-base-100 focus:border-success",
+                  "h-11 rounded-xl",
                   invalidRange && "input-error"
                 )}
                 value={hastaInput}
@@ -286,14 +288,14 @@ const CotizacionesKPIs: React.FC<Props> = ({ desde, hasta, refetchInterval, clas
             </div>
 
             {/* Presets */}
-            <div className="xl:col-span-3">
-              <label className="label pb-2">
-                <span className="label-text font-medium">Atajos</span>
+            <div className="col-span-2 lg:col-span-1">
+              <label className="label pb-1.5">
+                <span className="label-text text-xs font-semibold uppercase tracking-wide text-base-content/60">Atajos</span>
               </label>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 lg:flex">
                 <button
-                  className="btn btn-outline btn-warning h-12 rounded-xl"
+                  className="btn h-11 rounded-xl border border-success/30 bg-success/5 text-success hover:bg-success hover:text-success-content hover:border-success"
                   type="button"
                   onClick={setThisMonth}
                 >
@@ -301,7 +303,7 @@ const CotizacionesKPIs: React.FC<Props> = ({ desde, hasta, refetchInterval, clas
                 </button>
 
                 <button
-                  className="btn btn-outline btn-info h-12 rounded-xl"
+                  className="btn h-11 rounded-xl border border-base-300 bg-base-100 text-base-content/70 hover:bg-base-200"
                   type="button"
                   onClick={setLastMonth}
                 >
@@ -311,14 +313,14 @@ const CotizacionesKPIs: React.FC<Props> = ({ desde, hasta, refetchInterval, clas
             </div>
 
             {/* Acciones */}
-            <div className="xl:col-span-3">
-              <label className="label pb-2">
-                <span className="label-text font-medium">Acciones</span>
+            <div className="col-span-2 lg:col-span-1">
+              <label className="label pb-1.5">
+                <span className="label-text text-xs font-semibold uppercase tracking-wide text-base-content/60">Acciones</span>
               </label>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 lg:flex">
                 <button
-                  className="btn btn-ghost h-12 rounded-xl"
+                  className="btn h-11 rounded-xl border border-base-300 bg-base-100 text-base-content/70 hover:bg-base-200"
                   type="button"
                   onClick={clearFilters}
                   title="Quitar filtros"
@@ -328,7 +330,7 @@ const CotizacionesKPIs: React.FC<Props> = ({ desde, hasta, refetchInterval, clas
                 </button>
 
                 <button
-                  className="btn btn-success h-12 rounded-xl"
+                  className="btn btn-success h-11 rounded-xl text-success-content shadow-sm"
                   type="button"
                   onClick={applyFilters}
                   disabled={invalidRange}
@@ -348,6 +350,29 @@ const CotizacionesKPIs: React.FC<Props> = ({ desde, hasta, refetchInterval, clas
               </span>
             </div>
           )}
+
+          <div className="flex flex-wrap items-center gap-2 text-xs text-base-content/60">
+            <span>Las métricas de <b>hoy</b> no usan estos filtros.</span>
+            <span className="hidden sm:inline">•</span>
+            <span>Alcance:</span>
+            <code className="badge badge-ghost badge-sm align-middle">{modo}</code>
+
+            {applied.desde && (
+              <>
+                <span className="hidden sm:inline">•</span>
+                <span>desde</span>
+                <code className="badge badge-outline badge-sm align-middle">{applied.desde}</code>
+              </>
+            )}
+
+            {applied.hasta && (
+              <>
+                <span className="hidden sm:inline">•</span>
+                <span>hasta</span>
+                <code className="badge badge-outline badge-sm align-middle">{applied.hasta}</code>
+              </>
+            )}
+          </div>
         </div>
       </SectionCard>
 

@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { Eye, EyeOff, Loader2, Mail, Lock } from "lucide-react";
 import useLogin from "../services/authServices";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useLoaderStore } from "../store/loader.store"; // o "../store/loader.store"
+import { useAuthStore } from "../store/auth.store";
 
 
 interface LoginRequest {
@@ -13,6 +14,9 @@ interface LoginRequest {
 }
 
 const Login: React.FC = () => {
+  const user = useAuthStore((s) => s.user);
+  const token = useAuthStore((s) => s.token);
+
   const {
     register,
     handleSubmit,
@@ -43,6 +47,11 @@ const Login: React.FC = () => {
       },
     });
   };
+
+  // Ya hay sesión iniciada: no mostrar el login, mandar directo al home.
+  if (user && token) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <main className="login-page-bg h-screen max-h-screen overflow-hidden w-full bg-linear-to-br from-base-200 via-slate-100 to-slate-200">

@@ -254,7 +254,7 @@ const CreditoDetalleAsesor: React.FC = () => {
                                     numero_motor: credito?.numero_motor ?? "",
                                     numero_chasis: credito?.numero_chasis ?? "",
                                     placa: credito?.placa ?? "",
-                                }} codigo_credito={codigo_credito} id_cotizacion={id_cotizacion} />
+                                }} codigo_credito={codigo_credito} id_cotizacion={id_cotizacion} yaCerrado={Number(credito?.credito_cerrado) === 1} />
                             </section>
 
                         </>

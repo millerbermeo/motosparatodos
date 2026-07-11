@@ -823,6 +823,7 @@ const CoodeudoresFormulario: React.FC = () => {
         </fieldset>
 
         {/* ========== Controles (cambiados) ========== */}
+        {!readOnly && (
         <div className="mt-10 flex items-center justify-between">
           {/* ← Anterior (solo si hay paso previo) */}
           <button
@@ -835,7 +836,6 @@ const CoodeudoresFormulario: React.FC = () => {
             ← Anterior
           </button>
 
-          <fieldset disabled={readOnly} className="contents">
           <div className="flex gap-2">
             {fields.length < 2 && (
               <button type="button" className="btn btn-outline" onClick={addSecond} disabled={isSaving}>
@@ -861,8 +861,8 @@ const CoodeudoresFormulario: React.FC = () => {
                   : "Guardar"}
             </button>
           </div>
-          </fieldset>
         </div>
+        )}
       </form>
     </div>
   );

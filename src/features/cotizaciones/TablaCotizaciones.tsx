@@ -1,6 +1,6 @@
 // src/components/cotizaciones/TablaCotizaciones.tsx
 import React, { useState } from 'react';
-import { Eye, ReceiptText } from 'lucide-react';
+import { Eye, ReceiptText, RefreshCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCotizaciones } from '../../services/cotizacionesServices';
 import { useAuthStore } from '../../store/auth.store';
@@ -161,7 +161,7 @@ const TablaCotizaciones: React.FC = () => {
                                 title="Cambiar estado"
                             >
                                 <div className='text-warning'>
-                                    <Eye size="18px" />
+                                    <RefreshCcw size="18px" />
                                 </div>
                             </Link>
                         )}

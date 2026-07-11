@@ -178,6 +178,7 @@ const SolicitudFormulario: React.FC = () => {
       </div>
 
       {/* Controles de paso */}
+      {!readOnly && (
       <div className="mt-6 flex items-center w-full justify-between">
         <div>
           <button
@@ -192,7 +193,7 @@ const SolicitudFormulario: React.FC = () => {
         <div className="flex gap-4">
           <button
             onClick={handleUpload}
-            disabled={isUploading || !file || readOnly}
+            disabled={isUploading || !file}
             className="btn btn-primary disabled:opacity-50"
           >
             {isUploading ? "Subiendo..." : firmasUrl ? "📤 Actualizar firma" : "📤 Subir firma"}
@@ -213,6 +214,7 @@ const SolicitudFormulario: React.FC = () => {
         </div>
         <div />
       </div>
+      )}
     </div>
   );
 };

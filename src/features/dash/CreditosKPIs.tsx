@@ -240,17 +240,19 @@ const CreditosKPIs: React.FC<Props> = ({ desde, hasta, refetchInterval, classNam
       </div>
 
       {/* Filtros */}
-      <SectionCard className="border-primary/20 bg-base-100">
+      <SectionCard className="border-primary/20 bg-linear-to-br from-primary/5 via-base-100 to-base-100">
         <div className="card-body gap-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="card-title text-base md:text-lg">
-                  <CalendarRange className="h-5 w-5 text-primary" />
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                    <CalendarRange className="h-4.5 w-4.5" />
+                  </span>
                   Filtros de fecha
                 </h3>
 
-                <span className={cx("badge badge-sm md:badge-md", badgeClass)}>
+                <span className={cx("badge badge-sm md:badge-md border-0 font-medium", badgeClass)}>
                   {modo === "rango"
                     ? "rango aplicado"
                     : modo === "sin_fecha"
@@ -269,16 +271,16 @@ const CreditosKPIs: React.FC<Props> = ({ desde, hasta, refetchInterval, classNam
             )}
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-[1fr_1fr_auto_auto] lg:items-end">
             {/* Desde */}
-            <div className="xl:col-span-3">
-              <label className="label pb-2">
-                <span className="label-text font-medium">Desde</span>
+            <div className="col-span-1">
+              <label className="label pb-1.5">
+                <span className="label-text text-xs font-semibold uppercase tracking-wide text-base-content/60">Desde</span>
               </label>
               <input
                 type="date"
                 className={cx(
-                  "input input-bordered w-full h-12 rounded-xl bg-base-100",
+                  "input input-bordered w-full h-11 rounded-xl bg-base-100 focus:border-primary",
                   invalidRange && "input-error"
                 )}
                 value={desdeInput}
@@ -287,14 +289,14 @@ const CreditosKPIs: React.FC<Props> = ({ desde, hasta, refetchInterval, classNam
             </div>
 
             {/* Hasta */}
-            <div className="xl:col-span-3">
-              <label className="label pb-2">
-                <span className="label-text font-medium">Hasta</span>
+            <div className="col-span-1">
+              <label className="label pb-1.5">
+                <span className="label-text text-xs font-semibold uppercase tracking-wide text-base-content/60">Hasta</span>
               </label>
               <input
                 type="date"
                 className={cx(
-                  "input input-bordered w-full h-12 rounded-xl bg-base-100",
+                  "input input-bordered w-full h-11 rounded-xl bg-base-100 focus:border-primary",
                   invalidRange && "input-error"
                 )}
                 value={hastaInput}
@@ -303,14 +305,14 @@ const CreditosKPIs: React.FC<Props> = ({ desde, hasta, refetchInterval, classNam
             </div>
 
             {/* Presets */}
-            <div className="xl:col-span-3">
-              <label className="label pb-2">
-                <span className="label-text font-medium">Atajos</span>
+            <div className="col-span-2 lg:col-span-1">
+              <label className="label pb-1.5">
+                <span className="label-text text-xs font-semibold uppercase tracking-wide text-base-content/60">Atajos</span>
               </label>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 lg:flex">
                 <button
-                  className="btn btn-outline h-12 rounded-xl"
+                  className="btn h-11 rounded-xl border border-primary/30 bg-primary/5 text-primary hover:bg-primary hover:text-primary-content hover:border-primary"
                   type="button"
                   onClick={setThisMonth}
                 >
@@ -318,7 +320,7 @@ const CreditosKPIs: React.FC<Props> = ({ desde, hasta, refetchInterval, classNam
                 </button>
 
                 <button
-                  className="btn btn-outline h-12 rounded-xl"
+                  className="btn h-11 rounded-xl border border-base-300 bg-base-100 text-base-content/70 hover:bg-base-200"
                   type="button"
                   onClick={setLastMonth}
                 >
@@ -328,14 +330,14 @@ const CreditosKPIs: React.FC<Props> = ({ desde, hasta, refetchInterval, classNam
             </div>
 
             {/* Acciones */}
-            <div className="xl:col-span-3">
-              <label className="label pb-2">
-                <span className="label-text font-medium">Acciones</span>
+            <div className="col-span-2 lg:col-span-1">
+              <label className="label pb-1.5">
+                <span className="label-text text-xs font-semibold uppercase tracking-wide text-base-content/60">Acciones</span>
               </label>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 lg:flex">
                 <button
-                  className="btn btn-ghost h-12 rounded-xl"
+                  className="btn h-11 rounded-xl border border-base-300 bg-base-100 text-base-content/70 hover:bg-base-200"
                   type="button"
                   onClick={clearFilters}
                 >
@@ -344,7 +346,7 @@ const CreditosKPIs: React.FC<Props> = ({ desde, hasta, refetchInterval, classNam
                 </button>
 
                 <button
-                  className="btn btn-primary h-12 rounded-xl"
+                  className="btn btn-primary h-11 rounded-xl shadow-sm"
                   type="button"
                   onClick={applyFilters}
                   disabled={invalidRange}
