@@ -9,13 +9,19 @@ import { useLoaderStore } from "../../store/loader.store";
 import { fmtFecha, timeAgo } from "../../utils/date";
 import { DataTable } from "../../shared/components/datatable/DataTable";
 import type { DataTableColumn } from "../../shared/components/datatable/types";
-import { useClientPagination } from "../../shared/hooks/useClientPagination";
+import { PAGE_SIZE } from "../../constants/pagination";
 
-const DEFAULT_PAGE_SIZE = 10;
-// list_creditos.php no soporta filtrar por estado/texto en servidor: traemos todo
-// de una vez (hoy ~125 registros) y filtramos+paginamos en cliente, igual que
-// TablaMarcas/TablaEmpresas. Tope generoso para cubrir crecimiento del dataset.
-const ALL_CREDITOS_PAGE_SIZE = 5000;
+// list_creditos.php pagina y filtra por estado en servidor. Catálogo fijo
+// (no se deriva de la página cargada) para que el select siempre muestre todas las opciones.
+const ESTADOS_CREDITO = [
+    "Incompleto",
+    "Pendiente",
+    "Revision",
+    "Aprobado",
+    "En Facturación",
+    "Facturado",
+    "No viable",
+];
 
 const moneyCOP = (n: number) => `${Number(n || 0).toLocaleString()} COP`;
 
@@ -46,17 +52,17 @@ const timeAgoCredito = (iso?: string) =>
 
 const TablaCreditos: React.FC = () => {
     // ---- estado ----
-    const [q, setQ] = React.useState("");
+    const [page, setPage] = React.useState(1);
+    const [perPage, setPerPage] = React.useState(PAGE_SIZE);
     const [estadoFilter, setEstadoFilter] = React.useState<string>("");
     const [creditoId, setCreditoId] = React.useState<number | null>(null);
 
     // ---- queries ----
-    const oneQry = useCreditoById(creditoId);                    // detalle por id
-    const listQry = useCreditos(1, ALL_CREDITOS_PAGE_SIZE);       // todos los créditos
+    const oneQry = useCreditoById(creditoId);                       // detalle por id
+    const listQry = useCreditos(page, perPage, estadoFilter || undefined); // página actual (server-side, filtrada por estado)
 
     const isDetail = Boolean(creditoId);
 
-    // Dataset visible:
     const serverItems = listQry.data?.items ?? [];
     const listLoading = listQry.isLoading;
     const oneLoading = oneQry.isLoading;
@@ -65,60 +71,24 @@ const TablaCreditos: React.FC = () => {
     const isError = isDetail ? oneQry.isError : listQry.isError;
 
     // Para detalle, mostramos solo ese registro como array de 1
-    const baseData = isDetail
+    const visible = isDetail
         ? (oneQry.data ? [oneQry.data] : [])
         : serverItems;
 
-    // Filtros client-side sobre el dataset completo (no solo la página actual)
-    const creditosFiltrados = React.useMemo(() => {
-        if (isDetail) return baseData;
-        const term = q.trim().toLowerCase();
-        return baseData.filter((c: any) => {
-            const estadoOK = !estadoFilter || c.estado === estadoFilter;
-            if (!estadoOK) return false;
-            if (!term) return true;
-            return [c.asesor, c.codigo_credito, c.nombre_cliente, c.producto, c.estado, c.analista]
-                .join(" ").toLowerCase().includes(term);
-        });
-    }, [isDetail, baseData, q, estadoFilter]);
-
-    // Estados (solo en lista)
-    const estados = React.useMemo(() => {
-        if (isDetail) return [];
-        const set = new Set<string>();
-        // estados fijos garantizados aunque no estén en el dataset actual
-        set.add("En Facturación");
-        (serverItems ?? []).forEach((c: any) => c?.estado && set.add(c.estado));
-        return Array.from(set).sort();
-    }, [serverItems, isDetail]);
-
-    // Paginación (en cliente, sobre el resultado ya filtrado):
-    const {
-        page,
-        setPage,
-        pageSize,
-        setPageSize,
-        totalPages,
-        totalItems,
-        pageItems,
-    } = useClientPagination(creditosFiltrados, DEFAULT_PAGE_SIZE);
-
-    // vuelve a la página 1 cada vez que cambia el filtro o el modo detalle
+    // vuelve a la página 1 cada vez que cambia el filtro, el tamaño de página o el modo detalle
     React.useEffect(() => {
         setPage(1);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [q, estadoFilter, isDetail]);
+    }, [estadoFilter, perPage, isDetail]);
 
     const cleanFilters = () => {
         setCreditoId(null);
         setEstadoFilter("");
-        setQ("");
         setPage(1);
-        setPageSize(DEFAULT_PAGE_SIZE);
+        setPerPage(PAGE_SIZE);
     };
 
     const { show, hide } = useLoaderStore();
-
 
     React.useEffect(() => {
         if (isLoading) {
@@ -128,7 +98,9 @@ const TablaCreditos: React.FC = () => {
         }
     }, [isLoading, show, hide]);
 
-    const visible = isDetail ? creditosFiltrados : pageItems;
+    const total = Number(listQry.data?.pagination?.total ?? 0) || 0;
+    const currentPage = Number(listQry.data?.pagination?.current_page ?? page) || page;
+    const lastPage = Number(listQry.data?.pagination?.last_page ?? 1) || 1;
 
     const columns: DataTableColumn<any>[] = [
         { key: "id", header: "Id", render: (c) => c.id || "-" },
@@ -211,7 +183,7 @@ const TablaCreditos: React.FC = () => {
                         {/* Selector que setea el ID → modo detalle */}
                         <SelectCreditos onSelect={(id) => { setCreditoId(id ?? null); }} />
 
-                        {/* Filtro por estado (cliente, sobre el dataset completo) */}
+                        {/* Filtro por estado (server-side) */}
                         {!isDetail && (
                             <select
                                 className="select select-md select-bordered w-full sm:w-auto sm:flex-1 sm:min-w-44 sm:max-w-56"
@@ -219,7 +191,7 @@ const TablaCreditos: React.FC = () => {
                                 onChange={(e) => { setEstadoFilter(e.target.value); }}
                             >
                                 <option value="">Estado</option>
-                                {estados.map((e) => <option key={e} value={e}>{e}</option>)}
+                                {ESTADOS_CREDITO.map((e) => <option key={e} value={e}>{e}</option>)}
                             </select>
                         )}
 
@@ -249,13 +221,17 @@ const TablaCreditos: React.FC = () => {
                 isDetail
                     ? undefined
                     : {
-                          page,
-                          totalPages,
-                          totalItems,
-                          pageSize,
+                          page: currentPage,
+                          totalPages: lastPage,
+                          totalItems: total,
+                          pageSize: perPage,
                           onPageChange: setPage,
-                          onPageSizeChange: (v) => setPageSize(Number(v)),
+                          onPageSizeChange: (v) => {
+                              setPerPage(Number(v) || PAGE_SIZE);
+                              setPage(1);
+                          },
                           pageSizeOptions: [10, 25, 50],
+                          isFetching: listQry.isFetching,
                       }
             }
         />

@@ -22,6 +22,7 @@ const SoporteFormulario: React.FC<Props> = () => {
 
   const prev = useWizardStore(s => s.prev);
   const isFirst = useWizardStore(s => s.isFirst);
+  const readOnly = useWizardStore(s => s.readOnly);
 
 
   const { mutateAsync: actualizarEstado } = useActualizarEstadoCredito();
@@ -36,6 +37,7 @@ const SoporteFormulario: React.FC<Props> = () => {
   const buildUrl = (path: string) => toAbsoluteUrl(path) ?? "";
 
   const handleManualUpload = () => {
+    if (readOnly) return;
     if (!codigo_credito) {
       Swal.fire({ icon: "error", title: "Código de crédito no encontrado" });
       return;
@@ -89,6 +91,7 @@ const SoporteFormulario: React.FC<Props> = () => {
   };
 
   const handleRegisterAndFinish = () => {
+    if (readOnly) return;
     Swal.fire({
       icon: "warning",
       title: "¿Deseas registrar este proceso?",
@@ -125,13 +128,18 @@ const SoporteFormulario: React.FC<Props> = () => {
         });
       } catch (err: any) {
         console.error(err);
-        const raw = err?.response?.data?.message ?? "No fue posible actualizar el estado";
+        const raw =
+          err?.response?.data?.error ??
+          err?.response?.data?.message ??
+          "No fue posible actualizar el estado";
         const arr = Array.isArray(raw) ? raw : [raw];
 
         Swal.fire({
           icon: "error",
           title: "Error",
           html: arr.join("<br/>"),
+        }).then(() => {
+          navigate(redirectTo);
         });
       }
     });
@@ -151,7 +159,7 @@ const SoporteFormulario: React.FC<Props> = () => {
         multiple
         maxFiles={20}
         accept={ACCEPT_ATTR}
-        disabled={isUploading}
+        disabled={isUploading || readOnly}
         helperText="Arrastra y suelta tus archivos aquí o haz clic para seleccionar"
       />
 
@@ -211,7 +219,7 @@ const SoporteFormulario: React.FC<Props> = () => {
             type="button"
             className="btn btn-primary"
             onClick={handleManualUpload}
-            disabled={isUploading || selected.length === 0}
+            disabled={isUploading || selected.length === 0 || readOnly}
           >
             {isUploading ? (
               <span className="inline-flex items-center gap-2">
@@ -226,10 +234,10 @@ const SoporteFormulario: React.FC<Props> = () => {
             data-wizard-save
             type="button"
             className="btn btn-success"
-            onClick={handleRegisterAndFinish}
+            onClick={readOnly ? () => navigate(redirectTo) : handleRegisterAndFinish}
             disabled={isUploading}
           >
-            Continuar y pasar a revisión →
+            {readOnly ? "Ver detalle del crédito" : "Continuar y pasar a revisión →"}
           </button>
         </div>
       </div>

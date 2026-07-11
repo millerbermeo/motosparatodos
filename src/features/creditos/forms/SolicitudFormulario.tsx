@@ -27,6 +27,7 @@ const SolicitudFormulario: React.FC = () => {
   const next = useWizardStore((s) => s.next);
   const prev = useWizardStore((s) => s.prev);
   const isFirst = useWizardStore((s) => s.isFirst);
+  const readOnly = useWizardStore((s) => s.readOnly);
 
   // Código de crédito desde la URL
   const { id: codigoFromUrl } = useParams<{ id: string }>();
@@ -58,6 +59,7 @@ const SolicitudFormulario: React.FC = () => {
   );
 
   const handleUpload = () => {
+    if (readOnly) return;
     if (!file) {
       Swal.fire({
         icon: "warning",
@@ -124,6 +126,7 @@ const SolicitudFormulario: React.FC = () => {
           progress={uploadProgress}
           accept="application/pdf,image/*"
           helperText="PDF o imagen · máx. 1.5 MB"
+          disabled={readOnly}
         />
 
         {/* 👇 Mostrar firma registrada (si existe en el backend) */}
@@ -189,7 +192,7 @@ const SolicitudFormulario: React.FC = () => {
         <div className="flex gap-4">
           <button
             onClick={handleUpload}
-            disabled={isUploading || !file}
+            disabled={isUploading || !file || readOnly}
             className="btn btn-primary disabled:opacity-50"
           >
             {isUploading ? "Subiendo..." : firmasUrl ? "📤 Actualizar firma" : "📤 Subir firma"}

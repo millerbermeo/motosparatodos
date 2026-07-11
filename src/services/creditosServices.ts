@@ -391,16 +391,20 @@ const mapCredito = (r: CreditoRaw): Credito => ({
 
 export const useCreditos = (
   page: number,
-  perPage: number = 10
+  perPage: number = 10,
+  estado?: string
 ) => {
   return useQuery<{
     items: Credito[];
     pagination: PaginationMeta;
   }>({
-    queryKey: ["creditos", { page, perPage }],
+    queryKey: ["creditos", { page, perPage, estado: estado ?? "" }],
     queryFn: async () => {
+      const params: Record<string, string | number> = { page, per_page: perPage };
+      if (estado) params.estado = estado;
+
       const { data } = await api.get<ListCreditosResponseRaw>("/list_creditos.php", {
-        params: { page, per_page: perPage },
+        params,
       });
 
       // items: tolera {creditos: []} o {data: []}
