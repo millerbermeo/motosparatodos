@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import Swal from "sweetalert2";
 import { useRegistrarSolicitudFacturacion } from "../../../services/solicitudServices";
 import { HeaderSolicitud } from "../solicitar-facturacion/HeaderSolicitud";
 import { FileUpload } from "../FileUpload";
@@ -129,10 +130,21 @@ const FacturarCreditoForm: React.FC<Props> = ({
       // otros documentos múltiples
       otrosDocs.forEach((f) => fd.append("otros_documentos[]", f));
 
-      registrarSolicitud(fd, {
-        onSuccess: () => {
-          window.location.reload();
-        },
+      Swal.fire({
+        icon: "warning",
+        title: "¿Enviar solicitud de facturación?",
+        text: `Se registrará la solicitud de facturación para el crédito ${codigoCredito}.`,
+        showCancelButton: true,
+        confirmButtonText: "Sí, enviar",
+        cancelButtonText: "Cancelar",
+      }).then((res) => {
+        if (!res.isConfirmed) return;
+
+        registrarSolicitud(fd, {
+          onSuccess: () => {
+            window.location.reload();
+          },
+        });
       });
     },
     [
