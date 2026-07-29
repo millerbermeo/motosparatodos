@@ -21,7 +21,7 @@ export const DEFAULT_DOCS: DocItem[] = [
   },
   {
     name: "paquete_credito_MxT (1)",
-    file: "paquete_credito_MxT (1).docx",
+    file: "paquete_credito_ MxT (1).docx",
   },
 ];
 
