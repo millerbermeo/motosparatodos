@@ -297,8 +297,8 @@ const DetalleCotizacion: React.FC = () => {
       { name: 'Manifiesto', url: manifiestoUrlSolicitud || undefined },
     ].filter((d) => !!d.url);
 
-    return [...DEFAULT_DOCS, ...docsBackend];
-  }, [cedulaUrlSolicitud, manifiestoUrlSolicitud]);
+    return [...(isCreditoPropio ? DEFAULT_DOCS : []), ...docsBackend];
+  }, [isCreditoPropio, cedulaUrlSolicitud, manifiestoUrlSolicitud]);
 
 
 
