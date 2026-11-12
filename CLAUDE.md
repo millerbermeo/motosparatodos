@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run dev        # dev server at http://localhost:3000
+npm run dev        # dev server at http://localhost:4458
 npm run build      # tsc -b && vite build
 npm run lint       # eslint
 npm run preview    # preview production build
